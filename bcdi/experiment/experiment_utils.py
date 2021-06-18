@@ -17,7 +17,6 @@ import numpy as np
 import os
 import pathlib
 from scipy.interpolate import RegularGridInterpolator
-import warnings
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -27,11 +26,11 @@ class Detector:
     """
     Class to handle the configuration of the detector used for data acquisition.
 
-    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M', 'Eiger4M'}
+    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M',
+     'Eiger4M'}
     :param datadir: directory where the data files are located
     :param savedir: directory where to save the results
     :param template_imagefile: beamline-dependent template for the data files
-
      - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
      - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
      - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -39,20 +38,25 @@ class Detector:
      - P10: '_master.h5'
      - NANOMAX: '%06d.h5'
      - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-    :param specfile: template for the log file or the data file depending on the beamline
+
+    :param specfile: template for the log file or the data file depending on the
+     beamline
     :param roi: region of interest of the detector used for analysis
-    :param sum_roi: region of interest of the detector used for calculated an integrated intensity
+    :param sum_roi: region of interest of the detector used for calculated an
+     integrated intensity
     :param binning: binning factor of the 3D dataset
      (stacking dimension, detector vertical axis, detector horizontal axis)
     :param kwargs:
-
-     - 'is_series': boolean, True is the measurement is a series at PETRAIII P10 beamline
-     - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken (less pixels than expected)
-     - 'preprocessing_binning': tuple of the three binning factors used in a previous preprocessing step
-     - 'offsets': tuple or list, sample and detector offsets corresponding to the parameter delta
-       in xrayutilities hxrd.Ang2Q.area method
-     - 'linearity_func': function to apply to each pixel of the detector in order to compensate the deviation of the
-       detector linearity for large intensities.
+     - 'is_series': boolean, True is the measurement is a series at PETRAIII P10
+       beamline
+     - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken
+       (less pixels than expected)
+     - 'preprocessing_binning': tuple of the three binning factors used in a previous
+       preprocessing step
+     - 'offsets': tuple or list, sample and detector offsets corresponding to the
+       parameter delta in xrayutilities hxrd.Ang2Q.area method
+     - 'linearity_func': function to apply to each pixel of the detector in order to
+       compensate the deviation of the detector linearity for large intensities.
     """
 
     def __init__(
@@ -70,7 +74,8 @@ class Detector:
         binning=(1, 1, 1),
         **kwargs,
     ):
-        # the detector name should be initialized first, other properties are depending on it
+        # the detector name should be initialized first,
+        # other properties are depending on it
         self.name = name
 
         valid.valid_kwargs(
@@ -117,9 +122,10 @@ class Detector:
     @property
     def binning(self):
         """
-        Tuple of three positive integers corresponding to the binning of the data used in phase retrieval
-         (stacking dimension, detector vertical axis, detector horizontal axis). To declare an additional binning factor
-         due to a previous preprocessing step, use the kwarg 'preprocessing_binning' instead.
+        Tuple of three positive integers corresponding to the binning of the data used
+        in phase retrieval (stacking dimension, detector vertical axis, detector
+        horizontal axis). To declare an additional binning factor due to a previous
+        preprocessing step, use the kwarg 'preprocessing_binning' instead.
         """
         return self._binning
 
@@ -198,7 +204,8 @@ class Detector:
     @property
     def nb_pixel_x(self):
         """
-        Horizontal number of pixels of the detector, taking into account an eventual preprocessing binning.
+        Horizontal number of pixels of the detector, taking into account an eventual
+        preprocessing binning.
         """
         return self._nb_pixel_x
 
@@ -215,7 +222,8 @@ class Detector:
     @property
     def nb_pixel_y(self):
         """
-        Vertical number of pixels of the detector, taking into account an eventual preprocessing binning.
+        Vertical number of pixels of the detector, taking into account an eventual
+        preprocessing binning.
         """
         return self._nb_pixel_y
 
@@ -291,8 +299,9 @@ class Detector:
     @property
     def preprocessing_binning(self):
         """
-        Tuple of three positive integers corresponding to the binning factor of the data used in a previous
-         preprocessing step (stacking dimension, detector vertical axis, detector horizontal axis).
+        Tuple of three positive integers corresponding to the binning factor of the
+        data used in a previous preprocessing step (stacking dimension, detector
+        vertical axis, detector horizontal axis).
         """
         return self._preprocessing_binning
 
@@ -394,7 +403,8 @@ class Detector:
     @property
     def sum_roi(self):
         """
-        Region of interest of the detector used for integrating the intensity [y_start, y_stop, x_start, x_stop]
+        Region of interest of the detector used for integrating the intensity
+        [y_start, y_stop, x_start, x_stop]
         """
         return self._sum_roi
 
@@ -480,12 +490,22 @@ class Detector:
         Representation string of the Detector instance.
         """
         return (
-            f"{self.__class__.__name__}(name='{self.name}', unbinned_pixel={self.unbinned_pixel}, "
-            f"nb_pixel_x={self.nb_pixel_x}, nb_pixel_y={self.nb_pixel_y}, binning={self.binning},\n"
-            f"roi={self.roi}, sum_roi={self.sum_roi}, preprocessing_binning={self.preprocessing_binning}, "
-            f"is_series={self.is_series}\nrootdir = {self.rootdir},\ndatadir = {self.datadir},\n"
-            f"scandir = {self.scandir},\nsavedir = {self.savedir},\nsample_name = {self.sample_name},"
-            f" template_file = {self.template_file}, template_imagefile = {self.template_imagefile},"
+            f"{self.__class__.__name__}(name='{self.name}', "
+            f"unbinned_pixel={self.unbinned_pixel}, "
+            f"nb_pixel_x={self.nb_pixel_x}, "
+            f"nb_pixel_y={self.nb_pixel_y}, "
+            f"binning={self.binning},\n"
+            f"roi={self.roi}, "
+            f"sum_roi={self.sum_roi}, "
+            f"preprocessing_binning={self.preprocessing_binning}, "
+            f"is_series={self.is_series},\n"
+            f"rootdir = {self.rootdir},\n"
+            f"datadir = {self.datadir},\n"
+            f"scandir = {self.scandir},\n"
+            f"savedir = {self.savedir},\n"
+            f"sample_name = {self.sample_name},"
+            f" template_file = {self.template_file}, "
+            f"template_imagefile = {self.template_imagefile},"
             f" specfile = {self.specfile},\n"
         )
 
@@ -497,10 +517,12 @@ class Detector:
 
         :param data: the 2D data to mask
         :param mask: the 2D mask to be updated
-        :param nb_img: number of images summed to yield the 2D data (e.g. in a series measurement)
+        :param nb_img: number of images summed to yield the 2D data
+         (e.g. in a series measurement)
         :param flatfield: the 2D flatfield array to be multiplied with the data
         :param background: a 2D array to be subtracted to the data
-        :param hotpixels: a 2D array with hotpixels to be masked (1=hotpixel, 0=normal pixel)
+        :param hotpixels: a 2D array with hotpixels to be masked
+         (1=hotpixel, 0=normal pixel)
         :return: the masked data and the updated mask
         """
         if not isinstance(data, np.ndarray) or not isinstance(mask, np.ndarray):
@@ -644,16 +666,19 @@ class Detector:
 
 class Diffractometer:
     """
-    Base class for defining diffractometers. The frame used is the laboratory frame with the CXI convention
-    (z downstream, y vertical up, x outboard).
+    Base class for defining diffractometers. The frame used is the laboratory frame
+    with the CXI convention (z downstream, y vertical up, x outboard).
 
-    :param sample_offsets: list or tuple of three angles in degrees, corresponding to the offsets of each of the sample
-     circles (the offset for the most outer circle should be at index 0).
-     Convention: the sample offsets will be subtracted to measurement the motor values.
-    :param sample_circles: list of sample circles from outer to inner (e.g. mu eta chi phi),
-     expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
-    :param detector_circles: list of detector circles from outer to inner (e.g. gamma delta),
-     expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
+    :param sample_offsets: list or tuple of three angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). Convention: the sample offsets will be subtracted to
+     measurement the motor values.
+    :param sample_circles: list of sample circles from outer to inner (e.g. mu eta
+    chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
+    'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
+    :param detector_circles: list of detector circles from outer to inner
+     (e.g. gamma delta), expressed using a valid pattern within {'x+', 'x-', 'y+',
+     'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
     """
 
     valid_circles = {
@@ -674,9 +699,11 @@ class Diffractometer:
     @property
     def detector_circles(self):
         """
-        List of detector circles from outer to inner (e.g. gamma delta), expressed using a valid pattern within
-        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convetion
-        (z downstream, y vertical up, x outboard), + for a counter-clockwise rotation, - for a clockwise rotation.
+        List of detector circles from outer to inner (e.g. gamma delta), expressed
+        using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
+        example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
+        y vertical up, x outboard), + for a counter-clockwise rotation, - for a
+        clockwise rotation.
         """
         return self._detector_circles
 
@@ -691,16 +718,19 @@ class Diffractometer:
         )
         if any(val not in self.valid_circles for val in value):
             raise ValueError(
-                f"Invalid circle value encountered in detector_circles, valid are {self.valid_circles}"
+                "Invalid circle value encountered in detector_circles,"
+                f" valid are {self.valid_circles}"
             )
         self._detector_circles = list(value)
 
     @property
     def sample_circles(self):
         """
-        List of sample circles from outer to inner (e.g. mu eta chi phi), expressed using a valid pattern within
-        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convetion
-        (z downstream, y vertical up, x outboard), + for a counter-clockwise rotation, - for a clockwise rotation.
+        List of sample circles from outer to inner (e.g. mu eta chi phi), expressed
+        using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
+        example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
+        y vertical up, x outboard), + for a counter-clockwise rotation, - for a
+        clockwise rotation.
         """
         return self._sample_circles
 
@@ -715,16 +745,18 @@ class Diffractometer:
         )
         if any(val not in self.valid_circles for val in value):
             raise ValueError(
-                f"Invalid circle value encountered in sample_circles, valid are {self.valid_circles}"
+                "Invalid circle value encountered in sample_circles,"
+                f" valid are {self.valid_circles}"
             )
         self._sample_circles = list(value)
 
     @property
     def sample_offsets(self):
         """
-        List or tuple of three angles in degrees, corresponding to the offsets of each of the sample circles
-        (the offset for the most outer circle should be at index 0).
-        Convention: the sample offsets will be subtracted to measurement the motor values.
+        List or tuple of three angles in degrees, corresponding to the offsets of each
+        of the sample circles (the offset for the most outer circle should be at
+        index 0). Convention: the sample offsets will be subtracted to measurement
+        the motor values.
         """
         return self._sample_offsets
 
@@ -744,7 +776,8 @@ class Diffractometer:
 
     def add_circle(self, stage_name, index, circle):
         """
-        Add a circle to the list of circles (the most outer circle should be at index 0).
+        Add a circle to the list of circles (the most outer circle should be at
+        index 0).
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index where to put the circle in the list
@@ -782,30 +815,44 @@ class Diffractometer:
         **kwargs,
     ):
         """
-        Rotate arrays such that all circles of the sample stage are at their zero position.
+        Rotate arrays such that all circles of the sample stage are at their zero
+        position.
 
         :param arrays: tuple of 3D real arrays of the same shape.
-        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x (CXI convention)
-        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
-        :param q_com: diffusion vector of the center of mass of the Bragg peak, expressed in an orthonormal frame x y z
-        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
-        :param central_angle: if provided, angle to be used in the calculation of the rotation matrix for the rocking
-         angle. If None, it will be defined as the angle value at the middle of the rocking curve.
-        :param fill_value: tuple of numeric values used in the RegularGridInterpolator for points outside of the
-         interpolation domain. The length of the tuple should be equal to the number of input arrays.
-        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise. Used for plot labels.
-        :param reciprocal_space: True if the data is in reciprocal space, False otherwise. Used for plot labels.
-        :param debugging: tuple of booleans of the same length as the number of input arrays, True to see plots before
-         and after rotation
+        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
+         (CXI convention)
+        :param angles: tuple of angular values in degrees, one for each circle
+         of the sample stage
+        :param q_com: diffusion vector of the center of mass of the Bragg peak,
+         expressed in an orthonormal frame x y z
+        :param rocking_angle: angle which is tilted during the rocking curve in
+         {'outofplane', 'inplane'}
+        :param central_angle: if provided, angle to be used in the calculation
+         of the rotation matrix for the rocking angle. If None, it will be defined as
+         the angle value at the middle of the rocking curve.
+        :param fill_value: tuple of numeric values used in the RegularGridInterpolator
+         for points outside of the interpolation domain. The length of the tuple
+         should be equal to the number of input arrays.
+        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise.
+         Used for plot labels.
+        :param reciprocal_space: True if the data is in reciprocal space,
+         False otherwise. Used for plot labels.
+        :param debugging: tuple of booleans of the same length as the number
+         of input arrays, True to see plots before and after rotation
         :param kwargs:
-         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
-         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
-           number of arrays
-         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-        :return: a rotated array (if a single array was provided) or a tuple of rotated arrays (same length as the
-         number of input arrays)
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the
+           debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle
+           of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle
+           of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle
+           of the initial array
+
+        :return: a rotated array (if a single array was provided) or a tuple of
+         rotated arrays (same length as the number of input arrays)
         """
         # check that arrays is a tuple of 3D arrays
         if isinstance(arrays, np.ndarray):
@@ -845,12 +892,13 @@ class Diffractometer:
             rocking_angle=rocking_angle, stage_name="sample", angles=angles
         )
 
-        # get the relevant angle within the rocking circle. The reference point when orthogonalizing if the center of
-        # the array, but we do not know to which angle it corresponds if the data was cropped.
+        # get the relevant angle within the rocking circle.
+        # The reference point when orthogonalizing if the center of the array,
+        # but we do not know to which angle it corresponds if the data was cropped.
         if central_angle is None:
             print(
-                "central_angle=None, using the angle at half of the rocking curve for the calculation of the "
-                f"rotation matrix"
+                "central_angle=None, using the angle at half of the rocking curve"
+                " for the calculation of the rotation matrix"
             )
             nb_steps = len(angles[rocking_circle])
             central_angle = angles[rocking_circle][int(nb_steps // 2)]
@@ -859,7 +907,8 @@ class Diffractometer:
         angles = list(angles)
         angles[rocking_circle] = central_angle
         print(
-            f"sample stage circles: {self._sample_circles}\nsample stage angles:  {angles}"
+            f"sample stage circles: {self._sample_circles}\n"
+            f"sample stage angles:  {angles}"
         )
 
         # check that all angles are Real, not encapsulated in a list or an array
@@ -903,9 +952,11 @@ class Diffractometer:
         """
         Find the index of the circle which corresponds to the rocking angle.
 
-        :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        :param rocking_angle: angle which is tilted during the rocking curve in
+         {'outofplane', 'inplane'}
         :param stage_name: supported stage name, 'sample' or 'detector'
-        :param angles: tuple of angular values in degrees, one for each circle of the sample stage
+        :param angles: tuple of angular values in degrees, one for each circle
+         of the sample stage
         :return: the index of the rocking circles in the list of angles
         """
         # check parameters
@@ -959,24 +1010,28 @@ class Diffractometer:
 
     def goniometer_values(self, **kwargs):
         """
-        This method is beamline dependent and should be implemented in the child classes.
+        This method is beamline dependent and should be implemented
+         in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
         """
         raise NotImplementedError(
-            "This method is beamline specific and must be implemented in the child class"
+            "This method is beamline specific and must be implemented"
+            " in the child class"
         )
 
     def motor_positions(self, **kwargs):
         """
-        This method is beamline dependent and should be implemented in the child classes.
+        This method is beamline dependent and should be implemented
+        in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup.
         """
         raise NotImplementedError(
-            "This method is beamline specific and must be implemented in the child class"
+            "This method is beamline specific and must be implemented"
+            " in the child class"
         )
 
     def remove_circle(self, stage_name, index):
@@ -1004,10 +1059,12 @@ class Diffractometer:
 
     def rotation_matrix(self, stage_name, angles):
         """
-        Calculate the 3x3 rotation matrix given by the list of angles corresponding to the stage circles.
+        Calculate the 3x3 rotation matrix given by the list of angles corresponding to
+        the stage circles.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
-        :param angles: list of angular values in degrees for the stage circles during the measurement
+        :param angles: list of angular values in degrees for the stage circles
+         during the measurement
         :return: the rotation matrix as a numpy ndarray of shape (3, 3)
         """
         self.valid_name(stage_name)
@@ -1022,7 +1079,8 @@ class Diffractometer:
             name="angles",
         )
 
-        # create a list of rotation matrices corresponding to the circles, index 0 corresponds to the most outer circle
+        # create a list of rotation matrices corresponding to the circles,
+        # index 0 corresponds to the most outer circle
         rotation_matrices = [
             RotationMatrix(circle, angles[idx]).get_matrix()
             for idx, circle in enumerate(
@@ -1030,7 +1088,8 @@ class Diffractometer:
             )
         ]
 
-        # calculate the total tranformation matrix by rotating back from outer circles to inner circles
+        # calculate the total tranformation matrix by rotating back
+        # from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
     def valid_name(self, stage_name):
@@ -1048,8 +1107,9 @@ class Diffractometer:
 
 class Diffractometer34ID(Diffractometer):
     """
-    34ID goniometer, 2S+2D (sample: theta (inplane), phi (out of plane)   /   detector: delta (inplane), gamma).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    34ID goniometer, 2S+2D (sample: theta (inplane), phi (out of plane) / detector:
+    delta (inplane), gamma). The laboratory frame uses the CXI convention (z
+    downstream, y vertical up, x outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1066,10 +1126,13 @@ class Diffractometer34ID(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most outer
+           to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1098,7 +1161,8 @@ class Diffractometer34ID(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        # 34ID-C goniometer, 2S+2D (sample: theta (inplane), phi (out of plane)   detector: delta (inplane), gamma)
+        # 34ID-C goniometer, 2S+2D (sample: theta (inplane),
+        # phi (out of plane)   detector: delta (inplane), gamma)
         sample_angles = (theta, phi)
         detector_angles = (delta, gamma)
 
@@ -1128,7 +1192,8 @@ class Diffractometer34ID(Diffractometer):
 class DiffractometerCRISTAL(Diffractometer):
     """
     CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1142,14 +1207,18 @@ class DiffractometerCRISTAL(Diffractometer):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+        :param logfile: file containing the information about the scan and image
+         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1182,14 +1251,17 @@ class DiffractometerCRISTAL(Diffractometer):
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
-        Load the scan data and extract motor positions. It will look for the correct entry 'rocking_angle' in the
-         dictionary Setup.actuators, and use the default entry otherwise.
+        Load the scan data and extract motor positions. It will look for the correct
+        entry 'rocking_angle' in the dictionary Setup.actuators, and use the default
+        entry otherwise.
 
         :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
-         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-           equal to the number of measured frames. In case of data padding, the length changes.
+         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
+           (padded frame). The initial length is equal to the number of measured
+           frames. In case of data padding, the length changes.
+
         :return: (mgomega, mgphi, gamma, delta) motor positions
         """
         # check and load kwargs
@@ -1290,7 +1362,8 @@ class DiffractometerCRISTAL(Diffractometer):
             mgphi = setup.custom_motors.get("mgphi", None)
             energy = setup.custom_motors["energy", setup.energy]
 
-        # check if mgomega needs to be divided by 1e6 (data taken before the implementation of the correction)
+        # check if mgomega needs to be divided by 1e6
+        # (data taken before the implementation of the correction)
         if isinstance(mgomega, Real) and abs(mgomega) > 360:
             mgomega = mgomega / 1e6
         elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(
@@ -1303,13 +1376,15 @@ class DiffractometerCRISTAL(Diffractometer):
     @staticmethod
     def cristal_load_motor(datafile, root, actuator_name, field_name):
         """
-        Try to load the dataset at the defined entry and returns it. Patterns keep changing at CRISTAL.
+        Try to load the dataset at the defined entry and returns it.
+        Patterns keep changing at CRISTAL.
 
         :param datafile: h5py File object of CRISTAL .nxs scan file
-        :param root: string, path of the data up to the last subfolder (not included). This part is expected to
-         not change over time
-        :param actuator_name: string, name of the actuator (e.g. 'I06-C-C07-EX-DIF-KPHI'). Lowercase and uppercase will
-         be tested when trying to load the data.
+        :param root: string, path of the data up to the last subfolder
+         (not included). This part is expected to not change over time
+        :param actuator_name: string, name of the actuator
+         (e.g. 'I06-C-C07-EX-DIF-KPHI'). Lowercase and uppercase will be tested when
+         trying to load the data.
         :param field_name: name of the field under the actuator name (e.g. 'position')
         :return: the dataset if found or 0
         """
@@ -1352,10 +1427,12 @@ class DiffractometerCRISTAL(Diffractometer):
                     ][:]
                 except KeyError:  # nothing else that we can do
                     print(
-                        f"\nCould not find the field '{field_name}' in the actuator'{actuator_name}'"
+                        f"\nCould not find the field '{field_name}'"
+                        f" in the actuator'{actuator_name}'"
                     )
                     print(
-                        f"list of available fields: {list(datafile[root + '/' + actuator_name].keys())}\n"
+                        "list of available fields:"
+                        f" {list(datafile[root + '/' + actuator_name].keys())}\n"
                     )
                     return 0
         return dataset
@@ -1364,7 +1441,8 @@ class DiffractometerCRISTAL(Diffractometer):
 class DiffractometerID01(Diffractometer):
     """
     ID01 goniometer, 3S+2D (sample: mu, eta, phi / detector: nu,del).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1380,20 +1458,26 @@ class DiffractometerID01(Diffractometer):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+        :param logfile: file containing the information about the scan and image
+         numbers (specfile, .fio...)
         :param scan_number: the scan number to load
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
-         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-           equal to the number of measured frames. In case of data padding, the length changes.
-         - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to
-           follow the Bragg peak.
+         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
+           (padded frame). The initial length is equal to the number of measured
+           frames. In case of data padding, the length changes.
+         - 'follow_bragg': boolean, True for energy scans where the detector position
+           is changed during the scan to follow the Bragg peak.
+
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # load kwargs
         follow_bragg = kwargs.get("follow_bragg", False)
@@ -1449,14 +1533,16 @@ class DiffractometerID01(Diffractometer):
         """
         Load the scan data and extract motor positions.
 
-        :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+        :param logfile: Silx SpecFile object containing the information about the scan
+         and image numbers
         :param scan_number: the scan number to load
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
-         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-           equal to the number of measured frames. In case of data padding, the length changes.
-         - 'follow_bragg': boolean, True for energy scans where the detector position is changed during the scan to
-           follow the Bragg peak.
+         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
+           (padded frame). The initial length is equal to the number of measured
+           frames. In case of data padding, the length changes.
+         - 'follow_bragg': boolean, True for energy scans where the detector position
+           is changed during the scan to follow the Bragg peak.
         :return: (mu, eta, phi, nu, delta, energy) motor positions
         """
         # check and load kwargs
@@ -1573,7 +1659,8 @@ class DiffractometerID01(Diffractometer):
 class DiffractometerNANOMAX(Diffractometer):
     """
     NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1587,14 +1674,18 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+        :param logfile: file containing the information about the scan and image
+         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1631,7 +1722,8 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         Load the scan data and extract motor positions.
 
-        :param logfile: Silx SpecFile object containing the information about the scan and image numbers
+        :param logfile: Silx SpecFile object containing the information about the scan
+         and image numbers
         :param setup: the experimental setup: Class SetupPreprocessing()
         :return: (theta, phi, gamma, delta, energy, radius) motor positions
         """
@@ -1650,7 +1742,8 @@ class DiffractometerNANOMAX(Diffractometer):
                     phi = logfile["/" + group_key + "/measurement/gonphi"][:]
                 except KeyError:
                     raise KeyError(
-                        'phi not in measurement data, check the parameter "rocking_angle"'
+                        'phi not in measurement data,'
+                        ' check the parameter "rocking_angle"'
                     )
                 theta = logfile["/" + group_key + "/snapshot/gontheta"][:]
             else:
@@ -1658,7 +1751,8 @@ class DiffractometerNANOMAX(Diffractometer):
                     theta = logfile["/" + group_key + "/measurement/gontheta"][:]
                 except KeyError:
                     raise KeyError(
-                        'theta not in measurement data, check the parameter "rocking_angle"'
+                        'theta not in measurement data,'
+                        ' check the parameter "rocking_angle"'
                     )
                 phi = logfile["/" + group_key + "/snapshot/gonphi"][:]
 
@@ -1680,7 +1774,8 @@ class DiffractometerNANOMAX(Diffractometer):
 class DiffractometerP10(Diffractometer):
     """
     P10 goniometer, 4S+2D (sample: mu, om, chi, phi / detector: gamma, delta).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up, x
+    outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1694,14 +1789,18 @@ class DiffractometerP10(Diffractometer):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+        :param logfile: file containing the information about the scan and image
+         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1735,7 +1834,8 @@ class DiffractometerP10(Diffractometer):
 
     def motor_positions(self, logfile, setup):
         """
-        Load the .fio file from the scan and extract motor positions for P10 6-circle difractometer setup.
+        Load the .fio file from the scan and extract motor positions for P10 6-circle
+        difractometer setup.
 
         :param logfile: path of the . fio file containing the information about the scan
         :param setup: the experimental setup: Class SetupPreprocessing()
@@ -1827,7 +1927,8 @@ class DiffractometerP10(Diffractometer):
 class DiffractometerSIXS(Diffractometer):
     """
     SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x outboard).
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
     """
 
     def __init__(self, sample_offsets):
@@ -1841,17 +1942,23 @@ class DiffractometerSIXS(Diffractometer):
         """
         Extract goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image numbers (specfile, .fio...)
+        :param logfile: file containing the information about the scan and image
+         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
-         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-           equal to the number of measured frames. In case of data padding, the length changes.
+         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
+           (padded frame). The initial length is equal to the number of measured
+           frames. In case of data padding, the length changes.
+
         :return: a tuple of angular values in degrees, depending on stage_name:
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector angle, outofplane detector angle).
-           The grazing incidence angles are the positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most outer to the most inner circle
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
         """
         # load kwargs
         frames_logical = kwargs.get("frames_logical")
@@ -1901,8 +2008,10 @@ class DiffractometerSIXS(Diffractometer):
         :param logfile: nxsReady Dataset object of SIXS .nxs scan file
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
-         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1 (padded frame). The initial length is
-           equal to the number of measured frames. In case of data padding, the length changes.
+         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
+           (padded frame). The initial length is equal to the number of measured
+           frames. In case of data padding, the length changes.
+
         :return: (beta, mu, gamma, delta) motor positions and updated frames_logical
         """
         # check and load kwargs
@@ -1926,7 +2035,8 @@ class DiffractometerSIXS(Diffractometer):
             except AttributeError:  # data recorder changed after 11/03/2019
                 try:
                     beta = logfile.beta[0]  # not scanned
-                except AttributeError:  # the alias dictionnary was probably not provided
+                except AttributeError:
+                    # the alias dictionnary was probably not provided
                     beta = 0
 
             temp_mu = logfile.mu[:]
@@ -1958,9 +2068,11 @@ class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.
 
-    :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter represents the rotation axis.
-     + for a counter-clockwise rotation, - for a clockwise rotation.
-    :param angle: angular value in degrees to be used in the calculation of the rotation matrix
+    :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter
+     represents the rotation axis. + for a counter-clockwise rotation, - for a
+     clockwise rotation.
+    :param angle: angular value in degrees to be used in the calculation of the
+     rotation matrix
     """
 
     valid_circles = {
@@ -1993,8 +2105,9 @@ class RotationMatrix:
     @property
     def circle(self):
         """
-        Circle definition used for the calculation of the rotation matrix in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
-        + for a counter-clockwise rotation, - for a clockwise rotation.
+        Circle definition used for the calculation of the rotation matrix in
+        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. + for a counter-clockwise rotation,
+        - for a clockwise rotation.
         """
         return self._circle
 
@@ -2056,38 +2169,50 @@ class Setup:
     """
     Class for defining the experimental geometry.
 
-    :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019','34ID','P10','CRISTAL','NANOMAX'}
+    :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019',
+     '34ID','P10','CRISTAL','NANOMAX'}
     :param detector: an instance of the cass experiment_utils.Detector()
-    :param beam_direction: direction of the incident X-ray beam in the frame (z downstream,y vertical up,x outboard)
+    :param beam_direction: direction of the incident X-ray beam in the frame
+     (z downstream,y vertical up,x outboard)
     :param energy: energy setting of the beamline, in eV.
     :param distance: sample to detector distance, in m.
     :param outofplane_angle: vertical detector angle, in degrees.
     :param inplane_angle: horizontal detector angle, in degrees.
     :param tilt_angle: angular step of the rocking curve, in degrees.
-    :param rocking_angle: angle which is tilted during the rocking curve in {'outofplane', 'inplane', 'energy'}
-    :param grazing_angle: motor positions for the goniometer circles below the rocking angle. It should be a
-     list/tuple of lenght 1 for out-of-plane rocking curves (the chi motor value) and length 2 for inplane rocking
+    :param rocking_angle: angle which is tilted during the rocking curve in
+     {'outofplane', 'inplane', 'energy'}
+    :param grazing_angle: motor positions for the goniometer circles below the
+     rocking angle. It should be a list/tuple of lenght 1 for out-of-plane rocking
+     curves (the chi motor value) and length 2 for inplane rocking
      curves (the chi and omega/om/eta motor values).
     :param kwargs:
-     - 'direct_beam': tuple of two real numbers indicating the position of the direct beam in pixels at zero
-       detector angles.
-     - 'filtered_data': boolean, True if the data and the mask to be loaded were already preprocessed.
-     - 'custom_scan': boolean, True is the scan does not follow the beamline's usual directory format.
-     - 'custom_images': list of images numbers when the scan does no follow the beamline's usual directory format.
-     - 'custom_monitor': list of monitor values when the scan does no follow the beamline's usual directory format.
-       The number of values should be equal to the number of elements in custom_images.
-     - 'custom_motors': list of motor values when the scan does no follow the beamline's usual directory format.
-     - 'sample_inplane': sample inplane reference direction along the beam at 0 angles in xrayutilities frame
-       (x is downstream, y outboard, and z vertical up at zero incident angle).
-     - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities frame
-       (x is downstream, y outboard, and z vertical up at zero incident angle).
-     - 'sample_offsets': list or tuple of three angles in degrees, corresponding to the offsets of each of the sample
-       circles (the offset for the most outer circle should be at index 0).
-       Convention: the sample offsets will be subtracted to measurement the motor values.
-     - 'offset_inplane': inplane offset of the detector defined as the outer angle in xrayutilities area detector
-       calibration.
-     - 'actuators': optional dictionary that can be used to define the entries corresponding to actuators in data files
-       (useful at CRISTAL where the location of data keeps changing)
+     - 'direct_beam': tuple of two real numbers indicating the position of the direct
+      beam in pixels at zero detector angles.
+     - 'filtered_data': boolean, True if the data and the mask to be loaded were
+       already preprocessed.
+     - 'custom_scan': boolean, True is the scan does not follow the beamline's usual
+       directory format.
+     - 'custom_images': list of images numbers when the scan does no follow
+       the beamline's usual directory format.
+     - 'custom_monitor': list of monitor values when the scan does no follow
+       the beamline's usual directory format. The number of values should be equal
+       to the number of elements in custom_images.
+     - 'custom_motors': list of motor values when the scan does no follow
+       the beamline's usual directory format.
+     - 'sample_inplane': sample inplane reference direction along the beam at
+       0 angles in xrayutilities frame (x is downstream, y outboard, and z vertical
+       up at zero incident angle).
+     - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities
+       frame (x is downstream, y outboard, and z vertical up at zero incident angle).
+     - 'sample_offsets': list or tuple of three angles in degrees, corresponding to
+       the offsets of each of the sample circles (the offset for the most outer
+       circle should be at index 0). Convention: the sample offsets will be
+       subtracted to measurement the motor values.
+     - 'offset_inplane': inplane offset of the detector defined as the outer angle
+       in xrayutilities area detector calibration.
+     - 'actuators': optional dictionary that can be used to define the entries
+       corresponding to actuators in data files (useful at CRISTAL where the location
+       of data keeps changing)
     """
 
     def __init__(
@@ -2156,8 +2281,9 @@ class Setup:
     @property
     def actuators(self):
         """
-        Optional dictionary that can be used to define the entries corresponding to actuators in data files
-        (useful at CRISTAL where the location of data keeps changing)
+        Optional dictionary that can be used to define the entries corresponding to
+        actuators in data files (useful at CRISTAL where the location of data keeps
+        changing)
         """
         return self._actuators
 
@@ -2173,7 +2299,8 @@ class Setup:
     @property
     def beam_direction(self):
         """
-        Direction of the incident X-ray beam in the frame (z downstream, y vertical up, x outboard).
+        Direction of the incident X-ray beam in the frame (z downstream, y vertical up,
+        x outboard).
         """
         return self._beam_direction
 
@@ -2195,7 +2322,8 @@ class Setup:
     @property
     def beam_direction_xrutils(self):
         """
-        Direction of the incident X-ray beam in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+        Direction of the incident X-ray beam in the frame of xrayutilities
+        (x downstream, y outboard, z vertical up).
         """
         u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
         return u, w, v
@@ -2224,7 +2352,8 @@ class Setup:
     @property
     def custom_images(self):
         """
-        List of images numbers when the scan does no follow the beamline's usual directory format.
+        List of images numbers when the scan does no follow the beamline's usual
+        directory format.
         """
         return self._custom_images
 
@@ -2246,8 +2375,9 @@ class Setup:
     @property
     def custom_monitor(self):
         """
-        List of monitor values when the scan does no follow the beamline's usual directory format. The number of values
-         should be equal to the number of elements in custom_images.
+        List of monitor values when the scan does no follow the beamline's usual
+        directory format. The number of values should be equal to the number of
+        elements in custom_images.
         """
         return self._custom_monitor
 
@@ -2270,7 +2400,8 @@ class Setup:
     @property
     def custom_motors(self):
         """
-        List of motor values when the scan does no follow the beamline's usual directory format.
+        List of motor values when the scan does no follow the beamline's usual
+        directory format.
         """
         return self._custom_motors
 
@@ -2281,7 +2412,8 @@ class Setup:
         else:
             if not isinstance(value, dict):
                 raise TypeError(
-                    'custom_motors should be a dictionnary of "motor_name": motor_positions pairs'
+                    'custom_motors should be a dictionnary of "motor_name": '
+                    'motor_positions pairs'
                 )
             self._custom_motors = value
 
@@ -2314,20 +2446,24 @@ class Setup:
     @property
     def detector_hor(self):
         """
-        Defines the horizontal detector orientation for xrayutilities depending on the beamline.
-         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        Defines the horizontal detector orientation for xrayutilities depending on
+        the beamline. The frame convention of xrayutilities is the following: x
+        downstream, y outboard, z vertical up.
         """
         if self.beamline in {"ID01", "SIXS_2018", "SIXS_2019", "CRISTAL", "NANOMAX"}:
-            # we look at the detector from downstream, detector X along the outboard direction
+            # we look at the detector from downstream,
+            # detector X along the outboard direction
             return "y+"
-        # we look at the detector from upstream, detector X opposite to the outboard direction
+        # we look at the detector from upstream,
+        # detector X opposite to the outboard direction
         return "y-"
 
     @property
     def detector_ver(self):
         """
-        Defines the vertical detector orientation for xrayutilities depending on the beamline.
-         The frame convention of xrayutilities is the following: x downstream, y outboard, z vertical up.
+        Defines the vertical detector orientation for xrayutilities depending on the
+        beamline. The frame convention of xrayutilities is the following: x
+        downstream, y outboard, z vertical up.
         """
         if self.beamline in {
             "ID01",
@@ -2352,7 +2488,8 @@ class Setup:
     @property
     def direct_beam(self):
         """
-        Tuple of two real numbers indicating the position of the direct beam in pixels at zero detector angles.
+        Tuple of two real numbers indicating the position of the direct beam in pixels
+        at zero detector angles.
         """
         return self._direct_beam
 
@@ -2415,8 +2552,8 @@ class Setup:
     @property
     def exit_wavevector(self):
         """
-        Calculate the exit wavevector kout depending on the setup parameters, in the laboratory frame (z downstream,
-         y vertical, x outboard). The unit is 1/m
+        Calculate the exit wavevector kout depending on the setup parameters, in the
+        laboratory frame (z downstream, y vertical, x outboard). The unit is 1/m
 
         :return: kout vector
         """
@@ -2537,16 +2674,18 @@ class Setup:
     @property
     def grazing_angle(self):
         """
-        Motor positions for the goniometer circles below the rocking angle. It should be a list/tuple of lenght 1 for
-         out-of-plane rocking curves (the motor value for mu if it exists) and length 2 for inplane rocking curves
-         (mu and omega/om/eta motor values).
+        Motor positions for the goniometer circles below the rocking angle. It should
+        be a list/tuple of lenght 1 for out-of-plane rocking curves (the motor value
+        for mu if it exists) and length 2 for inplane rocking curves (mu and
+        omega/om/eta motor values).
         """
         return self._grazing_angle
 
     @grazing_angle.setter
     def grazing_angle(self, value):
         if self.rocking_angle == "outofplane":
-            # only the mu angle (rotation around the vertical axis, below the rocking angle omega/om/eta) is needed
+            # only the mu angle (rotation around the vertical axis,
+            # below the rocking angle omega/om/eta) is needed
             # mu is set to 0 if it does not exist
             valid.valid_container(
                 value,
@@ -2557,8 +2696,10 @@ class Setup:
             )
             self._grazing_angle = value
         elif self.rocking_angle == "inplane":
-            # one or more values needed, for example: mu angle, the omega/om/eta angle, the chi angle
-            # (rotations respectively around the vertical axis, outboard and downstream, below the rocking angle phi)
+            # one or more values needed, for example: mu angle,
+            # the omega/om/eta angle, the chi angle
+            # (rotations respectively around the vertical axis,
+            # outboard and downstream, below the rocking angle phi)
             valid.valid_container(
                 value,
                 container_types=(tuple, list),
@@ -2568,14 +2709,15 @@ class Setup:
             )
             self._grazing_angle = value
         else:  # self.rocking_angle == 'energy'
-            # there is no sample rocking for energy scans, hence the grazing angle value do not matter
+            # there is no sample rocking for energy scans,
+            # hence the grazing angle value do not matter
             self._grazing_angle = None
 
     @property
     def incident_wavevector(self):
         """
-        Calculate the incident wavevector kin depending on the setup parameters, in the laboratory frame (z downstream,
-         y vertical, x outboard). The unit is 1/m.
+        Calculate the incident wavevector kin depending on the setup parameters, in
+        the laboratory frame (z downstream, y vertical, x outboard). The unit is 1/m.
 
         :return: kin vector
         """
@@ -2597,9 +2739,10 @@ class Setup:
     @property
     def inplane_coeff(self):
         """
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
-         orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
-         See postprocessing/scripts/correct_angles_detector.py for an example.
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        and the detector inplane orientation. The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. See
+        postprocessing/scripts/correct_angles_detector.py for an example.
 
         :return: +1 or -1
         """
@@ -2647,9 +2790,10 @@ class Setup:
     @property
     def outofplane_coeff(self):
         """
-        Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
-         plane orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
-         See postprocessing/scripts/correct_angles_detector.py for an example.
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction and the detector out of  plane orientation. The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up. See
+        postprocessing/scripts/correct_angles_detector.py for an example.
 
         :return: +1 or -1
         """
@@ -2695,8 +2839,8 @@ class Setup:
     @property
     def q_laboratory(self):
         """
-        Calculate the diffusion vector in the laboratory frame (z downstream, y vertical up, x outboard). The unit is
-        1/A.
+        Calculate the diffusion vector in the laboratory frame (z downstream,
+        y vertical up, x outboard). The unit is 1/A.
 
         :return: a tuple of three vectors components.
         """
@@ -2717,7 +2861,8 @@ class Setup:
             raise TypeError("rocking_angle should be a str")
         elif value not in {"outofplane", "inplane", "energy"}:
             raise ValueError(
-                'rocking_angle can take only the value "outofplane", "inplane" or "energy"'
+                'rocking_angle can take only the value "outofplane", '
+                '"inplane" or "energy"'
             )
         else:
             self._rocking_angle = value
@@ -2748,17 +2893,25 @@ class Setup:
         Representation string of the Setup instance.
         """
         return (
-            f"{self.__class__.__name__}(beamline='{self.beamline}', detector='{self.detector.name}',"
+            f"{self.__class__.__name__}(beamline='{self.beamline}', "
+            f"detector='{self.detector.name}',"
             f" beam_direction={self.beam_direction}, "
-            f"energy={self.energy}, distance={self.distance}, outofplane_angle={self.outofplane_angle},\n"
-            f"inplane_angle={self.inplane_angle}, tilt_angle={self.tilt_angle}, "
-            f"rocking_angle='{self.rocking_angle}', grazing_angle={self.grazing_angle},\n"
-            f"pixel_size={self.detector.unbinned_pixel}, direct_beam={self.direct_beam}, "
+            f"energy={self.energy}, distance={self.distance}, "
+            f"outofplane_angle={self.outofplane_angle},\n"
+            f"inplane_angle={self.inplane_angle}, "
+            f"tilt_angle={self.tilt_angle}, "
+            f"rocking_angle='{self.rocking_angle}', "
+            f"grazing_angle={self.grazing_angle},\n"
+            f"pixel_size={self.detector.unbinned_pixel}, "
+            f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
-            f"filtered_data={self.filtered_data}, custom_scan={self.custom_scan},\n"
-            f"custom_images={self.custom_images},\ncustom_monitor={self.custom_monitor},\n"
+            f"filtered_data={self.filtered_data}, "
+            f"custom_scan={self.custom_scan},\n"
+            f"custom_images={self.custom_images},\n"
+            f"custom_monitor={self.custom_monitor},\n"
             f"custom_motors={self.custom_motors},\n"
-            f"sample_inplane={self.sample_inplane}, sample_outofplane={self.sample_outofplane}, "
+            f"sample_inplane={self.sample_inplane}, "
+            f"sample_outofplane={self.sample_outofplane}, "
             f"offset_inplane={self.offset_inplane})"
         )
 
@@ -2767,7 +2920,8 @@ class Setup:
         Create the logfile used in gridmap().
 
         :param scan_number: the scan number to load
-        :param root_folder: the root directory of the experiment, where is the specfile/.fio file
+        :param root_folder: the root directory of the experiment, where is the
+         specfile/.fio file
         :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
         :return: logfile
         """
@@ -2845,13 +2999,18 @@ class Setup:
         Interpolate the orthogonal object back into the non-orthogonal detector frame
 
         :param obj: real space object, in the orthogonal laboratory frame
-        :param voxel_size: voxel size of the original object, number of list/tuple of three numbers
-        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+        :param voxel_size: voxel size of the original object, number of list/tuple of
+         three numbers
+        :param width_z: size of the area to plot in z (axis 0), centered on the middle
+         of the initial array
+        :param width_y: size of the area to plot in y (axis 1), centered on the middle
+         of the initial array
+        :param width_x: size of the area to plot in x (axis 2), centered on the middle
+         of the initial array
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
          - 'title': title for the debugging plots
+
         :return: object interpolated on an orthogonal grid
         """
         valid.valid_kwargs(
@@ -2964,16 +3123,20 @@ class Setup:
         verbose=False,
     ):
         """
-        Update the detector instance with initialized paths and template for filenames depending on the beamline
+        Update the detector instance with initialized paths and template for filenames
+        depending on the beamline
 
         :param sample_name: string in front of the scan number in the data folder name.
         :param scan_number: the scan number
         :param root_folder: folder of the experiment, where all scans are stored
-        :param save_dir: path of the directory where to save the analysis results, can be None
+        :param save_dir: path of the directory where to save the analysis results,
+         can be None
         :param specfile_name: beamline-dependent string
          - ID01: name of the spec file without '.spec'
-         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g. root_folder+'alias_dict_2019.txt')
+         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary
+           (e.g. root_folder+'alias_dict_2019.txt')
          - empty string for all other beamlines
+
         :param template_imagefile: beamline-dependent template for the data files
          - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
          - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -2982,10 +3145,14 @@ class Setup:
          - P10: '_master.h5'
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-        :param data_dirname: name of the data folder, if None it will use the beamline default, if it is an empty
-         string, it will look for the data directly into the scan folder (no subfolder)
-        :param save_dirname: name of the saving folder, by default 'save_dir/result/' will be created
-        :param create_savedir: boolean, True to create the saving folder if it does not exist
+
+        :param data_dirname: name of the data folder, if None it will use the beamline
+         default, if it is an empty string, it will look for the data directly into
+         the scan folder (no subfolder)
+        :param save_dirname: name of the saving folder, by default 'save_dir/result/'
+         will be created
+        :param create_savedir: boolean, True to create the saving folder if it does
+         not exist
         :param verbose: True to print the paths
         """
         if not isinstance(scan_number, int):
@@ -3070,11 +3237,13 @@ class Setup:
         if verbose:
             if not self.custom_scan:
                 print(
-                    f"datadir = '{datadir}'\nsavedir = '{savedir}'\ntemplate_imagefile = '{template_imagefile}'\n"
+                    f"datadir = '{datadir}'\nsavedir = '{savedir}'\n"
+                    f"template_imagefile = '{template_imagefile}'\n"
                 )
             else:
                 print(
-                    f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\nsample_name = '{self.detector.sample_name}'\n"
+                    f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\n"
+                    f"sample_name = '{self.detector.sample_name}'\n"
                     f"template_imagefile = '{self.detector.template_file}'\n"
                 )
 
@@ -3091,29 +3260,38 @@ class Setup:
         **kwargs,
     ):
         """
-        Interpolate arrays (direct space output of the phase retrieval) in the orthogonal reference frame where q_com
-        is aligned onto the array axis reference_axis.
+        Interpolate arrays (direct space output of the phase retrieval) in the
+        orthogonal reference frame where q_com is aligned onto the array axis
+        reference_axis.
 
-        :param arrays: tuple of 3D arrays of the same shape (output of the phase retrieval), in the detector frame
-        :param q_com: tuple of 3 vector components for the q values of the center of mass of the Bragg peak,
-         expressed in an orthonormal frame x y z
+        :param arrays: tuple of 3D arrays of the same shape (output of the phase
+         retrieval), in the detector frame
+        :param q_com: tuple of 3 vector components for the q values of the center
+         of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param initial_shape: shape of the FFT used for phasing
-        :param voxel_size: number or list of three user-defined voxel sizes for the interpolation, in nm.
-         If a single number is provided, the voxel size will be identical in all directions.
-        :param fill_value: tuple of real numbers, fill_value parameter for the RegularGridInterpolator, same length as
-         the number of arrays
-        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
+        :param voxel_size: number or list of three user-defined voxel sizes for
+         the interpolation, in nm. If a single number is provided, the voxel size
+         will be identical in all directions.
+        :param fill_value: tuple of real numbers, fill_value parameter for the
+         RegularGridInterpolator, same length as the number of arrays
+        :param reference_axis: 3D vector along which q will be aligned, expressed in
+         an orthonormal frame x y z
         :param verbose: True to have printed comments
-        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
-         and after interpolation
+        :param debugging: tuple of booleans of the same length as the number of
+         input arrays, True to show plots before and after interpolation
         :param kwargs:
-         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
-         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of
+           the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of
+           the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of
+           the initial array
+
         :return:
-         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
-           (same length as the number of input arrays)
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
          - a tuple of 3 voxels size for the interpolated arrays
         """
         #############################################
@@ -3234,7 +3412,8 @@ class Setup:
             for val in (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))
         ):
             raise NotImplementedError(
-                "strain calculation along directions other than array axes is not implemented"
+                "strain calculation along directions "
+                "other than array axes is not implemented"
             )
 
         if not initial_shape:
@@ -3249,9 +3428,10 @@ class Setup:
                 name="Setup.orthogonalize",
             )
 
-        ######################################################################################################
-        # calculate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval #
-        ######################################################################################################
+        #########################################################
+        # calculate the direct space voxel sizes in nm          #
+        # based on the FFT window shape used in phase retrieval #
+        #########################################################
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
             initial_shape,
             tilt_angle=abs(self.tilt_angle),
@@ -3261,7 +3441,9 @@ class Setup:
         if verbose:
             print(
                 "Sampling in the laboratory frame (z, y, x): ",
-                f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)",
+                f"({dz_realspace:.2f} nm,"
+                f" {dy_realspace:.2f} nm,"
+                f" {dx_realspace:.2f} nm)",
             )
 
         if input_shape != initial_shape:
@@ -3276,17 +3458,22 @@ class Setup:
             if verbose:
                 print(
                     "Tilt, pixel_y, pixel_x based on the shape of the cropped array:",
-                    f"({tilt:.4f} deg, {pixel_y * 1e6:.2f} um, {pixel_x * 1e6:.2f} um)",
+                    f"({tilt:.4f} deg,"
+                    f" {pixel_y * 1e6:.2f} um,"
+                    f" {pixel_x * 1e6:.2f} um)",
                 )
 
-            # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
+            # sanity check, the direct space voxel sizes
+            # calculated below should be equal to the original ones
             dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
                 input_shape, tilt_angle=abs(tilt), pixel_x=pixel_x, pixel_y=pixel_y
             )
             if verbose:
                 print(
                     "Sanity check, recalculated direct space voxel sizes (z, y, x): ",
-                    f"({dz_realspace:.2f} nm, {dy_realspace:.2f} nm, {dx_realspace:.2f} nm)",
+                    f"({dz_realspace:.2f} nm,"
+                    f" {dy_realspace:.2f} nm,"
+                    f" {dx_realspace:.2f} nm)",
                 )
         else:
             tilt = self.tilt_angle
@@ -3326,9 +3513,10 @@ class Setup:
             axis_to_align=reference_axis, reference_axis=q_com / np.linalg.norm(q_com)
         )
         # rotation_matrix = np.identity(3)
-        ####################################################################################
-        # calculate the full transfer matrix including the rotation into the crystal frame #
-        ####################################################################################
+        ################################################
+        # calculate the full transfer matrix including #
+        # the rotation into the crystal frame          #
+        ################################################
         transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
         # transfer_matrix is the transformation matrix of the direct space coordinates
         # the spacing in the crystal frame is therefore given by the rows of the matrix
@@ -3336,9 +3524,10 @@ class Setup:
         d_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
         d_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
-        ############################################################################################
-        # find the shape of the output array that fits the extent of the data after transformation #
-        ############################################################################################
+        ################################################
+        # find the shape of the output array that fits #
+        # the extent of the data after transformation  #
+        ################################################
 
         # calculate the voxel coordinates of the data points in the laboratory frame
         myz, myy, myx = np.meshgrid(
@@ -3366,11 +3555,15 @@ class Setup:
 
         if verbose:
             print(
-                "\nCalculating the shape of the output array fitting the data extent after transformation:"
+                "\nCalculating the shape of the output array "
+                "fitting the data extent after transformation:"
                 f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
-                f"({d_along_z:.2f} nm, {d_along_y:.2f} nm, {d_along_x:.2f} nm)"
+                f"({d_along_z:.2f} nm,"
+                f" {d_along_y:.2f} nm,"
+                f" {d_along_x:.2f} nm)"
             )
-        # these positions are not equally spaced, we just extract the data extent from them
+        # these positions are not equally spaced,
+        # we just extract the data extent from them
         nx_output = int(np.rint((pos_along_x.max() - pos_along_x.min()) / d_along_x))
         ny_output = int(np.rint((pos_along_y.max() - pos_along_y.min()) / d_along_y))
         nz_output = int(np.rint((pos_along_z.max() - pos_along_z.min()) / d_along_z))
@@ -3392,8 +3585,10 @@ class Setup:
             indexing="ij",
         )
 
-        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
-        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
+        # ortho_matrix is the transformation matrix from the detector
+        # coordinates to the laboratory frame
+        # in RGI, we want to calculate the coordinates that would have
+        # a grid of the laboratory frame expressed in the
         # detector frame, i.e. one has to inverse the transformation matrix.
         transfer_imatrix = np.linalg.inv(transfer_matrix)
         new_x = (
@@ -3484,30 +3679,38 @@ class Setup:
         **kwargs,
     ):
         """
-        Interpolate arrays in the orthogonal laboratory frame (z/qx downstream, y/qz vertical up, x/qy outboard)
-        or crystal frame (q aligned along one array axis). The ouput shape will be increased in order to keep the same
-        range in q in each direction. The sampling in q is defined as the norm of the rows of the transformation matrix.
+        Interpolate arrays in the orthogonal laboratory frame (z/qx downstream,
+        y/qz vertical up, x/qy outboard) or crystal frame (q aligned along one array
+        axis). The ouput shape will be increased in order to keep the same range in q
+        in each direction. The sampling in q is defined as the norm of the rows of the
+        transformation matrix.
 
-        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space diffraction pattern and mask),
-         in the detector frame
-        :param fill_value: tuple of real numbers, fill_value parameter for the RegularGridInterpolator, same length as
-         the number of arrays
-        :param align_q: boolean, if True the data will be rotated such that q is along reference_axis, and q values
-         will be calculated in the pseudo crystal frame.
-        :param reference_axis: 3D vector along which q will be aligned, expressed in an orthonormal frame x y z
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
+         diffraction pattern and mask), in the detector frame
+        :param fill_value: tuple of real numbers, fill_value parameter for the
+         RegularGridInterpolator, same length as the number of arrays
+        :param align_q: boolean, if True the data will be rotated such that q is along
+         reference_axis, and q values will be calculated in the pseudo crystal frame.
+        :param reference_axis: 3D vector along which q will be aligned, expressed in
+         an orthonormal frame x y z
         :param verbose: True to have printed comments
-        :param debugging: tuple of booleans of the same length as the number of input arrays, True to show plots before
-         and after interpolation
+        :param debugging: tuple of booleans of the same length as the number of
+         input arrays, True to show plots before and after interpolation
         :param kwargs:
-         - 'title': tuple of strings, titles for the debugging plots, same length as the number of arrays
-         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging plots, same length as the
-           number of arrays
-         - width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-         - width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-         - width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for
+           the debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on
+           the middle of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on
+           the middle of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on
+           the middle of the initial array
+
         :return:
-         - an array (if a single array was provided) or a tuple of arrays interpolated on an orthogonal grid
-           (same length as the number of input arrays)
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
          - a tuple of three 1D vectors of q values (qx, qz, qy)
         """
         #############################################
@@ -3625,15 +3828,17 @@ class Setup:
             pixel_y=self.detector.unbinned_pixel[0],
         )
 
-        # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
+        # the voxel size in q in the laboratory frame
+        # is given by the rows of the transformation matrix
         # (the unit is 1/nm)
         dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
         dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
         dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
-        ############################################################################################
-        # find the shape of the output array that fits the extent of the data after transformation #
-        ############################################################################################
+        ################################################
+        # find the shape of the output array that fits #
+        # the extent of the data after transformation  #
+        ################################################
 
         # calculate the q coordinates of the data points in the laboratory frame
         myz, myy, myx = np.meshgrid(
@@ -3674,7 +3879,8 @@ class Setup:
             # find the shape of the output array that fits the extent of the data #
             # after rotating further these q values in a pseudo crystal frame     #
             #######################################################################
-            # the center of mass of the diffraction should be in the center of the array!
+            # the center of mass of the diffraction
+            # should be in the center of the array!
             # TODO: implement any offset of the center of mass
             q_along_z_com = (
                 q_along_z[nbz // 2, nby // 2, nbx // 2] + q_offset[2]
@@ -3687,7 +3893,8 @@ class Setup:
             if verbose:
                 print(f"\nAligning Q along {reference_axis} (x,y,z)")
 
-            # calculate the rotation matrix from the crystal frame to the laboratory frame
+            # calculate the rotation matrix from the crystal frame
+            # to the laboratory frame
             # (inverse rotation to have reference_axis along q)
             rotation_matrix = util.rotation_matrix_3d(
                 axis_to_align=reference_axis,
@@ -3695,16 +3902,19 @@ class Setup:
                 / qnorm,
             )
 
-            # calculate the full transfer matrix including the rotation into the crystal frame
+            # calculate the full transfer matrix
+            # including the rotation into the crystal frame
             transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
 
-            # the voxel size in q in the laboratory frame is given by the rows of the transformation matrix
+            # the voxel size in q in the laboratory frame
+            # is given by the rows of the transformation matrix
             # (the unit is 1/nm)
             dq_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
             dq_along_y = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
             dq_along_z = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
-            # calculate the new offset in the crystal frame (inverse rotation to have qz along q)
+            # calculate the new offset in the crystal frame
+            # (inverse rotation to have qz along q)
             offset_crystal = util.rotate_vector(
                 vectors=q_offset,
                 axis_to_align=reference_axis,
@@ -3730,7 +3940,8 @@ class Setup:
                 + transfer_matrix[2, 2] * myz
             )
 
-            # these q values are not equally spaced, we just extract the q extent from them
+            # these q values are not equally spaced,
+            # we just extract the q extent from them
             nx_output = int(np.rint((q_along_x.max() - q_along_x.min()) / dq_along_x))
             ny_output = int(np.rint((q_along_y.max() - q_along_y.min()) / dq_along_y))
             nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
@@ -3738,7 +3949,9 @@ class Setup:
             if verbose:
                 print(
                     f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):    "
-                    f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)"
+                    f"({dq_along_z:.5f} 1/nm,"
+                    f" {dq_along_y:.5f} 1/nm,"
+                    f" {dq_along_x:.5f} 1/nm)"
                 )
 
         del q_along_x, q_along_y, q_along_z, myx, myy, myz
@@ -3752,15 +3965,19 @@ class Setup:
         )
         if verbose:
             print(
-                f"\nInitial shape = ({nbz},{nby},{nbx})\nOutput shape  = ({nz_output},{ny_output},{nx_output})"
+                f"\nInitial shape = ({nbz},{nby},{nbx})\n"
+                f"Output shape  = ({nz_output},{ny_output},{nx_output})"
                 f" (satisfying FFT shape requirements)"
             )
 
-        #####################################################################################################
-        # define the interpolation qx qz qy 1D vectors in 1/nm, the reference being the center of the array #
-        #####################################################################################################
-        # the usual frame is used for q values: qx downstream, qz vertical up, qy outboard
-        # this assumes that the center of mass of the diffraction pattern was at the center of the array
+        ########################################################
+        # define the interpolation qx qz qy 1D vectors in 1/nm #
+        # the reference being the center of the array          #
+        ########################################################
+        # the usual frame is used for q values:
+        # qx downstream, qz vertical up, qy outboard
+        # this assumes that the center of mass of the diffraction pattern
+        # was at the center of the array
         # TODO : correct this if the diffraction pattern is not centered
         qx = (
             np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z
@@ -3774,8 +3991,10 @@ class Setup:
 
         myz, myy, myx = np.meshgrid(qx, qz, qy, indexing="ij")
 
-        # transfer_matrix is the transformation matrix from the detector coordinates to the laboratory/crystal frame
-        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory/crystal frame expressed
+        # transfer_matrix is the transformation matrix from
+        # the detector coordinates to the laboratory/crystal frame
+        # in RGI, we want to calculate the coordinates that would have a grid
+        # of the laboratory/crystal frame expressed
         # in the detector frame, i.e. one has to inverse the transformation matrix.
         transfer_imatrix = np.linalg.inv(transfer_matrix)
         new_x = (
@@ -3801,7 +4020,8 @@ class Setup:
         ######################
         output_arrays = []
         for idx, array in enumerate(arrays):
-            # convert array type to float, for integers the interpolation can lead to artefacts
+            # convert array type to float,
+            # for integers the interpolation can lead to artefacts
             array = array.astype(float)
             rgi = RegularGridInterpolator(
                 (
@@ -3856,7 +4076,8 @@ class Setup:
                     title=title[idx] + " in the orthogonal frame",
                 )
 
-        # add the offset due to the detector angles to qx qz qy vectors, convert them to 1/A
+        # add the offset due to the detector angles
+        # to qx qz qy vectors, convert them to 1/A
         # the offset components are in the order (x/qy, y/qz, z/qx)
         qx = (qx + q_offset[2]) / 10  # along z downstream
         qz = (qz + q_offset[1]) / 10  # along y vertical up
@@ -3872,13 +4093,15 @@ class Setup:
         """
         Calculate the coordinates of the vector in the laboratory frame.
 
-        :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
+        :param vector: tuple of 3 coordinates, vector to be transformed in the detector
+         frame
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         :param verbose: True to have printed comments
-        :return: tuple of 3 numbers, the coordinates of the vector expressed in the laboratory frame
+        :return: tuple of 3 numbers, the coordinates of the vector expressed in the
+         laboratory frame
         """
         valid.valid_container(
             array_shape,
@@ -3896,8 +4119,10 @@ class Setup:
             pixel_y=pixel_y,
             verbose=verbose,
         )
-        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
-        # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
+        # ortho_matrix is the transformation matrix
+        # from the detector coordinates to the laboratory frame
+        # Here, we want to calculate the coordinates that would have
+        # a vector of the laboratory frame expressed in the
         # detector frame, i.e. one has to inverse the transformation matrix.
         ortho_imatrix = np.linalg.inv(ortho_matrix)
         new_x = (
@@ -3921,14 +4146,16 @@ class Setup:
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True
     ):
         """
-        Calculate the transformation matrix from the detector frame to the laboratory frame. For direct space, the
-        length scale is in nm, for reciprocal space, it is in 1/nm.
+        Calculate the transformation matrix from the detector frame to the laboratory
+        frame. For direct space, the length scale is in nm, for reciprocal space,
+        it is in 1/nm.
 
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
-        :param direct_space: True in order to return the transformation matrix in direct space
+        :param direct_space: True in order to return the transformation matrix in
+         direct space
         :param verbose: True to have printed comments
         :return:
          - the transformation matrix from the detector frame to the laboratory frame
@@ -3970,7 +4197,8 @@ class Setup:
                 print("using ESRF ID01 PSIC geometry")
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError(
-                    "Non-zero mu not implemented for the transformation matrices at ID01"
+                    "Non-zero mu not implemented "
+                    "for the transformation matrices at ID01"
                 )
 
             if self.rocking_angle == "outofplane":
@@ -4040,7 +4268,8 @@ class Setup:
                         f" eta={grazing_angle[1]*180/np.pi:.3f}deg"
                     )
 
-                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
+                # rocking phi angle clockwise around y,
+                # incident angle eta is non zero (eta below phi)
                 mymatrix[:, 0] = (
                     2
                     * np.pi
@@ -4110,7 +4339,8 @@ class Setup:
                     print(
                         f"rocking angle is om, mu={grazing_angle[0]*180/np.pi:.3f} deg"
                     )
-                # rocking omega angle clockwise around x at mu=0, chi potentially non zero (chi below omega)
+                # rocking omega angle clockwise around x at mu=0,
+                # chi potentially non zero (chi below omega)
                 # (phi does not matter, above eta)
                 mymatrix[:, 0] = (
                     2
@@ -4182,7 +4412,8 @@ class Setup:
                         f" chi={grazing_angle[2]*180/np.pi:.3f} deg"
                     )
 
-                # rocking phi angle clockwise around y, omega and chi potentially non zero (chi below omega below phi)
+                # rocking phi angle clockwise around y,
+                # omega and chi potentially non zero (chi below omega below phi)
                 mymatrix[:, 0] = (
                     2
                     * np.pi
@@ -4267,7 +4498,8 @@ class Setup:
                     )
                 if verbose:
                     print("rocking angle is theta")
-                # rocking theta angle clockwise around x (phi does not matter, above eta)
+                # rocking theta angle clockwise around x
+                # (phi does not matter, above eta)
                 mymatrix[:, 0] = (
                     2
                     * np.pi
@@ -4324,9 +4556,11 @@ class Setup:
             elif self.rocking_angle == "inplane":
                 if verbose:
                     print(
-                        f"rocking angle is phi, theta={grazing_angle[0]*180/np.pi:.3f} deg"
+                        "rocking angle is phi,"
+                        f" theta={grazing_angle[0]*180/np.pi:.3f} deg"
                     )
-                # rocking phi angle clockwise around y, incident angle theta is non zero (theta below phi)
+                # rocking phi angle clockwise around y,
+                # incident angle theta is non zero (theta below phi)
                 mymatrix[:, 0] = (
                     2
                     * np.pi
@@ -4455,7 +4689,8 @@ class Setup:
             elif self.rocking_angle == "outofplane":
                 if verbose:
                     print(
-                        f"rocking angle is phi, theta={grazing_angle[0] * 180 / np.pi:.3f} deg"
+                        "rocking angle is phi,"
+                        f" theta={grazing_angle[0] * 180 / np.pi:.3f} deg"
                     )
                 # rocking phi angle anti-clockwise around x
                 mymatrix[:, 0] = (
@@ -4519,7 +4754,8 @@ class Setup:
             if self.rocking_angle == "inplane":
                 if verbose:
                     print(
-                        f"rocking angle is mu, beta={grazing_angle[0] * 180 / np.pi:.3f} deg"
+                        "rocking angle is mu,"
+                        f" beta={grazing_angle[0] * 180 / np.pi:.3f} deg"
                     )
 
                 # rocking mu angle anti-clockwise around y
@@ -4684,9 +4920,11 @@ class Setup:
             elif self.rocking_angle == "inplane":
                 if verbose:
                     print(
-                        f"rocking angle is phi, mgomega={grazing_angle[0]*180/np.pi:.3f} deg"
+                        "rocking angle is phi,"
+                        f" mgomega={grazing_angle[0]*180/np.pi:.3f} deg"
                     )
-                # rocking phi angle anti-clockwise around y, incident angle mgomega is non zero (mgomega below phi)
+                # rocking phi angle anti-clockwise around y,
+                # incident angle mgomega is non zero (mgomega below phi)
                 mymatrix[:, 0] = (
                     2
                     * np.pi
@@ -4749,7 +4987,8 @@ class Setup:
                 )
 
         if direct_space:  # length scale in nm
-            # for a discrete FT, the dimensions of the basis vectors after the transformation are related to the total
+            # for a discrete FT, the dimensions of the basis vectors
+            # after the transformation are related to the total
             # domain size
             mymatrix[:, 0] = nbx * mymatrix[:, 0]
             mymatrix[:, 1] = nby * mymatrix[:, 1]
@@ -4760,14 +4999,16 @@ class Setup:
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
-        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
+        Calculate the direct space voxel sizes in the laboratory frame
+        (z downstream, y vertical up, x outboard).
 
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
+        :return: the direct space voxel sizes in nm, in the laboratory frame
+         (voxel_z, voxel_y, voxel_x)
         """
         valid.valid_container(
             array_shape,
@@ -4786,16 +5027,19 @@ class Setup:
             pixel_y=pixel_y,
             verbose=verbose,
         )
-        # transfer_matrix is the transformation matrix of the direct space coordinates (its columns are the
+        # transfer_matrix is the transformation matrix
+        # of the direct space coordinates (its columns are the
         # non-orthogonal basis vectors reciprocal to the detector frame)
-        # the spacing in the laboratory frame is therefore given by the rows of the matrix
+        # the spacing in the laboratory frame is therefore
+        # given by the rows of the matrix
         dx = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
         dy = np.linalg.norm(transfer_matrix[1, :])  # along y vertical up
         dz = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
         if verbose:
             print(
-                f"Direct space voxel size (z, y, x) = ({dz:.2f}, {dy:.2f}, {dx:.2f}) (nm)"
+                "Direct space voxel size (z, y, x) = "
+                f"({dz:.2f}, {dy:.2f}, {dx:.2f}) (nm)"
             )
         return dz, dy, dx
 
@@ -4804,14 +5048,15 @@ class Setup:
     ):
         """
         Calculate the direct space voxel sizes in the detector frame
-         (z rocking angle, y detector vertical axis, x detector horizontal axis).
+        (z rocking angle, y detector vertical axis, x detector horizontal axis).
 
         :param array_shape: shape of the 3D array used in phase retrieval
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
         :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
+        :return: the direct space voxel sizes in nm, in the detector frame
+         (voxel_z, voxel_y, voxel_x)
         """
         voxel_z = (
             self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9
@@ -4832,9 +5077,10 @@ class Setup:
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers. The default values for maxprime is the largest integer accepted
-    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+    Find the closest integer >=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
 
     :param number: the integer number
     :param maxprime: the largest prime factor acceptable
@@ -4899,9 +5145,10 @@ def primes(number):
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers. The default values for maxprime is the largest integer accepted
-    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+    Find the closest integer <=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
 
     :param number: the integer number
     :param maxprime: the largest prime factor acceptable
@@ -4942,12 +5189,14 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Check if the largest prime divider is <=maxprime, and optionally includes some dividers. Adapted from PyNX.
+    Check if the largest prime divider is <=maxprime, and optionally includes some
+    dividers. Adapted from PyNX.
 
     :param number: the integer number for which the prime decomposition will be checked
-    :param maxprime: the maximum acceptable prime number. This defaults to the largest integer accepted by the clFFT
-        library for OpenCL GPU FFT.
-    :param required_dividers: list of required dividers in the prime decomposition. If None, this check is skipped.
+    :param maxprime: the maximum acceptable prime number. This defaults to the
+     largest integer accepted by the clFFT library for OpenCL GPU FFT.
+    :param required_dividers: list of required dividers in the prime decomposition.
+     If None, this check is skipped.
     :return: True if the conditions are met.
     """
     p = primes(number)
@@ -4958,1359 +5207,3 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
             if number % k != 0:
                 return False
     return True
-
-
-class SetupPostprocessing:
-    """
-    Class to handle the experimental geometry for postprocessing.
-    """
-
-    def __init__(
-        self,
-        beamline,
-        energy,
-        outofplane_angle,
-        inplane_angle,
-        tilt_angle,
-        rocking_angle,
-        distance,
-        grazing_angle=0,
-        pixel_x=55e-6,
-        pixel_y=55e-6,
-    ):
-        """
-        Initialize parameters of the experiment.
-
-        :param beamline: name of the beamline: 'ID01', 'SIXS_2018', 'SIXS_2019', '34ID', 'P10', 'CRISTAL', 'NANOMAX'
-        :param energy: X-ray energy in eV
-        :param outofplane_angle: out of plane angle of the detector in degrees
-        :param inplane_angle: inplane angle of the detector in degrees
-        :param tilt_angle: angular step of the sample during the rocking curve, in degrees
-        :param rocking_angle: name of the angle which is tilted during the rocking curve, 'outofplane' or 'inplane'
-        :param distance: sample to detector distance in meters
-        :param grazing_angle: grazing angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS), in degrees
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        """
-        warnings.warn("deprecated, use the class Setup instead", DeprecationWarning)
-        self.beamline = beamline  # string
-        self.energy = energy  # in eV
-        self.wavelength = 12.398 * 1e-7 / energy  # in m
-        self.outofplane_angle = outofplane_angle  # in degrees
-        self.inplane_angle = inplane_angle  # in degrees
-        self.tilt_angle = tilt_angle  # in degrees
-        self.rocking_angle = rocking_angle  # string
-        self.grazing_angle = grazing_angle  # in degrees
-        self.distance = distance  # in meters
-        self.pixel_x = pixel_x  # in meters
-        self.pixel_y = pixel_y  # in meters
-
-        #############################################################
-        # detector orientation convention depending on the beamline #
-        #############################################################
-        # the frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up
-
-        # horizontal axis:
-        if beamline in {"ID01", "SIXS_2018", "SIXS_2019", "CRISTAL", "NANOMAX"}:
-            # we look at the detector from downstream, detector X along the outboard direction
-            self.detector_hor = "y+"
-        else:  # 'P10', '34ID'
-            # we look at the detector from upstream, detector X opposite to the outboard direction
-            self.detector_hor = "y-"
-
-        # vertical axis:
-        # origin is at the top, detector Y along vertical down
-        self.detector_ver = "z-"
-
-    def __repr__(self):
-        """
-        :return: a nicely formatted representation string
-        """
-        return (
-            f"{self.__class__.__name__}: beamline={self.beamline}, energy={self.energy}eV,"
-            f" sample to detector distance={self.distance}m, pixel size (VxH)=({self.pixel_y},{self.pixel_x})"
-        )
-
-    def detector_frame(
-        self,
-        obj,
-        voxelsize,
-        width_z=None,
-        width_y=None,
-        width_x=None,
-        debugging=False,
-        **kwargs,
-    ):
-        """
-        Interpolate the orthogonal object back into the non-orthogonal detector frame
-
-        :param obj: real space object, in the orthogonal laboratory frame
-        :param voxelsize: voxel size of the original object
-        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-        :param debugging: True to show plots before and after interpolation
-        :param kwargs:
-         - 'title': title for the debugging plots
-        :return: object interpolated on an orthogonal grid
-        """
-        title = kwargs.get("title", "Object")
-
-        for k in kwargs:
-            if k not in {"title"}:
-                raise Exception("unknown keyword argument given:", k)
-
-        nbz, nby, nbx = obj.shape
-
-        if debugging:
-            gu.multislices_plot(
-                abs(obj),
-                sum_frames=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                title=title + " before interpolation\n",
-            )
-
-        ortho_matrix = self.update_coords(
-            array_shape=(nbz, nby, nbx),
-            tilt_angle=self.tilt_angle,
-            pixel_x=self.pixel_x,
-            pixel_y=self.pixel_y,
-        )
-
-        ################################################
-        # interpolate the data into the detector frame #
-        ################################################
-        myz, myy, myx = np.meshgrid(
-            np.arange(-nbz // 2, nbz // 2, 1),
-            np.arange(-nby // 2, nby // 2, 1),
-            np.arange(-nbx // 2, nbx // 2, 1),
-            indexing="ij",
-        )
-
-        new_x = (
-            ortho_matrix[0, 0] * myx
-            + ortho_matrix[0, 1] * myy
-            + ortho_matrix[0, 2] * myz
-        )
-        new_y = (
-            ortho_matrix[1, 0] * myx
-            + ortho_matrix[1, 1] * myy
-            + ortho_matrix[1, 2] * myz
-        )
-        new_z = (
-            ortho_matrix[2, 0] * myx
-            + ortho_matrix[2, 1] * myy
-            + ortho_matrix[2, 2] * myz
-        )
-        del myx, myy, myz
-        # la partie rgi est sure: c'est la taille de l'objet orthogonal de depart
-        rgi = RegularGridInterpolator(
-            (
-                np.arange(-nbz // 2, nbz // 2) * voxelsize,
-                np.arange(-nby // 2, nby // 2) * voxelsize,
-                np.arange(-nbx // 2, nbx // 2) * voxelsize,
-            ),
-            obj,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        detector_obj = rgi(
-            np.concatenate(
-                (
-                    new_z.reshape((1, new_z.size)),
-                    new_y.reshape((1, new_z.size)),
-                    new_x.reshape((1, new_z.size)),
-                )
-            ).transpose()
-        )
-        detector_obj = detector_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
-
-        if debugging:
-            gu.multislices_plot(
-                abs(detector_obj),
-                sum_frames=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                title=title + " interpolated in detector frame\n",
-            )
-
-        return detector_obj
-
-    def exit_wavevector(self):
-        """
-        Calculate the exit wavevector kout depending on the setup parameters, in laboratory frame (z downstream,
-         y vertical, x outboard).
-
-        :return: kout vector
-        """
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "ID01":
-            # nu is clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        -np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "34ID":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "NANOMAX":
-            # gamma is clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        -np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "P10":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "CRISTAL":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        else:
-            raise ValueError("setup parameter: ", self.beamline, "not defined")
-        return kout
-
-    def inplane_coeff(self):
-        """
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction and the detector inplane
-         orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
-         See postprocessing/scripts/correct_angles_detector.py for an example.
-
-        :return: +1 or -1
-        """
-        if self.detector_hor == "y+":
-            hor_coeff = 1
-        else:  # 'y-'
-            hor_coeff = -1
-
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == "ID01":
-            # nu is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
-        elif self.beamline == "34ID":
-            # delta is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == "P10":
-            # gamma is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == "CRISTAL":
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
-        elif self.beamline == "NANOMAX":
-            # gamma is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
-        else:
-            raise ValueError("setup parameter: ", self.beamline, "not defined")
-        return coeff_inplane
-
-    def orthogonalize(
-        self,
-        obj,
-        initial_shape=(),
-        voxel_size=np.nan,
-        width_z=None,
-        width_y=None,
-        width_x=None,
-        verbose=True,
-        debugging=False,
-        **kwargs,
-    ):
-        """
-        Interpolate obj on the orthogonal reference frame defined by the setup.
-
-        :param obj: real space object, in a non-orthogonal frame (output of phasing program)
-        :param initial_shape: shape of the FFT used for phasing
-        :param voxel_size: user-defined voxel size, in nm
-        :param width_z: size of the area to plot in z (axis 0), centered on the middle of the initial array
-        :param width_y: size of the area to plot in y (axis 1), centered on the middle of the initial array
-        :param width_x: size of the area to plot in x (axis 2), centered on the middle of the initial array
-        :param verbose: True to have printed comments
-        :param debugging: True to show plots before and after interpolation
-        :param kwargs:
-         - 'title': title for the debugging plots
-        :return: object interpolated on an orthogonal grid
-        """
-        title = kwargs.get("title", "Object")
-
-        for k in kwargs:
-            if k not in {"title"}:
-                raise Exception("unknown keyword argument given:", k)
-
-        if len(initial_shape) == 0:
-            initial_shape = obj.shape
-
-        if debugging:
-            gu.multislices_plot(
-                abs(obj),
-                sum_frames=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                title=title + " in detector frame",
-            )
-
-        # estimate the direct space voxel sizes in nm based on the FFT window shape used in phase retrieval
-        dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
-            initial_shape,
-            tilt_angle=abs(self.tilt_angle),
-            pixel_x=self.pixel_x,
-            pixel_y=self.pixel_y,
-        )
-
-        if verbose:
-            print(
-                "Direct space voxel sizes (z, y, x) based on initial FFT shape: (",
-                str("{:.2f}".format(dz_realspace)),
-                "nm,",
-                str("{:.2f}".format(dy_realspace)),
-                "nm,",
-                str("{:.2f}".format(dx_realspace)),
-                "nm )",
-            )
-
-        (
-            nbz,
-            nby,
-            nbx,
-        ) = obj.shape  # could be smaller if the object was cropped around the support
-        if (
-            nbz != initial_shape[0]
-            or nby != initial_shape[1]
-            or nbx != initial_shape[2]
-        ):
-            # recalculate the tilt and pixel sizes to accomodate a shape change
-            tilt = self.tilt_angle * initial_shape[0] / nbz
-            pixel_y = self.pixel_y * initial_shape[1] / nby
-            pixel_x = self.pixel_x * initial_shape[2] / nbx
-            if verbose:
-                print(
-                    "Tilt, pixel_y, pixel_x based on cropped array shape: (",
-                    str("{:.4f}".format(tilt)),
-                    "deg,",
-                    str("{:.2f}".format(pixel_y * 1e6)),
-                    "um,",
-                    str("{:.2f}".format(pixel_x * 1e6)),
-                    "um)",
-                )
-
-            # sanity check, the direct space voxel sizes calculated below should be equal to the original ones
-            dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
-                (nbz, nby, nbx), tilt_angle=abs(tilt), pixel_x=pixel_x, pixel_y=pixel_y
-            )
-            if verbose:
-                print(
-                    "Sanity check, recalculated direct space voxel sizes: (",
-                    str("{:.2f}".format(dz_realspace)),
-                    " nm,",
-                    str("{:.2f}".format(dy_realspace)),
-                    "nm,",
-                    str("{:.2f}".format(dx_realspace)),
-                    "nm )",
-                )
-        else:
-            tilt = self.tilt_angle
-            pixel_y = self.pixel_y
-            pixel_x = self.pixel_x
-
-        if np.isnan(voxel_size):
-            voxel = np.mean([dz_realspace, dy_realspace, dx_realspace])  # in nm
-        else:
-            voxel = voxel_size
-
-        ortho_matrix = self.update_coords(
-            array_shape=(nbz, nby, nbx),
-            tilt_angle=tilt,
-            pixel_x=pixel_x,
-            pixel_y=pixel_y,
-            verbose=verbose,
-        )
-
-        ###############################################################
-        # Vincent Favre-Nicolin's method using inverse transformation #
-        ###############################################################
-        myz, myy, myx = np.meshgrid(
-            np.arange(-nbz // 2, nbz // 2, 1) * voxel,
-            np.arange(-nby // 2, nby // 2, 1) * voxel,
-            np.arange(-nbx // 2, nbx // 2, 1) * voxel,
-            indexing="ij",
-        )
-
-        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
-        # in RGI, we want to calculate the coordinates that would have a grid of the laboratory frame expressed in the
-        # detector frame, i.e. one has to inverse the transformation matrix.
-        ortho_imatrix = np.linalg.inv(ortho_matrix)
-        new_x = (
-            ortho_imatrix[0, 0] * myx
-            + ortho_imatrix[0, 1] * myy
-            + ortho_imatrix[0, 2] * myz
-        )
-        new_y = (
-            ortho_imatrix[1, 0] * myx
-            + ortho_imatrix[1, 1] * myy
-            + ortho_imatrix[1, 2] * myz
-        )
-        new_z = (
-            ortho_imatrix[2, 0] * myx
-            + ortho_imatrix[2, 1] * myy
-            + ortho_imatrix[2, 2] * myz
-        )
-        del myx, myy, myz
-        gc.collect()
-
-        rgi = RegularGridInterpolator(
-            (
-                np.arange(-nbz // 2, nbz // 2),
-                np.arange(-nby // 2, nby // 2),
-                np.arange(-nbx // 2, nbx // 2),
-            ),
-            obj,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        ortho_obj = rgi(
-            np.concatenate(
-                (
-                    new_z.reshape((1, new_z.size)),
-                    new_y.reshape((1, new_z.size)),
-                    new_x.reshape((1, new_z.size)),
-                )
-            ).transpose()
-        )
-        ortho_obj = ortho_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
-
-        if debugging:
-            gu.multislices_plot(
-                abs(ortho_obj),
-                sum_frames=True,
-                width_z=width_z,
-                width_y=width_y,
-                width_x=width_x,
-                title=title + " in the orthogonal laboratory frame",
-            )
-        return ortho_obj, voxel
-
-    def orthogonalize_vector(
-        self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False
-    ):
-        """
-        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
-
-        :param vector: tuple of 3 coordinates, vector to be transformed in the detector frame
-        :param array_shape: shape of the 3D array to orthogonalize
-        :param tilt_angle: angular step during the rocking curve, in degrees
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
-        """
-        ortho_matrix = self.update_coords(
-            array_shape=array_shape,
-            tilt_angle=tilt_angle,
-            pixel_x=pixel_x,
-            pixel_y=pixel_y,
-            verbose=verbose,
-        )
-        # ortho_matrix is the transformation matrix from the detector coordinates to the laboratory frame
-        # Here, we want to calculate the coordinates that would have a vector of the laboratory frame expressed in the
-        # detector frame, i.e. one has to inverse the transformation matrix.
-        ortho_imatrix = np.linalg.inv(ortho_matrix)
-        new_x = (
-            ortho_imatrix[0, 0] * vector[2]
-            + ortho_imatrix[0, 1] * vector[1]
-            + ortho_imatrix[0, 2] * vector[0]
-        )
-        new_y = (
-            ortho_imatrix[1, 0] * vector[2]
-            + ortho_imatrix[1, 1] * vector[1]
-            + ortho_imatrix[1, 2] * vector[0]
-        )
-        new_z = (
-            ortho_imatrix[2, 0] * vector[2]
-            + ortho_imatrix[2, 1] * vector[1]
-            + ortho_imatrix[2, 2] * vector[0]
-        )
-        return new_z, new_y, new_x
-
-    def outofplane_coeff(self):
-        """
-        Define a coefficient +/- 1 depending on the detector out of plane rotation direction and the detector out of
-         plane orientation. The frame convention is the one of xrayutilities: x downstream, y outboard, z vertical up.
-         See postprocessing/scripts/correct_angles_detector.py for an example.
-
-        :return: +1 or -1
-        """
-        if self.detector_ver == "z+":  # origin of pixels at the bottom
-            ver_coeff = 1
-        else:  # 'z-'  origin of pixels at the top
-            ver_coeff = -1
-
-        # the out of plane detector rotation is clockwise for all beamlines
-        coeff_outofplane = -1 * ver_coeff
-
-        return coeff_outofplane
-
-    def update_coords(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=True):
-        """
-        Calculate the pixel non-orthogonal coordinates in the orthogonal reference frame.
-
-        :param array_shape: shape of the 3D array to orthogonalize
-        :param tilt_angle: angular step during the rocking curve, in degrees
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have printed comments
-        :return: the transfer matrix from the detector frame to the laboratory frame
-        """
-        wavelength = self.wavelength * 1e9  # convert to nm
-        distance = self.distance * 1e9  # convert to nm
-        pixel_x = pixel_x * 1e9  # convert to nm
-        pixel_y = pixel_y * 1e9  # convert to nm
-        outofplane = np.radians(self.outofplane_angle)
-        inplane = np.radians(self.inplane_angle)
-        mygrazing_angle = np.radians(self.grazing_angle)
-        lambdaz = wavelength * distance
-        mymatrix = np.zeros((3, 3))
-        tilt = np.radians(tilt_angle)
-
-        nbz, nby, nbx = array_shape
-
-        if self.beamline == "ID01":
-            if verbose:
-                print("using ESRF ID01 PSIC geometry")
-            if self.rocking_angle == "outofplane":
-                if verbose:
-                    print("rocking angle is eta")
-                # rocking eta angle clockwise around x (phi does not matter, above eta)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            -pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            0,
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            tilt * distance * np.sin(outofplane),
-                        ]
-                    )
-                )
-            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                if verbose:
-                    print("rocking angle is phi, eta=0")
-                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            -pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            -tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            0,
-                            tilt * distance * np.sin(inplane) * np.cos(outofplane),
-                        ]
-                    )
-                )
-            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                if verbose:
-                    print("rocking angle is phi, with eta non zero")
-                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            -pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * tilt
-                    * distance
-                    * np.array(
-                        [
-                            (
-                                np.sin(mygrazing_angle) * np.sin(outofplane)
-                                + np.cos(mygrazing_angle)
-                                * (np.cos(inplane) * np.cos(outofplane) - 1)
-                            ),
-                            np.sin(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                            np.cos(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                        ]
-                    )
-                )
-        if self.beamline == "P10":
-            if verbose:
-                print("using PETRAIII P10 geometry")
-            if self.rocking_angle == "outofplane":
-                if verbose:
-                    print("rocking angle is omega")
-                # rocking omega angle clockwise around x at mu=0 (phi does not matter, above eta)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [-pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            0,
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            tilt * distance * np.sin(outofplane),
-                        ]
-                    )
-                )
-            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                if verbose:
-                    print("rocking angle is phi, omega=0")
-                # rocking phi angle clockwise around y, incident angle omega is zero (omega below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [-pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            tilt
-                            * distance
-                            * (np.cos(inplane) * np.cos(outofplane) - 1),
-                            0,
-                            -tilt * distance * np.sin(inplane) * np.cos(outofplane),
-                        ]
-                    )
-                )
-
-            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                if verbose:
-                    print("rocking angle is phi, with omega non zero")
-                # rocking phi angle clockwise around y, incident angle omega is non zero (omega below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [-pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * tilt
-                    * distance
-                    * np.array(
-                        [
-                            (
-                                np.sin(mygrazing_angle) * np.sin(outofplane)
-                                + np.cos(mygrazing_angle)
-                                * (np.cos(inplane) * np.cos(outofplane) - 1)
-                            ),
-                            -np.sin(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                            -np.cos(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                        ]
-                    )
-                )
-
-        if self.beamline == "NANOMAX":
-            if verbose:
-                print("using NANOMAX geometry")
-            if self.rocking_angle == "outofplane":
-                if verbose:
-                    print("rocking angle is theta")
-                # rocking eta angle clockwise around x (phi does not matter, above eta)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            pixel_y * np.cos(outofplane),
-                            -pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            0,
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            tilt * distance * np.sin(outofplane),
-                        ]
-                    )
-                )
-            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                if verbose:
-                    print("rocking angle is phi, theta=0")
-                # rocking phi angle clockwise around y, assuming incident angle eta is zero (eta below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            pixel_y * np.cos(outofplane),
-                            -pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            -tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            0,
-                            tilt * distance * np.sin(inplane) * np.cos(outofplane),
-                        ]
-                    )
-                )
-            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                if verbose:
-                    print("rocking angle is phi, with theta non zero")
-                # rocking phi angle clockwise around y, incident angle eta is non zero (eta below phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            pixel_y * np.cos(outofplane),
-                            -pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * tilt
-                    * distance
-                    * np.array(
-                        [
-                            (
-                                np.sin(mygrazing_angle) * np.sin(outofplane)
-                                + np.cos(mygrazing_angle)
-                                * (np.cos(inplane) * np.cos(outofplane) - 1)
-                            ),
-                            np.sin(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                            np.cos(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                        ]
-                    )
-                )
-
-        if self.beamline == "34ID":
-            if verbose:
-                print("using APS 34ID geometry")
-            if self.rocking_angle == "outofplane":
-                if verbose:
-                    print("rocking angle is phi")
-                # rocking phi angle anti-clockwise around x (theta does not matter, above phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            0,
-                            -tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            -tilt * distance * np.sin(outofplane),
-                        ]
-                    )
-                )
-
-            elif self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                if verbose:
-                    print("rocking angle is theta, with phi non zero")
-                # rocking theta angle anti-clockwise around y, incident angle is non zero (theta is above phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * tilt
-                    * distance
-                    * np.array(
-                        [
-                            (
-                                np.sin(mygrazing_angle) * np.sin(outofplane)
-                                + np.cos(mygrazing_angle)
-                                * (1 - np.cos(inplane) * np.cos(outofplane))
-                            ),
-                            -np.sin(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                            np.cos(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                        ]
-                    )
-                )
-
-            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                if verbose:
-                    print("rocking angle is theta, phi=0")
-                # rocking theta angle anti-clockwise around y, assuming incident angle is zero (theta is above phi)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            0,
-                            tilt * distance * np.sin(inplane) * np.cos(outofplane),
-                        ]
-                    )
-                )
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            if verbose:
-                print("using SIXS geometry")
-            if self.rocking_angle == "inplane" and mygrazing_angle != 0:
-                if verbose:
-                    print("rocking angle is mu, with beta non zero")
-                # rocking mu angle anti-clockwise around y
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * pixel_x
-                    * np.array(
-                        [
-                            np.cos(inplane),
-                            -np.sin(mygrazing_angle) * np.sin(inplane),
-                            -np.cos(mygrazing_angle) * np.sin(inplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * pixel_y
-                    * np.array(
-                        [
-                            np.sin(inplane) * np.sin(outofplane),
-                            (
-                                np.sin(mygrazing_angle)
-                                * np.cos(inplane)
-                                * np.sin(outofplane)
-                                - np.cos(mygrazing_angle) * np.cos(outofplane)
-                            ),
-                            (
-                                np.cos(mygrazing_angle)
-                                * np.cos(inplane)
-                                * np.sin(outofplane)
-                                + np.sin(mygrazing_angle) * np.cos(outofplane)
-                            ),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * tilt
-                    * distance
-                    * np.array(
-                        [
-                            np.cos(mygrazing_angle)
-                            - np.cos(inplane) * np.cos(outofplane),
-                            np.sin(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                            np.cos(mygrazing_angle)
-                            * np.sin(inplane)
-                            * np.cos(outofplane),
-                        ]
-                    )
-                )
-
-            elif self.rocking_angle == "inplane" and mygrazing_angle == 0:
-                if verbose:
-                    print("rocking angle is mu, beta=0")
-                # rocking th angle anti-clockwise around y, assuming incident angle is zero (th above tilt)
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            0,
-                            tilt * distance * np.sin(inplane) * np.cos(outofplane),
-                        ]
-                    )
-                )
-        if self.beamline == "CRISTAL":
-            if verbose:
-                print("using CRISTAL geometry")
-            if self.rocking_angle == "outofplane":
-                if verbose:
-                    print("rocking angle is komega")
-                # rocking tilt angle clockwise around x
-                mymatrix[:, 0] = (
-                    2
-                    * np.pi
-                    * nbx
-                    / lambdaz
-                    * np.array(
-                        [pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
-                    )
-                )
-                mymatrix[:, 1] = (
-                    2
-                    * np.pi
-                    * nby
-                    / lambdaz
-                    * np.array(
-                        [
-                            pixel_y * np.sin(inplane) * np.sin(outofplane),
-                            -pixel_y * np.cos(outofplane),
-                            pixel_y * np.cos(inplane) * np.sin(outofplane),
-                        ]
-                    )
-                )
-                mymatrix[:, 2] = (
-                    2
-                    * np.pi
-                    * nbz
-                    / lambdaz
-                    * np.array(
-                        [
-                            0,
-                            tilt
-                            * distance
-                            * (1 - np.cos(inplane) * np.cos(outofplane)),
-                            tilt * distance * np.sin(outofplane),
-                        ]
-                    )
-                )
-
-        transfer_matrix = 2 * np.pi * np.linalg.inv(mymatrix).transpose()
-        return transfer_matrix
-
-    def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
-        """
-        Calculate the direct space voxel sizes in the laboratory frame (z downstream, y vertical up, x outboard).
-
-        :param array_shape: shape of the 3D array to orthogonalize
-        :param tilt_angle: angular step during the rocking curve, in degrees
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the laboratory frame (voxel_z, voxel_y, voxel_x)
-        """
-        transfer_matrix = self.update_coords(
-            array_shape=array_shape,
-            tilt_angle=tilt_angle,
-            pixel_x=pixel_x,
-            pixel_y=pixel_y,
-            verbose=verbose,
-        )
-        rec_matrix = 2 * np.pi * np.linalg.inv(transfer_matrix).transpose()
-        qx_range = np.linalg.norm(rec_matrix[0, :])
-        qy_range = np.linalg.norm(rec_matrix[1, :])
-        qz_range = np.linalg.norm(rec_matrix[2, :])
-        if verbose:
-            print(
-                "q_range_z, q_range_y, q_range_x=({0:.5f}, {1:.5f}, {2:.5f}) (1/nm)".format(
-                    qz_range, qy_range, qx_range
-                )
-            )
-            print(
-                "voxelsize_z, voxelsize_y, voxelsize_x="
-                "({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)".format(
-                    2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
-                )
-            )
-        return 2 * np.pi / qz_range, 2 * np.pi / qy_range, 2 * np.pi / qx_range
-
-    def voxel_sizes_detector(
-        self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False
-    ):
-        """
-        Calculate the direct space voxel sizes in the detector frame
-         (z rocking angle, y detector vertical axis, x detector horizontal axis).
-
-        :param array_shape: shape of the 3D array used in phase retrieval
-        :param tilt_angle: angular step during the rocking curve, in degrees
-        :param pixel_x: horizontal pixel size, in meters
-        :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have printed comments
-        :return: the direct space voxel sizes in nm, in the detector frame (voxel_z, voxel_y, voxel_x)
-        """
-        voxel_z = (
-            self.wavelength / (array_shape[0] * abs(tilt_angle) * np.pi / 180) * 1e9
-        )  # in nm
-        voxel_y = (
-            self.wavelength * self.distance / (array_shape[1] * pixel_y) * 1e9
-        )  # in nm
-        voxel_x = (
-            self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9
-        )  # in nm
-        if verbose:
-            print(
-                "voxelsize_z, voxelsize_y, voxelsize_x="
-                "({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)".format(voxel_z, voxel_y, voxel_x)
-            )
-        return voxel_z, voxel_y, voxel_x
