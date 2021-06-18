@@ -2187,7 +2187,7 @@ class Setup:
      curves (the chi and omega/om/eta motor values).
     :param kwargs:
      - 'direct_beam': tuple of two real numbers indicating the position of the direct
-      beam in pixels at zero detector angles.
+       beam in pixels at zero detector angles.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were
        already preprocessed.
      - 'custom_scan': boolean, True is the scan does not follow the beamline's usual
@@ -3133,8 +3133,8 @@ class Setup:
          can be None
         :param specfile_name: beamline-dependent string
          - ID01: name of the spec file without '.spec'
-         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary
-           (e.g. root_folder+'alias_dict_2019.txt')
+         - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
+         root_folder+'alias_dict_2019.txt')
          - empty string for all other beamlines
 
         :param template_imagefile: beamline-dependent template for the data files
