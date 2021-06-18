@@ -260,8 +260,7 @@ plt.ion()
 #################################################
 # initialize detector, setup, paths and logfile #
 #################################################
-kwargs = dict()  # create dictionnary
-kwargs["is_series"] = is_series
+kwargs = {"is_series": is_series}  # create dictionnary
 
 detector = exp.Detector(
     name=detector,
