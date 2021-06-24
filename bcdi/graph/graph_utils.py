@@ -1450,8 +1450,7 @@ def loop_thru_scan(
             vmax = vmax / 2
         else:
             vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
 
     elif key == "p":  # plot full image
         if dim == 0:
@@ -3000,16 +2999,14 @@ def update_aliens(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":  # increase colobar max
         vmax = vmax * 2
 
     elif key == "left":  # reduce colobar max
         vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
 
     elif key == "m":  # mask intensities
         skip = False
@@ -3267,16 +3264,14 @@ def update_aliens_combined(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":  # increase colobar max
         vmax = vmax * 2
 
     elif key == "left":  # reduce colobar max
         vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
 
     elif key == "m":  # mask intensities
         skip = False
@@ -3526,16 +3521,14 @@ def update_aliens_2d(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":
         vmax = vmax * 2
 
     elif key == "left":
         vmax = vmax / 2
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
 
     elif key == "m":
         skip = False
@@ -3808,16 +3801,14 @@ def update_mask(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":
         vmax = vmax + 1
 
     elif key == "left":
         vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
 
     elif key == "m":
         skip = False
@@ -4080,8 +4071,7 @@ def update_mask_combined(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":
         vmax = vmax + 1
@@ -4089,8 +4079,7 @@ def update_mask_combined(
 
     elif key == "left":
         vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
         update_fig = True
 
     elif key == "m":
@@ -4431,8 +4420,7 @@ def update_mask_2d(
 
     elif key == "down":
         width = width - 1
-        if width < 0:
-            width = 0
+        width = max(width, 0)
 
     elif key == "right":
         vmax = vmax + 1
@@ -4440,8 +4428,7 @@ def update_mask_2d(
 
     elif key == "left":
         vmax = vmax - 1
-        if vmax < 1:
-            vmax = 1
+        vmax = max(vmax, 1)
         updated_data[updated_mask == 1] = masked_color
 
     elif key == "m":

@@ -229,8 +229,7 @@ def press_key(event):
         max_colorbar = max_colorbar + 1
     elif event.key == "left":
         max_colorbar = max_colorbar - 1
-        if max_colorbar < 1:
-            max_colorbar = 1
+        max_colorbar = max(max_colorbar, 1)
 
     ax0.cla()
     ax0.imshow(np.log10(sumdata), vmin=0, vmax=max_colorbar, cmap=my_cmap)
