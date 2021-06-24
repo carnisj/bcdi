@@ -4874,7 +4874,7 @@ def normalize_dataset(
 
     if debugging:
         original_data = np.copy(array)
-        original_max = original_data.max(initial=None)
+        original_max = original_data.max()
         original_data[original_data < 5] = 0  # remove the background
         original_data = original_data.sum(
             axis=1
@@ -4912,7 +4912,7 @@ def normalize_dataset(
 
     print(
         "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
-            monitor.min(initial=None), monitor.max(initial=None), monitor.mean()
+            monitor.min(), monitor.max(), monitor.mean()
         )
     )
     if norm_to_min:
@@ -4921,9 +4921,9 @@ def normalize_dataset(
         print("Data normalization by monitor.max()/monitor\n")
 
     if norm_to_min:
-        monitor = monitor.min(initial=None) / monitor  # will divide higher intensities
+        monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
-        monitor = monitor.max(initial=None) / monitor  # will multiply lower intensities
+        monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
     if len(monitor) != nbz:
@@ -4941,7 +4941,7 @@ def normalize_dataset(
     if debugging:
         norm_data = np.copy(array)
         # rescale norm_data to original_data for easier comparison
-        norm_data = norm_data * original_max / norm_data.max(initial=None)
+        norm_data = norm_data * original_max / norm_data.max()
         norm_data[norm_data < 5] = 0  # remove the background
         norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
         fig = gu.combined_plots(

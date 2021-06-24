@@ -2091,7 +2091,7 @@ def remove_ramp(
     mysupportz = np.zeros((nbz, nby, nbx))
     mysupportz[abs(mygradz) < gradient_threshold] = 1
     mysupportz = mysupportz * mysupport
-    if mysupportz.sum(initial=None) == 0:
+    if mysupportz.sum() == 0:
         raise ValueError(
             "No voxel below the threshold, raise the parameter threshold_gradient"
         )
@@ -2124,7 +2124,7 @@ def remove_ramp(
     mysupporty = np.zeros((nbz, nby, nbx))
     mysupporty[abs(mygrady) < gradient_threshold] = 1
     mysupporty = mysupporty * mysupport
-    if mysupporty.sum(initial=None) == 0:
+    if mysupporty.sum() == 0:
         raise ValueError(
             "No voxel below the threshold, raise the parameter threshold_gradient"
         )
@@ -2157,7 +2157,7 @@ def remove_ramp(
     mysupportx = np.zeros((nbz, nby, nbx))
     mysupportx[abs(mygradx) < gradient_threshold] = 1
     mysupportx = mysupportx * mysupport
-    if mysupportx.sum(initial=None) == 0:
+    if mysupportx.sum() == 0:
         raise ValueError(
             "No voxel below the threshold, raise the parameter threshold_gradient"
         )
