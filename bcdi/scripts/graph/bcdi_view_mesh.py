@@ -216,8 +216,7 @@ def press_key(event):
         max_colorbar = max_colorbar + 1
     elif event.key == "left":
         max_colorbar = max_colorbar - 1
-        if max_colorbar < 1:
-            max_colorbar = 1
+        max_colorbar = max(max_colorbar, 1)
     extents = rectangle.extents
     xmin0, xmax0 = ax0.get_xlim()
     ymin0, ymax0 = ax0.get_ylim()
