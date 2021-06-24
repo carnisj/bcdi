@@ -21,8 +21,6 @@ import bcdi.utils.utilities as util
 class EmptyO:
     """Empty class used as container in the nxs2spec case. """
 
-    pass
-
 
 class DataSet:
     """Dataset read the file and store it in an object, from this object we can
@@ -127,7 +125,6 @@ class DataSet:
                     except KeyError:
                         self.__dict__[leaf.attrs.long_name.decode("UTF-8")] = leaf[:]
                         aliases.append(leaf.attrs.long_name.decode("UTF-8"))
-                        pass
                 self.attlist = aliases
 
             else:
