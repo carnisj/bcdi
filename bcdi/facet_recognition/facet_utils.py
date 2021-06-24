@@ -337,7 +337,7 @@ def equirectangular_proj(
         plt.pause(0.1)
 
     # watershed segmentation
-    labels = watershed(-distances, markers, mask=mask)
+    labels = watershed(-1*distances, markers, mask=mask)
     print("There are", str(labels.max()), "facets")  # label 0 is the background
 
     plt.figure()
@@ -1287,8 +1287,8 @@ def stereographic_proj(
     ##########################
     # watershed segmentation #
     ##########################
-    labels_south = watershed(-distances_south, markers_south, mask=mask_south)
-    labels_north = watershed(-distances_north, markers_north, mask=mask_north)
+    labels_south = watershed(-1*distances_south, markers_south, mask=mask_south)
+    labels_north = watershed(-1*distances_north, markers_north, mask=mask_north)
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2, figsize=(12, 9))
     img0 = ax0.imshow(labels_south, cmap=cmap, interpolation="nearest")
     ax0.set_title("Labels South")

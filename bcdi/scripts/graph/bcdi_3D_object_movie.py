@@ -7,19 +7,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import matplotlib
-from matplotlib import pyplot as plt
 import matplotlib.animation as manimation
+from matplotlib import pyplot as plt
+import numpy as np
 import tkinter as tk
-from tkinter import filedialog
 import sys
+from tkinter import filedialog
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Create a movie from a 3D real space reconstruction in each direction. Requires imagemagick (https://imagemagick.org)
-or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
+Create a movie from a 3D real space reconstruction in each direction. Requires 
+imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 22
@@ -37,13 +38,17 @@ frame_per_second = 2  # number of frames per second, 5 is a good default
 vmin_vmax = [0, 1]  # scale for plotting the data
 roi = (
     []
-)  # ROI to be plotted, leave it as [] to use all the reconstruction [zstart, ztop, ystart, ystop, xstart, xstop]
+)  # ROI to be plotted, leave it as [] to use all the reconstruction
+# [zstart, ztop, ystart, ystop, xstart, xstop]
 field_name = ""  # name or ''
-# load the field name in a .npz file, if '' load the complex object and plot the normalized modulus
+# load the field name in a .npz file, if '' load the complex object
+# and plot the normalized modulus
 align_axes = ((0.2, 1, 0.02), (1, 0, -0.1))
-# sequence of vectors of 3 elements each in the order xyz, e.g. ((x1,y1,z1), ...). None otherwise.
+# sequence of vectors of 3 elements each in the order xyz,
+# e.g. ((x1,y1,z1), ...). None otherwise.
 ref_axes = ((0, 1, 0), (1, 0, 0))
-# sequence of reference vectors, same length as align_axes. Each vector in align_axes will be aligned to the
+# sequence of reference vectors, same length as align_axes.
+# Each vector in align_axes will be aligned to the
 # corresponding reference axis of ref_axes
 threshold = 0.05  # threshold apply on the object, if np.nan nothing happens
 output_format = "gif"  # 'gif', 'mp4'
@@ -62,6 +67,7 @@ my_cmap = colormap.cmap
 ###############
 if output_format == "gif":
     plt.rcParams["animation.convert_path"] = "D:/Python/imagemagick/magick.exe"
+    FFMpegWriter = None
 else:
     try:
         FFMpegWriter = manimation.writers["ffmpeg"]
@@ -118,7 +124,7 @@ if align_axes:
     for axis, ref_axis in zip(align_axes, ref_axes):
         print("axis to align, reference axis:", axis, ref_axis)
         obj = util.rotate_crystal(
-            array=obj, axis_to_align=axis, reference_axis=ref_axis, debugging=True
+            arrays=obj, axis_to_align=axis, reference_axis=ref_axis, debugging=True
         )  # out of plane alignement
 
 ###################

@@ -7,13 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 from mayavi import mlab
+import numpy as np
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.ticker as ticker
-import sys
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -52,7 +53,8 @@ field_of_view = [
     2000,
     2000,
 ]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
-# the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
+# the number of labels of mlab.axes() is an integer and is be calculated as:
+# field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
 threshold_isosurface = 0.4  # threshold for the 3D isosurface plot  #0.4 without ML
 threshold_modulus = 0.06  # threshold for 2D plots  # 0.06 without ML
@@ -117,14 +119,14 @@ if axis_outofplane is not None or axis_inplane is not None:
     print("Rotating object to have the crystallographic axes along array axes")
     if axis_outofplane is not None:
         obj = util.rotate_crystal(
-            array=obj,
+            arrays=obj,
             axis_to_align=axis_outofplane,
             reference_axis=np.array([0, 1, 0]),
             debugging=True,
         )  # out of plane alignement
     if axis_inplane is not None:
         obj = util.rotate_crystal(
-            array=obj,
+            arrays=obj,
             axis_to_align=axis_inplane,
             reference_axis=np.array([1, 0, 0]),
             debugging=True,
@@ -136,7 +138,8 @@ if axis_outofplane is not None or axis_inplane is not None:
 amp = np.copy(obj)
 amp = np.flip(
     amp, 2
-)  # mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
+)  # mayavi expect xyz, but we provide downstream/upward/outboard
+# which is not in the correct order
 amp = amp / amp.max()
 amp[amp < threshold_isosurface] = 0
 

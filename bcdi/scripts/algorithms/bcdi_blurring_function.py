@@ -18,6 +18,7 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import find_peaks
 import tkinter as tk
 from tkinter import filedialog
+
 import bcdi.algorithms.algorithms_utils as algo
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.graph.graph_utils as gu
@@ -25,34 +26,40 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Load a 3D BCDI reconstruction (.npz file) containing the field 'amp'. After defining a support using a threshold on the 
-normalized amplitude, calculate the blurring function by Richardson-Lucy deconvolution. Extract the resolution from 
-this blurring function in arbitrary direction. See M. Cherukara et al. Anisotropic nano-scale resolution in 3D 
-Bragg coherent diffraction imaging. Appl. Phys. Lett. 113, 203101 (2018); https://doi.org/10.1063/1.5055235
+Load a 3D BCDI reconstruction (.npz file) containing the field 'amp'. After defining a 
+support using a threshold on the normalized amplitude, calculate the blurring function 
+by Richardson-Lucy deconvolution. Extract the resolution from this blurring function in 
+arbitrary direction. See M. Cherukara et al. Anisotropic nano-scale resolution in 3D 
+Bragg coherent diffraction imaging. 
+Appl. Phys. Lett. 113, 203101 (2018); https://doi.org/10.1063/1.5055235
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/"
+datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/"
 savedir = datadir + "blurring_function/test/"
 isosurface_threshold = 0.2
-phasing_shape = None  # shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
+phasing_shape = None
+# shape of the dataset used during phase retrieval (after an eventual binning in PyNX).
 # tuple of 3 positive integers or None, if None the actual shape will be considered.
 upsampling_factor = (
     2  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...
 )
-voxel_size = 5  # number or list of three numbers corresponding to the voxel size in each dimension. If a single number
-# is provided, it will use it for all dimensions
+voxel_size = 5
+# number or list of three numbers corresponding to the voxel size in each dimension.
+# If a single number is provided, it will use it for all dimensions
 sigma_guess = (
     15  # in nm, sigma of the gaussian guess for the blurring function (e.g. mean PRTF)
 )
 rl_iterations = 50  # number of iterations for the Richardson-Lucy algorithm
-center_method = "max"  # 'com' or 'max', method to determine the center of the blurring function for line cuts
+center_method = "max"
+# 'com' or 'max', method to determine the center of the blurring function for line cuts
 comment = ""  # string to add to the filename when saving, should start with "_"
 tick_length = 8  # in plots
 tick_width = 2  # in plots
 roi_width = 20  # in pixels, width of the central region of the psf to plot
 debug = True  # True to see more plots
-min_offset = 1e-6  # object and support voxels with null value will be set to this number, in order to avoid
-# divisions by zero
+min_offset = 1e-6
+# object and support voxels with null value will be set to this number,
+# in order to avoid divisions by zero
 ##########################
 # end of user parameters #
 ##########################
@@ -218,7 +225,7 @@ peaks, _ = find_peaks(-1 * error)
 if peaks.size == 1 and peaks[0] == rl_iterations - 1:
     print("no local minimum for this number of iterations")
 else:
-    print(f"error local minima at iterations {[val for val in peaks]}")
+    print(f"error local minima at iterations {list(val for val in peaks)}")
 print(f"min error={error.min():.6f} at iteration {min_error_idx}\n")
 
 ###############################################
@@ -283,7 +290,8 @@ linecuts_dict = OrderedDict(
     ]
 )
 
-# define the maximum identical length that can share the linecuts (we need to concatenate them)
+# define the maximum identical length that can share the linecuts
+# (we need to concatenate them)
 width_length = min(width_z.size, width_y.size, width_x.size)
 linecuts = np.empty(
     (6, width_length)

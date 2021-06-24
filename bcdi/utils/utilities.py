@@ -7,20 +7,21 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from collections import OrderedDict
+import ctypes
 from functools import reduce
 import gc
 import json
-import os
-from collections import OrderedDict
-import ctypes
 import h5py
+from matplotlib import pyplot as plt
 from numbers import Real
 import numpy as np
+import os
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from matplotlib import pyplot as plt
+
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 

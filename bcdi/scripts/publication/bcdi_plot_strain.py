@@ -8,27 +8,30 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 from numbers import Real
 import numpy as np
 import pathlib
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.ticker as ticker
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
 Template for figures of the following article: 
-Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
+Carnis et al. Scientific Reports 9, 17357 (2019) 
+https://doi.org/10.1038/s41598-019-53774-2
 
 Open an amp_dist_strain.npz file and save individual figures.
 
-In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk', 'phase' for simulated data or 'disp' 
-for experimental data, 'strain'.
+In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk', 
+phase' for simulated data or 'disp' for experimental data, 'strain'.
 
-It is necessary to know the voxel size of the reconstruction in order to put ticks at the correct position.
+It is necessary to know the voxel size of the reconstruction in order to put ticks 
+at the correct position.
 """
 
 
@@ -37,7 +40,9 @@ datadir = (
 )
 savedir = datadir + "/figures/"
 comment = ""  # should start with _
-simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
+simulated_data = False
+# if yes, it will look for a field 'phase' in the reconstructed file,
+# otherwise for field 'disp'
 strain_isosurface = 0.7  # amplitude below this value will be set to 0
 
 voxel_size = 10.0  # in nm
@@ -50,9 +55,11 @@ tick_direction = "in"  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = "minmax"  # 0.008  # for plots, if float it represents the half range, if 'minmax' if will use the full
+strain_range = "minmax"  # 0.008
+# for plots, if float it represents the half range, if 'minmax' if will use the full
 # data range
-phase_range = "minmax"  # for plots, if float it represents the half range, if 'minmax' if will use the full
+phase_range = "minmax"
+# for plots, if float it represents the half range, if 'minmax' if will use the full
 # data range
 grey_background = True  # True to set the background to grey in phase and strain plots
 
@@ -68,11 +75,13 @@ flag_support = False  # True to plot and save the support
 amp_histogram_Yaxis = (
     "linear"  # 'log' or 'linear', Y axis scale for the amplitude histogram
 )
-xmin_histo = 0.02  # array values <= xmin_histo*array.max() will not be plotted to avoid the peak at 0
+xmin_histo = 0.02
+# array values <= xmin_histo*array.max() will not be plotted to avoid the peak at 0
 ylim_histo = (
     1,
     800,
-)  # tuple of two numbers (ymin, ymax) for the limits of the y axis in the histogram plot
+)
+# tuple of two numbers (ymin, ymax) for the limits of the y axis in the histogram plot
 vline_hist = None  # [0.375, 0.451, 0.505, 0.541]
 # list of vertical lines to plot in the amplitude histogram, leave None otherwise
 
@@ -103,15 +112,24 @@ my_cmap = colormap.cmap
 #########################
 # check some parameters #
 #########################
-if not isinstance(strain_range, Real) and strain_range != "minmax":
-    raise ValueError(
-        f'Incorrect setting {strain_range} for the parameter "strain_range"'
-    )
-strain_min, strain_max = -strain_range, strain_range
+if not isinstance(strain_range, Real):
+    if strain_range != "minmax":
+        raise ValueError(
+            f'Incorrect setting {strain_range} '
+            'for the parameter "strain_range"'
+        )
+    strain_min, strain_max = -np.inf, np.inf
+else:
+    strain_min, strain_max = -1*strain_range, strain_range
 
-if not isinstance(phase_range, Real) and phase_range != "minmax":
-    raise ValueError(f'Incorrect setting {phase_range} for the parameter "phase_range"')
-phase_min, phase_max = -phase_range, phase_range
+if not isinstance(phase_range, Real):
+    if phase_range != "minmax":
+        raise ValueError(f'Incorrect setting {phase_range} '
+                         'for the parameter "phase_range"'
+                         )
+    phase_min, phase_max = -np.inf, np.inf
+else:
+    phase_min, phase_max = -1*phase_range, phase_range
 
 valid.valid_item(xmin_histo, allowed_types=Real, min_included=0, name="xmin_histo")
 valid.valid_container(
@@ -224,7 +242,7 @@ phase[support == 0] = background_phase
 ###########
 if flag_support:
     fig, ax0 = plt.subplots(1, 1)
-    plt0 = ax0.imshow(
+    ax0.imshow(
         support[
             numz // 2 - pixel_FOV : numz // 2 + pixel_FOV,
             numy // 2 - pixel_FOV : numy // 2 + pixel_FOV,
@@ -250,7 +268,7 @@ if flag_support:
         fig.savefig(savedir + "support_YZ" + comment + ".png", bbox_inches="tight")
 
     fig, ax1 = plt.subplots(1, 1)
-    plt1 = ax1.imshow(
+    ax1.imshow(
         support[
             numz // 2 - pixel_FOV : numz // 2 + pixel_FOV,
             numy // 2,
@@ -275,7 +293,7 @@ if flag_support:
         fig.savefig(savedir + "support_XZ" + comment + ".png", bbox_inches="tight")
 
     fig, ax2 = plt.subplots(1, 1)
-    plt2 = ax2.imshow(
+    ax2.imshow(
         support[
             numz // 2,
             numy // 2 - pixel_FOV : numy // 2 + pixel_FOV,
@@ -673,11 +691,13 @@ if flag_phase:
             savedir + "phase_XY" + comment + "_colorbar.png", bbox_inches="tight"
         )
 
-    ###################
-    # example of a line cut on the phase, can also load more data for the lineplot for comparison
-    ##################
+    ############################################################
+    # example of a line cut on the phase,
+    # can also load more data for the lineplot for comparison  #
+    ############################################################
     if flag_linecut:
-        # file_path = filedialog.askopenfilename(initialdir=datadir, title="Select avg7 file",
+        # file_path = filedialog.askopenfilename(initialdir=datadir,
+        #                                        title="Select avg7 file",
         #                                        filetypes=[("NPZ", "*.npz")])
         # npzfile = np.load(file_path)
         # phase2 = npzfile['displacement']
@@ -687,7 +707,8 @@ if flag_phase:
         #     sys.exit()
         # phase2[bulk == 0] = np.nan
         #
-        # file_path = filedialog.askopenfilename(initialdir=datadir, title="Select post_processing apodization file",
+        # file_path = filedialog.askopenfilename(initialdir=datadir,
+        #  title="Select post_processing apodization file",
         #                                        filetypes=[("NPZ", "*.npz")])
         # npzfile = np.load(file_path)
         # phase3 = npzfile['displacement']
@@ -697,7 +718,8 @@ if flag_phase:
         #     sys.exit()
         # phase3[bulk == 0] = np.nan
         #
-        # file_path = filedialog.askopenfilename(initialdir=datadir, title="Select pre_processingapodization file",
+        # file_path = filedialog.askopenfilename(initialdir=datadir,
+        # title="Select pre_processingapodization file",
         #                                        filetypes=[("NPZ", "*.npz")])
         # npzfile = np.load(file_path)
         # phase4 = npzfile['displacement']
@@ -709,14 +731,17 @@ if flag_phase:
 
         fig, ax0 = plt.subplots(1, 1)
         plt0 = ax0.imshow(
-            phase[numz // 2, :, :], vmin=-phase_range, vmax=phase_range, cmap=my_cmap
+            phase[numz // 2, :, :], vmin=-phase_min, vmax=phase_max, cmap=my_cmap
         )
 
         fig, ax3 = plt.subplots(1, 1)
         plt.plot(phase[numz // 2, y_linecut, :], "r", linestyle="-")  # (1, (4, 4)))  #
-        # plt.plot(phase2[numz // 2, y_linecut, :], 'k', linestyle='-.')  # , marker='D', fillstyle='none'
-        # plt.plot(phase3[numz // 2, y_linecut, :], 'b', linestyle=':')  # , marker='^', fillstyle='none'
-        # plt.plot(phase4[numz // 2, y_linecut, :], 'g', linestyle='--')  # , marker='^', fillstyle='none'
+        # plt.plot(phase2[numz // 2, y_linecut, :], 'k', linestyle='-.')
+        # , marker='D', fillstyle='none'
+        # plt.plot(phase3[numz // 2, y_linecut, :], 'b', linestyle=':')
+        # , marker='^', fillstyle='none'
+        # plt.plot(phase4[numz // 2, y_linecut, :], 'g', linestyle='--')
+        # , marker='^', fillstyle='none'
         ax3.spines["right"].set_linewidth(1)
         ax3.spines["left"].set_linewidth(1)
         ax3.spines["top"].set_linewidth(1)

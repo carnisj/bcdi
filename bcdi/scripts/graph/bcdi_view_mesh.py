@@ -22,6 +22,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
 import os
+
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -336,7 +337,7 @@ data, mask, monitor, frames_logical = pru.load_data(
     debugging=False,
 )
 nz, ny, nx = data.shape
-print("Data shape: ", nz, ny, nx)
+print(f"Data shape: ({nz}, {ny}, {nx})")
 data[np.nonzero(mask)] = 0
 
 #######################
