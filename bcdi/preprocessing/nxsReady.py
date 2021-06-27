@@ -133,7 +133,6 @@ class DataSet:
                         except KeyError:
                             self.alias.append(nodenickname)
                             self.__dict__[nodenickname] = leaf.read()[shift:]
-                            pass
 
                 elif len(leaf.shape) == 3:
                     if leaf.shape[1] == 1065:
@@ -152,7 +151,6 @@ class DataSet:
                             self.mfilm = leaf[:-shift]
                         else:
                             self.mfilm = leaf[:]
-                    pass
 
         except ValueError:
             print("probleme le fichier ", longname, "est corrompu")

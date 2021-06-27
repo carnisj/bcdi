@@ -142,7 +142,6 @@ try:
 except FileNotFoundError:
     exp_qvalues = None
     qvalues_flag = False
-    pass
 
 ##########################
 # apply photon threshold #
