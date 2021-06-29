@@ -19,8 +19,9 @@ branch.
 1. Click on the “Code” button. Select “HTTPS” is selected, unless you’ve set up SSH. 
    Click on the clipboard icon to copy the address.
 1. Open a terminal. Navigate to a directory where you want to put your repository.
-1. Clone your fork of BCDI to your local computer: `https://github.com/your-name/bcdi.
-   git`. This will create a BCDI subdirectory inside the directory you were already in.
+1. Clone your fork of BCDI to your local computer: `https://github.
+   com/your-name/bcdi.git`. This will create a BCDI subdirectory inside the 
+   directory you were already in.
 1. Synchronize your local clone with the original repository (you can use a 
    different name from upstream, though it is a common usage): `git remote add 
    upstream https://github.com/carnisj/bcdi.git`
