@@ -1,6 +1,10 @@
 name: python-package-conda
 
-on: [push]
+on:
+  push:
+    branches: [ master, devel ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build-linux:
