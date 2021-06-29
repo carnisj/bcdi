@@ -1,5 +1,6 @@
 include *.gitignore
 include *.md
+recursive-include .github *.md
 include *.rst
 include *.txt
 recursive-include doc *.rst

@@ -1,11 +1,9 @@
 # Cythonized files
 # /image/bilinear.c
 
-
-# Hidden files
-.*
-# But include .gitgnore
+# do not exclude .gitgnore and .github
 !.gitignore
+!.github/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
