@@ -31,7 +31,7 @@ Work in Progress pull requests are also welcome to get feedback early on, or if 
 - [GitHub Help](https://help.github.com)
 
 [fork]: https://github.com/carnisj/bcdi/fork
-[pr]: https://github.com/probot/probot/compare
+[pr]: https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/
 [style]: https://www.python.org/dev/peps/pep-0008/
 [blck]: https://pypi.org/project/black/
 [code-of-conduct]: CODE_OF_CONDUCT.md
