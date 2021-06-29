@@ -1,8 +1,16 @@
 # Contributing
 
-Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
+Hi there! We're thrilled that you'd like to contribute to this project. Your help is 
+essential for keeping it great.
 
-Please note that this project is released with a [Contributor Code of Conduct][code-of-conduct]. By participating in this project you agree to abide by its terms.
+Please note that this project is released with a [Contributor Code of Conduct]
+[code-of-conduct]. By participating in this project you agree to abide by its terms.
+
+## Never push modifications directly to do master branch, even if you have permissions
+
+- Several continuous integration workflows are configured for the repository, they 
+  need to pass successfully before considering merging modifications into the master 
+  branch.
 
 ## Submitting a pull request
 
@@ -14,15 +22,19 @@ Please note that this project is released with a [Contributor Code of Conduct][c
 1. Push to your fork and [submit a pull request][pr]
 1. Pat your self on the back and wait for your pull request to be reviewed and merged.
 
-Here are a few things you can do that will increase the likelihood of your pull request being accepted:
+Here are a few things you can do that will increase the likelihood of your pull 
+request being accepted:
 
 - Follow the [style guide][style] which is using PEP 8 reommandations.
 - Run [black] [blck] against your code.
 - Write and update tests.
-- Keep your change as focused as possible. If there are multiple changes you would like to make that are not dependent upon each other, consider submitting them as separate pull requests.
-- Write a [good commit message](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+- Keep your change as focused as possible. If there are multiple changes you would 
+  like to make that are not dependent upon each other, consider submitting them as 
+  separate pull requests.
+- Write a [good commit message][gcm].
 
-Work in Progress pull requests are also welcome to get feedback early on, or if there is something that blocked you.
+Work in Progress pull requests are also welcome to get feedback early on, or if 
+there is something that blocked you.
 
 ## Resources
 
@@ -31,7 +43,8 @@ Work in Progress pull requests are also welcome to get feedback early on, or if 
 - [GitHub Help](https://help.github.com)
 
 [fork]: https://github.com/carnisj/bcdi/fork
-[pr]: https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/
+[pr]: https://docs.github.com/en/github/collaborating-with-pull-requests/
 [style]: https://www.python.org/dev/peps/pep-0008/
 [blck]: https://pypi.org/project/black/
+[gcm]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [code-of-conduct]: CODE_OF_CONDUCT.md
