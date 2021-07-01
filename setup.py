@@ -19,7 +19,7 @@ with open(path.join(here, "README.rst"), encoding="utf-8") as f:
 
 setup(
     name="bcdi",
-    version="0.1.1",
+    version="0.1.2",
     packages=find_packages(),
     include_package_data=True,
     # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},
