@@ -47,7 +47,7 @@ Here are a few things you can do that will increase the likelihood of your pull
 request being accepted:
 
 - Follow the [style guide][style] which is using PEP 8 recommendations.
-- Run [black] [blck] against your code.
+- Run [black] [blck] against your code, with the default line length of 88 characters.
 - Write and update tests.
 - Keep your change as focused as possible. If there are multiple changes you would 
   like to make that are not dependent upon each other, consider submitting them as 
