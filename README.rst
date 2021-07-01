@@ -105,7 +105,7 @@ Changelog
 =========
 
 .. include:: ../HISTORY.rst
-  :end-before: Version 0.0.8
+  :end-before: Version 0.1.0
 
 See the full :doc:`Changelog<changelog>`
 
