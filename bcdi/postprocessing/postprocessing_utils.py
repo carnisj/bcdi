@@ -1679,7 +1679,7 @@ def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
      :param array_stack: the stack of modes to orthogonalize along the first dimension.
      :param nb_mode: the maximum number of modes to be returned. If None,
       all are returned. This is useful if nb_mode is used, and only a partial list
-       of modes is returned.
+      of modes is returned.
      :param method: either 'eig' to use eigenvalue decomposition or 'svd' to use
       singular value decomposition.
      :param verbose: set it to True to have more printed comments

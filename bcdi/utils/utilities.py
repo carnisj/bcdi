@@ -711,7 +711,7 @@ def in_range(point, extent):
     :param extent: tuple of four integers (2D case) (y_start, y_stop, x_tart, x_stop)
      or six integers (3D case)
      (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
-      valid indices
+     valid indices
     :return: True if point belongs to extent, False otherwise
     """
     # check parameters
@@ -773,8 +773,8 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     :param direction_basis: 'orthonormal' if the vector direction is expressed in
      an orthonormal basis. In that case it
      will be corrected for the different voxel sizes in each direction. 'voxel' if
-      direction is expressed in the non-orthonormal basis defined by the voxel sizes
-      in each direction.
+     direction is expressed in the non-orthonormal basis defined by the voxel sizes
+     in each direction.
     :param voxel_size: real positive number or tuple of 2 (for 2D) or 3 (for 3D)
      real positive numbers representing the voxel size in each dimension.
     :return: distances (1D array, distance along the linecut in the unit given by
@@ -1635,7 +1635,7 @@ def rotate_vector(
      reference_axis will be discarded.
     :return: tuple of three ndarrays in CXI convention z y x, each of shape
      (vectors[0].size, vectors[1].size, vectors[2].size). If a single vector is
-      provided, returns a 1D array of size 3.
+     provided, returns a 1D array of size 3.
     """
     # check parameters
     if isinstance(vectors, np.ndarray):
