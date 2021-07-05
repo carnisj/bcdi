@@ -7,21 +7,23 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import filedialog
+
+import bcdi.utils.utilities as util
+import bcdi.graph.graph_utils as gu
 
 plt.switch_backend(
     "Qt5Agg"
 )  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
-import tkinter as tk
-from tkinter import filedialog
-import bcdi.utils.utilities as util
-import bcdi.graph.graph_utils as gu
 
 helptext = """
-Determination of the background in a reciprocal space linecut using an interactive interface. The background-subtracted
-data is saved in a different .npz file with the original field names.
+Determination of the background in a reciprocal space linecut using an interactive 
+interface. The background-subtracted data is saved in a different .npz file with the 
+original field names.
 """
 
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
@@ -38,8 +40,8 @@ field_names = ["distances", "average"]  # names of the fields in the file
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
-    if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel. If
+    flag_pause==1 or if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
     :return: updated list of vertices which defines a polygon to be masked
