@@ -16,15 +16,14 @@ import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
 
 helptext = """
-Plot a 1D angular average of a 3D reciprocal space map, based on the position of the origin (direct beam or Bragg peak). 
-
-If q values are provided, the data can be in an orthonormal frame or not (detector frame in Bragg CDI). The unit
-expected for q values is 1/nm.
-
-If q values are not provided, the data is supposed to be in an orthonormal frame.
+Plot a 1D angular average of a 3D reciprocal space map, based on the position of the 
+origin (direct beam or Bragg peak). If q values are provided, the data can be in an 
+orthonormal frame or not (detector frame in Bragg CDI). The unit expected for q 
+values is 1/nm. If q values are not provided, the data is supposed to be in an 
+orthonormal frame.
 """
 
-root_folder = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/test/"
+root_folder = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/"
 savedir = root_folder
 load_qvalues = True  # True if the q values are provided
 load_mask = True  # True to load a mask, masked points are not used for angular average
@@ -42,13 +41,17 @@ vertical_lines = [
     0.208,
 ]  # plot vertical dashed lines at these q values, leave [] otherwise
 # position in pixels of the origin of the angular average in the array.
-# if a nan value is used, the origin will be set at the middle of the array in the corresponding dimension.
+# if a nan value is used, the origin will be set at the middle of the array in the
+# corresponding dimension.
 threshold = 0  # data < threshold will be set to 0
 debug = False  # True to show more plots
-xlim = None  # [0, 0.8]  # [start, stop] limits used for the horizontal axis of the angular plot, leave None otherwise
-ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None otherwise
+xlim = None  # [0, 0.8]  # [start, stop] limits used for the horizontal axis of the
+# angular plot, leave None otherwise
+ylim = None  # [start, stop] limits used for the vertical axis of plots, leave None
+# otherwise
 save_txt = True  # True to save q values and the average in .txt format
-subtract_median = False  # if True, will subtract the median to the mean at each q, to see peaks more clearly
+subtract_median = False  # if True, will subtract the median to the mean at each q,
+# to see peaks more clearly
 ##########################
 # end of user parameters #
 ##########################
