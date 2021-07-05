@@ -82,7 +82,8 @@ data = util.crop_pad(
 )
 data = util.bin_data(data, binning=binning, debugging=debug)
 comment = (
-    f"{data.shape[0]}_{data.shape[1]}_{data.shape[2]}_{binning[0]}_{binning[1]}_{binning[2]}"
+    f"{data.shape[0]}_{data.shape[1]}_{data.shape[2]}_"
+    f"{binning[0]}_{binning[1]}_{binning[2]}"
     + comment
 )
 np.savez_compressed(datadir + "S" + str(scan) + "_pynx" + comment + ".npz", data=data)
