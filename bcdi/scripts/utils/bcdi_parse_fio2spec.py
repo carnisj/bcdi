@@ -143,7 +143,7 @@ for no in nos:
         # cen_index=int(scind.center_of_mass(sumData)[0])
 
         cols_str = "#L "
-
+        motor_name = 'None'
         for i in range(len(cols.keys())):
             for key in cols:
                 if cols[key] == i:
