@@ -21,18 +21,22 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script allow to plot and save linecuts through a 2D SEM image of a calibration grid. 
-Must be given as input: the voxel size, the direction of the cuts and a list of points where to apply the cut along 
-this direction. A rectangular profile is fitted to the maxima.
+This script allow to plot and save linecuts through a 2D SEM image of a calibration 
+grid. Must be given as input: the voxel size, the direction of the cuts and a list of 
+points where to apply the cut along this direction. A rectangular profile is fitted 
+to the maxima.
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/"  # data folder
+datadir =\
+    "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/"
+# data folder
 savedir = (
     "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/test/"
 )
 # results will be saved here, if None it will default to datadir
 direction = (0, 1)  # tuple of 2 numbers defining the direction of the cut
-# in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
+# in the orthonormal reference frame is given by the array axes.
+# It will be corrected for anisotropic voxel sizes.
 points = [
     (5, 0),
     (25, 0),
@@ -47,7 +51,8 @@ points = [
 ]
 # points for MCS_03.tif,  MCS_06.tif and MCS_07.tif
 # list/tuple of 2 indices corresponding to the points where
-# the cut alond direction should be performed. The reference frame is given by the array axes.
+# the cut alond direction should be performed.
+# The reference frame is given by the array axes.
 # fit_roi = [[(360, 480), (1070, 1190)],  # ROIs for MCS_07.tif
 #            [(475, 590), (1175, 1290)],
 #            [(575, 685), (1275, 1390)],
@@ -86,8 +91,10 @@ fit_roi = [
 background_roi = [0, 400, 112, 118]  # background_roi for MCS_03.tif
 # [ystart, ystop, xstart, xstop], the mean intensity in this ROI will be
 # subtracted from the data. Leave None otherwise
-# list of tuples [(start, stop), ...] of regions to be fitted, in the unit of length along the linecut, None otherwise
-voxel_size = 4.140786749482402  #  * 0.96829786  # positive real number, voxel size of the SEM image
+# list of tuples [(start, stop), ...] of regions to be fitted,
+# in the unit of length along the linecut, None otherwise
+voxel_size = 4.140786749482402  # * 0.96829786
+# positive real number, voxel size of the SEM image
 nb_lines = 52
 expected_width = 100.4 * (nb_lines - 1)  # 5120  # in nm, real positive number or None
 debug = False  # True to print the output dictionary and plot the legend
@@ -179,7 +186,8 @@ valid.valid_container(
 if fit_roi is not None:
     if len(fit_roi) != len(points):
         raise ValueError(
-            "There should be as many ROIs sublists as the number of points (None allowed)"
+            "There should be as many ROIs sublists as the number of points (None "
+            "allowed)"
         )
     for sublist in fit_roi:
         valid.valid_container(
@@ -255,7 +263,8 @@ for point in points:
     distance, cut = util.linecut(
         array=obj, point=point, direction=direction, voxel_size=voxel_size
     )
-    # store the result in a dictionary (cuts can have different lengths depending on the direction)
+    # store the result in a dictionary
+    # (cuts can have different lengths depending on the direction)
     result[f"pixel {point}"] = {"distance": distance, "cut": cut}
 
 ######################
@@ -365,7 +374,8 @@ if fit_roi is not None:
     tmp_str = "mean width"
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
     print(
-        f"mean width: {result['mean_width']:.2f}nm, std width: {result['std_width']:.2f}"
+        f"mean width: {result['mean_width']:.2f}nm,"
+        f" std width: {result['std_width']:.2f}"
     )
     print(f"mean pitch: {result['mean_width']/(nb_lines-1):.2f}nm")
     if expected_width is not None:

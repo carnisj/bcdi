@@ -7,19 +7,22 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
 from lmfit import minimize, Parameters, report_fit
+import matplotlib.pyplot as plt
+import numpy as np
+
+from scipy.interpolate import interp1d
+
 import tkinter as tk
 from tkinter import filedialog
 import sys
 import bcdi.utils.utilities as util
 
 helptext = """
-Fit a reciprocal space radial profile over selected q ranges using different lineshapes. The fit is performed 
-simultaneously  over all q ranges defined by the user; it is possible to define constraints  limiting the number of 
-free fitting parameters.
+Fit a reciprocal space radial profile over selected q ranges using different 
+lineshapes. The fit is performed simultaneously  over all q ranges defined by the 
+user; it is possible to define constraints  limiting the number of free fitting 
+parameters.
 """
 
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx_not_masked/"
@@ -27,7 +30,8 @@ xlim = [0, 1]  # limits used for the horizontal axis of plots, leave None otherw
 ylim = (
     None  # [0, 3]  # limits used for the vertical axis of plots, leave None otherwise
 )
-lineshape = "pseudovoigt"  # lineshape to use for fitting: 'gaussian', 'lorentzian' or 'pseudovoigt'
+lineshape = "pseudovoigt"
+# lineshape to use for fitting: 'gaussian', 'lorentzian' or 'pseudovoigt'
 scale = "log"  # scale for plots, 'linear' or 'log'
 field_names = ["distances", "average"]  # names of the fields in the file
 fit_range = [
@@ -159,7 +163,8 @@ if len(constraint_expr) != 0:
         nb_ranges - 1
     ):
         print(
-            "Number of constraints or constrained variables incompatible with the number of ranges"
+            "Number of constraints or constrained variables incompatible with the "
+            "number of ranges"
         )
         sys.exit()
     for idx in range(1, nb_ranges):

@@ -5,10 +5,10 @@ matplotlib
 hdf5plugin
 h5py
 traits
-vtk
 importlib_resources
 xrayutilities
 mayavi
+vtk
 fabio
 silx
 tables

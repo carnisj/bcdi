@@ -105,11 +105,11 @@ def parsefio(fio_filename):
 fns = os.listdir(basepath)
 nos = np.arange(30000)
 for no in nos:
+    targetdir = sampleid % no
     try:
-        targetdir = sampleid % no
         fns.index(targetdir)
         add2file = True
-    except:
+    except ValueError:  # targetdir not in path
         # print("no data for this one: ",targetdir)
         add2file = False
 
@@ -143,7 +143,7 @@ for no in nos:
         # cen_index=int(scind.center_of_mass(sumData)[0])
 
         cols_str = "#L "
-
+        motor_name = 'None'
         for i in range(len(cols.keys())):
             for key in cols:
                 if cols[key] == i:

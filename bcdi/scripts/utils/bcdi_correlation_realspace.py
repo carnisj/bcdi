@@ -20,8 +20,9 @@ helptext = """
 Compare the correlation between several 3D objects.
 """
 
-datadir = "D:/data/P10_August2019/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/maximum_likelihood/good/"
-threshold_correlation = 0.05  # only points above that threshold will be considered for correlation calculation
+datadir = ""
+threshold_correlation = 0.05
+# only points above that threshold will be considered for correlation calculation
 ###################
 # define colormap #
 ###################
