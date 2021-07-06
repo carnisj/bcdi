@@ -5,7 +5,7 @@ name: python-package-3.8
 
 on:
   push:
-    branches: [ master, devel ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
