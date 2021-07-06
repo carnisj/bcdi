@@ -105,11 +105,11 @@ def parsefio(fio_filename):
 fns = os.listdir(basepath)
 nos = np.arange(30000)
 for no in nos:
+    targetdir = sampleid % no
     try:
-        targetdir = sampleid % no
         fns.index(targetdir)
         add2file = True
-    except:
+    except ValueError:  # targetdir not in path
         # print("no data for this one: ",targetdir)
         add2file = False
 
