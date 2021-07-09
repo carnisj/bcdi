@@ -13,6 +13,7 @@ dependencies:
   - hdf5plugin
   - h5py
   - traits
+  - pyqt
   - mayavi
   - vtk
   - importlib_resources

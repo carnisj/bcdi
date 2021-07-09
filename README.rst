@@ -61,33 +61,14 @@ We would like to acknowledge the following packages:
 
 The following third-party packages are required:
 
-* numpy
-
-* scipy
-
-* scikit-image
-
-* matplotlib
-
-* mayavi
-
-* vtk
-
-* h5py
-
-* hdf5plugin
-
-* fabio
-
-* silx
-
-* xrayutilities
+* numpy, scipy, scikit-image, matplotlib, pyqt5, mayavi, vtk, h5py, hdf5plugin, fabio,
+silx, xrayutilities
 
 * lmfit: for scripts performing fits
 
-* pytest if you want to execute the tests
+* pytest: to run the tests
 
-* pytables: when loading the dictionnary for SIXS data
+* pytables: to load the devices dictionnary for SIXS data
 
 * moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
 
