@@ -7,7 +7,7 @@ h5py
 traits
 importlib_resources
 xrayutilities
-pyqt5>=5.15.4
+pyqt6
 pyqtgraph
 mayavi
 vtk
