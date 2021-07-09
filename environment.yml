@@ -14,6 +14,7 @@ dependencies:
   - h5py
   - traits
   - pyqt
+  - pyqtgraph
   - mayavi
   - vtk
   - importlib_resources

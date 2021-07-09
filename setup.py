@@ -141,6 +141,7 @@ setup(
         "h5py",
         "traits",
         "pyqt5",
+        "pyqtgraph",
         "mayavi",
         "vtk",
         "importlib_resources",
