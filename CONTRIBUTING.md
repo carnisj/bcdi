@@ -30,7 +30,7 @@ branch.
 1. Fetch the most recent changes from remotes: `git fetch --all`
 1. Create a feature branch based off of the main branch on the upstream remote, and 
    give it a descriptive name. This command will create the branch, and switch you 
-   to it: `git checkout -b branch-name upstream/main`
+   to it: `git checkout -b branch-name upstream/master`
 1. To check the branches that you have and which branch you are on, type: `git branch`
 1. Push and link the branch to your fork on GitHub: `git push --set-upstream origin 
    branch-name`
