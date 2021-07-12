@@ -7,6 +7,8 @@ h5py
 traits
 importlib_resources
 xrayutilities
+pyqt6
+pyqtgraph
 mayavi
 vtk
 fabio

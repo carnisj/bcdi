@@ -140,6 +140,8 @@ setup(
         "hdf5plugin",
         "h5py",
         "traits",
+        "pyqt6",
+        "pyqtgraph",
         "mayavi",
         "vtk",
         "importlib_resources",
