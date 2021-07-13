@@ -6,7 +6,7 @@ essential for keeping it great.
 Please note that this project is released with a [Contributor Code of Conduct]
 [code-of-conduct]. By participating in this project you agree to abide by its terms.
 
-###*Never push changes directly to the master branch, even if you have permissions.*
+### *Never push changes directly to the master branch, even if you have permissions.*
 
 Several continuous integration workflows are configured for the repository, they 
 need to pass successfully before considering merging modifications into the master 
