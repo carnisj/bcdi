@@ -406,9 +406,7 @@ def find_nearest(reference_array, test_values, width=None):
         for idx in range(nb_values):
             if (
                 reference_array[nearest_index[idx]] >= test_values[idx] + width / 2
-            ) or (
-                reference_array[nearest_index[idx]] < test_values[idx] - width / 2
-            ):
+            ) or (reference_array[nearest_index[idx]] < test_values[idx] - width / 2):
                 # no neighbour in the range defined by width
                 nearest_index[idx] = -1
     return nearest_index
@@ -808,7 +806,7 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     point = tuple(point)  # point needs to be hashable
     if direction_basis not in {"orthonormal", "voxel"}:
         raise ValueError(
-            f'unknown value {direction_basis} for direction_basis,'
+            f"unknown value {direction_basis} for direction_basis,"
             ' allowed are "voxel" and "orthonormal"'
         )
     if isinstance(voxel_size, Real):
@@ -1669,7 +1667,7 @@ def rotate_vector(
         )
     else:
         print(
-            'The rotation matrix is provided, '
+            "The rotation matrix is provided, "
             'parameters "axis_to_align" and "reference_axis" will be discarded'
         )
         if not isinstance(rotation_matrix, np.ndarray):

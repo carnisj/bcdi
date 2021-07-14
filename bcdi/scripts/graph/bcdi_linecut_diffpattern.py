@@ -210,9 +210,8 @@ def press_key(event):
         if event.inaxes:
             if event.key == "s":
                 template = (
-                    savedir
-                    + f"{sample_name}_{scan}_"
-                      f"linecut_start={starting_point}_stop={endpoint}"
+                    savedir + f"{sample_name}_{scan}_"
+                    f"linecut_start={starting_point}_stop={endpoint}"
                 )
                 fig_diff.savefig(template + ".png")
                 np.savez_compressed(template + ".npz", linecut=cut, distance=distance)

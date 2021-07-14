@@ -136,9 +136,7 @@ if axis_outofplane is not None or axis_inplane is not None:
 #  pad array to obtain the desired field of view #
 ##################################################
 amp = np.copy(obj)
-amp = np.flip(
-    amp, 2
-)  # mayavi expect xyz, but we provide downstream/upward/outboard
+amp = np.flip(amp, 2)  # mayavi expect xyz, but we provide downstream/upward/outboard
 # which is not in the correct order
 amp = amp / amp.max()
 amp[amp < threshold_isosurface] = 0

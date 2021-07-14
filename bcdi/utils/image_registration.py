@@ -154,9 +154,7 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
     crosscorr = np.zeros([mlarge, nlarge], dtype=np.complex128)
 
     crosscorr[
-        int(row_nb - np.fix(row_nb / 2)) : int(
-            row_nb + 1 + np.fix((row_nb - 1) / 2)
-        ),
+        int(row_nb - np.fix(row_nb / 2)) : int(row_nb + 1 + np.fix((row_nb - 1) / 2)),
         int(column_nb - np.fix(column_nb / 2)) : int(
             column_nb + 1 + np.fix((column_nb - 1) / 2)
         ),

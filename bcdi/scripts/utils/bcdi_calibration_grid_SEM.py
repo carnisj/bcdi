@@ -27,8 +27,9 @@ points where to apply the cut along this direction. A rectangular profile is fit
 to the maxima.
 """
 
-datadir =\
+datadir = (
     "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/"
+)
 # data folder
 savedir = (
     "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/SEM calibration/test/"
