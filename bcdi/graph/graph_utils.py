@@ -58,16 +58,12 @@ my_cmap.set_bad(color="0.7")
 class Colormap:
     """
     Class to define a colormap.
+
+    :param colormap: a colormap string. Available choices at the moment: 'default'
+    :param bad_color: a string which defines the grey level for nan pixels, e.g. '0.7'
     """
 
     def __init__(self, bad_color="0.7", colormap="default"):
-        """
-        Initialize parameters of the experiment.
-
-        :param colormap: a colormap string. Available choices at the moment: 'default'
-        :param bad_color: a string which defines the grey level for nan pixels.
-         example: '0.7'
-        """
         if colormap == "default":
             cdict = color_dict
         else:
