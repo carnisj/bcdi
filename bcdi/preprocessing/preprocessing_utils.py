@@ -688,7 +688,7 @@ def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
             scale="linear",
             labels=("Qx (z_interp)", "Qy (x_interp)"),
             title="calculated polar angle for a 2D grid\n"
-                  "perpendicular to the rotation axis",
+            "perpendicular to the rotation axis",
         )
 
         gu.imshow_plot(
@@ -705,7 +705,7 @@ def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
             scale="linear",
             labels=("Qx (z_interp)", "Qy (x_interp)"),
             title="calculated polar radius for a 2D grid\n"
-                  "perpendicular to the rotation axis",
+            "perpendicular to the rotation axis",
         )
 
     return interp_angle, interp_height, interp_radius
@@ -904,7 +904,7 @@ def center_fft(
         print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
     if any(val == 0 for val in (max_nz, max_ny, max_nx)):
         print(
-            'Empty images or presence of hotpixel at the border,'
+            "Empty images or presence of hotpixel at the border,"
             ' defaulting fft_option to "skip"!'
         )
         fft_option = "skip"
@@ -1452,9 +1452,7 @@ def check_pixels(data, mask, debugging=False):
     meandata = data.mean(axis=0)  # 2D
     vardata = 1 / data.var(axis=0)  # 2D
     var_mean = vardata[vardata != np.inf].mean()
-    vardata[
-        meandata == 0
-    ] = var_mean
+    vardata[meandata == 0] = var_mean
     # pixels were data=0 (i.e. 1/variance=inf) are set to the mean of  1/var:
     # we do not want to mask pixels where there was no intensity during the scan
 
@@ -1495,9 +1493,7 @@ def check_pixels(data, mask, debugging=False):
 
     # mask hotpixels with zero variance
     temp_mask = np.zeros((nby, nbx))
-    temp_mask[
-        vardata == np.inf
-    ] = 1
+    temp_mask[vardata == np.inf] = 1
     # this includes only hotpixels since zero intensity pixels were set to var_mean
     mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
     vardata[vardata == np.inf] = 0  # update the array
@@ -2452,9 +2448,7 @@ def grid_cdi(
             " (1/nm)",
         )
 
-        if (
-            loop_2d
-        ):  # loop over 2D slices perpendicular to the rotation axis,
+        if loop_2d:  # loop over 2D slices perpendicular to the rotation axis,
             # slower but needs less memory
 
             # find the corresponding polar coordinates of a cartesian 2D grid
@@ -3924,9 +3918,7 @@ def load_hotpixels(hotpixels_file):
             hotpixels = hotpixels.sum(axis=0)
         if hotpixels.ndim != 2:
             raise ValueError("hotpixels should be a 2D array")
-        if (
-            hotpixels == 0
-        ).sum() < hotpixels.size / 4:
+        if (hotpixels == 0).sum() < hotpixels.size / 4:
             # masked pixels are more than 3/4 of the pixel number
             print("hotpixels values are probably 0 instead of 1, switching values")
             hotpixels[np.nonzero(hotpixels)] = -1

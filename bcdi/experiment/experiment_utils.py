@@ -1742,7 +1742,7 @@ class DiffractometerNANOMAX(Diffractometer):
                     phi = logfile["/" + group_key + "/measurement/gonphi"][:]
                 except KeyError:
                     raise KeyError(
-                        'phi not in measurement data,'
+                        "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
                 theta = logfile["/" + group_key + "/snapshot/gontheta"][:]
@@ -1751,7 +1751,7 @@ class DiffractometerNANOMAX(Diffractometer):
                     theta = logfile["/" + group_key + "/measurement/gontheta"][:]
                 except KeyError:
                     raise KeyError(
-                        'theta not in measurement data,'
+                        "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
                 phi = logfile["/" + group_key + "/snapshot/gonphi"][:]
@@ -2413,7 +2413,7 @@ class Setup:
             if not isinstance(value, dict):
                 raise TypeError(
                     'custom_motors should be a dictionnary of "motor_name": '
-                    'motor_positions pairs'
+                    "motor_positions pairs"
                 )
             self._custom_motors = value
 

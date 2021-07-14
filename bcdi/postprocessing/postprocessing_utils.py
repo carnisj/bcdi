@@ -2186,10 +2186,7 @@ def remove_ramp(
     gc.collect()
 
     myz, myy, myx = np.meshgrid(
-        np.arange(0, nbz, 1),
-        np.arange(0, nby, 1),
-        np.arange(0, nbx, 1),
-        indexing="ij",
+        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij",
     )
 
     print(
@@ -2382,9 +2379,7 @@ def remove_ramp_2d(
     del mysupportx, mygradx, mysupport
     gc.collect()
 
-    myy, myx = np.meshgrid(
-        np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
-    )
+    myy, myx = np.meshgrid(np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij")
 
     print(
         "Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (",
@@ -2536,8 +2531,10 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     import numpy.ma as ma
 
     if support_threshold < 0 or support_threshold > 1:
-        raise ValueError("support_threshold is a relative threshold, expected value "
-                         "between 0 and 1")
+        raise ValueError(
+            "support_threshold is a relative threshold, expected value "
+            "between 0 and 1"
+        )
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,

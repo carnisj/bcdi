@@ -149,7 +149,7 @@ setup(
         "fabio",
         "silx",
     ],
-    extra_requires=["tables", "lmfit", "moviepy", "sphinx", 'pillow'],
+    extra_requires=["tables", "lmfit", "moviepy", "sphinx", "pillow"],
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha

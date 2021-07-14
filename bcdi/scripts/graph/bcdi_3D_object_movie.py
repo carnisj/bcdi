@@ -36,9 +36,7 @@ movie_x = False  # save movie along x axis (outboard)
 frame_spacing = 1  # spacing between consecutive slices in voxel
 frame_per_second = 2  # number of frames per second, 5 is a good default
 vmin_vmax = [0, 1]  # scale for plotting the data
-roi = (
-    []
-)  # ROI to be plotted, leave it as [] to use all the reconstruction
+roi = []  # ROI to be plotted, leave it as [] to use all the reconstruction
 # [zstart, ztop, ystart, ystop, xstart, xstop]
 field_name = ""  # name or ''
 # load the field name in a .npz file, if '' load the complex object
