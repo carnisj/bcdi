@@ -1,5 +1,6 @@
 .. image:: https://readthedocs.org/projects/bcdi/badge/?version=latest
 .. image:: https://deepsource.io/gh/carnisj/bcdi.svg/?label=active+issues&show_trend=true&token=N3Z0cklmQrG8kzZOVwGJhLd9
+
 BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
 ==============================================================================================
 
@@ -62,7 +63,7 @@ We would like to acknowledge the following packages:
 The following third-party packages are required:
 
 * numpy, scipy, scikit-image, matplotlib, pyqt5, mayavi, vtk, h5py, hdf5plugin, fabio,
-silx, xrayutilities
+  silx, xrayutilities
 
 * lmfit: for scripts performing fits
 
