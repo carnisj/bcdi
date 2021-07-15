@@ -81,7 +81,10 @@ BCDI is available from:
  * https://github.com/carnisj  for the most updated version
  * upgrade existing version from GitHub: pip install --upgrade git+https://github.com/carnisj/bcdi.git
 
-Please send feedback in GitHub or at carnis_jerome@yahoo.fr
+Not that there are issues with installing scikit-image within an Anaconda environment.
+In such situation, the workaround is to create instead a virtual environment using pip.
+
+Please send feedback in GitHub.
 
 Changelog
 =========
@@ -133,7 +136,7 @@ After meshing the object, facets are found using a density estimation of mesh tr
 .. bcdi.facet_recognition end
 
 BCDI.experiment: class and methods defining the experimental setup
-================================================================
+==================================================================
 
 .. bcdi.experiment section
 
