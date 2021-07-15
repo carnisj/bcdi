@@ -23,8 +23,10 @@ class TestValidContainer(unittest.TestCase):
     ############################
     # tests on valid_container #
     ############################
-    # valid_container(obj, container_types, length=None, min_length=None, item_types=None, min_included=None,
-    #                 min_excluded=None, max_included=None, max_excluded=None, allow_none=False, name=None)
+    # valid_container(obj, container_types, length=None, min_length=None,
+    #                 item_types=None, min_included=None,
+    #                 min_excluded=None, max_included=None, max_excluded=None,
+    #                 allow_none=False, name=None)
     # def setUp(self):
     #     executed before each test
     #
@@ -408,7 +410,8 @@ class TestValidItem(unittest.TestCase):
     #######################
     # tests on valid_item #
     #######################
-    # valid_item(value, allowed_types, min_included=None, min_excluded=None, max_included=None, max_excluded=None,
+    # valid_item(value, allowed_types, min_included=None, min_excluded=None,
+    #            max_included=None, max_excluded=None,
     #            allow_none=False, name=None)
 
     def test_validitem_allowedtypes_none(self):
