@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-# import bcdi.facet_recognition.facet_utils as fu  # unknown bug when importing this
+import bcdi.facet_recognition.facet_utils as fu
 
 
 def run_tests(test_class):
