@@ -21,7 +21,8 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 helptext = """
-Create a movie from a scan (i.e. timescan). Requires ffmpeg (http://ffmpeg.zeranoe.com/builds/).
+Create a movie from a scan (i.e. timescan). Requires ffmpeg 
+(http://ffmpeg.zeranoe.com/builds/).
 """
 
 scan = 99  # spec scan number
@@ -35,7 +36,8 @@ roi = [
     516,
     0,
     516,
-]  # ROI of the detector to be plotted [0, 516, 0, 516] Maxipix, [0, 2164, 0, 1030] Eiger2M
+]
+# ROI of the detector to be plotted [0, 516, 0, 516] Maxipix, [0, 2164, 0, 1030] Eiger2M
 ccdfiletmp = os.path.join(
     datadir, "data_mpx4_%05d.edf.gz"
 )  # ID01 template for the CCD file names

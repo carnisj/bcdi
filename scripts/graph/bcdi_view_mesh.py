@@ -16,18 +16,15 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
 import matplotlib
-
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
+import numpy as np
 import os
-
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
-
+matplotlib.use("Qt5Agg")
 
 scan = 26  # scan number as it appears in the folder name
 sample_name = "B10_syn_S5"  # without _ at the end

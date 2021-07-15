@@ -20,24 +20,29 @@ import bcdi.postprocessing.postprocessing_utils as pu
 
 
 helptext = """
-Apply intensity normalization of additive aptially multiplexed patterns with n encoded phases, as described in:
+Apply intensity normalization of additive aptially multiplexed patterns with n 
+encoded phases, as described in:
 R. Jaurez-Salazar et al. Optics and Lasers in Engineering 77, 225-229 (2016).
 
 Input: a 3D real intensity array
 """
 
-datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1000_1000_1000_1_1_1/current_paper/"
+datadir = ""
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/scratch/"
 comment = "_gaussian_21_5"  # should start with _
-threshold = 0.075  # threshold used to define the support for background fitting (intensity normalized to 1)
+threshold = 0.075
+# threshold used to define the support for background fitting
+# (intensity normalized to 1)
 roll_modes = (0, -10, 0)  # axis=(0, 1, 2), correct a misalignement of the data
 save = True  # True to save the result as a NPZ file
 nb_phases = 1  # number of encoded phases, generally 1 if this is a single measurement
 #########################################
 # parameters for the background fitting #
 #########################################
-background_method = "gaussian"  # 'gaussian', 'polyfit' or 'skip': 'gaussian' will convolve a gaussian with the object,
-# 'polyfit' will fit a polynomial or order background_order to the object. 'skip' defines a zero background
+background_method = "gaussian"
+# 'gaussian', 'polyfit' or 'skip': 'gaussian' will convolve a gaussian with the object,
+# 'polyfit' will fit a polynomial or order background_order to the object.
+# 'skip' defines a zero background
 background_order = 1  # degree of the polynomial for background fitting 1~4.
 background_kernel = (
     21  # size of the kernel for the 'gaussian' method  # 2*ceil(2*sigma)+1 in matlab
@@ -46,7 +51,8 @@ background_sigma = 5  # standard deviation of the gaussian for the 'gaussian' me
 #########################################
 # parameters for the modulation fitting #
 #########################################
-modulation_method = "gaussian"  # 'gaussian' or 'polyfit': 'gaussian' will convolve a gaussian with the object,
+modulation_method = "gaussian"
+# 'gaussian' or 'polyfit': 'gaussian' will convolve a gaussian with the object,
 # 'polyfit' will fit a polynomial or order modulation_order to the object.
 modulation_order = 4  # degree of the polynomial for modulation fitting 1~4
 modulation_kernel = (
