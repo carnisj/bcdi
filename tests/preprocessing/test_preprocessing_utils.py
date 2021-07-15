@@ -19,10 +19,11 @@ def run_tests(test_class):
 
 class Test(unittest.TestCase):
     """
-    Tests on the function utilities.in_range
+    Tests
     """
 
-    pass
+    def test_dummy(self):
+        self.assertTrue(True)
 
 
 if __name__ == "main":
