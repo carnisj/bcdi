@@ -20,8 +20,8 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
 helptext = """
-Open and plot the point-spread function (PSF) from a .cxi reconstruction file (from PyNX). The PSF or the mutual 
-coherence function (FFT of the PSF) can be to be plotted.
+Open and plot the point-spread function (PSF) from a .cxi reconstruction file (from 
+PyNX). The PSF or the mutual coherence function (FFT of the PSF) can be to be plotted.
 """
 
 datadir = (
@@ -30,8 +30,10 @@ datadir = (
 savedir = datadir + "psf_Run0020/"
 is_orthogonal = False  # True if the data was orthogonalized before phasing
 comment = ""  # should start with _
-width = 30  # integer or tuple of three integers (one for each dimension), the psf will be plotted
-# for +/- this number of pixels from center of the array. Leave None to use the full array
+width = 30
+# integer or tuple of three integers (one for each dimension), the psf will be plotted
+# for +/- this number of pixels from center of the array.
+# Leave None to use the full array
 vmin = -6  # min of the colorbar for plots (log scale). Use np.nan for default.
 vmax = 0  # max of the colorbar for plots (log scale). Use np.nan for default.
 plot_mcf = False  # True to plot the Fourier transform of the PSF
@@ -161,13 +163,15 @@ fig.savefig(savedir + fname + "_centralslice" + comment + ".png")
 if save_slices:
     if (
         is_orthogonal
-    ):  # orthogonal laboratory frame, CXI convention z downstream, y vertical up, x outboard
+    ):  # orthogonal laboratory frame, CXI convention:
+        # z downstream, y vertical up, x outboard
         labels = (
             ("x", "y", "z"),  # labels for x axis, y axis, title
             ("x", "z", "y"),
             ("y", "z", "x"),
         )
-    else:  # non-orthogonal detector frame stacking axis, detector vertical Y down, detector horizontal X inboard
+    else:  # non-orthogonal detector frame stacking axis,
+        # detector vertical Y down, detector horizontal X inboard
         labels = (
             (
                 "detector X",

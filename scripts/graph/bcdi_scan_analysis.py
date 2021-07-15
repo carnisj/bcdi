@@ -8,8 +8,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 helptext = """
-Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a user-defined
-region of interest.
+Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a 
+user-defined region of interest.
 """
 
 try:
@@ -34,7 +34,8 @@ import bcdi.preprocessing.preprocessing_utils as pru
 scan = 7  # scan number as it appears in the folder name
 sample_name = "p15_2"  # without _ at the end
 root_folder = "D:/data/P10_isosurface/data/"
-savedir = ""  # images will be saved here, leave it to '' otherwise (default to data directory's parent)
+savedir = ""  # images will be saved here,
+# leave it to '' otherwise (default to data directory's parent)
 sum_roi = [
     100,
     300,
@@ -60,9 +61,11 @@ beamline = (
 # supported beamlines: 'P10' only for now, see preprocessing_utils.get_motor_pos()
 is_series = False  # specific to series measurement at P10
 specfile_name = ""
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
+# not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
+# typically: root_folder + 'alias_dict.txt'
 # template for SIXS_2019: ''
 # template for P10: ''
 # template for CRISTAL: ''
@@ -73,7 +76,8 @@ detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 binning = [
     4,
     4,
-]  # binning (detector vertical axis, detector horizontal axis) applied during data loading
+]
+# binning (detector vertical axis, detector horizontal axis) applied during data loading
 template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -91,8 +95,8 @@ def onclick(click_event):
 
     :param click_event: mouse click event
     """
-    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int, scale, motor_text, max_text
-    global figure
+    global sum_roi, vline, ax1, ax2, index_peak, motor_positions, data, my_cmap, sum_int
+    global figure, scale, motor_text, max_text
 
     if click_event.inaxes == ax1:  # click in the line plot
         index_peak = util.find_nearest(motor_positions, click_event.xdata)
@@ -150,8 +154,8 @@ def onselect(click, release):
     :param click: position of the mouse click event
     :param release: position of the mouse release event
     """
-    global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis, index_peak, sum_int, vline, nz
-    global sum_roi, roi_text, max_text, figure
+    global ax1, ax2, data, my_cmap, motor_name, motor_positions, scale, invert_xaxis
+    global sum_roi, roi_text, max_text, figure, index_peak, sum_int, vline, nz
 
     sum_roi = int(click.ydata), int(release.ydata), int(click.xdata), int(release.xdata)
     sum_int = data[:, sum_roi[0] : sum_roi[1], sum_roi[2] : sum_roi[3]].sum(axis=(1, 2))
@@ -249,7 +253,7 @@ plt.ion()
 #################################################
 # initialize detector, setup, paths and logfile #
 #################################################
-kwargs = {}  # create dictionnary
+kwargs = dict()  # create dictionnary
 kwargs["is_series"] = is_series
 detector = exp.Detector(
     name=detector,
@@ -342,7 +346,8 @@ min_fast, max_fast = motor_positions[0], motor_positions[-1]
 
 if len(motor_positions) != nz:
     raise ValueError(
-        f"Number of fast scanning motor steps: {len(motor_positions)} incompatible with data shape: {nz}"
+        f"Number of fast scanning motor steps: {len(motor_positions)}"
+        f" incompatible with data shape: {nz}"
     )
 
 ####################

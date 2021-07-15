@@ -15,12 +15,15 @@ from tkinter import filedialog
 import sys
 
 helptext = """
-Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the cross-correlation function.
+Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the 
+cross-correlation function.
 
 Input: a NPZ file with the fields 'angles', 'ccf', 'points': 
-    - 'angles': values between [0, 180] where the cross-correlation function was calculated
+    - 'angles': values between [0, 180] where the cross-correlation function was 
+      calculated
     - 'ccf': cross-correlation function values at these angles
-    - 'points': number of points contributing to the cross-correlation function at these angles
+    - 'points': number of points contributing to the cross-correlation function at 
+      these angles
 """
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
@@ -61,10 +64,9 @@ except KeyError:
 #######################################
 fig, ax = plt.subplots(1, 1)
 ax.plot(angles, ccf, linestyle="None", marker=".", markerfacecolor="blue")
-if ylim is not None:
-    ymin, ymax = ylim
-else:
-    ymin, ymax = np.floor(ax.get_ylim())
+
+ymin, ymax = ylim if ylim is not None else np.floor(ax.get_ylim())
+
 ax.set_xlim(0, 180)
 ax.set_ylim(ymin, ymax)
 ax.set_xlabel("Angle (deg)")
