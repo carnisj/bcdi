@@ -59,6 +59,7 @@ class Detector:
        parameter delta in xrayutilities hxrd.Ang2Q.area method
      - 'linearity_func': function to apply to each pixel of the detector in order to
        compensate the deviation of the detector linearity for large intensities.
+
     """
 
     def __init__(
@@ -1137,6 +1138,7 @@ class Diffractometer34ID(Diffractometer):
            to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1224,6 +1226,7 @@ class DiffractometerCRISTAL(Diffractometer):
            outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1486,6 +1489,7 @@ class DiffractometerID01(Diffractometer):
            outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # load kwargs
         follow_bragg = kwargs.get("follow_bragg", False)
@@ -1697,6 +1701,7 @@ class DiffractometerNANOMAX(Diffractometer):
            outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1813,6 +1818,7 @@ class DiffractometerP10(Diffractometer):
            outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # check some parameter
         if not isinstance(setup, Setup):
@@ -1973,6 +1979,7 @@ class DiffractometerSIXS(Diffractometer):
            outer to the most inner circle
          - 'detector': tuple of angular values for the detector circles, from the most
            outer to the most inner circle
+
         """
         # load kwargs
         frames_logical = kwargs.get("frames_logical")
@@ -2229,6 +2236,7 @@ class Setup:
      - 'actuators': optional dictionary that can be used to define the entries
        corresponding to actuators in data files (useful at CRISTAL where the location
        of data keeps changing)
+
     """
 
     def __init__(
@@ -3314,6 +3322,7 @@ class Setup:
          - an array (if a single array was provided) or a tuple of arrays interpolated
            on an orthogonal grid (same length as the number of input arrays)
          - a tuple of 3 voxels size for the interpolated arrays
+
         """
         #############################################
         # check that arrays is a tuple of 3D arrays #
@@ -3735,6 +3744,7 @@ class Setup:
          - an array (if a single array was provided) or a tuple of arrays interpolated
            on an orthogonal grid (same length as the number of input arrays)
          - a tuple of three 1D vectors of q values (qx, qz, qy)
+
         """
         #############################################
         # check that arrays is a tuple of 3D arrays #
@@ -4184,6 +4194,7 @@ class Setup:
 
          - the transformation matrix from the detector frame to the laboratory frame
          - the q offset (3D vector) if direct_space is False.
+
         """
         if verbose:
             print(
