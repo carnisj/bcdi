@@ -31,6 +31,7 @@ class Detector:
     :param datadir: directory where the data files are located
     :param savedir: directory where to save the results
     :param template_imagefile: beamline-dependent template for the data files
+
      - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
      - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
      - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -47,6 +48,7 @@ class Detector:
     :param binning: binning factor of the 3D dataset
      (stacking dimension, detector vertical axis, detector horizontal axis)
     :param kwargs:
+
      - 'is_series': boolean, True is the measurement is a series at PETRAIII P10
        beamline
      - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken
@@ -840,6 +842,7 @@ class Diffractometer:
         :param debugging: tuple of booleans of the same length as the number
          of input arrays, True to see plots before and after rotation
         :param kwargs:
+
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - 'scale': tuple of strings (either 'linear' or 'log'), scale for the
@@ -1260,6 +1263,7 @@ class DiffractometerCRISTAL(Diffractometer):
         :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
+
          - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
            (padded frame). The initial length is equal to the number of measured
            frames. In case of data padding, the length changes.
@@ -1466,6 +1470,7 @@ class DiffractometerID01(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
+
          - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
            (padded frame). The initial length is equal to the number of measured
            frames. In case of data padding, the length changes.
@@ -1541,6 +1546,7 @@ class DiffractometerID01(Diffractometer):
         :param scan_number: the scan number to load
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
+
          - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
            (padded frame). The initial length is equal to the number of measured
            frames. In case of data padding, the length changes.
@@ -1953,6 +1959,7 @@ class DiffractometerSIXS(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
+
          - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
            (padded frame). The initial length is equal to the number of measured
            frames. In case of data padding, the length changes.
@@ -2015,6 +2022,7 @@ class DiffractometerSIXS(Diffractometer):
         :param logfile: nxsReady Dataset object of SIXS .nxs scan file
         :param setup: the experimental setup: Class SetupPreprocessing()
         :param kwargs:
+
          - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
            (padded frame). The initial length is equal to the number of measured
            frames. In case of data padding, the length changes.
@@ -2193,6 +2201,7 @@ class Setup:
      curves (the chi motor value) and length 2 for inplane rocking
      curves (the chi and omega/om/eta motor values).
     :param kwargs:
+
      - 'direct_beam': tuple of two real numbers indicating the position of the direct
        beam in pixels at zero detector angles.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were
@@ -3016,6 +3025,7 @@ class Setup:
          of the initial array
         :param debugging: True to show plots before and after interpolation
         :param kwargs:
+
          - 'title': title for the debugging plots
 
         :return: object interpolated on an orthogonal grid
@@ -3139,12 +3149,14 @@ class Setup:
         :param save_dir: path of the directory where to save the analysis results,
          can be None
         :param specfile_name: beamline-dependent string
+
          - ID01: name of the spec file without '.spec'
          - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
          root_folder+'alias_dict_2019.txt')
          - empty string for all other beamlines
 
         :param template_imagefile: beamline-dependent template for the data files
+
          - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
          - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
          - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -3287,6 +3299,7 @@ class Setup:
         :param debugging: tuple of booleans of the same length as the number of
          input arrays, True to show plots before and after interpolation
         :param kwargs:
+
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - width_z: size of the area to plot in z (axis 0), centered on the middle of
@@ -3297,6 +3310,7 @@ class Setup:
            the initial array
 
         :return:
+
          - an array (if a single array was provided) or a tuple of arrays interpolated
            on an orthogonal grid (same length as the number of input arrays)
          - a tuple of 3 voxels size for the interpolated arrays
@@ -3704,6 +3718,7 @@ class Setup:
         :param debugging: tuple of booleans of the same length as the number of
          input arrays, True to show plots before and after interpolation
         :param kwargs:
+
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - 'scale': tuple of strings (either 'linear' or 'log'), scale for
@@ -3716,6 +3731,7 @@ class Setup:
            the middle of the initial array
 
         :return:
+
          - an array (if a single array was provided) or a tuple of arrays interpolated
            on an orthogonal grid (same length as the number of input arrays)
          - a tuple of three 1D vectors of q values (qx, qz, qy)
@@ -4165,6 +4181,7 @@ class Setup:
          direct space
         :param verbose: True to have printed comments
         :return:
+
          - the transformation matrix from the detector frame to the laboratory frame
          - the q offset (3D vector) if direct_space is False.
         """
