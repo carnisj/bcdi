@@ -3152,7 +3152,7 @@ class Setup:
 
          - ID01: name of the spec file without '.spec'
          - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
-         root_folder+'alias_dict_2019.txt')
+           root_folder+'alias_dict_2019.txt')
          - empty string for all other beamlines
 
         :param template_imagefile: beamline-dependent template for the data files
