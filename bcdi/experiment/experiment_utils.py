@@ -674,8 +674,8 @@ class Diffractometer:
      should be at index 0). Convention: the sample offsets will be subtracted to
      measurement the motor values.
     :param sample_circles: list of sample circles from outer to inner (e.g. mu eta
-    chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
-    'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
+     chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
+     'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
     :param detector_circles: list of detector circles from outer to inner
      (e.g. gamma delta), expressed using a valid pattern within {'x+', 'x-', 'y+',
      'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
@@ -1011,7 +1011,7 @@ class Diffractometer:
     def goniometer_values(self, **kwargs):
         """
         This method is beamline dependent and should be implemented
-         in the child classes.
+        in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
@@ -1126,6 +1126,7 @@ class Diffractometer34ID(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
@@ -1212,6 +1213,7 @@ class DiffractometerCRISTAL(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
@@ -1471,6 +1473,7 @@ class DiffractometerID01(Diffractometer):
            is changed during the scan to follow the Bragg peak.
 
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
@@ -1543,6 +1546,7 @@ class DiffractometerID01(Diffractometer):
            frames. In case of data padding, the length changes.
          - 'follow_bragg': boolean, True for energy scans where the detector position
            is changed during the scan to follow the Bragg peak.
+
         :return: (mu, eta, phi, nu, delta, energy) motor positions
         """
         # check and load kwargs
@@ -1679,6 +1683,7 @@ class DiffractometerNANOMAX(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
@@ -1794,6 +1799,7 @@ class DiffractometerP10(Diffractometer):
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
@@ -1952,6 +1958,7 @@ class DiffractometerSIXS(Diffractometer):
            frames. In case of data padding, the length changes.
 
         :return: a tuple of angular values in degrees, depending on stage_name:
+
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
            angle, outofplane detector angle). The grazing incidence angles are the
            positions of circles below the rocking circle.
