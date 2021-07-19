@@ -17,3 +17,6 @@ tables
 lmfit
 moviepy
 pillow
+black
+doit
+coverage

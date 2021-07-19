@@ -25,3 +25,6 @@ dependencies:
   - lmfit
   - moviepy
   - pillow
+  - black
+  - doit
+  - coverage

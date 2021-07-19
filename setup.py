@@ -148,6 +148,9 @@ setup(
         "xrayutilities",
         "fabio",
         "silx",
+        "black",
+        "doit",
+        "coverage",
     ],
     extra_requires=["tables", "lmfit", "moviepy", "sphinx", "pillow"],
     classifiers=[
