@@ -11,7 +11,10 @@ def task_black():
     Run black against the package.
     """
     return {
-        "actions": [f"python -m black {os.path.dirname(os.path.abspath(__file__))}"],
+        "actions": [
+            f"python -m black --line-length=88 "
+            f"{os.path.dirname(os.path.abspath(__file__)) }"
+        ],
         "verbosity": 2,
     }
 
@@ -22,7 +25,7 @@ def task_coverage_xml():
     """
 
     def create_coverage_xml(coverage_file, output_file):
-        print("XML coverage report generated in test_output/")
+        print("XML coverage report generated in 'test_output/'")
         cov = coverage.Coverage(data_file=coverage_file)
         cov.load()
         cov.xml_report(outfile=output_file)
