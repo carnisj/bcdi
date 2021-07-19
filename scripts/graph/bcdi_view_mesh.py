@@ -24,6 +24,7 @@ import os
 import bcdi.graph.graph_utils as gu
 import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
+
 matplotlib.use("Qt5Agg")
 
 scan = 26  # scan number as it appears in the folder name

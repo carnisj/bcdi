@@ -161,9 +161,7 @@ fig, _, _ = gu.multislices_plot(
 fig.savefig(savedir + fname + "_centralslice" + comment + ".png")
 
 if save_slices:
-    if (
-        is_orthogonal
-    ):  # orthogonal laboratory frame, CXI convention:
+    if is_orthogonal:  # orthogonal laboratory frame, CXI convention:
         # z downstream, y vertical up, x outboard
         labels = (
             ("x", "y", "z"),  # labels for x axis, y axis, title
