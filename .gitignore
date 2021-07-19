@@ -12,6 +12,16 @@ __pycache__/
 # C extensions
 *.so
 
+# coverage report
+*.cov*
+
+# doit automation tool
+*.doit*
+
+# tests output
+test_output
+tests/test_output
+
 # Distribution / packaging
 .Python
 venv/
