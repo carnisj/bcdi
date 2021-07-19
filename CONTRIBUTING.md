@@ -50,6 +50,8 @@ branch.
 - Push and link the branch to your fork on GitHub: `git push --set-upstream origin 
    branch-name`
 - Edit a file, for example filename.py, add tests, and make sure the tests still pass.
+- Run automated tasks: in a terminal, go to the same level as dodo.py and simply 
+  type: `doit`. This will run tests with coverage and black (code formatting).
 - Commit the file and push it to GitHub:
    - `git add filename.py`
    - `git commit -m "Add exciting new feature"`
@@ -91,7 +93,6 @@ upstream master:
 ## Here are a few things you can do that will increase the likelihood of your pull request being accepted:
 
 - Follow the [style guide][style] (PEP 8 recommendations).
-- Run [black] [blck] against your code, with the default line length of 88 characters.
 - Write and update tests.
 - Keep your change as focused as possible. If there are multiple changes you would 
   like to make that are not dependent upon each other, consider submitting them as 
