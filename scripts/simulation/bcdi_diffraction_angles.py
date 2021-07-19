@@ -15,8 +15,9 @@ import bcdi.simulation.simulation_utils as simu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
-Calculate the position of the Bragg peaks for a material and a particular diffractometer setup. 
-The crystal frame uses the following convention: x downstream, y outboard, z vertical
+Calculate the position of the Bragg peaks for a material and a particular 
+diffractometer setup. The crystal frame uses the following convention: x downstream, 
+y outboard, z vertical.
 Supported beamlines:  ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10"""
 
 material = xu.materials.Pt  # load material from materials submodule
@@ -34,8 +35,8 @@ basis_vectors = (
     np.array([1, 0, 0]),
     np.array([0, 1, 0]),
     np.array([0, 0, 1]),
-)  # tuple of the three components
-# of the basis vectors expressed in the orthonormal basis. The convention used for the orthonormal basis is
+)  # tuple of the three components of the basis vectors expressed in the orthonormal
+# basis. The convention used for the orthonormal basis is
 # ([1, 0, 0], [0, 1, 0], [0, 0, 1]).
 reflections = [[1, -1, 1]]  # list of reflections to calculate [[2,1,1], [1,-1,-1],...]
 bounds = (
@@ -77,9 +78,7 @@ if (
     simu.angle_vectors(sample_inplane, sample_outofplane, basis_vectors=basis_vectors)
     != 90.0
 ):
-    print(
-        "The angle between reference directions is not 90 degrees"
-    )
+    print("The angle between reference directions is not 90 degrees")
     sys.exit()
 assert (len(qconv.sampleAxis) + len(qconv.detectorAxis)) == len(
     bounds

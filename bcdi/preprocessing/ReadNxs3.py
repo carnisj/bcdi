@@ -866,9 +866,7 @@ class DataSet:
         for el in self.attlist:
             bla = self.__getattribute__(el)
             # get the attributes from list one by one
-            if (
-                len(bla.shape) == 3
-            ):  # check for image stacks
+            if len(bla.shape) == 3:  # check for image stacks
                 # Does Not work if you have more than one 2D detectors
                 mat = []
                 if np.shape(mask) != np.shape(bla[0]):  # verify mask size
