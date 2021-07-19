@@ -10,7 +10,8 @@
 import numpy as np
 
 helptext = """
-Check smaller or higher prime of a number, in order to determine the correct FFT window size for phase retrieval.
+Check smaller or higher prime of a number, in order to determine the correct FFT 
+window size for phase retrieval.
 Adapted from PyNX
 """
 # 428 * 294 * 599
@@ -18,7 +19,8 @@ my_nb = 368
 
 
 def primes(n):
-    """ Returns the prime decomposition of n as a list
+    """
+    Returns the prime decomposition of n as a list.
     """
     v = [1]
     assert n > 0
@@ -35,7 +37,8 @@ def primes(n):
 
 def try_smaller_primes(n, maxprime=13, required_dividers=(4,)):
     """
-    Check if the largest prime divider is <=maxprime, and optionally includes some dividers.
+    Check if the largest prime divider is <=maxprime, and optionally includes some
+    dividers.
 
     Args:
         n: the integer number for which the prime decomposition will be checked
@@ -56,9 +59,10 @@ def try_smaller_primes(n, maxprime=13, required_dividers=(4,)):
 
 
 def smaller_primes(n, maxprime=13, required_dividers=(4,)):
-    """ Find the closest integer <=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers.
-    The default values for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU FFT.
+    """Find the closest integer <=n (or list/array of integers), for which the
+    largest prime divider is <=maxprime, and has to include some dividers. The
+    default values for maxprime is the largest integer accepted by the clFFT library
+    for OpenCL GPU FFT.
 
     Args:
         n: the integer number
@@ -97,9 +101,10 @@ def smaller_primes(n, maxprime=13, required_dividers=(4,)):
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Find the closest integer >=n (or list/array of integers), for which the largest prime divider is <=maxprime,
-    and has to include some dividers. The default values for maxprime is the largest integer accepted
-    by the clFFT library for OpenCL GPU FFT. Adapted from PyNX.
+    Find the closest integer >=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
 
     :param number: the integer number
     :param maxprime: the largest prime factor acceptable

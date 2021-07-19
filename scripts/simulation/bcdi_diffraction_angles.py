@@ -77,7 +77,9 @@ if (
     simu.angle_vectors(sample_inplane, sample_outofplane, basis_vectors=basis_vectors)
     != 90.0
 ):
-    print("The angle between reference directions is not 90 degrees",)
+    print(
+        "The angle between reference directions is not 90 degrees"
+    )
     sys.exit()
 assert (len(qconv.sampleAxis) + len(qconv.detectorAxis)) == len(
     bounds

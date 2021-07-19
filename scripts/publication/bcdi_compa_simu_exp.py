@@ -19,8 +19,10 @@ from bcdi.utils import image_registration as reg
 
 helptext = """
 Template for figures of the following article: 
-Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
-Open the simulated amp_dist_strain.npz file and the reconstructed amp_dist_strain.npz, and plot difference maps
+Carnis et al. Scientific Reports 9, 17357 (2019) 
+https://doi.org/10.1038/s41598-019-53774-2
+Open the simulated amp_dist_strain.npz file and the reconstructed 
+amp_dist_strain.npz, and plot difference maps
 """
 
 
@@ -452,7 +454,10 @@ if debug:
     ax2.invert_yaxis()
     plt.title("new_amp")
 
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2,)
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(
+        2,
+        2,
+    )
     plt0 = ax0.imshow(
         amp_simu[
             numz // 2 - pixel_FOV : numz // 2 + pixel_FOV,
@@ -492,7 +497,8 @@ support = np.zeros(amp_simu.shape)
 
 support[np.nonzero(amp_simu)] = 1
 support[np.nonzero(new_amp)] = 1
-# the support will have the size of the largest object between the simulation and the reconstruction
+# the support will have the size of the largest object
+# between the simulation and the reconstruction
 diff_amp_copy[support == 0] = np.nan
 masked_array = np.ma.array(diff_amp_copy, mask=np.isnan(diff_amp_copy))
 if debug:
