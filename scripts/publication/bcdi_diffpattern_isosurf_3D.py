@@ -21,11 +21,12 @@ import bcdi.utils.utilities as util
 import bcdi.graph.graph_utils as gu
 
 helptext = """
-Template for 3d isosurface figures of a diffraction pattern.
-The data will be interpolated on an isotropic range in order to fulfill the desired tick spacing.
-Note that qy values (axis 2) are opposite to the correct ones, because there is no easy way to flip an axis in mayvi.
-The diffraction pattern is supposed to be in an orthonormal frame and q values need to be provided.
-Optionally creates a movie from a 3D real space reconstruction in each direction. This requires moviepy.
+Template for 3d isosurface figures of a diffraction pattern. The data will be 
+interpolated on an isotropic range in order to fulfill the desired tick spacing. Note 
+that qy values (axis 2) are opposite to the correct ones, because there is no easy 
+way to flip an axis in mayvi. The diffraction pattern is supposed to be in an 
+orthonormal frame and q values need to be provided. Optionally creates a movie from a 
+3D real space reconstruction in each direction. This requires moviepy.
 """
 
 scan = 1  # spec scan number
@@ -36,7 +37,8 @@ savedir = homedir + "3D_diffpattern/"  # saving directory
 comment = ""  # should start with _
 binning = (2, 2, 2)  # binning for the measured diffraction pattern in each dimension
 geometry = "Bragg"  # 'SAXS' or 'Bragg'
-crop_symmetric = False  # if True, will crop the data ot the largest symmetrical range around the direct beam
+crop_symmetric = False
+# if True, will crop the data ot the largest symmetrical range around the direct beam
 # (geometry = 'SAXS') or the Brapp peak (geometry = 'Bragg')
 tick_spacing = 0.05  # in 1/nm, spacing between ticks
 contours = [-0.1, 0.5, 1.5, 3]  # contours for the isosurface in log scale.
@@ -50,7 +52,8 @@ debug = True  # True to see contour plots for debugging
 ##########################
 make_movie = False  # True to save a movie
 duration = 10  # duration of the movie in s
-frame_per_second = 20  # number of frames per second, there will be duration*frame_per_second frames in total
+frame_per_second = 20
+# number of frames per second, there will be duration*frame_per_second frames in total
 output_format = "mp4"  # 'gif', 'mp4' or None for no movie
 ##########################
 # end of user parameters #
@@ -132,7 +135,12 @@ if crop_symmetric:
         raise ValueError('supported geometry: "SAXS" or "Bragg"')
 
     min_range = min(
-        min(abs(qx.min() - qx_com,), qx.max() - qx_com,),
+        min(
+            abs(
+                qx.min() - qx_com,
+            ),
+            qx.max() - qx_com,
+        ),
         min(abs(qz.min() - qz_com), qz.max() - qz_com),
         min(abs(qy.min() - qy_com), qy.max() - qy_com),
     )
@@ -269,7 +277,8 @@ else:
         distance=np.sqrt(qx.max() ** 2 + qz.max() ** 2 + qy.max() ** 2),
     )
 
-# Update the look up table (LUT) of the contour3d object. The lut is a 255x4 array, with the columns representing
+# Update the look up table (LUT) of the contour3d object.
+# The lut is a 255x4 array, with the columns representing
 # RGBA (red, green, blue, alpha) coded with integers going from 255 to 0.
 
 # set the color and transparency for nans

@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 helptext = """
-starting from a 2D complex object (output of phasing program), center the object, remove the phase ramp,
- the phase offset and wrap the phase
+starting from a 2D complex object (output of phasing program), center the object, 
+remove the phase ramp, the phase offset and wrap the phase
 """
 
 
@@ -81,7 +81,8 @@ my_cmap = matplotlib.colors.LinearSegmentedColormap("my_colormap", cdict, 256)
 
 def crop_pad_2d(myobj, myshape, debugging=0):
     """
-    will crop or pad my obj depending on myshape
+    Will crop or pad my obj depending on myshape
+
     :param myobj: 2d complex array to be padded
     :param myshape: list of desired output shape [y, x]
     :param debugging: to plot myobj before and after padding
@@ -120,7 +121,9 @@ def crop_pad_2d(myobj, myshape, debugging=0):
 
 
 def center_com_2d(myarray, debugging=0):
-    """"
+    """
+    Center myarray using the center of mass
+
     :param myarray: array to be centered based on the center of mass value
     :param debugging: 1 to show plots
     :return centered array
@@ -160,7 +163,8 @@ def remove_ramp_2d(myamp, myphase, threshold, gradient_threshold, debugging=0):
     :param myamp: amplitude of the object
     :param myphase: phase of the object, to be detrended
     :param threshold: threshold used to define the support of the object
-    :param gradient_threshold: higher threshold used to select valid voxels in the gradient array
+    :param gradient_threshold: higher threshold used to select valid voxels in the
+     gradient array
     :param debugging: 1 to show plots
     :return: the detrended phase
     """
@@ -222,7 +226,8 @@ def remove_ramp_2d(myamp, myphase, threshold, gradient_threshold, debugging=0):
 
 def wrap(myphase):
     """
-    wrap the phase in [-pi pi] interval
+    Wrap the phase in [-pi pi] interval
+
     :param myphase:
     :return:
     """
@@ -295,7 +300,8 @@ plt.axis("scaled")
 plt.title("phase before ramp removal")
 plt.pause(0.1)
 
-# phase = remove_ramp_2d(amp, phase, threshold=0.0005, gradient_threshold=0.01, debugging=1)
+# phase = remove_ramp_2d(amp, phase, threshold=0.0005,
+# gradient_threshold=0.01, debugging=1)
 
 plt.figure()
 plt.imshow(phase, cmap=my_cmap)

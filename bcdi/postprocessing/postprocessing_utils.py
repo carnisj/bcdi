@@ -2186,7 +2186,10 @@ def remove_ramp(
     gc.collect()
 
     myz, myy, myx = np.meshgrid(
-        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij",
+        np.arange(0, nbz, 1),
+        np.arange(0, nby, 1),
+        np.arange(0, nbx, 1),
+        indexing="ij",
     )
 
     print(
