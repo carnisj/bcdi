@@ -1,7 +1,7 @@
 Version 0.1.2
 -------------
 
-* Refactor: ``remove circular imports from modules``
+* Refactor: remove circular imports from modules
 
 * Refactor: ``move crop_pad``, ``bin_data`` and ``gaussian_window functions`` from ``postprocessing_utils.py`` to another module
   in order to avoid circular imports
@@ -276,6 +276,6 @@ Version 0.0.2
 
 Version 0.0.1
 -------------
-* Initial add, for the moment only the main scripts have been converted and checked:``strain.py`` and ``prepare_cdi_mask.py``
+* Initial add, for the moment only the main scripts have been converted and checked: ``strain.py`` and ``prepare_cdi_mask.py``
 
 EOF
