@@ -92,7 +92,7 @@ Changelog
 .. include:: ../HISTORY.rst
   :end-before: Version 0.1.0
 
-See the full .. doc:`Changelog<changelog>`
+See the full  :doc:`Changelog<changelog>`
 
 Citation & Bibliography
 =======================
@@ -109,7 +109,8 @@ Documentation
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
-``BCDI.algorithms``: psf and image deconvolution algorithms
+
+BCDI.algorithms: psf and image deconvolution algorithms
 =======================================================
 
 .. bcdi.algorithms section
@@ -121,7 +122,7 @@ This module includes routines using Richardson-Lucy deconvolution algorithm.
 
 .. bcdi.algorithms end
 
-``BCDI.facet_recognition``: automatic facet detection in BCDI 3D reconstructions
+BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
 ============================================================================
 
 .. bcdi.facet_recognition section
@@ -135,7 +136,7 @@ After meshing the object, facets are found using a density estimation of mesh tr
 
 .. bcdi.facet_recognition end
 
-``BCDI.experiment``: class and methods defining the experimental setup
+BCDI.experiment: class and methods defining the experimental setup
 ==================================================================
 
 .. bcdi.experiment section
@@ -163,7 +164,7 @@ The following detectors are implemented:
 
 .. bcdi.experiment end
 
-``BCDI.preprocessing``: preprocessing utilities on the diffraction data before phasing
+BCDI.preprocessing: preprocessing utilities on the diffraction data before phasing
 ==================================================================================
 
 .. bcdi.preprocessing section
@@ -176,7 +177,7 @@ hotpixels removal, filtering, masking...
 
 .. bcdi.preprocessing end
 
-``BCDI.postprocessing``: postprocessing utilities on the complex object after phasing
+BCDI.postprocessing: postprocessing utilities on the complex object after phasing
 =================================================================================
 
 .. bcdi.postprocessing section
@@ -189,7 +190,7 @@ phase offset and ramp removal, centering, cropping, padding, aligning reconstruc
 
 .. bcdi.postprocessing end
 
-``BCDI.publication``: utilities to make formatted figure for publication
+BCDI.publication: utilities to make formatted figure for publication
 ====================================================================
 
 .. bcdi.publication section
@@ -201,7 +202,7 @@ This module provides scripts with templates for figures that can be used in pres
 
 .. bcdi.publication end
 
-``BCDI.simulation``: simulation of diffraction patterns
+BCDI.simulation: simulation of diffraction patterns
 ===================================================
 
 .. bcdi.simulation section
@@ -216,7 +217,7 @@ and unit cell parameter. It can be used to fit experimental data.
 
 .. bcdi.simulation end
 
-``BCDI.graph``: plotting utilities
+BCDI.graph: plotting utilities
 ==============================
 
 .. bcdi.graph section
@@ -228,7 +229,7 @@ This module provides methods to plot 2D and 3D data using templates, and to save
 
 .. bcdi.graph end
 
-``BCDI.utils``: various utilities for data analysis
+BCDI.utils: various utilities for data analysis
 ===============================================
 
 .. bcdi.utils section
@@ -240,7 +241,7 @@ Various non-specific utilities (i/o, ...)
 
 .. bcdi.utils end
 
-``BCDI.xcca``: X-ray cross-correlation analysis
+BCDI.xcca: X-ray cross-correlation analysis
 ===========================================
 
 .. bcdi.xcca section
