@@ -151,8 +151,21 @@ setup(
         "black",
         "doit",
         "coverage",
+        "tables",
+        "lmfit",
+        "moviepy",
+        "pillow",
     ],
-    extra_requires=["tables", "lmfit", "moviepy", "sphinx", "pillow"],
+    extras_require={
+        "docs": [
+            "sphinx",
+        ],
+        "dev": [
+            "black",
+            "doit",
+            "coverage",
+        ],
+    },
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -162,6 +175,7 @@ setup(
         # Indicate who your project is intended for
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Physics",
+        "Topic :: Software Development :: Libraries :: Python Modules",
         # Pick your license as you wish
         "License :: CeCILL-B Free Software License Agreement (CECILL-B)",
         # Specify the Python versions you support here. In particular, ensure
@@ -171,5 +185,6 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Operating System :: OS Independent",
     ],
 )
