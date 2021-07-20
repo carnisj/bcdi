@@ -71,20 +71,20 @@ The following third-party packages are required:
 
 * pytables: to load the devices dictionnary for SIXS data
 
-* moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
+* moviepy, `imagemagick <https://imagemagick.org>`_ or `ffmpeg <http://ffmpeg.zeranoe.com/builds/>`_ for creating movies
 
 Download & Installation
 =======================
 
 BCDI is available from:
- * Python Package Index: pip install bcdi
- * https://github.com/carnisj  for the most updated version
- * upgrade existing version from GitHub: pip install --upgrade git+https://github.com/carnisj/bcdi.git
+ * Python Package Index: ``pip install bcdi``
+ * `Most updated version on GitHub <https://github.com/carnisj/>`_
+ * upgrade existing version from GitHub: ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
 
 Not that there are issues with installing scikit-image within an Anaconda environment.
 In such situation, the workaround is to create instead a virtual environment using pip.
 
-Please send feedback in GitHub.
+Please send feedback in `GitHub <https://github.com/carnisj/>`_.
 
 Changelog
 =========
@@ -92,7 +92,7 @@ Changelog
 .. include:: ../HISTORY.rst
   :end-before: Version 0.1.0
 
-See the full :doc:`Changelog<changelog>`
+See the full  :doc:`Changelog<changelog>`
 
 Citation & Bibliography
 =======================
@@ -108,6 +108,7 @@ Documentation
 =============
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
+
 
 BCDI.algorithms: psf and image deconvolution algorithms
 =======================================================
