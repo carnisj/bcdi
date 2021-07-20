@@ -27,25 +27,25 @@ BCDI as a python toolkit
 
 BCDI can be used as a python library with the following main modules:
 
-1) :mod:`bcdi.algorithms`: PSF and image deconvolution using Richardson-Lucy algorithm
+1) :mod:``bcdi.algorithms``: PSF and image deconvolution using Richardson-Lucy algorithm
 
-2) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
+2) :mod:``bcdi.facet_recognition``: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
 
-3) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
+3) :mod:``bcdi.experiment``: definition of the experimental geometry (beamline, setup, detector...).
 
-4) :mod:`bcdi.graph` : generation of plots using predefined templates.
+4) :mod:``bcdi.graph`` : generation of plots using predefined templates.
 
-5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
+5) :mod:``bcdi.postprocessing``: various methods for post-processing the complex output of a phasing algorithm.
 
-6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
+6) :mod:``bcdi.preprocessing``: various methods for pre-processing the diffraction intensity.
 
-7) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity based on FFT or kinematical sum.
+7) :mod:``bcdi.simulation``: in BCDI geometry, calculation of the diffraction intensity based on FFT or kinematical sum.
    It can include a displacement field, noise, detector gaps etc... In forward CDI geometry, calculation of the Bragg
    peak positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
-8) :mod:`bcdi.utils`: data loading, fitting functions ...
+8) :mod:``bcdi.utils``: data loading, fitting functions ...
 
-9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
+9) :mod:``bcdi.xcca``: X-ray cross-correlation analysis related methods
 
 Acknowledgment and third party packages
 =======================================
@@ -71,20 +71,20 @@ The following third-party packages are required:
 
 * pytables: to load the devices dictionnary for SIXS data
 
-* moviepy, imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/) for creating movies
+* moviepy, `imagemagick <https://imagemagick.org>`_ or `ffmpeg <http://ffmpeg.zeranoe.com/builds/>`_ for creating movies
 
 Download & Installation
 =======================
 
 BCDI is available from:
- * Python Package Index: pip install bcdi
- * https://github.com/carnisj  for the most updated version
- * upgrade existing version from GitHub: pip install --upgrade git+https://github.com/carnisj/bcdi.git
+ * Python Package Index: ``pip install bcdi``
+ * `Updated Version <https://github.com/carnisj/>`_
+ * upgrade existing version from GitHub: ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
 
 Not that there are issues with installing scikit-image within an Anaconda environment.
 In such situation, the workaround is to create instead a virtual environment using pip.
 
-Please send feedback in GitHub.
+Please send feedback in `GitHub <https://github.com/carnisj/>`_.
 
 Changelog
 =========
@@ -92,7 +92,9 @@ Changelog
 .. include:: ../HISTORY.rst
   :end-before: Version 0.1.0
 
-See the full :doc:`Changelog<changelog>`
+See  `Here <https://github.com/carnisj/bcdi/blob/master/doc/changelog.rst>`_
+
+.. doc:`Changelog<changelog>`_
 
 Citation & Bibliography
 =======================
@@ -109,7 +111,7 @@ Documentation
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
-BCDI.algorithms: psf and image deconvolution algorithms
+``BCDI.algorithms``: psf and image deconvolution algorithms
 =======================================================
 
 .. bcdi.algorithms section
@@ -121,7 +123,7 @@ This module includes routines using Richardson-Lucy deconvolution algorithm.
 
 .. bcdi.algorithms end
 
-BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
+``BCDI.facet_recognition``: automatic facet detection in BCDI 3D reconstructions
 ============================================================================
 
 .. bcdi.facet_recognition section
@@ -135,7 +137,7 @@ After meshing the object, facets are found using a density estimation of mesh tr
 
 .. bcdi.facet_recognition end
 
-BCDI.experiment: class and methods defining the experimental setup
+``BCDI.experiment``: class and methods defining the experimental setup
 ==================================================================
 
 .. bcdi.experiment section
@@ -163,7 +165,7 @@ The following detectors are implemented:
 
 .. bcdi.experiment end
 
-BCDI.preprocessing: preprocessing utilities on the diffraction data before phasing
+``BCDI.preprocessing``: preprocessing utilities on the diffraction data before phasing
 ==================================================================================
 
 .. bcdi.preprocessing section
@@ -176,7 +178,7 @@ hotpixels removal, filtering, masking...
 
 .. bcdi.preprocessing end
 
-BCDI.postprocessing: postprocessing utilities on the complex object after phasing
+``BCDI.postprocessing``: postprocessing utilities on the complex object after phasing
 =================================================================================
 
 .. bcdi.postprocessing section
@@ -189,7 +191,7 @@ phase offset and ramp removal, centering, cropping, padding, aligning reconstruc
 
 .. bcdi.postprocessing end
 
-BCDI.publication: utilities to make formatted figure for publication
+``BCDI.publication``: utilities to make formatted figure for publication
 ====================================================================
 
 .. bcdi.publication section
@@ -201,7 +203,7 @@ This module provides scripts with templates for figures that can be used in pres
 
 .. bcdi.publication end
 
-BCDI.simulation: simulation of diffraction patterns
+``BCDI.simulation``: simulation of diffraction patterns
 ===================================================
 
 .. bcdi.simulation section
@@ -216,7 +218,7 @@ and unit cell parameter. It can be used to fit experimental data.
 
 .. bcdi.simulation end
 
-BCDI.graph: plotting utilities
+``BCDI.graph``: plotting utilities
 ==============================
 
 .. bcdi.graph section
@@ -228,7 +230,7 @@ This module provides methods to plot 2D and 3D data using templates, and to save
 
 .. bcdi.graph end
 
-BCDI.utils: various utilities for data analysis
+``BCDI.utils``: various utilities for data analysis
 ===============================================
 
 .. bcdi.utils section
@@ -240,7 +242,7 @@ Various non-specific utilities (i/o, ...)
 
 .. bcdi.utils end
 
-BCDI.xcca: X-ray cross-correlation analysis
+``BCDI.xcca``: X-ray cross-correlation analysis
 ===========================================
 
 .. bcdi.xcca section
