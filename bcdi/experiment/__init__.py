@@ -6,7 +6,9 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-A sub-package to declare the experimental setup.
+BCDI experiment.
+
+This module contains classes related to the experimental setup.
 
 Classes
 -------
