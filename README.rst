@@ -78,7 +78,7 @@ Download & Installation
 
 BCDI is available from:
  * Python Package Index: ``pip install bcdi``
- * `Updated Version <https://github.com/carnisj/>`_
+ * `Most updated version on GitHub <https://github.com/carnisj/>`_
  * upgrade existing version from GitHub: ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
 
 Not that there are issues with installing scikit-image within an Anaconda environment.
