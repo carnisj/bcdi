@@ -428,7 +428,7 @@ class DataSet:
         ):  # sometimes this attribute is absent, especially on the ctrl+C scans
             try:
                 self.end_time = f.end_time._get_obj_timestamps().ctime
-            except:
+            except Exception:
                 if is_empty(np.shape(f.end_time)):
                     try:
                         self.end_time = max(self.epoch)
@@ -444,7 +444,7 @@ class DataSet:
         if hasattr(f, "start_time"):
             try:
                 self.start_time = f.start_time._get_obj_timestamps().ctime
-            except:
+            except Exception:
                 if is_empty(np.shape(f.start_time)):
                     try:
                         self.start_time = min(self.epoch)
