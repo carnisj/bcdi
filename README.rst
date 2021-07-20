@@ -27,25 +27,25 @@ BCDI as a python toolkit
 
 BCDI can be used as a python library with the following main modules:
 
-1) :mod:``bcdi.algorithms``: PSF and image deconvolution using Richardson-Lucy algorithm
+1) :mod:`bcdi.algorithms`: PSF and image deconvolution using Richardson-Lucy algorithm
 
-2) :mod:``bcdi.facet_recognition``: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
+2) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a reconstructed crystal. Automatic detection of reconstructed facets and statistics on facet strain.
 
-3) :mod:``bcdi.experiment``: definition of the experimental geometry (beamline, setup, detector...).
+3) :mod:`bcdi.experiment`: definition of the experimental geometry (beamline, setup, detector...).
 
-4) :mod:``bcdi.graph`` : generation of plots using predefined templates.
+4) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
-5) :mod:``bcdi.postprocessing``: various methods for post-processing the complex output of a phasing algorithm.
+5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output of a phasing algorithm.
 
-6) :mod:``bcdi.preprocessing``: various methods for pre-processing the diffraction intensity.
+6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction intensity.
 
-7) :mod:``bcdi.simulation``: in BCDI geometry, calculation of the diffraction intensity based on FFT or kinematical sum.
+7) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity based on FFT or kinematical sum.
    It can include a displacement field, noise, detector gaps etc... In forward CDI geometry, calculation of the Bragg
    peak positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
-8) :mod:``bcdi.utils``: data loading, fitting functions ...
+8) :mod:`bcdi.utils`: data loading, fitting functions ...
 
-9) :mod:``bcdi.xcca``: X-ray cross-correlation analysis related methods
+9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
 Acknowledgment and third party packages
 =======================================
@@ -92,9 +92,7 @@ Changelog
 .. include:: ../HISTORY.rst
   :end-before: Version 0.1.0
 
-See  `Here <https://github.com/carnisj/bcdi/blob/master/doc/changelog.rst>`_
-
-.. doc:`Changelog<changelog>`_
+See the full .. doc:`Changelog<changelog>`
 
 Citation & Bibliography
 =======================
