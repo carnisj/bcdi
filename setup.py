@@ -164,7 +164,7 @@ setup(
             "black",
             "coverage",
             "doit",
-            "pylint",
+            "pycodestyle",
         ],
     },
     classifiers=[

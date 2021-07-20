@@ -20,4 +20,4 @@ pillow
 black
 coverage
 doit
-pylint
+pycodestyle
