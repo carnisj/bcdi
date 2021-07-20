@@ -162,8 +162,9 @@ setup(
         ],
         "dev": [
             "black",
-            "doit",
             "coverage",
+            "doit",
+            "pycodestyle",
         ],
     },
     classifiers=[

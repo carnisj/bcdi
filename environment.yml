@@ -10,10 +10,8 @@ dependencies:
   - scipy
   - scikit-image
   - matplotlib
-  - hdf5plugin
   - h5py
   - traits
-  - pyqt
   - pyqtgraph
   - mayavi
   - vtk
@@ -26,5 +24,9 @@ dependencies:
   - moviepy
   - pillow
   - black
-  - doit
   - coverage
+  - doit
+  - pip:
+    - hdf5plugin
+    - pyqt6
+    - pycodestyle

@@ -3981,7 +3981,7 @@ class Setup:
 
             if verbose:
                 print(
-                    f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):    "
+                    f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):  "
                     f"({dq_along_z:.5f} 1/nm,"
                     f" {dq_along_y:.5f} 1/nm,"
                     f" {dq_along_x:.5f} 1/nm)"

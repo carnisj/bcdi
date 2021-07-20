@@ -19,6 +19,19 @@ def task_black():
     }
 
 
+def task_code_style():
+    """
+    Run pycodestyle on the modules.
+    """
+    return {
+        "actions": [
+            "pycodestyle    bcdi --max-line-length=88 "
+            "--ignore=E24,E121,E123,E126,E203,E226,E704,W503"
+        ],
+        "verbosity": 2,
+    }
+
+
 def task_coverage_xml():
     """
     Generate an XML version of the coverage report. It can be opened with Notepad++.
