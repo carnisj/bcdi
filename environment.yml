@@ -30,3 +30,4 @@ dependencies:
     - hdf5plugin
     - pyqt6
     - pycodestyle
+    - pydocstyle
