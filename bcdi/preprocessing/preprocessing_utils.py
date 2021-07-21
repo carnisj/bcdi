@@ -7,7 +7,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """
-BCDI preprocessing.
+preprocessing_utils.
 
 This module contains functions related to data loading and preprocessing,
 before phase retrieval.
