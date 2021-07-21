@@ -7,9 +7,7 @@ import os
 
 
 def task_black():
-    """
-    Run black against the package.
-    """
+    """Run black against the package."""
     return {
         "actions": [
             f"python -m black --line-length=88 "
@@ -20,9 +18,7 @@ def task_black():
 
 
 def task_code_style():
-    """
-    Run pycodestyle on the modules.
-    """
+    """Run pycodestyle on the modules."""
     return {
         "actions": [
             "pycodestyle    bcdi --max-line-length=88 "
@@ -34,7 +30,9 @@ def task_code_style():
 
 def task_coverage_xml():
     """
-    Generate an XML version of the coverage report. It can be opened with Notepad++.
+    Generate an XML version of the coverage report.
+
+    It can be opened with Notepad++.
     """
 
     def create_coverage_xml(coverage_file, output_file):
@@ -53,10 +51,16 @@ def task_coverage_xml():
     }
 
 
+def task_docstrings():
+    """Run pydocstyle on the modules."""
+    return {
+        "actions": ["pydocstyle    bcdi --ignore=D107,D212,D203"],
+        "verbosity": 2,
+    }
+
+
 def task_tests():
-    """
-    Run unit tests with coverage.
-    """
+    """Run unit tests with coverage."""
     return {
         "actions": [f"coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage", "test_output/unit-test-report.xml"],
