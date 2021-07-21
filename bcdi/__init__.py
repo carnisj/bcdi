@@ -6,7 +6,5 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-The main bcdi package, which contains the whole framework.
-"""
+"""The main bcdi package, which contains the whole framework."""
 __version__ = "0.1.2"
