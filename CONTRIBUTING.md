@@ -52,7 +52,8 @@ branch.
    branch-name`
 - Edit a file, for example filename.py, add tests, and make sure the tests still pass.
 - Run automated tasks: in a terminal, go to the same level as dodo.py and simply 
-  type: `doit`. This will run tests with coverage and black (code formatting).
+  type: `doit`. This will run a series of tasks, including tests with coverage, code 
+  formatting, docstring and documentation checks...
 - Commit the file and push it to GitHub:
    - `git add filename.py`
    - `git commit -m "Add exciting new feature"`
