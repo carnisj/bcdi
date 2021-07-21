@@ -277,7 +277,8 @@ def dftups(
     Modified from dftups, by J.R. Fienup 7/31/06
 
     This code is intended to provide the same result as if the following
-    operations were performed
+    operations were performed:
+
       - Embed the array "in" in an array that is usfac times larger in each
         dimension. ifftshift to bring the center of the image to (1,1).
       - Take the FFT of the larger array

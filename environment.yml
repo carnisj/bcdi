@@ -31,3 +31,5 @@ dependencies:
     - pyqt6
     - pycodestyle
     - pydocstyle
+    - twine
+    - wheel

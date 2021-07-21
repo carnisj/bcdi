@@ -22,3 +22,5 @@ coverage
 doit
 pycodestyle
 pydocstyle
+twine
+wheel
