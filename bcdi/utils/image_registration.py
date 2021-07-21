@@ -24,9 +24,8 @@ def getimageregistration(array1, array2, precision=10):
      registered to within 1/precision of a pixel.
     :return: the list of shifts
     """
-    assert (
-        array1.shape == array2.shape
-    ), "Arrays are different shape in registration"
+    if array1.shape != array2.shape:
+        raise ValueError("Arrays should have the same shape")
     # 3D arrays
     if len(array1.shape) == 3:
         abs_array1 = np.abs(array1)
