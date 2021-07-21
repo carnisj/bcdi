@@ -19,7 +19,6 @@ dependencies:
   - xrayutilities
   - fabio
   - silx
-  - pyqt6
   - pytables
   - lmfit
   - moviepy
@@ -34,4 +33,4 @@ dependencies:
   - wheel
   - pip:
     - hdf5plugin
-
+    - pyqt6
