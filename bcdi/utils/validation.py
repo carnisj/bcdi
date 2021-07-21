@@ -6,6 +6,11 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+validation.
+
+This module contains functions related to the validation of input parameters.
+"""
 
 from numbers import Real
 import numpy as np
@@ -319,8 +324,3 @@ def valid_item(
 
     # every tests passed, return True
     return True
-
-
-if __name__ == "__main__":
-    result = valid_item(value=1 + 1j, allowed_types=Real, allow_none=True)
-    print(result is None)
