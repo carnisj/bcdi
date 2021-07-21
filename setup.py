@@ -166,6 +166,8 @@ setup(
             "doit",
             "pycodestyle",
             "pydocstyle",
+            "twine",
+            "wheel",
         ],
     },
     classifiers=[
