@@ -45,6 +45,7 @@ var/
 doc/_build
 doc/_static
 doc/_templates
+doc/doc_html
 
 # PyCharm
 .idea/
