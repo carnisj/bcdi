@@ -6,3 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+BCDI preprocessing.
+
+This package contains:
+ - functions related to data loading and preprocessing,
+   before phase retrieval.
+ - modules to load data at SIXS beamline (nxsReady, ReadNxs3)
+
+"""
