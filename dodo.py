@@ -49,7 +49,7 @@ def task_clean_dist():
     }
 
 
-def task_clean_docs():
+def task_clean_doc():
     """Remove the compiled documentation."""
 
     def delete_dir(dirname):
@@ -61,7 +61,7 @@ def task_clean_docs():
             print("\n\tNo built documentation to delete.\n")
 
     return {
-        "actions": [(delete_dir, ["doc/_build/"])],
+        "actions": [(delete_dir, ["doc/doc_html/"])],
         "verbosity": 2,
     }
 
@@ -132,6 +132,17 @@ def task_tests():
         "actions": [f"coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage"],
         "verbosity": 2,
+    }
+
+
+def task_build_doc():
+    """Build the documentation with sphinx."""
+    # import pathlib
+    # documentation_sources = list(pathlib.Path("doc").glob("**/*"))
+    # print(documentation_sources)
+    return {
+        "actions": ["sphinx-build doc doc/doc_html"],
+        "targets": ["docs/"],
     }
 
 
