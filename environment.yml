@@ -19,6 +19,7 @@ dependencies:
   - xrayutilities
   - fabio
   - silx
+  - pyqt6
   - pytables
   - lmfit
   - moviepy
@@ -26,10 +27,11 @@ dependencies:
   - black
   - coverage
   - doit
+  - pycodestyle
+  - pydocstyle
+  - sphinx
+  - twine
+  - wheel
   - pip:
     - hdf5plugin
-    - pyqt6
-    - pycodestyle
-    - pydocstyle
-    - twine
-    - wheel
+

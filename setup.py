@@ -161,9 +161,7 @@ setup(
         "pillow",
     ],
     extras_require={
-        "docs": [
-            "sphinx",
-        ],
+        "docs": ["sphinx",],
         "dev": [
             "black",
             "coverage",
@@ -172,6 +170,7 @@ setup(
             "pydocstyle",
             "twine",
             "wheel",
+            "sphinx",
         ],
     },
     classifiers=[
