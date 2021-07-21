@@ -42,20 +42,11 @@ def getimageregistration(array1, array2, precision=10):
 
         # calculate shift in each dimension, i.e. 2 estimates of shift
         result = dft_registration(ft_array1_2, ft_array2_2, ups_factor=precision)
-        (
-            shiftx1,
-            shifty1,
-        ) = result[2:4]
+        (shiftx1, shifty1,) = result[2:4]
         result = dft_registration(ft_array1_1, ft_array2_1, ups_factor=precision)
-        (
-            shiftx2,
-            shiftz1,
-        ) = result[2:4]
+        (shiftx2, shiftz1,) = result[2:4]
         result = dft_registration(ft_array1_0, ft_array2_0, ups_factor=precision)
-        (
-            shifty2,
-            shiftz2,
-        ) = result[2:4]
+        (shifty2, shiftz2,) = result[2:4]
 
         # average them
         xshift = (shiftx1 + shiftx2) / 2
@@ -213,19 +204,16 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
             np.ceil(ups_factor * 1.5) / 2
         )  # Center of output array at dftshift+1
         # Matrix multiply DFT around the current shift estimate
-        crosscorr = (
-            np.conj(
-                dftups(
-                    buf2ft * np.conj(buf1ft),
-                    np.ceil(ups_factor * 1.5),
-                    np.ceil(ups_factor * 1.5),
-                    ups_factor,
-                    dftshift - row_shift * ups_factor,
-                    dftshift - col_shift * ups_factor,
-                )
+        crosscorr = np.conj(
+            dftups(
+                buf2ft * np.conj(buf1ft),
+                np.ceil(ups_factor * 1.5),
+                np.ceil(ups_factor * 1.5),
+                ups_factor,
+                dftshift - row_shift * ups_factor,
+                dftshift - col_shift * ups_factor,
             )
-            / (md2 * nd2 * ups_factor ** 2)
-        )
+        ) / (md2 * nd2 * ups_factor ** 2)
         # Locate maximum and map back to original pixel grid
         _, indices = index_max(np.abs(crosscorr))
         row_max = indices[0]
@@ -262,12 +250,7 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
 
 
 def dftups(
-    array,
-    output_row_nb,
-    output_column_nb,
-    ups_factor=1,
-    row_offset=0,
-    column_offset=0,
+    array, output_row_nb, output_column_nb, ups_factor=1, row_offset=0, column_offset=0,
 ):
     """
     Upsampled DFT by matrix multiplies.

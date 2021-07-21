@@ -135,12 +135,7 @@ if crop_symmetric:
         raise ValueError('supported geometry: "SAXS" or "Bragg"')
 
     min_range = min(
-        min(
-            abs(
-                qx.min() - qx_com,
-            ),
-            qx.max() - qx_com,
-        ),
+        min(abs(qx.min() - qx_com,), qx.max() - qx_com,),
         min(abs(qz.min() - qz_com), qz.max() - qz_com),
         min(abs(qy.min() - qy_com), qy.max() - qy_com),
     )
