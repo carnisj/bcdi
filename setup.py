@@ -137,6 +137,7 @@ setup(
     project_urls={"Documentation": "https://bcdi.readthedocs.io/en/latest/"},
     python_requires=">=3.6, !=3.9.*",
     install_requires=[
+        "wheel",
         "numpy",
         "scipy",
         "scikit-image",
@@ -144,9 +145,8 @@ setup(
         "hdf5plugin",
         "h5py",
         "traits",
-        "pyqt6",
+        "pyqt5",
         "pyqtgraph",
-        "mayavi",
         "vtk",
         "importlib_resources",
         "xrayutilities",
@@ -159,9 +159,10 @@ setup(
         "lmfit",
         "moviepy",
         "pillow",
+        "mayavi",
     ],
     extras_require={
-        "docs": ["sphinx",],
+        "doc": ["sphinx"],
         "dev": [
             "black",
             "coverage",
@@ -169,8 +170,6 @@ setup(
             "pycodestyle",
             "pydocstyle",
             "twine",
-            "wheel",
-            "sphinx",
         ],
     },
     classifiers=[

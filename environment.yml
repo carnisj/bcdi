@@ -6,6 +6,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.8
+  - wheel
   - numpy
   - scipy
   - scikit-image
@@ -13,13 +14,12 @@ dependencies:
   - h5py
   - traits
   - pyqtgraph
-  - mayavi
   - vtk
   - importlib_resources
   - xrayutilities
   - fabio
   - silx
-  - pyqt6
+  - pyqt5
   - pytables
   - lmfit
   - moviepy
@@ -31,7 +31,6 @@ dependencies:
   - pydocstyle
   - sphinx
   - twine
-  - wheel
+  - mayavi
   - pip:
     - hdf5plugin
-
