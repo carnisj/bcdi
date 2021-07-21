@@ -33,14 +33,12 @@ def task_clean_docs():
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
-            print(f"\nDeleted {path}")
+            print(f"\nDeleted {path}\n")
         else:
             print("\nNo built documentation to delete.\n")
 
     return {
-        "actions": [
-            (delete_docs, ["doc/_build/"])
-        ],
+        "actions": [(delete_docs, ["doc/_build/"])],
         "verbosity": 2,
     }
 
@@ -86,14 +84,12 @@ def task_clean_coverage():
         path = os.path.join(get_path(), filename).replace("\\", "/")
         if os.path.isfile(path):
             os.unlink(path)
-            print(f"\nDeleted {path}")
+            print(f"\nDeleted {path}\n")
         else:
             print("\nNo coverage file to delete.\n")
 
     return {
-        "actions": [
-            (delete_coverage, [".coverage"])
-        ],
+        "actions": [(delete_coverage, [".coverage"])],
         "file_dep": ["test_output/coverage-report.xml"],
         "verbosity": 2,
     }
