@@ -9,7 +9,7 @@
 """
 BCDI preprocessing.
 
-This package contains functions related to data loading and preprocessing,
+This module contains functions related to data loading and preprocessing,
 before phase retrieval.
 """
 
