@@ -4,6 +4,7 @@ doit configuration for BCDI
 
 import coverage
 import os
+import shutil
 
 # Generic functions go here
 
@@ -21,6 +22,25 @@ def task_black():
     path = get_path()
     return {
         "actions": [f"python -m black --line-length=88 {path}"],
+        "verbosity": 2,
+    }
+
+
+def task_clean_docs():
+    """Remove the compiled documentation."""
+
+    def delete_docs(dirname):
+        path = os.path.join(get_path(), dirname).replace("\\", "/")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            print(f"\nDeleted {path}")
+        else:
+            print("\nNo built documentation to delete.\n")
+
+    return {
+        "actions": [
+            (delete_docs, ["doc/_build/"])
+        ],
         "verbosity": 2,
     }
 
