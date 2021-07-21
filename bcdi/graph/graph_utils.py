@@ -6,6 +6,11 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+graph_utils.
+
+This module contains functions related to visualization.
+"""
 
 import numpy as np
 from numbers import Number, Real
@@ -1281,8 +1286,9 @@ def imshow_plot(
 
 def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False):
     """
-    Linecut through a 2D or 3D array given the indices of the starting voxel and of
-    the end voxel.
+    Linecut through a 2D or 3D array.
+
+    The user must input indices of the starting voxel and of the end voxel.
 
     :param array: a 2D or 3D array
     :param start_indices: tuple of indices, of the same length as the number of
@@ -1383,7 +1389,7 @@ def loop_thru_scan(
     key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None
 ):
     """
-    Update the plot while removing the parasitic diffraction intensity in 3D dataset
+    Update the plot while removing the parasitic diffraction intensity in 3D dataset.
 
     :param key: the keyboard key which was pressed
     :param data: the 3D data array
@@ -2305,8 +2311,7 @@ def savefig(
     **kwargs,
 ):
     """
-    This function can be used to plot template figures for publications,
-     without and with labels.
+    Save a template figures for publication, without and with labels.
 
     :param savedir: str, the directory where to save the figures
     :param figure: a matplotlib figure instance
@@ -2331,6 +2336,7 @@ def savefig(
      - 'text': dict, a dictionnary of dictionnaries containing the parameters for
        matplotlib.pyplot.text function e.g. {0: {'x': 0.4, 'y': 0.4, 's': 'test',
        'fontsize': 12}, 1:{'x': 0.4, 'y': 0.5, 's': 'res', 'fontsize': 12}}
+
     """
     #########################
     # check and load kwargs #
@@ -2591,11 +2597,13 @@ def save_to_vti(
     amplitude_threshold=0.01,
 ):
     """
-    Save arrays defined by their name in a single vti file. Paraview expects data
-    in an orthonormal basis (x,y,z). For BCDI data in the .cxi convention (hence: z,
-    y,x) it is necessary to flip the last axis. The data sent to Paraview will be in
-    the orthonormal frame (z,y,-x), therefore Paraview_x is z (downstream),
-    Paraview_y is y (vertical up), Paraview_z is -x (inboard) of the .cxi convention.
+    Save arrays defined by their name in a single vti file.
+
+    Paraview expects data in an orthonormal basis (x,y,z). For BCDI data in the .cxi
+    convention (hence: z, y,x) it is necessary to flip the last axis. The data sent
+    to Paraview will be in the orthonormal frame (z,y,-x), therefore Paraview_x is z
+    (downstream), Paraview_y is y (vertical up), Paraview_z is -x (inboard) of the
+    .cxi convention.
 
     :param filename: the file name of the vti file
     :param voxel_size: tuple (voxel_size_axis0, voxel_size_axis1, voxel_size_axis2)
@@ -2920,7 +2928,7 @@ def update_aliens(
     invert_yaxis=False,
 ):
     """
-    Update the plot while removing the parasitic diffraction intensity in 3D dataset
+    Update the plot while removing the parasitic diffraction intensity in 3D dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -3177,7 +3185,7 @@ def update_aliens_combined(
     invert_yaxis=False,
 ):
     """
-    Update the plot while removing the parasitic diffraction intensity in 3D dataset
+    Update the plot while removing the parasitic diffraction intensity in 3D dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -3479,7 +3487,7 @@ def update_aliens_2d(
     invert_yaxis=False,
 ):
     """
-    Update the plot while removing the parasitic diffraction intensity in 2D dataset
+    Update the plot while removing the parasitic diffraction intensity in 2D dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -3743,8 +3751,10 @@ def update_mask(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in
-    3D dataset.
+    Update the mask corresponding to parasitic intensities in a 3D dataset.
+
+    The GUI contains one 2D projection of the mask, the projection axis is
+    determined by the parameter "dim".
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -4003,8 +4013,10 @@ def update_mask_combined(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels in 3D
-    dataset.
+    Update the mask to remove parasitic intensities in a 3D dataset.
+
+    The GUI contains the three 2D projections of the mask, the axis being modified is
+    determined by the parameter "dim".
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer
@@ -4370,8 +4382,7 @@ def update_mask_2d(
     invert_yaxis=False,
 ):
     """
-    Update the mask to remove parasitic diffraction intensity and hotpixels for 2d
-    dataset.
+    Update the mask corresponding to parasitic intensities in a 2D dataset.
 
     :param key: the keyboard key which was pressed
     :param pix: the x value of the mouse pointer

@@ -165,6 +165,7 @@ setup(
             "coverage",
             "doit",
             "pycodestyle",
+            "pydocstyle",
         ],
     },
     classifiers=[

@@ -3,6 +3,12 @@
 # To be used together with the dictionnary 'alias_dict.txt'
 # Code from Andrea Resta @ Soleil Synchrotron
 # Modified 02052019 by Jerome Carnis @ CNRS IM2NP: PEP8 + removed unused functions
+"""
+nxsReady.
+
+This module contains Classes and functions to load data at SIXS beamline.
+"""
+
 import tables
 import numpy
 import pickle
@@ -13,7 +19,8 @@ print("You can copy it from /Lib/site-packages/bcdi/preprocessing/")
 
 
 class PrefParameters:
-    # classe for preference parameters
+    """Class for preference parameters."""
+
     def __init__(self):
         self.namedisplays = list(
             (
@@ -29,7 +36,9 @@ class PrefParameters:
 
 class DataSet:
     """
-    Dataset read the file and store it in an object, from this object we can retrieve
+    Class dealing with datasets.
+
+    It reads the file and stores it in an object, from this object we can retrieve
     the data to use it: MyFileObject=nxsRead.DataSet(path/filename, filename)
     """
 

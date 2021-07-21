@@ -6,3 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+BCDI utils.
+
+This package contains utilities functions related to:
+ - utilities: data loading, JSON encoding, fitting, data manipulation (rotation)
+ - image_registration: DFT registration
+ - validation: the validation of input parameters
+
+"""

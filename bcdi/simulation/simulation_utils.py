@@ -6,6 +6,11 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+simulation_utils.
+
+This module contains functions related to the calculation of crystalline lattices.
+"""
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -18,8 +23,9 @@ def angle_vectors(
     basis_vectors=(np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])),
 ):
     """
-    Calculate the angle between two vectors expressed in a defined basis, using the
-    Gram matrix.
+    Calculate the angle between two vectors expressed in a defined basis.
+
+    It uses the Gram matrix.
 
     :param ref_vector: reference vector
     :param test_vector: vector for which the angle relative to the reference vector
@@ -214,7 +220,8 @@ def bct_lattice(
     verbose=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters for a BCT unit cell.
+    Calculate Bragg peaks positions for a BCT unit cell.
+
     The long axis is by default along qz (vertical up).
 
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look for
@@ -325,8 +332,7 @@ def cubic_lattice(
     verbose=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters for a simple cubic
-    unit cell.
+    Calculate Bragg peaks positions for a simple cubic unit cell.
 
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look
      for Bragg peaks
@@ -415,7 +421,7 @@ def fcc_lattice(
     verbose=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters for a FCC unit cell.
+    Calculate Bragg peaks positions for a FCC unit cell.
 
     :param q_values: tuple of 1D arrays (qx, qz, qy), q_values range where to look
      for Bragg peaks
@@ -516,7 +522,7 @@ def lattice(
     offset_indices=False,
 ):
     """
-    Calculate Bragg peaks positions using experimental parameters and unit cell.
+    Calculate the position of the Bragg peaks positions for a particular unit cell.
 
     :param energy: X-ray energy in eV
     :param sdd: sample to detector distance in m
@@ -626,8 +632,9 @@ def reciprocal_lattice(
     alpha, beta, gamma, a1, a2, a3, input_lattice="direct", verbose=False
 ):
     """
-    Calculate the reciprocal lattice given the direct space lattice parameters for
-    the most general triclinic lattice.
+    Calculate the reciprocal lattice given the direct space lattice parameters.
+
+    It assumes the most general triclinic lattice.
 
     :param alpha: in degrees, angle between a2 and a3
     :param beta: in degrees, angle between a1 and a3
@@ -676,7 +683,9 @@ def rotate_lattice(
     lattice_list, peaks_list, original_shape, pad_offset, pivot, euler_angles=(0, 0, 0)
 ):
     """
-    Rotate lattice points given Euler angles, the pivot position and an eventual
+    Rotate a lattice.
+
+    It rotates lattice points given Euler angles, the pivot position and an eventual
     offset of the origin.
 
     :param lattice_list: list of Bragg peaks positions in pixels to be rotated
@@ -739,8 +748,10 @@ def rotate_lattice(
 
 def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
     """
-    Calculate the basis vector components in the orthonormal basis
-    [[1, 0, 0], [0, 1, 0], [0, 0, 1]] for the most general triclinic lattice.
+    Change basis for the most general triclinic lattice.
+
+    It calculate the basis vector components in the orthonormal basis
+    [[1, 0, 0], [0, 1, 0], [0, 0, 1]].
 
     :param alpha: in degrees, angle between a2 and a3
     :param beta: in degrees, angle between a1 and a3

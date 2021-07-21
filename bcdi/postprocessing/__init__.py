@@ -6,3 +6,8 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+BCDI postprocessing.
+
+This package contains functions related to data postprocessing after phase retrieval.
+"""

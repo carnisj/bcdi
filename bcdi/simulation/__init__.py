@@ -6,3 +6,8 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
+"""
+BCDI simulation.
+
+This package contains functions related to the calculation of crystalline lattices.
+"""

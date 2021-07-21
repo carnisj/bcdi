@@ -6,6 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
+"""
+BCDI preprocessing.
+
+This module contains functions related to data loading and preprocessing,
+before phase retrieval.
+"""
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
@@ -43,8 +49,10 @@ def align_diffpattern(
     return_shift=False,
 ):
     """
-    Align two diffraction patterns based on the shift of the center of mass or based on
-    dft registration.
+    Align two diffraction patterns.
+
+    The alignement can be based either on the shift of the center of mass or on dft
+    registration.
 
     :param reference_data: the first 3D or 2D diffraction intensity array which will
      serve as a reference.
@@ -575,7 +583,10 @@ def beamstop_correction(data, detector, setup, debugging=False):
 
 def bin_parameters(binning, nb_frames, params, debugging=True):
     """
-    Select parameter values taking into account an eventual binning of the data along
+    Bin some parameters.
+
+    It selects parameter values taking into account an eventual binning of the data.
+    The use case is to bin diffractometer motor positions for a dataset binned along
     the rocking curve axis.
 
     :param binning: binning factor for the axis corresponding to the rocking curve
@@ -624,9 +635,9 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
 
 def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
     """
-    Find the corresponding cylindrical coordinates of a cartesian 3D, including the
-    correction for the Ewald sphere
-    curvature. The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
+    Find the corresponding cylindrical coordinates of a cartesian 3D grid.
+
+    The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
 
     :param grid_shape: tuple, shape of the 3D cartesion grid
     :param pivot: tuple of two numbers, position in pixels of the origin of reciprocal
@@ -713,8 +724,9 @@ def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
 
 def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
     """
-    Find the corresponding polar coordinates of a cartesian 2D grid perpendicular to
-    the rotation axis.
+    Find the corresponding polar coordinates of a cartesian 2D grid.
+
+    The grid is assumed perpendicular to the rotation axis.
 
     :param nb_pixels: number of pixels of the axis of the squared grid
     :param pivot: position in pixels of the origin of the polar coordinates system
@@ -782,7 +794,7 @@ def center_fft(
     **kwargs,
 ):
     """
-    Center and crop/pad the dataset depending on user parameters
+    Center and crop/pad the dataset depending on user parameters.
 
     :param data: the 3D data array
     :param mask: the 3D mask array
@@ -826,6 +838,7 @@ def center_fft(
      - pad_width = [z0, z1, y0, y1, x0, x1] number of pixels added at each end of the
        original data
      - updated frames_logical
+
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -1355,9 +1368,11 @@ def center_fft(
 
 def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     """
-    In forward CDI experiment, check if there is no overlap in the measurement angles,
-    crop it otherwise. Flip the rotation direction to convert sample angles into
-    detector angles. Update data, mask and frames_logical accordingly.
+    Check for overlaps of the sample rotation motor position in forward CDI experiment.
+
+    It checks if there is no overlap in the measurement angles, and crops it otherwise.
+    Flip the rotation direction to convert sample angles into detector angles. Update
+    data, mask and frames_logical accordingly.
 
     :param data: 3D forward CDI dataset before gridding.
     :param mask: 3D mask
@@ -1610,8 +1625,7 @@ def cristal_find_detector(
     pattern="^data_[0-9][0-9]$",
 ):
     """
-    Look for the entry corresponding to the detector data in the file and return the
-    corresponding dataset.
+    Look for the entry corresponding to the detector data in CRISTAL dataset.
 
     :param datafile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class experiment_utils.Setup()
@@ -1669,7 +1683,8 @@ def cristal_find_detector(
 
 def cristal_load_motor(datafile, root, actuator_name, field_name):
     """
-    Try to load the dataset at the defined entry and returns it.
+    Try to load the CRISTAL dataset at the defined entry and returns it.
+
     Patterns keep changing at CRISTAL.
 
     :param datafile: h5py File object of CRISTAL .nxs scan file
@@ -1727,10 +1742,12 @@ def cristal_load_motor(datafile, root, actuator_name, field_name):
 
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     """
-    Correct the data for the curvature of Ewald sphere. Based on the CXI detector
-    geometry convention: Laboratory frame: z downstream, y vertical up, x outboard.
-    Detector axes: Y vertical and X horizontal (detector Y is vertical down at
-    out-of-plane angle=0, detector X is opposite to x at inplane angle=0)
+    Correct the data for the curvature of Ewald sphere.
+
+    Based on the CXI detector geometry convention: Laboratory frame: z downstream,
+    y vertical up, x outboard. Detector axes: Y vertical and X horizontal (detector Y
+    is vertical down at out-of-plane angle=0, detector X is opposite to x at inplane
+    angle=0)
 
     :param cdi_angle: 1D array of measurement angles in degrees
     :param detector: the detector object: Class experiment_utils.Detector()
@@ -1915,6 +1932,7 @@ def grid_bcdi_labframe(
 ):
     """
     Interpolate BCDI reciprocal space data using a linearized transformation matrix.
+
     The resulting (qx, qy, qz) are in the laboratory frame (qx downstrean,
     qz vertical up, qy outboard).
 
@@ -2109,6 +2127,7 @@ def grid_bcdi_xrayutil(
 ):
     """
     Interpolate BCDI reciprocal space data using xrayutilities package.
+
     The resulting (qx, qy, qz) are in the crystal frame (qz vertical).
 
     :param data: the 3D data, already binned in the detector frame
@@ -2335,9 +2354,11 @@ def grid_cdi(
     debugging=False,
 ):
     """
-    Interpolate forward CDI data from the cylindrical frame to the reciprocal frame in
-    cartesian coordinates. Note that it is based on PetraIII P10 beamline (
-    counterclockwise rotation, detector seen from the front).
+    Interpolate reciprocal space forward CDI data.
+
+    The interpolation is done from the measurement cylindrical frame to the
+    laboratory frame (cartesian coordinates). Note that it is based on PetraIII P10
+    beamline ( counterclockwise rotation, detector seen from the front).
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
@@ -2756,9 +2777,10 @@ def grid_cylindrical(
     multiprocessing=False,
 ):
     """
-    Interpolate a 3D array in cylindrical coordinated (tomographic dataset) onto
-    cartesian coordinates. There is no benefit from multiprocessing, the data
-    transfers are the limiting factor.
+    Interpolate a tomographic dataset onto cartesian coordinates.
+
+    The initial 3D array is in cylindrical coordinates. There is no benefit from
+    multiprocessing, the data transfers are the limiting factor.
 
     :param array: 3D array of intensities measured in the detector frame
     :param rotation_angle: array, rotation angle values for the rocking scan
@@ -2779,8 +2801,9 @@ def grid_cylindrical(
 
     def collect_result(result):
         """
-        Callback processing the result after asynchronous multiprocessing.
-        Update the global arrays.
+        Process the result after asynchronous multiprocessing.
+
+        This callback function updates global arrays.
 
         :param result: the output of interp_slice, containing the 2d interpolated slice
          and the slice index
@@ -2877,6 +2900,8 @@ def grid_cylindrical(
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
+    Find the closest larger number that meets some condition.
+
     Find the closest integer >=n (or list/array of integers), for which the largest
     prime divider is <=maxprime, and has to include some dividers. The default values
     for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
@@ -2925,6 +2950,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
 def init_qconversion(setup):
     """
     Initialize the qconv object from xrayutilities depending on the setup parameters.
+
     The convention in xrayutilities is x downstream, z vertical up, y outboard.
     Note: the user-defined motor offsets are applied directly when reading motor
     positions, therefore do not need to be taken into account in xrayutilities apart
@@ -3023,8 +3049,9 @@ def interp_2dslice(
     array, slice_index, rotation_angle, direct_beam, interp_angle, interp_radius
 ):
     """
-    Interpolate a 2D slice of a 3D array in cylindrical coordinated
-    (tomographic dataset) onto cartesian coordinates.
+    Interpolate a 2D slice from a tomographic dataset onto cartesian coordinates.
+
+    The initial 3D array is in cylindrical coordinates.
 
     :param array: 3D array of intensities measured in the detector frame
     :param slice_index: the index along the rotation axis of the 2D slice in array to
@@ -3120,6 +3147,7 @@ def load_bcdi_data(
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
+
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -3242,8 +3270,10 @@ def load_cdi_data(
     **kwargs,
 ):
     """
-    Load forward CDI data, apply beam stop correction and optional threshold,
-    normalization and binning.
+    Load forward CDI data and preprocess it.
+
+    It applies beam stop correction and an optional photon threshold, normalization
+    and binning.
 
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
@@ -3266,6 +3296,7 @@ def load_cdi_data(
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
      - the monitor values used for the intensity normalization
+
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -3391,9 +3422,10 @@ def load_cristal_data(
     debugging=False,
 ):
     """
-    Load CRISTAL data, apply filters and concatenate it for phasing. It will look for
-    the correct entry 'detector' in the dictionary Setup.actuators, and look for a
-    dataset with compatible shape otherwise.
+    Load CRISTAL data, apply filters and concatenate it for phasing.
+
+    It will look for the correct entry 'detector' in the dictionary Setup.actuators,
+    and look for a dataset with compatible shape otherwise.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class experiment_utils.Setup()
@@ -3412,6 +3444,7 @@ def load_cristal_data(
      - a logical array of length = initial frames number. A frame used will be set to
        True, a frame unused to False.
      - the monitor values for normalization
+
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
@@ -3522,9 +3555,10 @@ def load_cristal_data(
 
 def load_cristal_monitor(logfile, setup, nb_frames):
     """
-    Load monitor values for a dataset measured at CRISTAL. It will look for the correct
-    entry 'monitor' in the dictionary Setup.actuators, and use the default entry
-    otherwise.
+    Load monitor values for a dataset measured at CRISTAL.
+
+    It will look for the correct entry 'monitor' in the dictionary Setup.actuators,
+    and use the default entry otherwise.
 
     :param logfile: h5py File object of CRISTAL .nxs scan file
     :param setup: the experimental setup: Class SetupPreprocessing()
@@ -3743,6 +3777,7 @@ def load_data(
      - frames_logical: array of initial length the number of measured frames.
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
+
     """
     if setup.beamline != "P10":
         bin_during_loading = False
@@ -3964,6 +3999,7 @@ def load_id01_data(
      - frames_logical: array of initial length the number of measured frames.
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
+
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
@@ -4179,6 +4215,7 @@ def load_nanomax_data(
      - frames_logical: array of initial length the number of measured frames.
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
+
     """
     if debugging:
         print(
@@ -4301,6 +4338,7 @@ def load_p10_data(
      - frames_logical: array of initial length the number of measured frames.
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
+
     """
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
@@ -4525,6 +4563,7 @@ def load_sixs_data(
      - frames_logical: array of initial length the number of measured frames.
        In case of padding the length changes. A frame whose index is set to 1 means
        that it is used, 0 means not used, -1 means padded (added) frame.
+
     """
     if detector.name == "Merlin":
         tmp_data = logfile.merlin[:]
@@ -4667,7 +4706,9 @@ def mean_filter(
     debugging=False,
 ):
     """
-    Mask or apply a mean filter if the empty pixel is surrounded by nb_neighbours or
+    Mask or apply a mean filter to data.
+
+    The procedure is applied only if the empty pixel is surrounded by nb_neighbours or
     more pixels with at least min_count intensity per pixel.
 
     :param data: 2D or 3D array to be filtered
@@ -4855,6 +4896,7 @@ def normalize_dataset(
      - normalized dataset
      - updated monitor
      - a title for plotting
+
     """
     ndim = array.ndim
     nbz, nby, nbx = array.shape
@@ -4968,7 +5010,7 @@ def normalize_dataset(
 
 def primes(number):
     """
-    Returns the prime decomposition of n as a list. Adapted from PyNX.
+    Return the prime decomposition of n as a list. Adapted from PyNX.
 
     :param number: the integer to be decomposed
     :return: the list of prime dividers of number
@@ -5022,6 +5064,7 @@ def regrid(
        check if diffractometer angles have default values set at 0, otherwise use the
        parameter setup.diffractometer.sample_offsets to correct it.
      - updated frames_logical
+
     """
     # TODO: refactor this function
     binning = detector.binning
@@ -5459,6 +5502,7 @@ def reload_bcdi_data(
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
+
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -5594,6 +5638,7 @@ def reload_cdi_data(
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
+
     """
     # check and load kwargs
     valid.valid_kwargs(
@@ -5844,6 +5889,8 @@ def scan_motor_sixs(logfile, motor_name):
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
+    Find the closest smaller number that meets some condition.
+
     Find the closest integer <=n (or list/array of integers), for which the largest
     prime divider is <=maxprime, and has to include some dividers. The default values
     for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
@@ -5889,12 +5936,14 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
-    Check if the largest prime divider is <=maxprime, and optionally includes
-    some dividers. Adapted from PyNX.
+    Check if a number meets some condition.
+
+    Check if the largest prime divider is <=maxprime, and optionally includes some
+    dividers. Adapted from PyNX.
 
     :param number: the integer number for which the prime decomposition will be checked
-    :param maxprime: the maximum acceptable prime number. This defaults to the largest
-     integer accepted by the clFFT library for OpenCL GPU FFT.
+    :param maxprime: the maximum acceptable prime number. This defaults to the
+     largest integer accepted by the clFFT library for OpenCL GPU FFT.
     :param required_dividers: list of required dividers in the prime decomposition.
      If None, this check is skipped.
     :return: True if the conditions are met.
@@ -5911,7 +5960,7 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def wrap(obj, start_angle, range_angle):
     """
-    Wrap obj between start_angle and (start_angle + range_angle)
+    Wrap obj between start_angle and (start_angle + range_angle).
 
     :param obj: number or array to be wrapped
     :param start_angle: start angle of the range

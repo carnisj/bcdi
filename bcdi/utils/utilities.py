@@ -6,6 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+utilities.
+
+This module contains functions related to data loading, encoding, fitting,
+data manipulation.
+"""
 
 from collections import OrderedDict
 import ctypes
@@ -27,14 +33,10 @@ from ..utils import validation as valid
 
 
 class CustomEncoder(json.JSONEncoder):
-    """
-    Class to handle the serialization of np.ndarrays, sets
-    """
+    """Class to handle the serialization of np.ndarrays, sets."""
 
     def default(self, obj):
-        """
-        Override the JSONEncoder.default method to support more types
-        """
+        """Override the JSONEncoder.default method to support more types."""
         if isinstance(obj, np.ndarray):
             return CustomEncoder.ndarray_to_list(obj)
             # Let the base class default method raise the TypeError
@@ -46,9 +48,7 @@ class CustomEncoder(json.JSONEncoder):
 
     @staticmethod
     def ndarray_to_list(obj):
-        """
-        Convert a numpy ndarray of any dimension to a nested list
-        """
+        """Convert a numpy ndarray of any dimension to a nested list."""
         if not isinstance(obj, np.ndarray):
             raise TypeError("a numpy ndarray is expected")
         if obj.ndim == 1:
@@ -61,8 +61,10 @@ class CustomEncoder(json.JSONEncoder):
 
 def bin_data(array, binning, debugging=False):
     """
-    Rebin a 1D, 2D or 3D array. If its dimensions are not a multiple of binning,
-    the array will be cropped. Adapted from PyNX.
+    Rebin a 1D, 2D or 3D array.
+
+    If its dimensions are not a multiple of binning, the array will be cropped.
+    Adapted from PyNX.
 
     :param array: the array to resize
     :param binning: the rebin factor - pixels will be summed by groups of
@@ -129,7 +131,7 @@ def bin_data(array, binning, debugging=False):
 
 def catch_error(exception):
     """
-    Callback processing exception in asynchronous multiprocessing.
+    Process exception in asynchronous multiprocessing.
 
     :param exception: the arisen exception
     """
@@ -347,8 +349,7 @@ def crop_pad_1d(
 
 def decode_json(dct):
     """
-    Function used as the parameter object_hook in json.load function,
-    supporting various types
+    Define the parameter object_hook in json.load function, supporting various types.
 
     :param dct: the input dictionary of strings
     :return: a dictionary
@@ -414,8 +415,7 @@ def find_nearest(reference_array, test_values, width=None):
 
 def fit3d_poly1(x_axis, a, b, c, d):
     """
-    Calculate the 1st order polynomial function on points in a 3D gridgiven the
-    polynomial parameters.
+    Calculate the 1st order polynomial function on points in a 3D grid.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -429,8 +429,7 @@ def fit3d_poly1(x_axis, a, b, c, d):
 
 def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
     """
-    Calculate the 2nd order polynomial function on points in a 3D gridgiven the
-    polynomial parameters.
+    Calculate the 2nd order polynomial function on points in a 3D grid.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -455,8 +454,7 @@ def fit3d_poly2(x_axis, a, b, c, d, e, f, g):
 
 def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
     """
-    Calculate the 3rd order polynomial function on points in a 3D gridgiven the
-    polynomial parameters.
+    Calculate the 3rd order polynomial function on points in a 3D grid.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -487,8 +485,7 @@ def fit3d_poly3(x_axis, a, b, c, d, e, f, g, h, i, j):
 
 def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
     """
-    Calculate the 4th order polynomial function on points in a 3D grid given the
-    polynomial parameters.
+    Calculate the 4th order polynomial function on points in a 3D grid.
 
     :param x_axis: (3xN) tuple or array of 3D coordinates
     :param a: offset
@@ -668,8 +665,9 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
 
 def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     """
-    Convert an image to a numpy array using pillow (matplotlib only supports the PNG
-    format).
+    Convert an image to a numpy array using pillow.
+
+    Matplotlib only supports the PNG format.
 
     :param filename: absolute path of the image to open
     :param convert_grey: if True and the number of layers is 3, it will be converted
@@ -700,7 +698,9 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
 
 def in_range(point, extent):
     """
-    Return a boolean depending on whether point is in the indices range defined by
+    Check if a point in within a certain range.
+
+    It returns a boolean depending on whether point is in the indices range defined by
     extent or not.
 
     :param point: tuple of two real numbers (2D case) (y, x) or three real numbers
@@ -908,8 +908,10 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
 
 def load_file(file_path, fieldname=None):
     """
-    Load a file. In case of .cxi or .h5 file, it will use a default path to the data.
-    'fieldname' is used only for .npz files.
+    Load a file.
+
+    In case of .cxi or .h5 file, it will use a default path to the data. 'fieldname'
+    is used only for .npz files.
 
     :param file_path: the path of the reconstruction to load.
      Format supported: .npy .npz .cxi .h5
@@ -978,8 +980,9 @@ def lorentzian(x_axis, amp, cen, sig):
 
 def objective_lmfit(params, x_axis, data, distribution):
     """
-    Calculate total residual for fits to several data sets held in a 2-D array
-    (1 row per dataset).
+    Calculate the total residual for fits to several data sets.
+
+    Data sets should be held in a 2-D array (1 row per dataset).
 
     :param params: a lmfit Parameters object
     :param x_axis: where to calculate the distribution
@@ -1008,7 +1011,7 @@ def objective_lmfit(params, x_axis, data, distribution):
 
 def line(x_array, a, b):
     """
-    Return y values such that y = a*x + b
+    Return y values such that y = a*x + b.
 
     :param x_array: a 1D numpy array of length N
     :param a: coefficient for x values
@@ -1020,7 +1023,7 @@ def line(x_array, a, b):
 
 def plane(xy_array, a, b, c):
     """
-    Return z values such that z = a*x + b*y + c
+    Return z values such that z = a*x + b*y + c.
 
     :param xy_array: a (2xN) numpy array, x values being the first row and
      y values the second row
@@ -1193,7 +1196,7 @@ def pseudovoigt(x_axis, amp, cen, sig, ratio):
 
 def ref_count(address):
     """
-    Get the reference count using ctypes module
+    Get the reference count using ctypes module.
 
     :param address: integer, the memory adress id
     :return: the number of references to the memory address
@@ -1271,8 +1274,9 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method="norm
 
 def remove_nan(data, mask=None):
     """
-    Remove nan values from data and optionally update the mask
-    (masked data = 1 in the mask, 0 otherwise).
+    Remove nan values from data.
+
+    Optionally, it can update a mask (masked data = 1 in the mask, 0 otherwise).
 
     :param data: numpy ndarray
     :param mask: if provided, numpy ndarray of the same shape as the data
@@ -1297,9 +1301,10 @@ def remove_nan(data, mask=None):
 
 def rgb2gray(rgb):
     """
-    Convert a three layered RGB image in gray
+    Convert a three layered RGB image in gray.
+
     :param rgb: the image in RGB
-    :return:
+    :return: the image conveted to gray
     """
     if rgb.ndim != 3:
         raise ValueError("the input array should be 3d")
@@ -1362,9 +1367,11 @@ def rotate_crystal(
     **kwargs,
 ):
     """
-    Rotate arrays to align axis_to_align onto reference_axis. The pivot of the rotation
-    is in the center of the arrays. axis_to_align and reference_axis should be in the
-    order X Y Z, where Z is downstream, Y vertical and X outboard (CXI convention).
+    Rotate arrays to align axis_to_align onto reference_axis.
+
+    The pivot of the rotation is in the center of the arrays. axis_to_align and
+    reference_axis should be in the order X Y Z, where Z is downstream, Y vertical
+    and X outboard (CXI convention).
 
     :param arrays: tuple of 3D real arrays of the same shape.
     :param axis_to_align: the axis to be aligned (e.g. vector q),
@@ -1618,7 +1625,9 @@ def rotate_vector(
     vectors, axis_to_align=None, reference_axis=None, rotation_matrix=None
 ):
     """
-    Calculate the vector components (3D) in the basis where axis_to_align and
+    Rotate vectors.
+
+    It calculates the vector components (3D) in the basis where axis_to_align and
     reference_axis are aligned. axis_to_align and reference_axis should be in the
     order X Y Z, where Z is downstream, Y vertical and X outboard (CXI convention).
 

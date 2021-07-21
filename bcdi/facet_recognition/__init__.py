@@ -6,3 +6,8 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+BCDI facet_recognition.
+
+This package contains functions related to facet recognition of nanocrystals.
+"""

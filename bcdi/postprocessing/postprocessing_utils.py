@@ -6,6 +6,11 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+postprocessing_utils.
+
+This module contains functions related to data postprocessing after phase retrieval.
+"""
 
 from numbers import Number, Real
 from math import pi
@@ -277,8 +282,10 @@ def average_obj(
     **kwargs,
 ):
     """
-    Average two reconstructions after aligning it, if their cross-correlation is larger
-    than correlation_threshold.
+    Average two reconstructions after aligning it.
+
+    Alignment is processed only if their cross-correlation is larger than the parameter
+    correlation_threshold.
 
     :param avg_obj: 3D array, average complex density
     :param ref_obj: 3D array, reference complex object
@@ -857,7 +864,6 @@ def filter_3d(
     :param kwargs:
      - 'sigma': sigma of the gaussian kernel
 
-    :return:
     """
     from scipy.signal import convolve
 
@@ -1017,7 +1023,9 @@ def find_bulk(
 
 def find_crop_center(array_shape, crop_shape, pivot):
     """
-    Find the closest voxel to pivot which allows to crop an array of array_shape to
+    Find the position of the center of the cropping window.
+
+    It finds the closest voxel to pivot which allows to crop an array of array_shape to
     crop_shape.
 
     :param array_shape: initial shape of the array
@@ -1073,7 +1081,9 @@ def find_crop_center(array_shape, crop_shape, pivot):
 
 def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
     """
-    Find the meaningful range of the array where it is larger than the threshold, in
+    Find the range where data is larger than a threshold.
+
+    It finds the meaningful range of the array where it is larger than the threshold, in
     order to reduce the memory consumption in latter processing. The range can be
     larger than the initial data size, which then will need to be padded.
 
@@ -1085,6 +1095,7 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
      - zrange: half size of the data range to use in the first axis (Z)
      - yrange: half size of the data range to use in the second axis (Y)
      - xrange: half size of the data range to use in the third axis (X)
+
     """
     nbz, nby, nbx = array.shape
     #########################
@@ -1144,7 +1155,7 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
 
 def flip_reconstruction(obj, debugging=False):
     """
-    Calculate the conjugate object  giving the same diffracted intensity as 'obj'.
+    Calculate the conjugate object giving the same diffracted intensity as 'obj'.
 
     :param obj: 3D reconstructed complex object
     :param debugging: set to True to see plots
@@ -1175,7 +1186,7 @@ def flip_reconstruction(obj, debugging=False):
 
 def gap_detector(data, mask, start_pixel, width_gap):
     """
-    Reproduce a detector gap in reciprocal space data and mask
+    Reproduce a detector gap in reciprocal space data and mask.
 
     :param data: the 3D reciprocal space data
     :param mask: the corresponding 3D mask
@@ -1198,7 +1209,7 @@ def gap_detector(data, mask, start_pixel, width_gap):
 
 def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     """
-    Generate 2D or 3D Gaussian kernels
+    Generate 2D or 3D Gaussian kernels.
 
     :param ndim: number of dimensions of the kernel, 2 or 3
     :param kernel_length: length in pixels of the filtering kernel
@@ -1248,6 +1259,7 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
 def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
     """
     Calculate the optical path for refraction/absorption corrections in the crystal.
+
     'k' should be in the same basis (crystal or laboratory frame) as the data. For
     xrayutilities, the data is orthogonalized in crystal frame.
 
@@ -1543,8 +1555,10 @@ def mean_filter(
     debugging=False,
 ):
     """
-    Apply a mean filter to an object defined by a support, taking care of the object's
-    surface.
+    Apply a mean filter to an object defined by a support.
+
+    Only voxels belonging to the object are taken into account, taking care of the
+    object's surface.
 
     :param array: 3D array to be averaged
     :param support: support used for averaging
@@ -1672,7 +1686,9 @@ def mean_filter(
 
 def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
     """
-    Orthogonalize modes from a N+1 dimensional array or a list/tuple of N-dimensional
+    Decompose an object into a set of orthogonal modes.
+
+    It finds modes from a N+1 dimensional array or a list/tuple of N-dimensional
     arrays. The decomposition is such that the total intensity (i.e. (abs(m)**2).sum(
     )) is conserved. Adapted from PyNX.
 
@@ -2213,8 +2229,9 @@ def remove_ramp_2d(
     debugging=False,
 ):
     """
-    Remove the linear trend in the ramp using its gradient and a threshold in
-    a 2D dataset.
+    Remove the linear trend in the ramp using its gradient and a threshold.
+
+    This function can be used for a 2D dataset.
 
     :param amp: 2D array, amplitude of the object
     :param phase: 2D array, phase of the object to be detrended
@@ -2515,8 +2532,10 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
 
 def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
-    Unwrap the phase of a complex object, based on skimage.restoration.unwrap_phase.
-    A mask can be applied by thresholding the modulus of the object.
+    Unwrap the phase of a complex object.
+
+    It is based on skimage.restoration.unwrap_phase. A mask can be applied by
+    thresholding the modulus of the object.
 
     :param obj: number or array to be wrapped
     :param support_threshold: relative threshold used to define a support from abs(obj)

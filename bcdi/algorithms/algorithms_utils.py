@@ -6,6 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+algorithms_utils.
+
+This module contains functions related to image deconvolution (Richardson-Lucy
+algorithm, blind deconvolution...).
+"""
 
 import matplotlib.pyplot as plt
 from numbers import Real
@@ -28,9 +34,10 @@ def blind_deconvolution_rl(
     **kwargs,
 ):
     """
-    Blind deconvolution using Richardson-Lucy algorithm. Estimates of the perfect
-    object and psf have to be provided. See Figure 1 and equations (4) & (5) in  D.
-    A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
+    Blind deconvolution using Richardson-Lucy algorithm.
+
+    Estimates of the perfect object and the psf have to be provided. See Figure 1 and
+    equations (4) & (5) in  D. A. Fish et al. J. Opt. Soc. Am. A, 12, 58 (1995).
 
     :param blurred_object: ndarray, measured object with partial coherent illumination
     :param perfect_object: ndarray, estimate of the object measured by a fully coherent
@@ -208,9 +215,10 @@ def deconvolution_rl(
     image, psf=None, psf_shape=(10, 10, 10), iterations=20, debugging=False
 ):
     """
-    Image deconvolution using Richardson-Lucy algorithm. The algorithm is based on a
-    PSF (Point Spread Function), where PSF is described as the impulse response of
-    the optical system.
+    Image deconvolution using Richardson-Lucy algorithm.
+
+    The algorithm is based on a PSF (Point Spread Function), where PSF is described
+    as the impulse response of the optical system.
 
     :param image: image to be deconvoluted
     :param psf: ndarray, psf if known. Leave None to use a Gaussian kernel of shape
@@ -274,6 +282,7 @@ def partial_coherence_rl(
 ):
     """
     Partial coherence deconvolution using Richardson-Lucy algorithm.
+
     See J.N. Clark et al., Nat. Comm. 3, 993 (2012).
 
     :param measured_intensity: measured object with partial coherent illumination
@@ -362,8 +371,10 @@ def partial_coherence_rl(
 
 def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
     """
-    Richardson-Lucy algorithm as implemented in scikit-image.restoration.deconvolution
-    with an additional parameter for the initial guess of the psf.
+    Richardson-Lucy algorithm.
+
+    The algorithm is as implemented in scikit-image.restoration.deconvolution with an
+    additional parameter for the initial guess of the psf.
 
     :param image: ndarray, input degraded image (can be N dimensional).
     :param psf: ndarray, the point spread function.

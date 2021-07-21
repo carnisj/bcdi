@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Created on Mon Mar 18 14:39:36 2019
+# Meant to open the data generated from the datarecorder upgrade of january 2019
+# Modified again the 24/06/2020
+# @author: Andrea Resta
 """
-Created on Mon Mar 18 14:39:36 2019
-Meant to open the data generated from the datarecorder upgrade of january 2019
-Modified again the 24/06/2020
-@author: Andrea Resta
+ReadNxs3.
+
+This module contains Classes and functions to load data at SIXS beamline. It is meant to
+be used on the data produced after the 11/03/2019 data of the upgrade of the
+datarecorder.
 """
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,24 +29,26 @@ class EmptyO:
 
 
 class DataSet:
-    """Dataset read the file and store it in an object, from this object we can
+    """
+    Class dealing with datasets.
+
+    It reads the file and stores it in an object, from this object we can
     retrive the data to use it.
 
-    Use as:
-         dataObject = nxsRead3.DataSet( path/filename, path )
-         filename can be '/path/filename.nxs' or just 'filename.nxs'
-         directory is optional and it can contain '/dir00/dir01'
-         both are meant to be string.
+    Use as: dataObject = nxsRead3.DataSet( path/filename, path )
 
-        . It returns an object with attibutes all the recorded sensor/motors
-        listed in the nxs file.
-        . if the sensor/motor is not in the "aliad_dict" file it generate a
-        name from the device name.
+    Filename can be '/path/filename.nxs' or just 'filename.nxs'. Directory is
+    optional and it can contain '/dir00/dir01', both are meant to be string.
 
-    The object will also contains some basic methods for data reuction such as
-    ROI extraction, attenuation correction and plotting.
-    Meant to be used on the data produced after the 11/03/2019 data of the
-    upgrade of the datarecorder"""
+     - It returns an object with attibutes all the recorded sensor/motors listed in
+       the nxs file.
+     - If the sensor/motor is not in the "aliad_dict" file it generate a name from
+       the device name.
+
+    The object will also contains some basic methods for data reuction such as ROI
+    extraction, attenuation correction and plotting. Meant to be used on the data
+    produced after the 11/03/2019 data of the upgrade of the datarecorder.
+    """
 
     def __init__(self, filename, directory="", nxs2spec=False, alias_dict=None):
 
@@ -77,8 +85,7 @@ class DataSet:
             self._alias_dict = None
 
         def is_empty(any_structure):
-            """Quick function to determine if an array, tuple or string is
-            empty"""
+            """Quick function to determine if an array, tuple or string is empty."""
             if any_structure:
                 return False
             return True
@@ -598,8 +605,12 @@ class DataSet:
     # down here useful function in the NxsRead #
     ############################################
     def get_stack(self, det2d_name):
-        """For a given  2D detector name given as string it check in the
-        attribute-list and return a stack of images"""
+        """
+        Check in the attribute-list for a given 2D detector.
+
+        :param det2d_name: string, detector name
+        :return: the stack of images
+        """
         try:
             stack = self.__getattribute__(det2d_name)
             return stack
@@ -607,8 +618,12 @@ class DataSet:
             print("There is no such attribute")
 
     def make_mask_frame_xpad(self):
-        """It generate a new attribute 'mask0_xpad' to remove the double pixels
-        it can be applied only to xpads140 for now."""
+        """
+        Correction for XPAD detector.
+
+        It generates a new attribute 'mask0_xpad' to remove the double pixels. It can
+        be applied only to xpads140 for now.
+        """
         detlist = self.det2d()
 
         if "xpad140" in detlist:
@@ -629,8 +644,13 @@ class DataSet:
 
     @staticmethod
     def roi_sum(stack, roi):
-        """given a stack of images it returns the integals over the ROI
-        roi is expected as eg: [257, 126,  40,  40]"""
+        """
+        Integrate intensity in a ROI for a stack of images.
+
+        :param stack: the stack of images
+        :param roi: ROI for the integration, e.g. [257, 126,  40,  40]
+        :return: the summed intensity for the stack of images
+        """
         return (
             stack[:, roi[1] : roi[1] + roi[3], roi[0] : roi[0] + roi[2]]
             .sum(axis=1)
@@ -640,9 +660,14 @@ class DataSet:
 
     @staticmethod
     def roi_sum_mask(stack, roi, mask):
-        """given a stack of images it returns the integals over the ROI minus
-        the masked pixels
-        the ROI is expected as eg: [257, 126,  40,  40]"""
+        """
+        Integrate intensity in a ROI for a stack of images, neglecting masked pixels.
+
+        :param stack: the stack of images
+        :param roi: ROI for the integration, e.g. [257, 126,  40,  40]
+        :param mask: the mask
+        :return: the summed intensity for the stack of images
+        """
         _stack = stack[:] * (1 - mask.astype("uint16"))
         return (
             _stack[:, roi[1] : roi[1] + roi[3], roi[0] : roi[0] + roi[2]]
@@ -654,10 +679,12 @@ class DataSet:
         self, stack, roiextent, maskname, attcoef, filters, acq_time, roi_name
     ):
         """
-        To calculate the roi corrected by attcoef, mask, filters,
-        acquisition_time roi_name is the name of the attribute that will be attached
-        to the dataset object mind that there might be a shift between motors and
-        filters in the SBS scans the ROI is expected as eg: [257, 126,  40,  40]
+        Calculate a ROI.
+
+        To calculate the roi corrected by attcoef, mask, filters, acquisition_time
+        roi_name is the name of the attribute that will be attached to the dataset
+        object mind that there might be a shift between motors and filters in the SBS
+        scans the ROI is expected as eg: [257, 126,  40,  40]
         """
         if hasattr(self, maskname):
             mask = self.__getattribute__(maskname)
@@ -672,7 +699,7 @@ class DataSet:
             _filterchanges = np.where((filters[1:] - filters[:-1]) != 0)
             roi_c = (integrals[:] * (attcoef ** filters[:])) / acq_time
             _filterchanges = np.asanyarray(_filterchanges)
-            if self._SpecNaNs:  # PyMCA do noike NaNs in the last column
+            if self._SpecNaNs:  # PyMCA do not like NaNs in the last column
                 np.put(roi_c, _filterchanges + 1, 0)
             if not self._SpecNaNs:  # but for data analysis NaNs are better
                 np.put(roi_c, _filterchanges + 1, np.NaN)
@@ -687,14 +714,15 @@ class DataSet:
 
     def plot_roi(self, motor, roi, color="-og", detname=None, label=None):
         """
-        It integrates the desired roi and plot it this plot function is simply meant
-        as quick verification.
+        Integrate the desired roi and plot it as quick verification.
 
-            Motor: motor name string
-            roi: is the roi name string of the desired region measured or in the
-            form: [257, 126,  40,  40]
-            detname: detector name;  it used first detector it finds if not
-            differently specified
+        :param motor: motor name string
+        :param roi: roi name string of the desired region measured or in the
+         form: [257, 126,  40,  40]
+        :param color: color for the plot
+        :param detname: detector name. It uses the first detector it finds if not
+         differently specified
+        :param label: label for the plot
         """
         if not detname:
             detname = self.det2d()[0]
@@ -719,8 +747,11 @@ class DataSet:
         plt.plot(xmot, yint, color, label=label)
 
     def plotscan(self, xvar, yvar, color="-og", label=None):
-        """It plots xvar vs yvar.
-        xvar and yvar must be in the attributes list"""
+        """
+        Plot xvar vs yvar.
+
+        xvar and yvar must be in the attributes list.
+        """
         if xvar in self.attlist:
             x = getattr(self, xvar)
             print("x ok")
@@ -735,11 +766,14 @@ class DataSet:
 
     def calc_roi_new2(self):
         """
-        if exist _coef, _integration_time, _roi_limits, _roi_names it can be applied
+        Calculate of the ROI.
+
+        If exist _coef, _integration_time, _roi_limits, _roi_names it can be applied
         to recalculate the roi on one or more 2D detectors. filters and motors are
-        shifted of one points for the FLY. corrected in the self.calc_roi
-        For SBS the data point when the filter is changed is collected with no
-        constant absorber and therefore is rejected."""
+        shifted of one points for the FLY. corrected in the self.calc_roi. For SBS
+        the data point when the filter is changed is collected with no constant
+        absorber and therefore is rejected.
+        """
         list2d = self._list2d
         common_roots = [
             "_roi_limits",
@@ -848,12 +882,17 @@ class DataSet:
                             )
 
     def prj(self, axe=0, mask_extra=None):
-        """Project the 2D detector on the coosen axe of the detector and return a matrix
-        of size:'side detector pixels' x 'number of images'
-        axe = 0 ==> x axe detector image
-        axe = 1 ==> y axe detector image
-        specify a mask_extra variable if you like.
-        Mask extra must be a the result of np.load(YourMask.npy)"""
+        """
+        Project a 3D dataset along one axis of the detector.
+
+        :param axe:
+         - axe = 0 ==> x axe detector image
+         - axe = 1 ==> y axe detector image
+
+        :param mask_extra: specify a mask_extra variable if you like. Mask extra must
+         be a the result of np.load(YourMask.npy).
+        :return: a matrix of size: 'side detector pixels' x 'number of images'
+        """
         if hasattr(self, "mask"):
             mask = self.__getattribute__("mask")
         else:
@@ -885,7 +924,7 @@ class DataSet:
                 setattr(self, str(el + "_prjX"), mat)  # generate the new attribute
 
     def det2d(self):
-        """it retunrs the name/s of the 2D detector"""
+        """Return the name of the 2D detector."""
         list2d = []
         for el in self.attlist:
             bla = self.__getattribute__(el)

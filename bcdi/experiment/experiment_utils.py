@@ -6,6 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+experiment_utils.
+
+This module contains classes related to the experimental setup (Detector,
+Diffractometer and corresponding child classes, Setup).
+"""
 
 from collections.abc import Sequence
 from functools import reduce
@@ -125,6 +131,8 @@ class Detector:
     @property
     def binning(self):
         """
+        Binning factor of the dataset.
+
         Tuple of three positive integers corresponding to the binning of the data used
         in phase retrieval (stacking dimension, detector vertical axis, detector
         horizontal axis). To declare an additional binning factor due to a previous
@@ -146,9 +154,7 @@ class Detector:
 
     @property
     def counter(self):
-        """
-        Name of the counter for the image number.
-        """
+        """Name of the counter for the image number."""
         counter_dict = {
             "Maxipix": "mpx4inr",
             "Eiger2M": "ei2minr",
@@ -161,9 +167,7 @@ class Detector:
 
     @property
     def datadir(self):
-        """
-        Name of the data directory
-        """
+        """Name of the data directory."""
         return self._datadir
 
     @datadir.setter
@@ -179,9 +183,7 @@ class Detector:
 
     @property
     def is_series(self):
-        """
-        Boolean, True for a series measurement at PETRAIII P10
-        """
+        """Boolean, True for a series measurement at PETRAIII P10."""
         return self._is_series
 
     @is_series.setter
@@ -192,9 +194,7 @@ class Detector:
 
     @property
     def name(self):
-        """
-        Name of the detector
-        """
+        """Name of the detector."""
         return self._name
 
     @name.setter
@@ -207,8 +207,9 @@ class Detector:
     @property
     def nb_pixel_x(self):
         """
-        Horizontal number of pixels of the detector, taking into account an eventual
-        preprocessing binning.
+        Horizontal number of pixels of the detector.
+
+        It takes into account an eventual preprocessing binning.
         """
         return self._nb_pixel_x
 
@@ -225,8 +226,9 @@ class Detector:
     @property
     def nb_pixel_y(self):
         """
-        Vertical number of pixels of the detector, taking into account an eventual
-        preprocessing binning.
+        Vertical number of pixels of the detector.
+
+        It takes into account an eventual preprocessing binning.
         """
         return self._nb_pixel_y
 
@@ -242,9 +244,7 @@ class Detector:
 
     @property
     def params(self):
-        """
-        Return a dictionnary with all parameters
-        """
+        """Return a dictionnary with all parameters."""
         return {
             "Class": self.__class__.__name__,
             "name": self.name,
@@ -268,22 +268,20 @@ class Detector:
 
     @property
     def pixelsize_x(self):
-        """
-        Horizontal pixel size of the detector after taking into account binning.
-        """
+        """Horizontal pixel size of the detector after taking into account binning."""
         return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
 
     @property
     def pixelsize_y(self):
-        """
-        Vertical pixel size of the detector after taking into account binning.
-        """
+        """Vertical pixel size of the detector after taking into account binning."""
         return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
 
     @property
     def pix_number(self):
         """
-        Number of pixels (vertical, horizontal) of the unbinned detector.
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
         """
         if self.name in {"Maxipix", "Dummy"}:
             number = (516, 516)
@@ -302,6 +300,8 @@ class Detector:
     @property
     def preprocessing_binning(self):
         """
+        Preprocessing binning factor of the data.
+
         Tuple of three positive integers corresponding to the binning factor of the
         data used in a previous preprocessing step (stacking dimension, detector
         vertical axis, detector horizontal axis).
@@ -323,7 +323,9 @@ class Detector:
     @property
     def roi(self):
         """
-        Region of interest of the detector to be used [y_start, y_stop, x_start, x_stop]
+        Region of interest of the detector to be used.
+
+        Convention: [y_start, y_stop, x_start, x_stop]
         """
         return self._roi
 
@@ -342,9 +344,7 @@ class Detector:
 
     @property
     def rootdir(self):
-        """
-        Name of the root directory, which englobes all scans
-        """
+        """Name of the root directory, which englobes all scans."""
         return self._rootdir
 
     @rootdir.setter
@@ -360,9 +360,7 @@ class Detector:
 
     @property
     def sample_name(self):
-        """
-        Name of the sample
-        """
+        """Name of the sample."""
         return self._sample_name
 
     @sample_name.setter
@@ -378,9 +376,7 @@ class Detector:
 
     @property
     def savedir(self):
-        """
-        Name of the saving directory
-        """
+        """Name of the saving directory."""
         return self._savedir
 
     @savedir.setter
@@ -396,9 +392,7 @@ class Detector:
 
     @property
     def scandir(self):
-        """
-        Path of the scan, typically it is the parent folder of the data folder
-        """
+        """Path of the scan, typically it is the parent folder of the data folder."""
         if self.datadir:
             dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + "/"
             return dir_path.replace("\\", "/")
@@ -406,8 +400,9 @@ class Detector:
     @property
     def sum_roi(self):
         """
-        Region of interest of the detector used for integrating the intensity
-        [y_start, y_stop, x_start, x_stop]
+        Region of interest of the detector used for integrating the intensity.
+
+        Convention: [y_start, y_stop, x_start, x_stop]
         """
         return self._sum_roi
 
@@ -429,9 +424,7 @@ class Detector:
 
     @property
     def template_file(self):
-        """
-        Template that can be used to generate template_imagefile.
-        """
+        """Template that can be used to generate template_imagefile."""
         return self._template_file
 
     @template_file.setter
@@ -447,9 +440,7 @@ class Detector:
 
     @property
     def template_imagefile(self):
-        """
-        Name of the data file.
-        """
+        """Name of the data file."""
         return self._template_imagefile
 
     @template_imagefile.setter
@@ -465,9 +456,7 @@ class Detector:
 
     @property
     def unbinned_pixel(self):
-        """
-        Pixel size (vertical, horizontal) of the unbinned detector in meters.
-        """
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         if self.name in {"Maxipix", "Timepix", "Merlin"}:
             pix = (55e-06, 55e-06)
         elif self.name in {"Eiger2M", "Eiger4M"}:
@@ -489,9 +478,7 @@ class Detector:
         return pix
 
     def __repr__(self):
-        """
-        Representation string of the Detector instance.
-        """
+        """Representation string of the Detector instance."""
         return (
             f"{self.__class__.__name__}(name='{self.name}', "
             f"unbinned_pixel={self.unbinned_pixel}, "
@@ -516,7 +503,10 @@ class Detector:
         self, data, mask, nb_img=1, flatfield=None, background=None, hotpixels=None
     ):
         """
-        Mask data measured with a 2D detector (flatfield, background, hotpixels, gaps).
+        Mask data measured with a 2D detector.
+
+        It can apply flatfield correction, background subtraction, masking of hotpixels
+        and detector gaps.
 
         :param data: the 2D data to mask
         :param mask: the 2D mask to be updated
@@ -669,8 +659,10 @@ class Detector:
 
 class Diffractometer:
     """
-    Base class for defining diffractometers. The frame used is the laboratory frame
-    with the CXI convention (z downstream, y vertical up, x outboard).
+    Base class for defining diffractometers.
+
+    The frame used is the laboratory frame with the CXI convention (z downstream,
+    y vertical up, x outboard).
 
     :param sample_offsets: list or tuple of three angles in degrees, corresponding to
      the offsets of each of the sample circles (the offset for the most outer circle
@@ -702,7 +694,9 @@ class Diffractometer:
     @property
     def detector_circles(self):
         """
-        List of detector circles from outer to inner (e.g. gamma delta), expressed
+        List of detector circles.
+
+        The circles should be listed from outer to inner (e.g. gamma delta), expressed
         using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
         example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
         y vertical up, x outboard), + for a counter-clockwise rotation, - for a
@@ -729,8 +723,10 @@ class Diffractometer:
     @property
     def sample_circles(self):
         """
-        List of sample circles from outer to inner (e.g. mu eta chi phi), expressed
-        using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
+        List of sample circles.
+
+        The sample circles should be listed from outer to inner (e.g. mu eta chi phi),
+        expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
         example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
         y vertical up, x outboard), + for a counter-clockwise rotation, - for a
         clockwise rotation.
@@ -756,10 +752,11 @@ class Diffractometer:
     @property
     def sample_offsets(self):
         """
-        List or tuple of three angles in degrees, corresponding to the offsets of each
-        of the sample circles (the offset for the most outer circle should be at
-        index 0). Convention: the sample offsets will be subtracted to measurement
-        the motor values.
+        List or tuple of three sample angular offsets in degrees.
+
+        These angles correspond to the offsets of each f the sample circles (the
+        offset for the most outer circle should be at index 0). Convention: the
+        sample offsets will be subtracted to measurement the motor values.
         """
         return self._sample_offsets
 
@@ -779,8 +776,9 @@ class Diffractometer:
 
     def add_circle(self, stage_name, index, circle):
         """
-        Add a circle to the list of circles (the most outer circle should be at
-        index 0).
+        Add a circle to the list of circles.
+
+        The most outer circle should be at index 0.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index where to put the circle in the list
@@ -818,7 +816,9 @@ class Diffractometer:
         **kwargs,
     ):
         """
-        Rotate arrays such that all circles of the sample stage are at their zero
+        Send all sample circles to zero degrees.
+
+        Arrays are rotatedsuch that all circles of the sample stage are at their zero
         position.
 
         :param arrays: tuple of 3D real arrays of the same shape.
@@ -1014,8 +1014,9 @@ class Diffractometer:
 
     def goniometer_values(self, **kwargs):
         """
-        This method is beamline dependent and should be implemented
-        in the child classes.
+        Define goniometer values.
+
+        This method is beamline dependent. It must be implemented in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
@@ -1027,8 +1028,9 @@ class Diffractometer:
 
     def motor_positions(self, **kwargs):
         """
-        This method is beamline dependent and should be implemented
-        in the child classes.
+        Define motor positions.
+
+        This method is beamline dependent. It must be implemented in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup.
@@ -1063,8 +1065,7 @@ class Diffractometer:
 
     def rotation_matrix(self, stage_name, angles):
         """
-        Calculate the 3x3 rotation matrix given by the list of angles corresponding to
-        the stage circles.
+        Calculate a 3D rotation matrix given rotation axes and angles.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param angles: list of angular values in degrees for the stage circles
@@ -1111,9 +1112,14 @@ class Diffractometer:
 
 class Diffractometer34ID(Diffractometer):
     """
-    34ID goniometer, 2S+2D (sample: theta (inplane), phi (out of plane) / detector:
-    delta (inplane), gamma). The laboratory frame uses the CXI convention (z
-    downstream, y vertical up, x outboard).
+    Define 34ID goniometer: 2 sample circles + 2 detector circles.
+
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+
+    - sample: theta (inplane), phi (out of plane)
+    - detector: delta (inplane), gamma).
+
     """
 
     def __init__(self, sample_offsets):
@@ -1197,9 +1203,14 @@ class Diffractometer34ID(Diffractometer):
 
 class DiffractometerCRISTAL(Diffractometer):
     """
-    CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta).
+    Define CRISTAL goniometer: 2 sample circles + 2 detector circles.
+
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
+
+    - sample: mgomega, mgphi
+    - detector: gamma, delta.
+
     """
 
     def __init__(self, sample_offsets):
@@ -1259,9 +1270,10 @@ class DiffractometerCRISTAL(Diffractometer):
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
-        Load the scan data and extract motor positions. It will look for the correct
-        entry 'rocking_angle' in the dictionary Setup.actuators, and use the default
-        entry otherwise.
+        Load the scan data and extract motor positions.
+
+        It will look for the correct entry 'rocking_angle' in the dictionary
+        Setup.actuators, and use the default entry otherwise.
 
         :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: the experimental setup: Class SetupPreprocessing()
@@ -1386,6 +1398,7 @@ class DiffractometerCRISTAL(Diffractometer):
     def cristal_load_motor(datafile, root, actuator_name, field_name):
         """
         Try to load the dataset at the defined entry and returns it.
+
         Patterns keep changing at CRISTAL.
 
         :param datafile: h5py File object of CRISTAL .nxs scan file
@@ -1449,9 +1462,14 @@ class DiffractometerCRISTAL(Diffractometer):
 
 class DiffractometerID01(Diffractometer):
     """
-    ID01 goniometer, 3S+2D (sample: mu, eta, phi / detector: nu,del).
+    Define ID01 goniometer: 3 sample circles + 2 detector circles.
+
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
+
+    - sample: mu, eta, phi
+    - detector: nu,del.
+
     """
 
     def __init__(self, sample_offsets):
@@ -1672,9 +1690,14 @@ class DiffractometerID01(Diffractometer):
 
 class DiffractometerNANOMAX(Diffractometer):
     """
-    NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta).
+    Define NANOMAX goniometer: 2 sample circles + 2 detector circles.
+
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
+
+    - sample: theta, phi
+    - detector: gamma,delta.
+
     """
 
     def __init__(self, sample_offsets):
@@ -1789,9 +1812,14 @@ class DiffractometerNANOMAX(Diffractometer):
 
 class DiffractometerP10(Diffractometer):
     """
-    P10 goniometer, 4S+2D (sample: mu, om, chi, phi / detector: gamma, delta).
-    The laboratory frame uses the CXI convention (z downstream, y vertical up, x
-    outboard).
+    Define P10 goniometer: 4 sample circles + 2 detector circles.
+
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+
+    - sample: mu, om, chi, phi
+    - detector: gamma, delta.
+
     """
 
     def __init__(self, sample_offsets):
@@ -1852,8 +1880,7 @@ class DiffractometerP10(Diffractometer):
 
     def motor_positions(self, logfile, setup):
         """
-        Load the .fio file from the scan and extract motor positions for P10 6-circle
-        difractometer setup.
+        Load the .fio file from the scan and extract motor positions.
 
         :param logfile: path of the . fio file containing the information about the scan
         :param setup: the experimental setup: Class SetupPreprocessing()
@@ -1944,9 +1971,14 @@ class DiffractometerP10(Diffractometer):
 
 class DiffractometerSIXS(Diffractometer):
     """
-    SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del).
+    Define SIXS goniometer: 2 sample circles + 3 detector circles.
+
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
+
+    - sample: beta, mu
+    - detector: beta, gamma, del.
+
     """
 
     def __init__(self, sample_offsets):
@@ -2112,9 +2144,7 @@ class RotationMatrix:
 
     @property
     def angle(self):
-        """
-        Angular value to be used in the calculation of the rotation matrix.
-        """
+        """Angular value to be used in the calculation of the rotation matrix."""
         return self._angle
 
     @angle.setter
@@ -2127,9 +2157,10 @@ class RotationMatrix:
     @property
     def circle(self):
         """
-        Circle definition used for the calculation of the rotation matrix in
-        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. + for a counter-clockwise rotation,
-        - for a clockwise rotation.
+        Circle definition used for the calculation of the rotation matrix.
+
+        Allowed values: {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}.
+        + for a counter-clockwise rotation, - for a clockwise rotation.
         """
         return self._circle
 
@@ -2305,7 +2336,9 @@ class Setup:
     @property
     def actuators(self):
         """
-        Optional dictionary that can be used to define the entries corresponding to
+        Define motors names in the data file.
+
+        This optional dictionary  can be used to define the entries corresponding to
         actuators in data files (useful at CRISTAL where the location of data keeps
         changing)
         """
@@ -2323,8 +2356,9 @@ class Setup:
     @property
     def beam_direction(self):
         """
-        Direction of the incident X-ray beam in the frame (z downstream, y vertical up,
-        x outboard).
+        Direction of the incident X-ray beam.
+
+        Frame convention: (z downstream, y vertical up, x outboard).
         """
         return self._beam_direction
 
@@ -2346,17 +2380,16 @@ class Setup:
     @property
     def beam_direction_xrutils(self):
         """
-        Direction of the incident X-ray beam in the frame of xrayutilities
-        (x downstream, y outboard, z vertical up).
+        Direction of the incident X-ray beam.
+
+        xrayutilities frame convention: (x downstream, y outboard, z vertical up).
         """
         u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
         return u, w, v
 
     @property
     def beamline(self):
-        """
-        Name of the beamline.
-        """
+        """Name of the beamline."""
         return self._beamline
 
     @beamline.setter
@@ -2376,8 +2409,10 @@ class Setup:
     @property
     def custom_images(self):
         """
-        List of images numbers when the scan does no follow the beamline's usual
-        directory format.
+        List of images numbers.
+
+        It can be used for scans which don't follow the beamline's usual directory
+        format (e.g. manual scan).
         """
         return self._custom_images
 
@@ -2399,8 +2434,10 @@ class Setup:
     @property
     def custom_monitor(self):
         """
-        List of monitor values when the scan does no follow the beamline's usual
-        directory format. The number of values should be equal to the number of
+        List of monitor values.
+
+        It can be used for scans which don't follow the beamline's usual directory
+        format (e.g. manual scan). The number of values should be equal to the number of
         elements in custom_images.
         """
         return self._custom_monitor
@@ -2424,8 +2461,10 @@ class Setup:
     @property
     def custom_motors(self):
         """
-        List of motor values when the scan does no follow the beamline's usual
-        directory format.
+        List of motor values.
+
+        It can be used for scans which don't follow the beamline's usual directory
+        format (e.g. manual scan).
         """
         return self._custom_motors
 
@@ -2444,7 +2483,10 @@ class Setup:
     @property
     def custom_scan(self):
         """
-        Boolean, True is the scan does not follow the beamline's usual directory format.
+        Define is a scan follows the standard directory format or not.
+
+        Boolean, True is the scan does not follow the beamline's usual directory
+        format.
         """
         return self._custom_scan
 
@@ -2456,9 +2498,7 @@ class Setup:
 
     @property
     def detector(self):
-        """
-        Detector instance
-        """
+        """Define a valid Detector instance."""
         return self._detector
 
     @detector.setter
@@ -2470,9 +2510,10 @@ class Setup:
     @property
     def detector_hor(self):
         """
-        Defines the horizontal detector orientation for xrayutilities depending on
-        the beamline. The frame convention of xrayutilities is the following: x
-        downstream, y outboard, z vertical up.
+        Horizontal detector orientation for xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
         """
         if self.beamline in {"ID01", "SIXS_2018", "SIXS_2019", "CRISTAL", "NANOMAX"}:
             # we look at the detector from downstream,
@@ -2485,9 +2526,10 @@ class Setup:
     @property
     def detector_ver(self):
         """
-        Defines the vertical detector orientation for xrayutilities depending on the
-        beamline. The frame convention of xrayutilities is the following: x
-        downstream, y outboard, z vertical up.
+        Vertical detector orientation for xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
         """
         if self.beamline in {
             "ID01",
@@ -2504,14 +2546,14 @@ class Setup:
 
     @property
     def diffractometer(self):
-        """
-        Return the diffractometer instance.
-        """
+        """Return the diffractometer instance."""
         return self._diffractometer
 
     @property
     def direct_beam(self):
         """
+        Direct beam position in pixels.
+
         Tuple of two real numbers indicating the position of the direct beam in pixels
         at zero detector angles.
         """
@@ -2531,9 +2573,7 @@ class Setup:
 
     @property
     def distance(self):
-        """
-        Sample to detector distance, in m
-        """
+        """Sample to detector distance, in m."""
         return self._distance
 
     @distance.setter
@@ -2549,9 +2589,7 @@ class Setup:
 
     @property
     def energy(self):
-        """
-        Energy setting of the beamline, in eV.
-        """
+        """Energy setting of the beamline, in eV."""
         return self._energy
 
     @energy.setter
@@ -2576,8 +2614,10 @@ class Setup:
     @property
     def exit_wavevector(self):
         """
-        Calculate the exit wavevector kout depending on the setup parameters, in the
-        laboratory frame (z downstream, y vertical, x outboard). The unit is 1/m
+        Calculate the exit wavevector kout.
+
+        It uses the setup instance parameters. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
 
         :return: kout vector
         """
@@ -2685,7 +2725,10 @@ class Setup:
     @property
     def filtered_data(self):
         """
-        Boolean, True if the data and the mask to be loaded were already preprocessed.
+        Define if data was already preprocessed.
+
+        Boolean, True if the data and the mask to be loaded were already
+        preprocessed.
         """
         return self._filtered_data
 
@@ -2698,10 +2741,11 @@ class Setup:
     @property
     def grazing_angle(self):
         """
-        Motor positions for the goniometer circles below the rocking angle. It should
-        be a list/tuple of lenght 1 for out-of-plane rocking curves (the motor value
-        for mu if it exists) and length 2 for inplane rocking curves (mu and
-        omega/om/eta motor values).
+        Motor positions for the goniometer circles below the rocking angle.
+
+        It should be a list/tuple of lenght 1 for out-of-plane rocking curves (the
+        motor value for mu if it exists) and length 2 for inplane rocking curves (
+        e.g. mu and omega/om/eta motor values).
         """
         return self._grazing_angle
 
@@ -2740,8 +2784,10 @@ class Setup:
     @property
     def incident_wavevector(self):
         """
-        Calculate the incident wavevector kin depending on the setup parameters, in
-        the laboratory frame (z downstream, y vertical, x outboard). The unit is 1/m.
+        Calculate the incident wavevector kout.
+
+        It uses the setup instance parameters. kin is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
 
         :return: kin vector
         """
@@ -2749,9 +2795,7 @@ class Setup:
 
     @property
     def inplane_angle(self):
-        """
-        Horizontal detector angle, in degrees.
-        """
+        """Horizontal detector angle, in degrees."""
         return self._inplane_angle
 
     @inplane_angle.setter
@@ -2763,6 +2807,8 @@ class Setup:
     @property
     def inplane_coeff(self):
         """
+        Coefficient related to the detector inplane orientation.
+
         Define a coefficient +/- 1 depending on the detector inplane rotation direction
         and the detector inplane orientation. The frame convention is the one of
         xrayutilities: x downstream, y outboard, z vertical up. See
@@ -2800,9 +2846,7 @@ class Setup:
 
     @property
     def outofplane_angle(self):
-        """
-        Vertical detector angle, in degrees.
-        """
+        """Vertical detector angle, in degrees."""
         return self._outofplane_angle
 
     @outofplane_angle.setter
@@ -2814,6 +2858,8 @@ class Setup:
     @property
     def outofplane_coeff(self):
         """
+        Coefficient related to the detector vertical orientation.
+
         Define a coefficient +/- 1 depending on the detector out of plane rotation
         direction and the detector out of  plane orientation. The frame convention is
         the one of xrayutilities: x downstream, y outboard, z vertical up. See
@@ -2831,9 +2877,7 @@ class Setup:
 
     @property
     def params(self):
-        """
-        Return a dictionnary with all parameters
-        """
+        """Return a dictionnary with all parameters."""
         return {
             "Class": self.__class__.__name__,
             "beamline": self.beamline,
@@ -2863,8 +2907,9 @@ class Setup:
     @property
     def q_laboratory(self):
         """
-        Calculate the diffusion vector in the laboratory frame (z downstream,
-        y vertical up, x outboard). The unit is 1/A.
+        Calculate the diffusion vector in the laboratory frame.
+
+        Frame convention: (z downstream, y vertical up, x outboard). The unit is 1/A.
 
         :return: a tuple of three vectors components.
         """
@@ -2873,7 +2918,9 @@ class Setup:
     @property
     def rocking_angle(self):
         """
-        Angle which is tilted during the rocking curve in {'outofplane', 'inplane'}
+        Angle which is tilted during the rocking curve.
+
+        Valid values: {'outofplane', 'inplane'}
         """
         return self._rocking_angle
 
@@ -2893,9 +2940,7 @@ class Setup:
 
     @property
     def tilt_angle(self):
-        """
-        Angular step of the rocking curve, in degrees.
-        """
+        """Angular step of the rocking curve, in degrees."""
         return self._tilt_angle
 
     @tilt_angle.setter
@@ -2906,16 +2951,12 @@ class Setup:
 
     @property
     def wavelength(self):
-        """
-        Wavelength in meters.
-        """
+        """Wavelength in meters."""
         if self.energy:
             return 12.398 * 1e-7 / self.energy  # in m
 
     def __repr__(self):
-        """
-        Representation string of the Setup instance.
-        """
+        """Representation string of the Setup instance."""
         return (
             f"{self.__class__.__name__}(beamline='{self.beamline}', "
             f"detector='{self.detector.name}',"
@@ -2993,9 +3034,7 @@ class Setup:
         return logfile
 
     def create_diffractometer(self, sample_offsets):
-        """
-        Create a Diffractometer instance depending on the beamline.
-        """
+        """Create a Diffractometer instance depending on the beamline."""
         if self.beamline == "ID01":
             return DiffractometerID01(sample_offsets)
         if self.beamline in {"SIXS_2018", "SIXS_2019"}:
@@ -3020,7 +3059,7 @@ class Setup:
         **kwargs,
     ):
         """
-        Interpolate the orthogonal object back into the non-orthogonal detector frame
+        Interpolate the orthogonal object back into the non-orthogonal detector frame.
 
         :param obj: real space object, in the orthogonal laboratory frame
         :param voxel_size: voxel size of the original object, number of list/tuple of
@@ -3148,8 +3187,10 @@ class Setup:
         verbose=False,
     ):
         """
+        Init paths used for data processing and logging.
+
         Update the detector instance with initialized paths and template for filenames
-        depending on the beamline
+        depending on the beamline.
 
         :param sample_name: string in front of the scan number in the data folder name.
         :param scan_number: the scan number
@@ -3287,6 +3328,8 @@ class Setup:
         **kwargs,
     ):
         """
+        Geometrical transformation in direct space.
+
         Interpolate arrays (direct space output of the phase retrieval) in the
         orthogonal reference frame where q_com is aligned onto the array axis
         reference_axis.
@@ -3709,6 +3752,8 @@ class Setup:
         **kwargs,
     ):
         """
+        Geometrical transformation in reciprocal (Fourier) space.
+
         Interpolate arrays in the orthogonal laboratory frame (z/qx downstream,
         y/qz vertical up, x/qy outboard) or crystal frame (q aligned along one array
         axis). The ouput shape will be increased in order to keep the same range in q
@@ -4179,9 +4224,10 @@ class Setup:
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True
     ):
         """
-        Calculate the transformation matrix from the detector frame to the laboratory
-        frame. For direct space, the length scale is in nm, for reciprocal space,
-        it is in 1/nm.
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
 
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
@@ -5034,8 +5080,9 @@ class Setup:
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
-        Calculate the direct space voxel sizes in the laboratory frame
-        (z downstream, y vertical up, x outboard).
+        Calculate the direct space voxel sizes in the laboratory frame.
+
+        Frame convention: (z downstream, y vertical up, x outboard).
 
         :param array_shape: shape of the 3D array to orthogonalize
         :param tilt_angle: angular step during the rocking curve, in degrees
@@ -5082,8 +5129,10 @@ class Setup:
         self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False
     ):
         """
-        Calculate the direct space voxel sizes in the detector frame
-        (z rocking angle, y detector vertical axis, x detector horizontal axis).
+        Calculate the direct space voxel sizes in the detector frame.
+
+        Frame convention: (z rocking angle, y detector vertical axis, x detector
+        horizontal axis).
 
         :param array_shape: shape of the 3D array used in phase retrieval
         :param tilt_angle: angular step during the rocking curve, in degrees
@@ -5112,6 +5161,8 @@ class Setup:
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
+    Find the closest larger number that meets some condition.
+
     Find the closest integer >=n (or list/array of integers), for which the largest
     prime divider is <=maxprime, and has to include some dividers. The default values
     for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
@@ -5158,7 +5209,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
 
 def primes(number):
     """
-    Returns the prime decomposition of n as a list. Adapted from PyNX.
+    Return the prime decomposition of n as a list. Adapted from PyNX.
 
     :param number: the integer to be decomposed
     :return: the list of prime dividers of number
@@ -5180,6 +5231,8 @@ def primes(number):
 
 def smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
+    Find the closest smaller number that meets some condition.
+
     Find the closest integer <=n (or list/array of integers), for which the largest
     prime divider is <=maxprime, and has to include some dividers. The default values
     for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
@@ -5224,6 +5277,8 @@ def smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     """
+    Check if a number meets some condition.
+
     Check if the largest prime divider is <=maxprime, and optionally includes some
     dividers. Adapted from PyNX.
 
