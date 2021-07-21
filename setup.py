@@ -18,7 +18,7 @@ with open(path.join(here, "README.rst"), encoding="utf-8") as f:
 
 # get the version
 with open("bcdi/__init__.py", "r") as version_file:
-    version = version_file.readlines()[-1].split("=")[1].strip()
+    version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
 
 
 setup(

@@ -55,7 +55,7 @@ author = "Jerome Carnis"
 
 # The short X.Y version.
 with open("../bcdi/__init__.py", "r") as version_file:
-    version = version_file.readlines()[-1].split("=")[1].strip()
+    version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
 
 # The full version, including alpha/beta/rc tags.
 release = version
