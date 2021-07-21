@@ -5,14 +5,22 @@ doit configuration for BCDI
 import coverage
 import os
 
+# Generic functions go here
+
+
+def get_path():
+    """Get the path of the dodo.py file."""
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+# Tasks go here
+
 
 def task_black():
     """Run black against the package."""
+    path = get_path()
     return {
-        "actions": [
-            f"python -m black --line-length=88 "
-            f"{os.path.dirname(os.path.abspath(__file__)) }"
-        ],
+        "actions": [f"python -m black --line-length=88 {path}"],
         "verbosity": 2,
     }
 
@@ -36,7 +44,7 @@ def task_coverage_xml():
     """
 
     def create_coverage_xml(coverage_file, output_file):
-        print("XML coverage report generated in 'test_output/'")
+        print("\nXML coverage report generated in 'test_output/'\n")
         cov = coverage.Coverage(data_file=coverage_file)
         cov.load()
         cov.xml_report(outfile=output_file)
@@ -46,7 +54,27 @@ def task_coverage_xml():
             (create_coverage_xml, [".coverage", "test_output/coverage-report.xml"])
         ],
         "file_dep": [".coverage"],
-        "targets": ["test-output/coverage-report.xml"],
+        "targets": ["test_output/coverage-report.xml"],
+        "verbosity": 2,
+    }
+
+
+def task_clean_coverage():
+    """Delete the coverage report."""
+
+    def delete_coverage(filename):
+        path = os.path.join(get_path(), filename).replace("\\", "/")
+        if os.path.isfile(path):
+            os.unlink(path)
+            print(f"\nDeleted {path}")
+        else:
+            print("\nNo coverage file to delete.\n")
+
+    return {
+        "actions": [
+            (delete_coverage, [".coverage"])
+        ],
+        "file_dep": ["test_output/coverage-report.xml"],
         "verbosity": 2,
     }
 
@@ -63,6 +91,6 @@ def task_tests():
     """Run unit tests with coverage."""
     return {
         "actions": [f"coverage run --source=bcdi -m unittest discover"],
-        "targets": [".coverage", "test_output/unit-test-report.xml"],
+        "targets": [".coverage"],
         "verbosity": 2,
     }
