@@ -14,6 +14,12 @@ def get_path():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def get_version():
+    with open("bcdi/__init__.py", "r") as version_file:
+        version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
+    return version
+
+
 # Tasks go here
 
 
@@ -22,6 +28,23 @@ def task_black():
     path = get_path()
     return {
         "actions": [f"python -m black --line-length=88 {path}"],
+        "verbosity": 2,
+    }
+
+
+def task_clean_dist():
+    """Remove the build directory and its content."""
+
+    def delete_dir(dirname):
+        path = os.path.join(get_path(), dirname).replace("\\", "/")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            print(f"\n\tDeleted {path}\n")
+        else:
+            print("\n\tNo build directory to delete.\n")
+
+    return {
+        "actions": [(delete_dir, ["dist/"])],
         "verbosity": 2,
     }
 
@@ -39,23 +62,6 @@ def task_clean_docs():
 
     return {
         "actions": [(delete_dir, ["doc/_build/"])],
-        "verbosity": 2,
-    }
-
-
-def task_clean_build():
-    """Remove the build directory and its content."""
-
-    def delete_dir(dirname):
-        path = os.path.join(get_path(), dirname).replace("\\", "/")
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-            print(f"\n\tDeleted {path}\n")
-        else:
-            print("\n\tNo build directory to delete.\n")
-
-    return {
-        "actions": [(delete_dir, ["build/"])],
         "verbosity": 2,
     }
 
@@ -129,11 +135,19 @@ def task_tests():
     }
 
 
-#
-# def task_build_package():
-#     """Build the package."""
-#     return {
-#         "actions": ["python setup.py sdist bdist_wheel"],
-#         "targets": ["build/"],
-#         "verbosity": 2,
-#     }
+def task_build_distribution():
+    """Build the distribution."""
+    return {
+        "actions": ["python setup.py sdist bdist_wheel"],
+        "targets": [f"dist/bcdi-{get_version()}.tar.gz"],
+        "verbosity": 1,
+    }
+
+
+def task_check_description():
+    """Check whether the long description will render correctly on PyPI."""
+    return {
+        "actions": ["twine check dist/*"],
+        "file_dep": [f"dist/bcdi-{get_version()}.tar.gz"],
+        "verbosity": 2,
+    }
