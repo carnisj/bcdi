@@ -10,8 +10,8 @@
 BCDI preprocessing.
 
 This package contains:
- - functions related to data loading and preprocessing,
+ - preprocessing_utils: functions related to data loading and preprocessing,
    before phase retrieval.
- - modules to load data at SIXS beamline (nxsReady, ReadNxs3)
+ - nxsReady, ReadNxs3: modules to load data at SIXS beamline
 
 """
