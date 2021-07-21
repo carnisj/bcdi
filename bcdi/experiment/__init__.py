@@ -8,7 +8,7 @@
 """
 BCDI experiment.
 
-This module contains classes related to the experimental setup.
+This package contains classes related to the experimental setup.
 
 Classes
 -------

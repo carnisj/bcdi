@@ -6,6 +6,11 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+facet_utils.
+
+This module contains functions related to facet recognition of nanocrystals.
+"""
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve
@@ -31,8 +36,9 @@ default_cmap = colormap.cmap
 
 def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
     """
-    Calculate the coordinates of normals in the stereographic projection depending on
-    the reference axis. See: Nanoscale 10, 4833 (2018).
+    Calculate the coordinates of normals in the stereographic projection.
+
+    The calculation depends on the reference axis. See: Nanoscale 10, 4833 (2018).
 
     :param projection_axis: the projection is performed on q plane perpendicular to
      that axis (0, 1 or 2)
@@ -149,7 +155,7 @@ def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):
 
 def detect_edges(faces):
     """
-    Find indices of vertices defining non-shared edges
+    Find indices of vertices defining non-shared edges.
 
     :param faces: ndarray of m*3 faces
     :return: 1D list of indices of vertices defining non-shared edges (near hole...)
@@ -175,7 +181,7 @@ def detect_edges(faces):
 
 def distance_threshold(fit, indices, plane_shape, max_distance=0.90):
     """
-    Filter out pixels depending on their distance to a fit plane
+    Filter out pixels depending on their distance to a fit plane.
 
     :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
     :param indices: tuple or array of plane indices, x being the 1st tuple element or
@@ -222,8 +228,10 @@ def equirectangular_proj(
     debugging=False,
 ):
     """
-    Detect facets in an object using an equirectangular projection of normals
-    to mesh triangles and watershed segmentation.
+    Detect facets in an object.
+
+    It uses an equirectangular projection of normals to mesh triangles and watershed
+    segmentation.
 
     :param normals: normals array
     :param intensity: intensity array
@@ -712,8 +720,9 @@ def fit_plane(plane, label, debugging=False):
 
 def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     """
-    Find voxels of the object which belong to a facet using the facet plane equation
-     and the distance to the plane.
+    Find voxels of the object which belong to a facet.
+
+    It uses the facet plane equation and the distance to the plane to find such voxels.
 
     :param fit: coefficients of the plane (a, b, c, d) such that a*x + b*y + c*z + d = 0
     :param plane: 3D binary support of the plane, with shape of the full dataset
@@ -827,8 +836,9 @@ def offset_plane(indices, offset, plane_normal):
 
 def remove_duplicates(vertices, faces, debugging=False):
     """
-    Remove duplicates in a list of vertices and faces (a face is a triangle made of
-     three vertices).
+    Remove duplicates in a list of vertices and faces.
+
+    A face is a triangle made of three vertices.
 
     :param vertices: a ndarray of vertices, shape (N, 3)
     :param faces: a ndarray of vertex indices, shape (M, 3)
@@ -902,7 +912,9 @@ def remove_duplicates(vertices, faces, debugging=False):
 
 def surface_indices(surface, plane_indices, margin=3):
     """
-    Crop surface around the plane with a certain margin, and find corresponding
+    Find surface indices potentially belonging to a plane.
+
+    It crops the surface around the plane with a certain margin, and find corresponding
     surface indices.
 
     :param surface: the 3D surface binary array
@@ -954,8 +966,10 @@ def stereographic_proj(
     debugging=False,
 ):
     """
-    Detect facets in an object using a stereographic projection of normals to mesh
-    triangles and watershed segmentation.
+    Detect facets in an object.
+
+    It uses a stereographic projection of normals to mesh triangles and watershed
+    segmentation.
 
     :param normals: array of normals to mesh triangles (nb_normals rows x 3 columns)
     :param intensity: array of intensities (nb_normals rows x 1 column)
@@ -989,6 +1003,7 @@ def stereographic_proj(
        v column 1) and North (u column2 , v column 3). The coordinates are in
        degrees, not indices.
      - the list of rows to remove
+
     """
 
     def mouse_move(event):
@@ -1390,7 +1405,9 @@ def taubin_smooth(
     debugging=False,
 ):
     """
-    Performs a back and forward Laplacian smoothing "without shrinking" of a
+    Perform Taubin's smoothing of a mesh.
+
+    It performs a back and forward Laplacian smoothing "without shrinking" of a
     triangulated mesh, as described by Gabriel Taubin (ICCV '95)
 
     :param faces: m*3 ndarray of m faces defined by 3 indices of vertices
