@@ -6,6 +6,12 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+xcca_utils.
+
+This module contains functions related to reciprocal space averaging and X-ray
+cross-correlation analysis.
+"""
 
 import numpy as np
 from ..graph import graph_utils as gu
@@ -16,8 +22,9 @@ def angular_avg(
     data, q_values, mask=None, origin=None, nb_bins=np.nan, debugging=False
 ):
     """
-    Calculate an angular average of a 3D reciprocal space dataset given q values and
-    the position of the origin of the reciprocal space.
+    Calculate an angular average of a 3D reciprocal space dataset.
+
+    It needs q values and the position of the origin of the reciprocal space.
 
     :param data: 3D reciprocal space data gridded in the orthonormal frame
      (qx downstream, qz vertical up, qy outboard)
@@ -117,7 +124,9 @@ def angular_avg(
 
 def calc_ccf_polar(point, q1_name, q2_name, bin_values, polar_azi_int):
     """
-    Calculate for the cross-correlation of point with all other points at the second q
+    Cross-correlate intensities at two q values, in polar coordinates.
+
+    It calculates the cross-correlation of point with all other points at the second q
     value and sort the result.
 
     :param point: the reference point
@@ -174,7 +183,9 @@ def calc_ccf_polar(point, q1_name, q2_name, bin_values, polar_azi_int):
 
 def calc_ccf_rect(point, q1_name, q2_name, bin_values, q_int):
     """
-    Calculate for the cross-correlation of point with all other points at the second q
+    Cross-correlate intensities at two q values, in cartesian coordinates.
+
+    It calculates the cross-correlation of point with all other points at the second q
     value and sort the result.
 
     :param point: the reference point
