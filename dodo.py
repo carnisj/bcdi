@@ -29,16 +29,33 @@ def task_black():
 def task_clean_docs():
     """Remove the compiled documentation."""
 
-    def delete_docs(dirname):
+    def delete_dir(dirname):
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
-            print(f"\nDeleted {path}\n")
+            print(f"\n\tDeleted {path}\n")
         else:
-            print("\nNo built documentation to delete.\n")
+            print("\n\tNo built documentation to delete.\n")
 
     return {
-        "actions": [(delete_docs, ["doc/_build/"])],
+        "actions": [(delete_dir, ["doc/_build/"])],
+        "verbosity": 2,
+    }
+
+
+def task_clean_build():
+    """Remove the build directory and its content."""
+
+    def delete_dir(dirname):
+        path = os.path.join(get_path(), dirname).replace("\\", "/")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            print(f"\n\tDeleted {path}\n")
+        else:
+            print("\n\tNo build directory to delete.\n")
+
+    return {
+        "actions": [(delete_dir, ["build/"])],
         "verbosity": 2,
     }
 
@@ -62,7 +79,7 @@ def task_coverage_xml():
     """
 
     def create_coverage_xml(coverage_file, output_file):
-        print("\nXML coverage report generated in 'test_output/'\n")
+        print("\n\tXML coverage report generated in 'test_output/'\n")
         cov = coverage.Coverage(data_file=coverage_file)
         cov.load()
         cov.xml_report(outfile=output_file)
@@ -84,9 +101,9 @@ def task_clean_coverage():
         path = os.path.join(get_path(), filename).replace("\\", "/")
         if os.path.isfile(path):
             os.unlink(path)
-            print(f"\nDeleted {path}\n")
+            print(f"\n\tDeleted {path}\n")
         else:
-            print("\nNo coverage file to delete.\n")
+            print("\n\tNo coverage file to delete.\n")
 
     return {
         "actions": [(delete_coverage, [".coverage"])],
@@ -98,7 +115,7 @@ def task_clean_coverage():
 def task_docstrings():
     """Run pydocstyle on the modules."""
     return {
-        "actions": ["pydocstyle    bcdi --ignore=D107,D212,D203"],
+        "actions": ["pydocstyle bcdi --ignore=D107,D212,D203"],
         "verbosity": 2,
     }
 
@@ -110,3 +127,13 @@ def task_tests():
         "targets": [".coverage"],
         "verbosity": 2,
     }
+
+
+#
+# def task_build_package():
+#     """Build the package."""
+#     return {
+#         "actions": ["python setup.py sdist bdist_wheel"],
+#         "targets": ["build/"],
+#         "verbosity": 2,
+#     }
