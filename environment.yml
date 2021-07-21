@@ -19,7 +19,7 @@ dependencies:
   - xrayutilities
   - fabio
   - silx
-  - pyqt5
+  - pyqt
   - pytables
   - lmfit
   - moviepy
