@@ -164,7 +164,7 @@ BCDI.experiment: class and methods defining the experimental setup
 Description
 -----------
 
-This module provides a class and methods for the definition of the experimental setup.
+This module provides classes and methods for the definition of the experimental setup.
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
@@ -181,6 +181,12 @@ The following detectors are implemented:
  * Merlin
  * Eiger2M
  * Eiger4M
+
+The following classes are implemented:
+
+ * Detector
+ * Diffractometer and corresponding child classes (one per beamline)
+ * Setup
 
 .. bcdi.experiment end
 
