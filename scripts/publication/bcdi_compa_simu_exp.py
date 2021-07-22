@@ -454,7 +454,10 @@ if debug:
     ax2.invert_yaxis()
     plt.title("new_amp")
 
-    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2,)
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(
+        2,
+        2,
+    )
     plt0 = ax0.imshow(
         amp_simu[
             numz // 2 - pixel_FOV : numz // 2 + pixel_FOV,

@@ -7,10 +7,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """
-experiment_utils.
+Classes related to the experimental setup.
 
-This module contains classes related to the experimental setup (Detector,
-Diffractometer and corresponding child classes, Setup).
+Detector, Diffractometer and corresponding child classes, Setup
 """
 
 from collections.abc import Sequence

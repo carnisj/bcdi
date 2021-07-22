@@ -6,11 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-facet_utils.
-
-This module contains functions related to facet recognition of nanocrystals.
-"""
+"""Functions related to facet recognition of nanocrystals."""
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve

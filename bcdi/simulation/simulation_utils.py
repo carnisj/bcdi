@@ -6,11 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-simulation_utils.
-
-This module contains functions related to the calculation of crystalline lattices.
-"""
+"""Functions related to the calculation of crystalline lattices."""
 
 import numpy as np
 from scipy.spatial.transform import Rotation

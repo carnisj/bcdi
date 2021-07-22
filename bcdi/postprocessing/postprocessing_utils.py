@@ -6,11 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-postprocessing_utils.
-
-This module contains functions related to data postprocessing after phase retrieval.
-"""
+"""Functions related to data postprocessing after phase retrieval."""
 
 from numbers import Number, Real
 from math import pi
@@ -2202,7 +2198,10 @@ def remove_ramp(
     gc.collect()
 
     myz, myy, myx = np.meshgrid(
-        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij",
+        np.arange(0, nbz, 1),
+        np.arange(0, nby, 1),
+        np.arange(0, nbx, 1),
+        indexing="ij",
     )
 
     print(

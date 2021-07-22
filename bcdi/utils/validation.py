@@ -6,11 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-validation.
-
-This module contains functions related to the validation of input parameters.
-"""
+"""Functions related to the validation of input parameters."""
 
 from numbers import Real
 import numpy as np
