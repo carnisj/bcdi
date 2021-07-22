@@ -6,12 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-experiment_utils.
-
-This module contains classes related to the experimental setup (Detector,
-Diffractometer and corresponding child classes, Setup).
-"""
+"""Classes related to the experimental setup."""
 
 from collections.abc import Sequence
 from functools import reduce

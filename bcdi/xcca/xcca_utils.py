@@ -7,10 +7,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """
-xcca_utils.
+Functions related to reciprocal space averaging and XCCA.
 
-This module contains functions related to reciprocal space averaging and X-ray
-cross-correlation analysis.
+XCCA stands for X-ray cross-correlation analysis.
 """
 
 import numpy as np

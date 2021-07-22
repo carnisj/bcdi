@@ -7,10 +7,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """
-algorithms_utils.
+Functions related to image deconvolution.
 
-This module contains functions related to image deconvolution (Richardson-Lucy
-algorithm, blind deconvolution...).
+Richardson-Lucy algorithm, blind deconvolution...
 """
 
 import matplotlib.pyplot as plt

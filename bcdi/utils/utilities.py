@@ -6,12 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-utilities.
-
-This module contains functions related to data loading, encoding, fitting,
-data manipulation.
-"""
+"""Functions related to data loading, encoding, fitting, data manipulation."""
 
 from collections import OrderedDict
 import ctypes

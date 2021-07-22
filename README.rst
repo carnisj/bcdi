@@ -140,22 +140,6 @@ This module includes routines using Richardson-Lucy deconvolution algorithm.
 
 .. bcdi.algorithms end
 
-BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
-============================================================================
-
-.. bcdi.facet_recognition section
-
-Description
------------
-
-This module provides tools for plotting the stereographic projection of a diffraction
-peak or an object. There is also a script for facet detection on a reconstructed
-object, and for calculating statistics on facet strain. After meshing the object,
-facets are found using a density estimation of mesh triangles normals, followed by
-watershed segmentation.
-
-.. bcdi.facet_recognition end
-
 BCDI.experiment: class and methods defining the experimental setup
 ==================================================================
 
@@ -164,7 +148,7 @@ BCDI.experiment: class and methods defining the experimental setup
 Description
 -----------
 
-This module provides a class and methods for the definition of the experimental setup.
+This module provides classes and methods for the definition of the experimental setup.
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
@@ -182,7 +166,42 @@ The following detectors are implemented:
  * Eiger2M
  * Eiger4M
 
+The following classes are implemented:
+
+ * Detector
+ * Diffractometer and corresponding child classes (one per beamline)
+ * Setup
+
 .. bcdi.experiment end
+
+BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
+============================================================================
+
+.. bcdi.facet_recognition section
+
+Description
+-----------
+
+This module provides tools for plotting the stereographic projection of a diffraction
+peak or an object. There is also a script for facet detection on a reconstructed
+object, and for calculating statistics on facet strain. After meshing the object,
+facets are found using a density estimation of mesh triangles normals, followed by
+watershed segmentation.
+
+.. bcdi.facet_recognition end
+
+BCDI.graph: plotting utilities
+==============================
+
+.. bcdi.graph section
+
+Description
+-----------
+
+This module provides methods to plot 2D and 3D data using templates, and to save it
+as a .vti file.
+
+.. bcdi.graph end
 
 BCDI.preprocessing: preprocessing utilities on the diffraction data before phasing
 ==================================================================================
@@ -240,19 +259,6 @@ experimental data.
 
 .. bcdi.simulation end
 
-BCDI.graph: plotting utilities
-==============================
-
-.. bcdi.graph section
-
-Description
------------
-
-This module provides methods to plot 2D and 3D data using templates, and to save it
-as a .vti file.
-
-.. bcdi.graph end
-
 BCDI.utils: various utilities for data analysis
 ===============================================
 
@@ -261,7 +267,8 @@ BCDI.utils: various utilities for data analysis
 Description
 -----------
 
-Various non-specific utilities (i/o, ...)
+Various non-specific utilities for i/o, fitting, array registration, parameter
+validation...
 
 .. bcdi.utils end
 

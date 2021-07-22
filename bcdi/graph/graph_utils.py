@@ -6,11 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""
-graph_utils.
-
-This module contains functions related to visualization.
-"""
+"""Functions related to visualization."""
 
 import numpy as np
 from numbers import Number, Real
