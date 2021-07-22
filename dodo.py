@@ -126,14 +126,6 @@ def task_docstrings():
     }
 
 
-def task_docstrings():
-    """Run pydocstyle on the modules."""
-    return {
-        "actions": ["pydocstyle    bcdi --ignore=D107,D212,D203"],
-        "verbosity": 2,
-    }
-
-
 def task_tests():
     """Run unit tests with coverage."""
     return {
