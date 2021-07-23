@@ -22,31 +22,34 @@ import bcdi.utils.validation as valid
 helptext = """
 Template for 3d isosurface figures of a real space BCDI reconstruction.
 
-Open an npz file (reconstruction ampdispstrain.npz) and save individual figures including a length scale.
+Open an npz file (reconstruction ampdispstrain.npz) and save individual figures 
+including a length scale.
 """
 
-scan = 1  # scan number
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
-sample_name = "dataset_"  #
-homedir = root_folder + sample_name + str(scan) + "_newpsf/result/"
-savedir = homedir + "isosurfaces/mayavi/"  # saving directory
+scan = 283  # scan number
+root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
+sample_name = "B10_syn_S1_"  #
+homedir = root_folder + sample_name + str(scan) + "result/"
+savedir = homedir + "isosurfaces/"  # saving directory
 flag_support = False  # True to plot and save the support
 flag_amp = True  # True to plot and save the amplitude
 flag_phase = False  # True to plot and save the phase
 flag_strain = False  # True to plot and save the strain
-voxel_size = 5.0  # in nm, supposed isotropic
+voxel_size = 10.0  # in nm, supposed isotropic
 tick_spacing = 50  # for plots, in nm
 field_of_view = [
-    150,
-    150,
-    150,
+    400,
+    400,
+    400,
 ]  # [z,y,x] in nm, can be larger than the total width (the array will be padded)
-# the number of labels of mlab.axes() is an integer and is be calculated as: field_of_view[0]/tick_spacing
+# the number of labels of mlab.axes() is an integer and is be calculated as:
+# field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
 strain_isosurface = 0.2
 strain_range = 0.0005  # for plots
 phase_range = np.pi  # for plots
-plot_method = "points3d"  # 'contour3d' or 'points3d'. The support is always plotted with 'contour3d' because there is
+plot_method = "points3d"  # 'contour3d' or 'points3d'. The support is always plotted
+# with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (
     1200,
@@ -88,9 +91,12 @@ comment = [
     sample_name + "_{:5d}".format(scan) + "_back",
     sample_name + "_{:5d}".format(scan) + "_tilt",
 ]
-# list of comments used in the filename of saved figures (len(comment) must be equal to len(azimuth))
-colormap = "jet"  # colormap for the Mayavi scene of phase and strain. 'binary' is the default for the amplitude
-simulated_data = False  # if yes, it will look for a field 'phase' in the reconstructed file, otherwise for field 'disp'
+# list of comments used in the filename of saved figures (len(comment) must be equal
+# to len(azimuth))
+colormap = "jet"  # colormap for the Mayavi scene of phase and strain.
+# 'binary' is the default for the amplitude
+simulated_data = False  # if yes, it will look for a field 'phase' in the
+# reconstructed file, otherwise for field 'disp'
 ##########################
 # end of user parameters #
 ##########################
@@ -212,7 +218,8 @@ if amp.ndim != 3:
 amp = amp / amp.max()
 amp[amp < strain_isosurface] = 0
 
-# flip the last axis: mayavi expect xyz, but we provide downstream/upward/outboard which is not in the correct order
+# flip the last axis: mayavi expect xyz, but we provide downstream/upward/outboard
+# which is not in the correct order
 amp = np.flip(amp, 2)
 phase = np.flip(phase, 2)
 strain = np.flip(strain, 2)
