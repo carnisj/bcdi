@@ -76,7 +76,7 @@ We would like to acknowledge the following packages:
 
 The following third-party packages are required:
 
-* numpy, scipy, scikit-image, matplotlib, pyqt5, mayavi, vtk, h5py, hdf5plugin, fabio,
+* numpy, scipy, scikit-image, matplotlib, pyqt5, vtk, h5py, hdf5plugin, fabio,
   silx, xrayutilities
 
 * lmfit: for scripts performing fits

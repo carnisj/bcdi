@@ -24,4 +24,3 @@ pycodestyle
 pydocstyle
 sphinx
 twine
-mayavi

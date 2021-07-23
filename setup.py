@@ -159,7 +159,6 @@ setup(
         "lmfit",
         "moviepy",
         "pillow",
-        "mayavi",
     ],
     extras_require={
         "doc": ["sphinx"],

@@ -86,7 +86,6 @@ autodoc_mock_imports = [
     "hdf5plugin",
     "h5py",
     "vtk",
-    "mayavi",
     "xrayutilities",
     "fabio",
     "silx",

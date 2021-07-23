@@ -31,6 +31,5 @@ dependencies:
   - pydocstyle
   - sphinx
   - twine
-  - mayavi
   - pip:
     - hdf5plugin
