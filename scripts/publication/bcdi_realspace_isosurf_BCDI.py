@@ -20,9 +20,10 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Template for 3d isosurface figures of a real space BCDI reconstruction. Open an npz 
-file (reconstruction ampdispstrain.npz) and save individual figures including a 
-length scale.
+Template for 3d isosurface figures of a real space BCDI reconstruction.
+
+Open an npz file (reconstruction ampdispstrain.npz) and save individual figures
+including a length scale.
 """
 
 scan = 283  # scan number
