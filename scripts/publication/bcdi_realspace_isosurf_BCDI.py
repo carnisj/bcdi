@@ -20,10 +20,9 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Template for 3d isosurface figures of a real space BCDI reconstruction.
-
-Open an npz file (reconstruction ampdispstrain.npz) and save individual figures 
-including a length scale.
+Template for 3d isosurface figures of a real space BCDI reconstruction. Open an npz 
+file (reconstruction ampdispstrain.npz) and save individual figures including a 
+length scale.
 """
 
 scan = 283  # scan number
@@ -45,10 +44,10 @@ field_of_view = [
 # the number of labels of mlab.axes() is an integer and is be calculated as:
 # field_of_view[0]/tick_spacing
 # therefore it is better to use an isotropic field_of_view
-strain_isosurface = 0.2
+strain_isosurface = 0.55
 strain_range = 0.0005  # for plots
 phase_range = np.pi  # for plots
-plot_method = "points3d"  # 'contour3d' or 'points3d'. The support is always plotted
+plot_method = "contour3d"  # 'contour3d' or 'points3d'. The support is always plotted
 # with 'contour3d' because there is
 # no contrast with 'points3d'
 fig_size = (
