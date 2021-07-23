@@ -137,7 +137,6 @@ setup(
     project_urls={"Documentation": "https://bcdi.readthedocs.io/en/latest/"},
     python_requires=">=3.6, !=3.9.*",
     install_requires=[
-        "wheel",
         "numpy",
         "scipy",
         "scikit-image",
@@ -169,6 +168,7 @@ setup(
             "pycodestyle",
             "pydocstyle",
             "twine",
+            "wheel",
         ],
     },
     classifiers=[

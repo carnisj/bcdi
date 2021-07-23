@@ -6,7 +6,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.8
-  - wheel
   - numpy
   - scipy
   - scikit-image
@@ -31,5 +30,6 @@ dependencies:
   - pydocstyle
   - sphinx
   - twine
+  - wheel
   - pip:
     - hdf5plugin
