@@ -19,7 +19,6 @@ dependencies:
   - fabio
   - silx
   - pyqt
-  - pytables
   - lmfit
   - moviepy
   - pillow

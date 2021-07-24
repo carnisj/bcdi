@@ -12,7 +12,6 @@ pyqtgraph
 vtk
 fabio
 silx
-tables
 lmfit
 moviepy
 pillow
