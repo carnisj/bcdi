@@ -401,14 +401,6 @@ bcdi_diffpattern_from_reconstruction.py
    :end-before: """
    :language: rst
 
-bcdi_diffpattern_isosurf_3D.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/publication/bcdi_diffpattern_isosurf_3D.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 bcdi_plot_diffpattern_2D.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -421,22 +413,6 @@ bcdi_plot_strain.py
 ^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../scripts/publication/bcdi_plot_strain.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_realspace_isosurf_BCDI.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/publication/bcdi_realspace_isosurf_BCDI.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_realspace_isosurf_CDI.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/publication/bcdi_realspace_isosurf_CDI.py
    :start-after: helptext
    :end-before: """
    :language: rst
