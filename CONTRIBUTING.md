@@ -70,9 +70,9 @@ branch.
   - Rebase your feature branch on your master branch (note that there may be 
     conflicts, if the upstream master changes affect the same portion of code as 
     yours):
-   - `git checkout branchname`
-   - `git rebase master`
-   - `git push`
+    - `git checkout branchname`
+    - `git rebase master`
+    - `git push`
 - [Submit a pull request][pr].
 - Wait for your pull request to be reviewed and merged.
   
