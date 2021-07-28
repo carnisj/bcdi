@@ -20,8 +20,11 @@ branch.
 - Click on the “Code” button. Select “HTTPS” is selected, unless you’ve set up SSH. 
    Click on the clipboard icon to copy the address.
 - Open a terminal. Navigate to a directory where you want to put your repository.
-- Clone your fork of BCDI to your local computer: `gti clone https://github.com/your-name/bcdi.git`.
+- Clone your fork of BCDI to your local computer: `git clone https://github.
+  com/your-name/bcdi.git`.
   This will create a BCDI subdirectory inside the directory you were already in.
+- Activate your Python environment and install the dependencies: `python -m pip 
+  install -r requirements.txt` 
   
 ## 2. Make your local clone track the original upstream repository.
 
