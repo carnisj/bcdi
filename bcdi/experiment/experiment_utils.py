@@ -1018,7 +1018,6 @@ class Diffractometer(ABC):
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
         """
-        pass
 
     @abstractmethod
     def motor_positions(self, **kwargs):
@@ -1030,7 +1029,6 @@ class Diffractometer(ABC):
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup.
         """
-        pass
 
     def remove_circle(self, stage_name, index):
         """
