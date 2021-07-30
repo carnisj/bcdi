@@ -22,7 +22,7 @@ class Test(unittest.TestCase):
     Tests
     """
 
-    def test_create_diffractometer_from_parent(self):
+    def test_create_diffractometer_from_abc(self):
         with self.assertRaises(TypeError):
             exp.Diffractometer(sample_offsets=[])
 
