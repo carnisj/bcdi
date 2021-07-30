@@ -8,6 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Classes related to the experimental setup."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import reduce
 import gc
@@ -652,7 +653,7 @@ class Detector:
         return data, mask
 
 
-class Diffractometer:
+class Diffractometer(ABC):
     """
     Base class for defining diffractometers.
 
@@ -1007,6 +1008,7 @@ class Diffractometer:
                 )
         return index_circle
 
+    @abstractmethod
     def goniometer_values(self, **kwargs):
         """
         Define goniometer values.
@@ -1016,11 +1018,8 @@ class Diffractometer:
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
         """
-        raise NotImplementedError(
-            "This method is beamline specific and must be implemented"
-            " in the child class"
-        )
 
+    @abstractmethod
     def motor_positions(self, **kwargs):
         """
         Define motor positions.
@@ -1030,10 +1029,6 @@ class Diffractometer:
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup.
         """
-        raise NotImplementedError(
-            "This method is beamline specific and must be implemented"
-            " in the child class"
-        )
 
     def remove_circle(self, stage_name, index):
         """

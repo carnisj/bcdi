@@ -18,9 +18,7 @@ def run_tests(test_class):
 
 
 class TestInRange(unittest.TestCase):
-    """
-    Tests on the function utilities.in_range
-    """
+    """Tests on the function utilities.in_range."""
 
     def setUp(self):
         # executed before each test
