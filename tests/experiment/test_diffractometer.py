@@ -18,9 +18,7 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """
-    Tests
-    """
+    """Tests related to diffractometer instantiation."""
 
     def test_create_diffractometer_from_abc(self):
         with self.assertRaises(TypeError):
