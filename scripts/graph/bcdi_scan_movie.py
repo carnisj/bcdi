@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 helptext = """
-Create a movie from a scan (i.e. timescan). Requires ffmpeg 
+Create a movie from a scan (i.e. timescan). Requires ffmpeg
 (http://ffmpeg.zeranoe.com/builds/).
 """
 

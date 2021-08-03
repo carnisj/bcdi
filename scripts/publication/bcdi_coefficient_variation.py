@@ -20,14 +20,15 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Load several reconstructed complex objects and calculate the coefficient variation (CV = std/mean) 
-on the modulus, the phase or the strain.
+Load several reconstructed complex objects and calculate the coefficient variation
+(CV = std/mean) on the modulus, the phase or the strain.
 
-In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk', 'phase' for simulated data or 'disp' 
-for experimental data, 'strain'.
+In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk',
+'phase' for simulated data or 'disp' for experimental data, 'strain'.
 
-It is necessary to know the voxel size of the reconstruction in order to put ticks at the correct position.
-Laboratory frame: z downstream, y vertical, x outboard (CXI convention)
+It is necessary to know the voxel size of the reconstruction in order to put ticks at
+the correct position. Laboratory frame: z downstream, y vertical, x outboard (CXI
+convention)
 """
 
 
@@ -40,9 +41,12 @@ voxel_size = 9.74  # in nm
 planar_distance = 0.39242 / np.sqrt(
     3
 )  # crystallographic interplanar distance, in nm (for strain calculation)
-ref_axis_q = "z"  # axis along which q is aligned (for strain calculation) 'z', 'y' or 'x' in CXI convention
-isosurface = 0.30  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
-isosurface_method = "threshold"  # 'threshold' or 'defect', for 'defect' it tries to remove only outer layers even if
+ref_axis_q = "z"  # axis along which q is aligned (for strain calculation)
+# 'z', 'y' or 'x' in CXI convention
+isosurface = 0.30  # threshold use for removing the outer layer
+# (strain is undefined at the exact surface voxel)
+isosurface_method = "threshold"  # 'threshold' or 'defect',
+# for 'defect' it tries to remove only outer layers even if
 # the amplitude is low inside the crystal
 
 tick_spacing = 100  # for plots, in nm
@@ -54,10 +58,12 @@ tick_direction = "in"  # 'out', 'in', 'inout'
 tick_length = 10  # in plots
 tick_width = 2  # in plots
 
-strain_range = 1  # for coefficient of variation plots, the colorbar will be in the range [-strain_range, strain_range]
+strain_range = 1  # for coefficient of variation plots,
+# the colorbar will be in the range [-strain_range, strain_range]
 phase_range = (
     np.pi
-)  # for coefficient of variation plots, the colorbar will be in the range [-phase_range, phase_range]
+)  # for coefficient of variation plots, the colorbar will be in the range
+# [-phase_range, phase_range]
 grey_background = True  # True to set the background to grey in phase and strain plots
 background_color = (
     np.nan
@@ -206,7 +212,8 @@ for index in range(len(scans)):
         )  # rewrap after modifying phase
         ref_amp = np.copy(amp)
     else:  # align it with the reference object
-        # TODO: interpolate object if the shape is different from ref_amp (different voxel sizes between datasets)
+        # TODO: interpolate object if the shape is different from ref_amp
+        #  (different voxel sizes between datasets)
         shiftz, shifty, shiftx = reg.getimageregistration(ref_amp, amp, precision=1000)
         print(
             "Shift of array", index, "with the reference array:", shiftz, shifty, shiftx
@@ -394,7 +401,8 @@ if flag_phase:
     phase_concat = np.zeros((nb_scans, ref_amp.size))
     for idx in range(nb_scans):
         phase_concat[idx, :] = datasets["phase"][idx].flatten()
-        # do not apply amplitude threshold before CV calculation, it creates artefacts in the coefficient of variation
+        # do not apply amplitude threshold before CV calculation,
+        # it creates artefacts in the coefficient of variation
 
     CV_phase = np.divide(
         np.std(phase_concat, axis=0), np.mean(phase_concat, axis=0)
@@ -590,7 +598,8 @@ if flag_strain:
     strain_concat = np.zeros((nb_scans, ref_amp.size))
     for idx in range(nb_scans):
         strain_concat[idx, :] = datasets["strain"][idx].flatten()
-        # do not apply amplitude threshold before CV calculation, it creates artefacts in the coefficient of variation
+        # do not apply amplitude threshold before CV calculation,
+        # it creates artefacts in the coefficient of variation
 
     CV_strain = np.divide(
         np.std(strain_concat, axis=0), np.mean(strain_concat, axis=0)

@@ -10,8 +10,8 @@
 from math import tan, pi
 
 helptext = """
-Calculate the vertical correction and correction along the beam to apply to a 
-nanocrystal, given the drift along the beam at -/+ delta_angle from the center of the 
+Calculate the vertical correction and correction along the beam to apply to a
+nanocrystal, given the drift along the beam at -/+ delta_angle from the center of the
 rocking curve.
 """
 

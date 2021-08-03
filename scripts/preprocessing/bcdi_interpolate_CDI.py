@@ -18,13 +18,15 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script can be used to interpolate the intensity of masked voxels suing the centrosymmetry property of a 3D 
-diffraction pattern in the forward CDI geometry. The diffraction pattern should be in an orthonormal frame with 
-identical voxel sizes in all directions. The mask should be an array of integers (0 or 1) of the same shape as the 
-diffraction pattern. 
+This script can be used to interpolate the intensity of masked voxels suing the
+centrosymmetry property of a 3D diffraction pattern in the forward CDI geometry.
+The diffraction pattern should be in an orthonormal frame with identical voxel sizes
+in all directions. The mask should be an array of integers (0 or 1) of the same shape
+as the diffraction pattern.
 """
 
-data_dir = "D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/"  # location of the data and mask
+data_dir = "D:/data/P10_August2019_CDI/test/gold_2_2_2_00022/pynx/"
+# location of the data and mask
 save_dir = None  # path where to save the result, will default to datadir if None
 user_comment = (
     "_500_500_500_1_1_1"  # comment for the file name when saving, should start with _
@@ -59,10 +61,11 @@ def check_voxel(mask_index, ref_voxel, datarange):
 
     :param mask_index: tuple of three integers, indices of the masked voxel
     :param ref_voxel: tuple of three integers, indices of the origin of reciprocal space
-    :param datarange: tuple of six integers (z_start, z_stop, y_start, y_stop, x_tart, x_stop) representing the range of
-     valid indices
-    :return: tuple (boolean, mask_index, sym_index) where boolean is True if the centrosymmetric voxel belongs to the
-     datarange and sym_index is a tuple of three integers representing it's indices.
+    :param datarange: tuple of six integers (z_start, z_stop, y_start, y_stop, x_tart,
+     x_stop) representing the range of valid indices
+    :return: tuple (boolean, mask_index, sym_index) where boolean is True if the
+     centrosymmetric voxel belongs to the datarange and sym_index is a tuple of three
+     integers representing it's indices.
     """
     # calculate the position of the centrosymmetric voxel
     sym_z, sym_y, sym_x = (
@@ -86,10 +89,13 @@ def main(parameters):
 
     def collect_result(result):
         """
-        Callback processing the result after asynchronous multiprocessing. Update the global arrays.
+        Callback processing the result after asynchronous multiprocessing.
 
-        :param result: tuple output of check_voxel, (boolean, masked voxel indices, centrosymmetric voxel indices).
-         The boolean will be True if the centrosymmetrix voxel intensity can be used
+        Update the global arrays.
+
+        :param result: tuple output of check_voxel, (boolean, masked voxel indices,
+         centrosymmetric voxel indices). The boolean will be True if the
+         centrosymmetrix voxel intensity can be used
         """
         nonlocal data, mask, current_point, nb_points
         current_point += 1
@@ -156,7 +162,8 @@ def main(parameters):
     )
 
     nbz, nby, nbx = data.shape
-    # calculate the range of pixels indices covered by the data, taking into account the origin of reciprocal space
+    # calculate the range of pixels indices covered by the data,
+    # taking into account the origin of reciprocal space
     data_extent = (0, nbz - 1, 0, nby - 1, 0, nbx - 1)
     print(f"data shape: {data.shape}")
     print(f"origin of reciprocal space: {origin}")
@@ -189,9 +196,10 @@ def main(parameters):
             title="mask before interpolation",
         )
 
-    ####################################################################################################################
-    # loop over masked points to see if the centrosymmetric voxel is also masked, if not copy its intensity and unmask #
-    ####################################################################################################################
+    ##############################################################
+    # loop over masked points to see if the centrosymmetric      #
+    # voxel is also masked, if not copy its intensity and unmask #
+    ##############################################################
     ind_z, ind_y, ind_x = np.nonzero(
         mask
     )  # np.nonzero returns a tuple of three 1D arrays
@@ -211,7 +219,8 @@ def main(parameters):
         )
 
     pool.close()
-    pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
+    pool.join()  # postpones the execution of next line of code until
+    # all processes in the queue are done.
     print(f"\nnumber of masked points after interpolation: {len(np.nonzero(mask)[0])}")
 
     ##################################################

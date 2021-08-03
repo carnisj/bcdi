@@ -15,8 +15,8 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 
 helptext = """
-Load a 3D BCDI reconstruction (.npz file) containing the fields 'amp' and 'strain'. Calculate the mean and variance of 
-the strain, for all voxels in the support.
+Load a 3D BCDI reconstruction (.npz file) containing the fields 'amp' and 'strain'.
+Calculate the mean and variance of the strain, for all voxels in the support.
 """
 
 scan = 1301  # spec scan number

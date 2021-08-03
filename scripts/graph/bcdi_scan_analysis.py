@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 helptext = """
-Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a 
+Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a
 user-defined region of interest.
 """
 

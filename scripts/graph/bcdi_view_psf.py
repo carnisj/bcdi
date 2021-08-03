@@ -20,7 +20,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
 helptext = """
-Open and plot the point-spread function (PSF) from a .cxi reconstruction file (from 
+Open and plot the point-spread function (PSF) from a .cxi reconstruction file (from
 PyNX). The PSF or the mutual coherence function (FFT of the PSF) can be to be plotted.
 """
 

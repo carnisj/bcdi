@@ -27,12 +27,14 @@ import bcdi.simulation.simulation_utils as simu
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm (Bragg CDI) and making some statistics
-about strain by facet. The correct threshold for support determination should be given as input,
-as well as voxel sizes for a correct calculation of facet angle.
+Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm
+(Bragg CDI) and making some statistics about strain by facet. The correct threshold
+for support determination should be given as input, as well as voxel sizes for a
+correct calculation of facet angle.
 
-Input: a reconstruction .npz file with fields: 'amp' and 'strain' 
-Output: a log file with strain statistics by plane, a VTK file for 3D visualization of detected planes.
+Input: a reconstruction .npz file with fields: 'amp' and 'strain'
+Output: a log file with strain statistics by plane, a VTK file for 3D visualization of
+detected planes.
 """
 
 scan = 1585  # spec scan number
@@ -43,12 +45,15 @@ voxel_size = [
     10.4,
     11.3,
 ]  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-upsampling_factor = 2  # integer, factor for upsampling the reconstruction in order to have a smoother surface
+upsampling_factor = 2  # integer, factor for upsampling the reconstruction
+# in order to have a smoother surface
 savedir = datadir
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
+projection_axis = 1  # the projection will be performed on the equatorial plane
+# perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
-smoothing_iterations = 5  # number of iterations in Taubin smoothing, bugs if smoothing_iterations larger than 10
+smoothing_iterations = 5  # number of iterations in Taubin smoothing,
+# bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
 radius_normals = (
@@ -62,17 +67,19 @@ max_distance_plane = (
 edges_coord = (
     360  # coordination threshold for isolating edges, 360 seems to work reasonably well
 )
-corners_coord = 310  # coordination threshold for isolating corners, 310 seems to work reasonably well
+corners_coord = 310  # coordination threshold for isolating corners,
+# 310 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
-threshold_south = (
-    -2500
-)  # background threshold in the stereographic projection from South of the density of normals
+threshold_south = -2500  # background threshold in the stereographic projection
+# from South of the density of normals
 threshold_north = (
     -500
-)  # background threshold in the stereographic projection from North of the density of normals
-max_angle = 95  # maximum angle in degree of the stereographic projection (should be larger than 90)
+)  # background threshold in the stereographic projection from North
+# of the density of normals
+max_angle = 95  # maximum angle in degree of the stereographic projection
+# (should be larger than 90)
 stereo_scale = (
     "linear"  # 'linear' or 'log', scale of the colorbar in the stereographic plot
 )
@@ -83,13 +90,14 @@ bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
 kde_threshold = (
     -0.2
 )  # threshold for defining the background in the density estimation of normals
-###############################################################################################
-# define crystallographic planes of interest for the stereographic projection (cubic lattice) #
-###############################################################################################
-planes_south = (
-    {}
-)  # create dictionnary for the projection from the South pole, the reference is +reflection
-# planes_south['0 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
+##################################################
+# define crystallographic planes of interest for #
+# the stereographic projection (cubic lattice)   #
+##################################################
+planes_south = {}  # create dictionnary for the projection from the South pole,
+# the reference is +reflection
+# planes_south['0 2 0'] =
+# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([0, 2, 0]))
 planes_south["1 1 1"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([1, 1, 1])
 )
@@ -105,15 +113,19 @@ planes_south["-1 1 0"] = simu.angle_vectors(
 planes_south["1 -1 1"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([1, -1, 1])
 )
-# planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
-# planes_south['2 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
-# planes_south['2 -1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
-# planes_south['1 2 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
+# planes_south['-1 -1 1'] =
+# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+# planes_south['2 1 0'] =
+# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, 1, 0]))
+# planes_south['2 -1 0'] =
+# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([2, -1, 0]))
+# planes_south['1 2 0'] =
+# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 2, 0]))
 
-planes_north = (
-    {}
-)  # create dictionnary for the projection from the North pole, the reference is -reflection
-# planes_north['0 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
+planes_north = {}  # create dictionnary for the projection from the North pole,
+# the reference is -reflection
+# planes_north['0 -2 0'] =
+# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([0, -2, 0]))
 planes_north["-1 -1 -1"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([-1, -1, -1])
 )
@@ -129,14 +141,16 @@ planes_north["-1 1 0"] = simu.angle_vectors(
 planes_north["-1 -1 1"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([-1, -1, 1])
 )
-# planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+# planes_north['-1 1 1'] =
+# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
 planes_north["-2 1 0"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([-2, 1, 0])
 )
 planes_north["-2 -1 0"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([-2, -1, 0])
 )
-# planes_north['1 -2 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
+# planes_north['1 -2 0'] =
+# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([1, -2, 0]))
 ##########################
 # end of user parameters #
 ##########################
@@ -199,8 +213,10 @@ vertices_old, faces, _, _ = measure.marching_cubes_lewiner(
 # faces is a list of facets defined by the indices of 3 vertices_old
 
 # from scipy.io import savemat
-# savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/vertices.mat', {'V': vertices_old})
-# savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/faces.mat', {'F': faces})
+# savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/vertices.mat',
+# {'V': vertices_old})
+# savemat('//win.desy.de/home/carnisj/My Documents/MATLAB/TAUBIN/faces.mat',
+# {'F': faces})
 
 # Display mesh before smoothing
 if debug:
@@ -254,8 +270,9 @@ if projection_method == "stereographic":
         debugging=debug,
     )
     # labels_south and labels_north are 2D arrays for projections from South and North
-    # stereo_proj is a (Nx4) array containint the projected coordinates of normals from South (u column 0, v column 1)
-    # and North (u column2 , v column 3). The coordinates are in degrees, not indices.
+    # stereo_proj is a (Nx4) array containint the projected coordinates of normals
+    # from South (u column 0, v column 1) and North (u column2 , v column 3). The
+    # coordinates are in degrees, not indices.
 
     # remove rows containing nan values
     normals = np.delete(normals, remove_row, axis=0)
@@ -272,11 +289,14 @@ if projection_method == "stereographic":
     # look for potentially duplicated labels (labels crossing the 90 degree circle)
     duplicated_labels = [
         0
-    ]  # do not consider background points when looking for duplicates (label 0 is the background)
-    # duplicated_labels stores bottom_labels which are duplicate from top_labels [0 duplicated_labels unique_label ...]
+    ]  # do not consider background points when looking for duplicates
+    # (label 0 is the background)
+    # duplicated_labels stores bottom_labels which are duplicate from top_labels
+    # [0 duplicated_labels unique_label ...]
     for label in range(1, labels_top.max() + 1, 1):
         label_points = np.argwhere(labels_top == label)
-        # rescale label_points to angles instead of indices, the angular range is [-max_angle max_angle]
+        # rescale label_points to angles instead of indices,
+        # the angular range is [-max_angle max_angle]
         label_points[:, 0] = (label_points[:, 0] * 2 * max_angle / numy) - max_angle
         label_points[:, 1] = (label_points[:, 1] * 2 * max_angle / numx) - max_angle
 
@@ -290,7 +310,8 @@ if projection_method == "stereographic":
         if (label_distances > 90).sum() == label_points.shape[
             0
         ]:  # all points outside the 90deg border
-            continue  # do nothing, the facet will be filtered out in next section by distance check
+            continue  # do nothing, the facet will be filtered out
+            # in next section by distance check
         print("Label ", str(label), "is potentially duplicated")
         # look for the corresponding label in the bottom projection
         for idx in range(nb_normals):
@@ -314,7 +335,8 @@ if projection_method == "stereographic":
                     labels_top[v_top, u_top] == label
                     and labels_bottom[v_bottom, u_bottom] not in duplicated_labels
                 ):
-                    # only the first duplicated point will be checked, then the whole bottom_label is changed
+                    # only the first duplicated point will be checked,
+                    # then the whole bottom_label is changed
                     # to label and there is no need to check anymore
                     duplicated_labels.append(labels_bottom[v_bottom, u_bottom])
                     duplicated_labels.append(label)
@@ -328,18 +350,21 @@ if projection_method == "stereographic":
                         labels_bottom == labels_bottom[v_bottom, u_bottom]
                     ] = label
             except IndexError:
-                # the IndexError exception arises because we are spanning all normals for labels_top, even those
-                # whose stereographic projection is farther than max_angle.
+                # the IndexError exception arises because we are spanning all normals
+                # for labels_top, even those whose stereographic projection is
+                # farther than max_angle.
                 continue
 
     del label_points, label_distances
     gc.collect()
 
-    # reorganize stereo_proj to keep only the projected point which is in the angular range [-90 90]
+    # reorganize stereo_proj to keep only the projected point
+    # which is in the angular range [-90 90]
     # stereo_proj coordinates are in polar degrees, we want coordinates to be in indices
     coordinates = np.zeros((nb_normals, 3), dtype=stereo_proj.dtype)
     # 1st and 2nd columns are coordinates
-    # the 3rd column is a flag for using the South (0) or North (1) projected coordinates
+    # the 3rd column is a flag for using the South (0)
+    # or North (1) projected coordinates
     for idx in range(nb_normals):
         if np.sqrt(stereo_proj[idx, 0] ** 2 + stereo_proj[idx, 1] ** 2) > 90:
             coordinates[idx, 0] = stereo_proj[
@@ -371,9 +396,10 @@ if projection_method == "stereographic":
     # change coordinates to an array of integer indices
     coordinates = coordinates.astype(int)
 
-    #############################################################################################################
-    # now that we have the labels and coordinates in indices, we can assign back labels to normals and vertices #
-    #############################################################################################################
+    ##########################################################
+    # now that we have the labels and coordinates in indices #
+    # we can assign back labels to normals and vertices      #
+    ##########################################################
     normals_label = np.zeros(nb_normals, dtype=int)
     vertices_label = np.zeros(
         nb_vertices, dtype=int
@@ -477,8 +503,10 @@ for idx in range(nb_vertices):
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] + 1
     )
     # check duplicated voxels and discard them if they belong to different planes
-    # it happens when some vertices are close and they give the same voxel after rounding their position to integers
-    # one side effect is that the border of areas obtained by watershed segmentation will be set to the background
+    # it happens when some vertices are close and they give
+    # the same voxel after rounding their position to integers
+    # one side effect is that the border of areas obtained by
+    # watershed segmentation will be set to the background
     if (
         planes_counter[temp_indices[0], temp_indices[1], temp_indices[2]] > 1
     ):  # a rounded voxel was already added
@@ -489,8 +517,6 @@ for idx in range(nb_vertices):
             # belongs to different labels, therefore it is set as background (label 0)
             all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = 0
             duplicated_counter = duplicated_counter + 1
-            # if np.all([all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx]]):
-            #     print(all_planes[temp_indices[0], temp_indices[1], temp_indices[2]], vertices_label[idx])
     else:  # non duplicated pixel
         all_planes[temp_indices[0], temp_indices[1], temp_indices[2]] = vertices_label[
             idx
@@ -709,7 +735,8 @@ for label in unique_labels:
     )
     plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
 
-    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    # check that the plane normal is not flipped using
+    # the support gradient at the center of mass of the facet
     zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
     mean_gradient = fu.surface_gradient(
         (zcom_facet, ycom_facet, xcom_facet), support=support
@@ -723,9 +750,10 @@ for label in unique_labels:
         plane_normal = -1 * plane_normal
         coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
 
-    ##############################################################################################################
-    # Look for the surface: correct for the offset between the plane equation and the outer shell of the support #
-    ##############################################################################################################
+    #########################################################
+    # Look for the surface: correct for the offset between  #
+    # the plane equation and the outer shell of the support #
+    #########################################################
     # crop the support to a small ROI included in the plane box
     surf0, surf1, surf2 = fu.surface_indices(
         surface=surface, plane_indices=plane_indices, margin=3
@@ -761,7 +789,8 @@ for label in unique_labels:
         " to outer shell = " + str("{:.2f}".format(mean_dist)) + " pixels",
     )
 
-    # offset the plane by mean_dist/2 and see if the plane is closer to the surface or went in the wrong direction
+    # offset the plane by mean_dist/2 and see if the plane is closer to
+    # the surface or went in the wrong direction
     dist = np.zeros(len(surf0))
     offset = mean_dist / 2
 
@@ -782,7 +811,8 @@ for label in unique_labels:
         + " pixels",
     )
     # these directions are for a mesh smaller than the support
-    step_shift = 0.5  # will scan with subpixel step through the crystal in order to not miss voxels
+    step_shift = 0.5  # will scan with subpixel step through the crystal
+    # in order to not miss voxels
     if mean_dist * new_dist < 0:  # crossed the support surface, correct direction
         step_shift = np.sign(mean_dist) * step_shift
     elif (
@@ -792,11 +822,10 @@ for label in unique_labels:
     else:  # moving away from the surface, wrong direction
         step_shift = -1 * np.sign(mean_dist) * step_shift
 
-    # step_shift = -1*step_shift  # added JCR 24082018 because the direction of normals to plane is inwards the crystal
-
-    #########################################################################################
-    # shift the fit plane along its normal until the normal is crossed and go back one step #
-    #########################################################################################
+    ##############################################
+    # shift the fit plane along its normal until #
+    # the normal is crossed and go back one step #
+    ##############################################
     total_offset = fu.find_facet(
         refplane_indices=plane_indices,
         surf_indices=(surf0, surf1, surf2),
@@ -862,8 +891,9 @@ for label in unique_labels:
             max_distance=1.5 * max_distance_plane,
             debugging=debug,
         )
-        # here the distance threshold is larger in order to reach voxels missed by the first plane fit
-        # when rounding vertices to integer. Anyway we intersect it with the surface therefore it can not go crazy.
+        # here the distance threshold is larger in order to reach
+        # voxels missed by the first plane fit when rounding vertices to integer.
+        # Anyway we intersect it with the surface therefore it can not go crazy.
         plane_indices = np.nonzero(plane)
         iterate = iterate + 1
         plane = (
@@ -872,9 +902,8 @@ for label in unique_labels:
         if plane[plane == 1].sum() == previous_nb:
             print("Growth: maximum size reached")
             break
-        if (
-            iterate == 50
-        ):  # it is likely that we are stuck in an infinite loop after this number of iterations
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop
+            # after this number of iterations
             print("Growth: maximum iteration number reached")
             break
     grown_points = plane[plane == 1].sum().astype(int)
@@ -980,7 +1009,8 @@ for label in unique_labels:
             + str(len(plane_indices[0])),
         )
 
-    # check that the plane normal is not flipped using the support gradient at the center of mass of the facet
+    # check that the plane normal is not flipped using the support gradient
+    # at the center of mass of the facet
     zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
     mean_gradient = fu.surface_gradient(
         (zcom_facet, ycom_facet, xcom_facet), support=support
@@ -1016,9 +1046,8 @@ for label in unique_labels:
         if plane[plane == 1].sum() == previous_nb:
             print("Growth: maximum size reached")
             break
-        if (
-            iterate == 50
-        ):  # it is likely that we are stuck in an infinite loop after this number of iterations
+        if iterate == 50:  # it is likely that we are stuck in an infinite loop
+            # after this number of iterations
             print("Growth: maximum iteration number reached")
             break
     grown_points = plane[plane == 1].sum().astype(int)
@@ -1106,10 +1135,12 @@ for label in unique_labels:
         print("projection_axis should be a basis axis of the reconstructed array")
         sys.exit()
 
-    # calculate the angle of the plane normal to the measurement direction, which is aligned along projection_axis
+    # calculate the angle of the plane normal to the measurement direction,
+    # which is aligned along projection_axis
     angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
     print(
-        f"Angle between plane {label} and the measurement direction = {angle_plane:.2f} degrees"
+        f"Angle between plane {label} and "
+        f"the measurement direction = {angle_plane:.2f} degrees"
     )
     # update the dictionnary
     summary_dict[label] = {
@@ -1153,7 +1184,8 @@ counter_dict = collections.Counter(full_indices)
 # creates the list of duplicated voxels, these will be set to the background later on
 duplicates = [key for key, value in counter_dict.items() if value > 1]
 
-# modify the structure of the list so that it can be directly used for array indexing (like the output of np.nonzero)
+# modify the structure of the list so that it can be directly
+# used for array indexing (like the output of np.nonzero)
 ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
 ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
 ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])

@@ -15,14 +15,14 @@ from tkinter import filedialog
 import sys
 
 helptext = """
-Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the 
+Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the
 cross-correlation function.
 
-Input: a NPZ file with the fields 'angles', 'ccf', 'points': 
-    - 'angles': values between [0, 180] where the cross-correlation function was 
+Input: a NPZ file with the fields 'angles', 'ccf', 'points':
+    - 'angles': values between [0, 180] where the cross-correlation function was
       calculated
     - 'ccf': cross-correlation function values at these angles
-    - 'points': number of points contributing to the cross-correlation function at 
+    - 'points': number of points contributing to the cross-correlation function at
       these angles
 """
 

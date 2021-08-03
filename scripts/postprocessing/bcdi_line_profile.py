@@ -21,22 +21,28 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script allow to plot and save linecuts through a 2D or 3D object in function of a modulus threshold 
-defining the object from the background. Must be given as input: the voxel size (possibly different in all directions), 
-the direction of the cuts and a list of points where to apply the cut along this direction.   
+This script allow to plot and save linecuts through a 2D or 3D object in function of a
+modulus threshold defining the object from the background. Must be given as input:
+the voxel size (possibly different in all directions),  the direction of the cuts and
+a list of points where to apply the cut along this direction.
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"  # data folder
+datadir = (
+    "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
+)
+# data folder
 savedir = datadir + "linecuts/test/"
 # results will be saved here, if None it will default to datadir
 threshold = np.linspace(0, 1.0, num=20)
-# number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
+# number or list of numbers between 0 and 1,
+# modulus threshold defining the normalized object from the background
 direction = (
     0,
     1,
     0,
-)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D) defining the direction of the cut
-# in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
+)  # tuple of 2 or 3 numbers (2 for 2D object, 3 for 3D)
+# defining the direction of the cut in the orthonormal reference frame is given by
+# the array axes. It will be corrected for anisotropic voxel sizes.
 points = {
     (25, 37, 23),
     (25, 37, 24),
@@ -49,16 +55,20 @@ points = {
     (27, 37, 24),
     (27, 37, 25),
 }
-# {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100), (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}w
+# {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100),
+# (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}w
 
-# list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D) corresponding to the points where
-# the cut alond direction should be performed. The reference frame is given by the array axes.
-voxel_size = 5  # 4.140786749482402  # positive real number  or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
+# list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D)
+# corresponding to the points where the cut alond direction should be performed. The
+# reference frame is given by the array axes.
+voxel_size = 5  # 4.140786749482402  # positive real number  or
+# tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D)
 width_lines = (
     98,
     100,
     102,
-)  # list of vertical lines that will appear in the plot width vs threshold, None otherwise
+)  # list of vertical lines that will appear in the plot width vs threshold,
+# None otherwise
 styles = {
     0: (0, (2, 6)),
     1: "dashed",
@@ -71,7 +81,8 @@ tick_width = 2  # in plots
 fig_size = (
     7,
     9,
-)  # figure size for the plot of linecuts and plot of width vs threshold. If None, default to (12, 9)
+)  # figure size for the plot of linecuts and plot of width vs threshold.
+# If None, default to (12, 9)
 cuts_limits = [
     63,
     212,
@@ -86,7 +97,8 @@ thres_limits = [
     120,
 ]  # [xmin, xmax, ymin, ymax] list of axes limits for the plot width vs threshold.
 # Leave None for the default range.
-zoom = None  # [xmin, xmax, ymin, ymax] list of axes limits for a zoom on a ROI of the plot. Leave None to skip.
+zoom = None  # [xmin, xmax, ymin, ymax] list of axes limits
+# for a zoom on a ROI of the plot. Leave None to skip.
 ##################################
 # end of user-defined parameters #
 ##################################
@@ -259,7 +271,8 @@ for point in points:
     distance, cut = util.linecut(
         array=obj, point=point, direction=direction, voxel_size=voxel_size
     )
-    # store the result in a dictionary (cuts can have different lengths depending on the direction)
+    # store the result in a dictionary (cuts can have different lengths
+    # depending on the direction)
     result[f"voxel {point}"] = {"distance": distance, "cut": cut}
 
 ######################
@@ -331,7 +344,8 @@ for key, value in result.items():  # loop over the linecuts
     value["width"] = width
 
     if width_lines is not None:
-        # fit the function width vs threshold and estimate where it crosses the expected widths
+        # fit the function width vs threshold and estimate
+        # where it crosses the expected widths
         fit = interp1d(
             width, threshold
         )  # width vs threshold is monotonic (decreasing with increasing threshold)

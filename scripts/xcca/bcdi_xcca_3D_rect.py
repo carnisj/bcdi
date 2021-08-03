@@ -23,9 +23,9 @@ import bcdi.xcca.xcca_utils as xcca
 import bcdi.facet_recognition.facet_utils as fu
 
 helptext = """
-Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same 
-q value or between two different q values. The 3D dataset is expected to be 
-interpolated on an orthonormal grid. The voxels belonging to a slice at the defined q 
+Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same
+q value or between two different q values. The 3D dataset is expected to be
+interpolated on an orthonormal grid. The voxels belonging to a slice at the defined q
 value are used for the calculation without further interpolation.
 
 Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values

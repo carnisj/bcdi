@@ -15,10 +15,11 @@ import bcdi.simulation.simulation_utils as simu
 import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
-Calculate the position of the Bragg peaks for a material and a particular 
-diffractometer setup. The crystal frame uses the following convention: x downstream, 
+Calculate the position of the Bragg peaks for a material and a particular
+diffractometer setup. The crystal frame uses the following convention: x downstream,
 y outboard, z vertical.
-Supported beamlines:  ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10"""
+Supported beamlines:  ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
+"""
 
 material = xu.materials.Pt  # load material from materials submodule
 beamline = "P10"  # 'ID01' or 'P10'

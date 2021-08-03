@@ -24,22 +24,27 @@ import bcdi.xcca.xcca_utils as xcca
 import bcdi.facet_recognition.facet_utils as fu
 
 helptext = """
-Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same q value or between two different q
-values. The 3D dataset is expected to be interpolated on an orthonormal grid. The intensity used for cross-correlation 
-calculation is interpolated using the golden spiral method on a sphere of the desired q radius, using original voxels
- belonging to a slice at this q value. Downsampling can be applied for faster calculation.
+Calculate the angular cross-correlation in a 3D reciprocal space dataset at the same
+q value or between two different q values. The 3D dataset is expected to be
+interpolated on an orthonormal grid. The intensity used for cross-correlation
+calculation is interpolated using the golden spiral method on a sphere of the desired
+q radius, using original voxels belonging to a slice at this q value. Downsampling
+can be applied for faster calculation.
 
 Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
-Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
+Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.
+"""
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 comment = "_q1q3"  # should start with _
-interp_factor = 10  # the number of points for the interpolation on a sphere will be the number of voxels
+interp_factor = 10  # the number of points for the interpolation on a sphere
+# will be the number of voxels
 # at the defined q value divided by interp_factor
-angular_resolution = 0.1  # in degrees, angle between to adjacent points for the calculation of the cross-correlation
+angular_resolution = 0.1  # in degrees, angle between to adjacent points
+# for the calculation of the cross-correlation
 debug = True  # set to True to see more plots
 origin_qspace = (
     330,
@@ -51,7 +56,8 @@ q_xcca = [
     0.172,
 ]  # q values in 1/nm where to calculate the angular cross-correlation
 hotpix_threshold = 1e9  # data above this threshold will be masked
-# check once in the stereographic projection that usefull data is not masked, otherwise correlations will be wrong
+# check once in the stereographic projection that usefull data is not masked,
+# otherwise correlations will be wrong
 single_proc = False  # do not use multiprocessing if True
 plot_meandata = False  # if True, will plot the 1D average of the data
 ##################################################################
@@ -68,10 +74,13 @@ current_point = 0  # do not change this number, it is used as counter in the cal
 
 def collect_result(result):
     """
-    Callback processing the result after asynchronous multiprocessing. Update the global arrays corr_count, corr_point.
+    Callback processing the result after asynchronous multiprocessing.
 
-    :param result: the output of ccf_val, containing the sorted cross-correlation values, the angular bins indices and
-     the number of points contributing to the angular bins
+    Update the global arrays corr_count, corr_point.
+
+    :param result: the output of ccf_val, containing the sorted cross-correlation
+     values, the angular bins indices and the number of points contributing to the
+     angular bins
     """
     global corr_count, current_point
     # result is a tuple: ccf_uniq_val, counter_val, counter_indices
@@ -87,11 +96,15 @@ def collect_result(result):
 
 def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
     """
-    Similar behaviour as collect_result() when multiprocessing is not used, useful for debugging.
+    Similar behaviour as collect_result() when multiprocessing is not used.
+
+    It is usefull for debugging.
 
     :param ccf_uniq_val: the sorted cross-correlation values
-    :param counter_val: the number of points contributing to the angular bins defined by counter_indices
-    :param counter_indices: the indices of angular bins where to update the cross-correlation
+    :param counter_val: the number of points contributing to the angular bins defined
+     by counter_indices
+    :param counter_indices: the indices of angular bins where to update
+     the cross-correlation
     """
     global corr_count, current_point
     # result is a tuple: ccf_uniq_val, counter_val, counter_indices
@@ -223,15 +236,14 @@ def main(user_comment):
 
             nb_pixels = int(nb_pixels / interp_factor)
             print(
-                "Dividing the number of voxels by interp_factor: {:d} voxels remaining".format(
-                    nb_pixels
-                )
+                "Dividing the number of voxels by interp_factor: {:d} "
+                "voxels remaining".format(nb_pixels)
             )
 
             indices = np.arange(0, nb_pixels, dtype=float) + 0.5
 
-            # angles for interpolation are chosen using the 'golden spiral method', so that the corresponding points
-            # are evenly distributed on the sphere
+            # angles for interpolation are chosen using the 'golden spiral method',
+            # so that the corresponding points are evenly distributed on the sphere
             theta = np.arccos(
                 1 - 2 * indices / nb_pixels
             )  # theta is the polar angle of the spherical coordinates
@@ -273,7 +285,8 @@ def main(user_comment):
             phi = np.delete(phi, nan_indices)
             sphere_int = np.delete(sphere_int, nan_indices)
 
-            # normalize the intensity by the median value (remove the influence of the form factor)
+            # normalize the intensity by the median value
+            # (remove the influence of the form factor)
             print(
                 "q={:.3f}:".format(q_value),
                 " normalizing by the median value",
@@ -400,7 +413,8 @@ def main(user_comment):
             )
         # close the pool and let all the processes complete
         pool.close()
-        pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
+        pool.join()  # postpones the execution of next line of code
+        # until all processes in the queue are done.
     end = time.time()
     print(
         "\nTime ellapsed for the calculation of the CCF:",

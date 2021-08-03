@@ -25,12 +25,12 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Calculate the resolution of a forward CDI reconstruction using the phase retrieval transfer function (PRTF).
+Calculate the resolution of a forward CDI reconstruction using the phase retrieval
+transfer function (PRTF). The diffraction pattern and reconstructions should be in
+the orthogonal laboratory frame. Q values need to be provided.
 
-The diffraction pattern and reconstructions should be in the orthogonal laboratory frame. Q values need to be provided.
-
-For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
-For q, the usual convention is used: qx downstream, qz vertical, qy outboard
+For the laboratory frame, the CXI convention is used: z downstream, y vertical,
+x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 """
 
 scan = 22
@@ -43,8 +43,9 @@ binning = (
     1,
     1,
     1,
-)  # binning factor used during phasing: axis0=downstream, axis1=vertical up, axis2=outboard
-# leave it to (1, 1, 1) if the binning factor is the same between the input data and the phasing output
+)  # binning factor used during phasing: axis0=downstream,
+# axis1=vertical up, axis2=outboard. Leave it to (1, 1, 1) if the binning factor is the
+# same between the input data and the phasing output
 original_shape = (
     500,
     500,
@@ -53,9 +54,11 @@ original_shape = (
 ###########
 # options #
 ###########
-normalize_prtf = False  # set to True when the solution is the first mode - then the intensity needs to be normalized
+normalize_prtf = False  # set to True when the solution is the first mode
+# then the intensity needs to be normalized
 debug = False  # True to show more plots
-q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max. Leave it to None otherwise.
+q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max.
+# Leave it to None otherwise.
 ##########################
 # end of user parameters #
 ##########################
@@ -431,7 +434,8 @@ if normalize_prtf:
 #############################
 defined_q = q_axis[~np.isnan(prtf_avg)]
 
-# create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
+# create a new variable 'arc_length' to predict q and prtf parametrically
+# (because prtf is not monotonic)
 arc_length = np.concatenate(
     (
         np.zeros(1),

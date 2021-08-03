@@ -17,8 +17,7 @@ import sys
 from scipy.ndimage.measurements import center_of_mass
 
 helptext = """
-Area detector calibration
-Based on ESRF.ID01 geometry
+Area detector calibration, based on ESRF ID01 geometry.
 
 The input should be a list of detector meshes.
 Meshes at direct beam and Bragg angle can be combined.
@@ -46,7 +45,8 @@ frames_to_exclude = [
     [10, 11, 12, 13, 14],
     [3, 10, 17, 24, 31, 38, 45],
 ]  # [[list(3 + 7*np.linspace(0, 6, 7, dtype=int))],[]]
-#  list of lists of frames to exclude, leave it as [[],[],...] otherwise, there should be as many sublists as scans
+#  list of lists of frames to exclude, leave it as [[],[],...] otherwise,
+#  there should be as many sublists as scans
 
 use_rawdata = (
     1  # 0 to draw a 3*3 square around the COM and mask the rest, 1 to use the raw data
@@ -250,7 +250,6 @@ if imgpbcnt == 0:
         debug=False,
     )
 else:
-    wl = 12.398 / (en / 1000)  # wavelength in angstroms
     print("Data at Bragg peak detected")
     print("Using xu.analysis.area_detector_calib_hkl()")
     wl = 12.398 / (en / 1000)  # wavelength in angstroms

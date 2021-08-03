@@ -11,9 +11,8 @@ import numpy as np
 import bcdi.utils.utilities as util
 
 helptext = """
-Check smaller or higher prime of a number, in order to determine the correct FFT 
-window size for phase retrieval.
-Adapted from PyNX
+Check smaller or higher prime of a number, in order to determine the correct FFT
+window size for phase retrieval. Adapted from PyNX.
 """
 my_nb = 368
 

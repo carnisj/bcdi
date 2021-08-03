@@ -21,16 +21,16 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Template for figures of the following article: 
-Carnis et al. Scientific Reports 9, 17357 (2019) 
+Template for figures of the following article:
+Carnis et al. Scientific Reports 9, 17357 (2019)
 https://doi.org/10.1038/s41598-019-53774-2
 
 Open an amp_dist_strain.npz file and save individual figures.
 
-In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk', 
+In the reconstruction file, the following fieldnames are expected: 'amp', 'bulk',
 phase' for simulated data or 'disp' for experimental data, 'strain'.
 
-It is necessary to know the voxel size of the reconstruction in order to put ticks 
+It is necessary to know the voxel size of the reconstruction in order to put ticks
 at the correct position.
 """
 

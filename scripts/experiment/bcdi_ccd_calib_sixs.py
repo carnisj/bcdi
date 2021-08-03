@@ -14,9 +14,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from scipy.ndimage.measurements import center_of_mass
+from bcdi.preprocessing import nxsReady
 
 helptext = """
-Script to calibrate the Maxipix detector on SIXS beamline
+Script to calibrate the Maxipix detector on SOLEIL SIXS beamline.
 command for the mesh detector is e.g.
 SBS.mesh delta -0.40 0.70 12 gamma -0.40 0.70 12 1  (do not invert motors)
 remove first image of ascan gamma
@@ -53,10 +54,11 @@ specdir = "E:/backup_data/SIXS/exp/"
 savedir = specdir + "S" + str(start_scan) + "det/"
 datadir = specdir + "S" + str(start_scan) + "det/data/"
 sys.path.append(specdir)
-import nxsReady
+
 
 hotpixels_file = specdir + "hotpixels.npz"
 flatfield_file = specdir + "flatfield_8.5kev.npz"
+alias_dict = ""
 spec_prefix = "align.spec"
 ccdfiletmp = os.path.join(
     spec_prefix + "_ascan_gamma_%05d.nxs"
@@ -78,7 +80,6 @@ def remove_hotpixels_eiger(mydata, hot_file):  # , mymask):
     f = fabio.open(hot_file)
     hotpixels = f.data
     mydata[hotpixels == -1] = 0
-    # mymask[hotpixels == -1] = 1
     return mydata  # , mymask
 
 
@@ -140,7 +141,9 @@ mask = np.zeros((516, 516))
 
 # load first scan to get the data size
 dataset = nxsReady.DataSet(
-    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan, scan="SBS"
+    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan,
+    alias_dict=alias_dict,
+    scan="SBS"
 )
 img_per_scan = dataset.mfilm[1:, :, :].shape[0]  # first image is repeated
 nb_img = img_per_scan * len(scanlist)
@@ -157,7 +160,8 @@ sum_data = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 for index in range(len(scanlist)):
     scan = scanlist[index]
     dataset = nxsReady.DataSet(
-        datadir + ccdfiletmp % scan, ccdfiletmp % scan, scan="SBS"
+        datadir + ccdfiletmp % scan, ccdfiletmp % scan, alias_dict=alias_dict,
+        scan="SBS"
     )
     rawdata[index * img_per_scan : (index + 1) * img_per_scan, :, :] = dataset.mfilm[
         1:, :, :
@@ -186,8 +190,6 @@ for index in range(nb_img):
     if index not in frames_to_exclude:
         if use_rawdata == 0:
             y0, x0 = center_of_mass(rawdata[index, :, :])
-            # data[index - index_offset, int(np.rint(y0))-1:int(np.rint(y0))+2, int(np.rint(x0))-1:int(np.rint(x0))+2]\
-            #     = 1000
             data[
                 index - index_offset,
                 piy - window_ver : piy + window_ver + 1,

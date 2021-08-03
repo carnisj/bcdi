@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 helptext = """
-Open mesh scans and plot interactively the integrated intensity vs. motor positions for 
+Open mesh scans and plot interactively the integrated intensity vs. motor positions for
 a user-defined region of interest.
 """
 

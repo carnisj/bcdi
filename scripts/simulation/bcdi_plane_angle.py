@@ -11,7 +11,8 @@ import numpy as np
 import bcdi.simulation.simulation_utils as simu
 
 helptext = """
-Calculate the angle between to crystallographic planes expressed in the triclinic crystal system.
+Calculate the angle between to crystallographic planes expressed in the triclinic
+crystal system.
 """
 
 reference_planes = [[1, 0, 1], [-1, 0, 1], [1, 0, -1], [1, 0, 0]]
@@ -22,7 +23,8 @@ test_planes = [
     [-1, 0, 0],
     [-1, 0, 1],
 ]  # [[1, 0, 0], [0, 1, 0], [0, 0, 1]]  # list of test planes in the basis (b1, b2, b3)
-use_directlattice = False  # if True, it will use the direct lattice parameters to calculate the reciprocal lattice
+use_directlattice = False
+# if True, it will use the direct lattice parameters to calculate the reciprocal lattice
 #############################
 # define the direct lattice #
 #############################
@@ -45,9 +47,10 @@ b3 = 0.108  # length of b3 in 1/nm
 # end of user-defined parameters #
 ##################################
 
-####################################################################################################
-# calculate the basis vector components in the orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] #
-####################################################################################################
+#######################################################
+# calculate the basis vector components in the        #
+# orthonormal basis [[1, 0, 0], [0, 1, 0], [0, 0, 1]] #
+#######################################################
 if use_directlattice:
     print("Using the direct lattice to calculate the reciprocal lattice")
     alpha_r, beta_r, gamma_r, b1, b2, b3 = simu.reciprocal_lattice(

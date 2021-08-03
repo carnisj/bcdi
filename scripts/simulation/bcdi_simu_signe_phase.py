@@ -17,8 +17,9 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.ticker as ticker
 
 helptext = """
-calculation of the diffraction pattern using FFTs with both conventions and kinematic sum, to show the relationship
-between the phase and the displacement. The object is a Ge-core / Si-shell nanowire
+calculation of the diffraction pattern using FFTs with both conventions and kinematic
+sum, to show the relationship between the phase and the displacement.
+The object is a Ge-core / Si-shell nanowire.
 """
 
 savedir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2227/simu/Figures/phasing_kin_FFT/new/"
@@ -181,7 +182,8 @@ epsilonT = alpha + beta / (r * r)  # dimensionless
 epsilonXX = misfit + epsilonR * np.cos(theta) ** 2 + epsilonT * np.sin(theta) ** 2
 epsilonXX_Si = epsilonR * np.cos(theta) ** 2 + epsilonT * np.sin(theta) ** 2
 epsilon_xx = np.zeros((2 * half_window, 2 * half_window))
-# calculation based on the calculation of elastic strain in radial and transverse direction for a core-shell SiGe NW
+# calculation based on the calculation of elastic strain in radial and
+# transverse direction for a core-shell SiGe NW
 # reference:
 
 displacement = ((area_core - area_nanowire) * epsilonXX_Si + area_core * epsilon_xx) * 2
@@ -224,7 +226,8 @@ qx = q400_Ge + np.arange(-dq * half_window, dq * half_window, dq)
 qy = np.arange(-dq * half_window, dq * half_window, dq)
 
 ########################
-# FFT with displacement field and symmetric normalization for comparison with mathematica
+# FFT with displacement field and symmetric
+# normalization for comparison with mathematica
 ########################
 complex_object = nanowire * np.exp(1j * (ux * avg_q[0, 0] + 0))
 np.save(savedir + "GeSi_NW_complex_object.npy", complex_object)
@@ -295,7 +298,8 @@ plt.savefig(
 )
 
 ########################
-# FFT with displacement field of opposite sign and symmetric normalization for comparison with mathematica
+# FFT with displacement field of opposite sign and
+# symmetric normalization for comparison with mathematica
 ########################
 amplitude = fftshift(
     fftn(nanowire * np.exp(1j * (-ux * avg_q[0, 0] + 0)), norm="ortho")
