@@ -18,9 +18,7 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """
-    Tests
-    """
+    """Tests."""
 
     def test_dummy(self):
         self.assertTrue(True)

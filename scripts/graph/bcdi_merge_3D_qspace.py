@@ -47,9 +47,11 @@ centering = (
 )
 specdir = "C:/Users/carnis/Work Folders/Documents/data/HC3207/ID01/"
 
-setup = "ID01"  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10', used for data loading and normalization by monitor
+setup = "ID01"  # 'ID01' or 'SIXS' or 'CRISTAL' or 'P10',
+# used for data loading and normalization by monitor
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
-follow_delta = 0  # for energy_scan, set to 1 if the detector is also scanned to follow the Bragg peak (delta @ ID01)
+follow_delta = 0  # for energy_scan, set to 1 if the detector is also scanned
+# to follow the Bragg peak (delta @ ID01)
 output_size = [300, 500, 500]  # size for the interpolated summed data
 comment = "_Scans" + str(scans)  # string, should start with "_"
 hotpixels_file = ""  # specdir + 'hotpixels.npz'  #
@@ -108,7 +110,8 @@ if setup == "ID01":
     )  # for ID01
     # 3S+2D goniometer (ID01 goniometer, sample: eta, chi, phi      detector: nu,del
     # the vector beam_direction is giving the direction of the primary beam
-    # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
+    # convention for coordinate system: x downstream; z upwards;
+    # y to the "outside" (right-handed)
 elif setup == "SIXS":
     offsets = (0, 0, 0, offset_inplane, 0)  # beta, mu, beta, gamma del
     sys.path.append(specdir)
@@ -120,7 +123,8 @@ elif setup == "SIXS":
     # 2S+3D goniometer (SIXS goniometer, sample: beta, mu     detector: beta, gamma, del
     # beta is below both sample and detector circles
     # the vector is giving the direction of the primary beam
-    # convention for coordinate system: x downstream; z upwards; y to the "outside" (right-handed)
+    # convention for coordinate system: x downstream; z upwards;
+    # y to the "outside" (right-handed)
 elif setup == "CRISTAL":
     # TODO: adapt to Cristal
     pass
@@ -136,7 +140,8 @@ cch2 = -16.47 - roi[2]  # 50.49 - roi[2]  #
 hxrd = xu.experiment.HXRD(
     sample_inplane, sample_outofplane, qconv=qconv
 )  # x downstream, y outboard, z vertical
-# first two arguments in HXDD are the inplane reference direction along the beam and surface normal of the sample
+# first two arguments in HXDD are the inplane reference direction along
+# the beam and surface normal of the sample
 hxrd.Ang2Q.init_area(
     "z-",
     "y+",
@@ -151,7 +156,8 @@ hxrd.Ang2Q.init_area(
     tiltazimuth=237.2,
     tilt=1.316,
 )
-# first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
+# first two arguments in init_area are the direction of the detector,
+# checked for ID01 and SIXS
 ##############################################################################
 # parameters for plotting)
 params = {
@@ -197,9 +203,7 @@ my_cmap = LinearSegmentedColormap("my_colormap", cdict, 256)
 
 
 def remove_hotpixels(mydata, hotpixels, mymask):
-    """
-    function to remove hot pixels from CCD frames
-    """
+    """Remove hot pixels from CCD frames."""
     mydata[hotpixels == -1] = 0
     mymask[hotpixels == -1] = 1
     return mydata, mymask
@@ -207,7 +211,8 @@ def remove_hotpixels(mydata, hotpixels, mymask):
 
 def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
     """
-    function to check for hot pixels in the data
+    Check for hot pixels in the data.
+
     :param mydata: detector 3d data
     :param mymask: 2d mask
     :param var_threshold: pixels with 1/var > var_threshold*1/var.mean() will be masked
@@ -235,7 +240,8 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
     var_mean = vardata[vardata != np.inf].mean()
     vardata[
         meandata == 0
-    ] = var_mean  # pixels were data=0 (hence 1/variance=inf) are set to the mean of 1/var
+    ] = var_mean  # pixels were data=0 (hence 1/variance=inf)
+    # are set to the mean of 1/var
     indices_badpixels = np.nonzero(
         vardata > var_mean * var_threshold
     )  # isolate constants pixels != 0 (1/variance=inf)
@@ -260,7 +266,8 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
         plt.title("Variance of data along axis=0\nafter masking")
         plt.axis("scaled")
         plt.pause(0.1)
-    # print(str(indices_badpixels[0].shape[0]), "badpixels with 1/var>", str(var_threshold),
+    # print(str(indices_badpixels[0].shape[0]),
+    # "badpixels with 1/var>", str(var_threshold),
     #       '*1/var.mean() were masked on a total of', str(numx*numy))
     print(
         str(indices_badpixels[0].shape[0]),
@@ -271,6 +278,7 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
 
 
 def mask_eiger(mydata, mymask):
+    """Mask the Eiger2M frames."""
     mydata[:, 255:259] = 0
     mydata[:, 513:517] = 0
     mydata[:, 771:775] = 0
@@ -304,6 +312,7 @@ def mask_eiger(mydata, mymask):
 
 
 def mask_maxipix(mydata, mymask):
+    """Mask the Maxipix frames."""
     mydata[:, 255:261] = 0
     mydata[255:261, :] = 0
 
@@ -313,6 +322,7 @@ def mask_maxipix(mydata, mymask):
 
 
 def mask_eiger4m(mydata, mymask):
+    """Mask the Eiger4M frames."""
     return mydata, mymask
 
 
@@ -333,7 +343,8 @@ def gridmap(
     myoffsets=(0, 0, 0, 0, 0),
 ):
     """
-    Load the data, check for saturated pixels, interpolate on an orthogonal grid
+    Load the data, check for saturated pixels, interpolate on an orthogonal grid.
+
     :param specfile:
     :param scan_nb:
     :param mydetector: "Eiger4M" or "Eiger2M" or "Maxipix"
@@ -345,7 +356,8 @@ def gridmap(
     :param previous_mask: when you reload the data
     :param mysetup: 'ID01' or 'SIXS' or 'CRISTAL', different data loading method
     :param myrocking_angle: name of the motor which is tilted during the rocking curve
-    :param follow_bragg: for energy_scan, set to 1 if the detector is scanned to follow the Bragg peak (delta @ ID01)
+    :param follow_bragg: for energy_scan, set to 1 if the detector is scanned to
+     follow the Bragg peak (delta @ ID01)
     :param myenergy: energy in eV of the experiment, in case it is not in the spec file
     :param myoffsets: sample and detector offsets for xrayutilities
     :return:
@@ -592,10 +604,14 @@ for idx in range(nb_scan):
     ccdfiletmp = os.path.join(
         datadir, "align_eiger2M_%05d.edf.gz"
     )  # template for the CCD file names
-    # ccdfiletmp = os.path.join("data_mpx4_%05d.edf.gz")  # ID01 template for image name
-    # ccdfiletmp = os.path.join(spec_name + "_ascan_mu_%05d.nxs")  # SIXS template for image name
-    # ccdfiletmp = os.path.join(datadir, "mgomega-2018_06_08_19-37-38_418.nxs")  # Cristal template for image name
-    # ccdfiletmp = os.path.join("Sample2371_ref_00079_data_%06d.h5")   # P10 template for detector filenames
+    # ccdfiletmp = os.path.join("data_mpx4_%05d.edf.gz")
+    # ID01 template for image name
+    # ccdfiletmp = os.path.join(spec_name + "_ascan_mu_%05d.nxs")
+    # SIXS template for image name
+    # ccdfiletmp = os.path.join(datadir, "mgomega-2018_06_08_19-37-38_418.nxs")
+    # Cristal template for image name
+    # ccdfiletmp = os.path.join("Sample2371_ref_00079_data_%06d.h5")
+    # P10 template for detector filenames
     if setup == "CRISTAL":
         spec_file = h5py.File(ccdfiletmp, "r")
     elif setup == "P10":

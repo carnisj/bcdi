@@ -76,7 +76,8 @@ else:
 ##############################################################
 
 
-def remove_hotpixels_eiger(mydata, hot_file):  # , mymask):
+def remove_hotpixels_eiger(mydata, hot_file):
+    """Remove hot pixels from Eiger frames."""
     f = fabio.open(hot_file)
     hotpixels = f.data
     mydata[hotpixels == -1] = 0
@@ -84,9 +85,7 @@ def remove_hotpixels_eiger(mydata, hot_file):  # , mymask):
 
 
 def remove_hotpixels_maxipix(mydata, mymask, hot_file):
-    """
-    function to remove hot pixels from CCD frames
-    """
+    """Remove hot pixels from CCD frames."""
     hotpixels = np.load(hot_file)
     npz_keys = hotpixels.keys()
     hotpixels = hotpixels[npz_keys[0]]
@@ -96,6 +95,7 @@ def remove_hotpixels_maxipix(mydata, mymask, hot_file):
 
 
 def mask_eiger(mydata):
+    """Mask Eiger frames."""
     mydata[:, 255:259] = 0
     mydata[:, 513:517] = 0
     mydata[:, 771:775] = 0
@@ -113,6 +113,7 @@ def mask_eiger(mydata):
 
 
 def mask_maxipix(mydata, mymask):
+    """Mask Maxipix frames."""
     mydata[:, 255:261] = 0
     mydata[255:261, :] = 0
     mydata[0:15, 0:150] = 0

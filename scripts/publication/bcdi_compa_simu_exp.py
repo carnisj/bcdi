@@ -87,6 +87,7 @@ my_cmap.set_bad(color="0.7")
 
 
 def calc_coordination(mysupport, debugging=0):
+    """Calculate the coordination number of the support using a 3x3x3 kernel."""
     nbz, nby, nbx = mysupport.shape
 
     mykernel = np.ones((3, 3, 3))
@@ -117,7 +118,8 @@ def calc_coordination(mysupport, debugging=0):
 
 def crop_pad(myobj, myshape, debugging=0):
     """
-    will crop or pad my obj depending on myshape
+    Crop or pad my obj depending on myshape.
+
     :param myobj: 3d complex array to be padded
     :param myshape: list of desired output shape [z, y, x]
     :param debugging: to plot myobj before and after rotation

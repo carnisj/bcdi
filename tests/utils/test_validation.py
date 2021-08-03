@@ -20,18 +20,14 @@ def run_tests(test_class):
 
 
 class TestValidContainer(unittest.TestCase):
-    ############################
-    # tests on valid_container #
-    ############################
-    # valid_container(obj, container_types, length=None, min_length=None,
-    #                 item_types=None, min_included=None,
-    #                 min_excluded=None, max_included=None, max_excluded=None,
-    #                 allow_none=False, name=None)
-    # def setUp(self):
-    #     executed before each test
-    #
-    # def tearDown(self):
-    #     executed after each test
+    """
+    Tests on valid_container.
+
+    valid_container(obj, container_types, length=None, min_length=None,
+                item_types=None, min_included=None,
+                min_excluded=None, max_included=None, max_excluded=None,
+                allow_none=False, name=None)
+    """
 
     def test_validcontainer_container_type(self):
         self.assertRaises(TypeError, valid.valid_container, obj=[], container_types=1)
@@ -343,10 +339,11 @@ class TestValidContainer(unittest.TestCase):
 
 
 class TestValidKwargs(unittest.TestCase):
-    #########################
-    # tests on valid_kwargs #
-    #########################
-    # valid_kwargs(kwargs, allowed_kwargs, name=None)
+    """
+    Tests on valid_kwargs.
+
+    valid_kwargs(kwargs, allowed_kwargs, name=None)
+    """
 
     def test_validkwargs_kwargs_type_dict(self):
         self.assertTrue(valid.valid_kwargs(kwargs={}, allowed_kwargs="test"))
@@ -407,12 +404,13 @@ class TestValidKwargs(unittest.TestCase):
 
 
 class TestValidItem(unittest.TestCase):
-    #######################
-    # tests on valid_item #
-    #######################
-    # valid_item(value, allowed_types, min_included=None, min_excluded=None,
-    #            max_included=None, max_excluded=None,
-    #            allow_none=False, name=None)
+    """
+    Tests on valid_item.
+
+    valid_item(value, allowed_types, min_included=None, min_excluded=None,
+           max_included=None, max_excluded=None,
+           allow_none=False, name=None)
+    """
 
     def test_validitem_allowedtypes_none(self):
         self.assertRaises(ValueError, valid.valid_item, value=0, allowed_types=None)
