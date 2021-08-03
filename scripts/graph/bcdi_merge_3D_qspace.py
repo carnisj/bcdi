@@ -278,6 +278,7 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
 
 
 def mask_eiger(mydata, mymask):
+    """Mask the Eiger2M frames."""
     mydata[:, 255:259] = 0
     mydata[:, 513:517] = 0
     mydata[:, 771:775] = 0
@@ -311,6 +312,7 @@ def mask_eiger(mydata, mymask):
 
 
 def mask_maxipix(mydata, mymask):
+    """Mask the Maxipix frames."""
     mydata[:, 255:261] = 0
     mydata[255:261, :] = 0
 
@@ -320,6 +322,7 @@ def mask_maxipix(mydata, mymask):
 
 
 def mask_eiger4m(mydata, mymask):
+    """Mask the Eiger4M frames."""
     return mydata, mymask
 
 
