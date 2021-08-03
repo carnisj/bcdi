@@ -66,17 +66,21 @@ modulation_sigma = 5  # standard deviation of the gaussian for the 'gaussian' me
 ####################
 # check parameters #
 ####################
-assert 1 <= background_order <= 4, "polynomial fitting of order > 4 not implemented"
-assert 1 <= modulation_order <= 4, "polynomial fitting of order > 4 not implemented"
-assert background_method in [
+if not 1 <= background_order <= 4:
+    raise ValueError("polynomial fitting of order > 4 not implemented")
+if not 1 <= modulation_order <= 4:
+    raise ValueError("polynomial fitting of order > 4 not implemented")
+if background_method not in [
     "gaussian",
     "polyfit",
     "skip",
-], "invalid setting for background_method"
-assert modulation_method in [
+]:
+    raise ValueError("invalid setting for background_method")
+if modulation_method not in [
     "gaussian",
     "polyfit",
-], "invalid setting for modulation_method"
+]:
+    raise ValueError("invalid setting for modulation_method")
 
 #################
 # load the data #

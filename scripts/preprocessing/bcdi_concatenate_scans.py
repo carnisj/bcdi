@@ -17,11 +17,11 @@ import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
 
 helptext = """
-Average several BCDI or CDI scans after an optional alignement step, based on a threshold on their Pearson correlation
-coefficient.
-
-The alignment of diffraction patterns is based on the center of mass shift or dft registration, using Python regular
-grid interpolator or subpixel shift. Note thta there are many artefacts when using subpixel shift in reciprocal space.
+Average several BCDI or CDI scans after an optional alignement step, based on a
+threshold on their Pearson correlation coefficient. The alignment of diffraction
+patterns is based on the center of mass shift or dft registration, using Python regular
+grid interpolator or subpixel shift. Note thta there are many artefacts when using
+subpixel shift in reciprocal space.
 """
 
 scans = np.arange(314, 374 + 1, 4)  # list or array of scan numbers
@@ -34,7 +34,8 @@ suffix = [
     "_norm_250_1100_900_1_1_1.npz"
 ]  # list of sample names (end of the filename template after 'pynx'),
 # it will be repeated to match the length of scans
-homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"  # parent folder of scans folders
+homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+# parent folder of scans folders
 savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
 # path of the folder to save data
 alignement_method = "registration"
@@ -43,29 +44,38 @@ combining_method = (
     "subpixel"  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
 )
 corr_roi = None
-# [420, 520, 660, 760, 600, 700]  # region of interest where to calculate the correlation between scans.
+# [420, 520, 660, 760, 600, 700]
+# region of interest where to calculate the correlation between scans.
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
 output_shape = (
     250,
     1024,
     800,
 )  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
-crop_center = None  # [z, y, x] pixels position in the original array of the center of the cropped output
+crop_center = None  # [z, y, x] pixels position in the original array
+# of the center of the cropped output
 # if None, it will be set to the center of the original array
-boundaries = "crop"  # 'mask', 'crop' or 'skip'. If 'mask', boundary pixels were not all scans are defined after
-# alignement will be masked, if 'crop' output_shape will be modified to crop them. If 'skip', boundaries will not be
-# processed.
-partially_masked = "unmask"  # 'unmask' or 'mask'. If 'unmask', partially masked pixels will be set to their mean value
+boundaries = "crop"  # 'mask', 'crop' or 'skip'.
+# If 'mask', boundary pixels were not all scans are defined after
+# alignement will be masked, if 'crop' output_shape will be modified to crop them.
+# If 'skip', boundaries will not be processed.
+partially_masked = "unmask"  # 'unmask' or 'mask'.
+# If 'unmask', partially masked pixels will be set to their mean value
 # and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
 correlation_threshold = (
     0.95  # only scans having a correlation larger than this threshold will be combined
 )
-reference_scan = 0  # index in scans of the scan to be used as the reference for the correlation calculation
-combine_masks = True  # if True, the output mask is the combination of all masks. If False, the reference mask is used
-# if a pixel is defined only in part of the dataset, its value will be used with proper rescaling
-is_orthogonal = False  # if True, it will look for the data in a folder named /pynx, otherwise in /pynxraw
+reference_scan = 0
+# index in scans of the scan to be used as the reference for the correlation calculation
+combine_masks = True  # if True, the output mask is the combination of all masks.
+# If False, the reference mask is used
+# if a pixel is defined only in part of the dataset,
+# its value will be used with proper rescaling
+is_orthogonal = False  # if True, it will look for the data in a folder named /pynx,
+# otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
-comment = ""  # should start with _ , it will be added to the filename when saving the combined dataset
+comment = ""  # should start with _ , it will be added to the filename
+# when saving the combined dataset
 debug = False  # True or False
 ##################################
 # end of user-defined parameters #
@@ -79,14 +89,14 @@ if reference_scan is None:
 
 if type(output_shape) is tuple:
     output_shape = list(output_shape)
-assert len(output_shape) == 3, "output_shape should be a list or tuple of three numbers"
+if len(output_shape) != 3:
+    raise ValueError("output_shape should be a list or tuple of three numbers")
 
 if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
-    assert len(sample_name) == len(
-        scans
-    ), "sample_name and scans should have the same length"
+    if len(sample_name) != len(scans):
+        raise ValueError("sample_name and scans should have the same length")
 elif type(sample_name) is str:
     sample_name = [sample_name for idx in range(len(scans))]
 else:
@@ -96,20 +106,20 @@ else:
 if isinstance(suffix, (tuple, list)):
     if len(suffix) == 1:
         suffix = [suffix[0] for idx in range(len(scans))]
-    assert len(suffix) == len(
-        scans
-    ), "sample_name and scans should have the same length"
+    if len(suffix) != len(scans):
+        raise ValueError("sample_name and scans should have the same length")
 elif type(suffix) is str:
     suffix = [suffix for idx in range(len(scans))]
 else:
     print("suffix should be either a string or a list of strings")
     sys.exit()
 
-assert boundaries in {
+if boundaries not in {
     "mask",
     "crop",
     "skip",
-}, 'boundaries should be either "mask", "crop" or "skip"'
+}:
+    raise ValueError('boundaries should be either "mask", "crop" or "skip"')
 
 if is_orthogonal:
     parent_folder = "/pynx/"
@@ -143,7 +153,8 @@ refmask = np.load(
     + "_maskpynx"
     + suffix[reference_scan]
 )["mask"]
-assert refdata.ndim == 3 and refmask.ndim == 3, "data and mask should be 3D arrays"
+if not (refdata.ndim == 3 and refmask.ndim == 3):
+    raise ValueError("data and mask should be 3D arrays")
 nbz, nby, nbx = refdata.shape
 
 #################################################################
@@ -152,15 +163,16 @@ nbz, nby, nbx = refdata.shape
 crop_center = list(
     crop_center or [nbz // 2, nby // 2, nbx // 2]
 )  # if None, default to the middle of the array
-assert len(crop_center) == 3, "crop_center should be a list or tuple of three indices"
-assert np.all(
-    np.asarray(crop_center) - np.asarray(output_shape) // 2 >= 0
-), "crop_center incompatible with output_shape"
-assert (
+if len(crop_center) != 3:
+    raise ValueError("crop_center should be a list or tuple of three indices")
+if not np.all(np.asarray(crop_center) - np.asarray(output_shape) // 2 >= 0):
+    raise ValueError("crop_center incompatible with output_shape")
+if not (
     crop_center[0] + output_shape[0] // 2 <= nbz
     and crop_center[1] + output_shape[1] // 2 <= nby
     and crop_center[2] + output_shape[2] // 2 <= nbx
-), "crop_center incompatible with output_shape"
+):
+    raise ValueError("crop_center incompatible with output_shape")
 
 corr_roi = corr_roi or [
     0,
@@ -171,7 +183,8 @@ corr_roi = corr_roi or [
     nbx,
 ]  # if None, use the full array for corr_roi
 
-assert len(corr_roi) == 6, "corr_roi should be a tuple or list of lenght 6"
+if len(corr_roi) != 6:
+    raise ValueError("corr_roi should be a tuple or list of lenght 6")
 if (
     not 0 <= corr_roi[0] < corr_roi[1] <= nbz
     or not 0 <= corr_roi[2] < corr_roi[3] <= nby
@@ -180,7 +193,8 @@ if (
     print("Incorrect value for the parameter corr_roi")
     sys.exit()
 
-# crop the data directly to output_shape if no alignment is required, update corr_roi accordingly
+# crop the data directly to output_shape if no alignment is required,
+# update corr_roi accordingly
 if alignement_method == "skip":
     refmask = util.crop_pad(
         array=refmask, output_shape=output_shape, crop_center=crop_center
@@ -424,8 +438,9 @@ if alignement_method != "skip":
             center_z + output_shape[0] // 2 > nbz - shift_min[0]
         ):  # not enough pixels on the larger indices side
             print("cannot crop the first axis to {:d}".format(output_shape[0]))
-            # find the correct output_shape[0] taking into accournt FFT shape considerations
-            output_shape[0] = pru.smaller_primes(
+            # find the correct output_shape[0]
+            # taking into accournt FFT shape considerations
+            output_shape[0] = util.smaller_primes(
                 nbz - shift_min[0] - shift_max[0], maxprime=7, required_dividers=(2,)
             )
             # redefine crop_center[0] if needed
@@ -446,8 +461,9 @@ if alignement_method != "skip":
             center_y + output_shape[1] // 2 > nby - shift_min[1]
         ):  # not enough pixels on the larger indices side
             print("cannot crop the second axis to {:d}".format(output_shape[1]))
-            # find the correct output_shape[1] taking into accournt FFT shape considerations
-            output_shape[1] = pru.smaller_primes(
+            # find the correct output_shape[1]
+            # taking into accournt FFT shape considerations
+            output_shape[1] = util.smaller_primes(
                 nby - shift_min[1] - shift_max[1], maxprime=7, required_dividers=(2,)
             )
             # redefine crop_center[1] if needed
@@ -468,8 +484,9 @@ if alignement_method != "skip":
             center_x + output_shape[2] // 2 > nbx - shift_min[2]
         ):  # not enough pixels on the larger indices side
             print("cannot crop the third axis to {:d}".format(output_shape[2]))
-            # find the correct output_shape[2] taking into accournt FFT shape considerations
-            output_shape[2] = pru.smaller_primes(
+            # find the correct output_shape[2]
+            # taking into accournt FFT shape considerations
+            output_shape[2] = util.smaller_primes(
                 nbx - shift_min[2] - shift_max[2], maxprime=7, required_dividers=(2,)
             )
             # redefine crop_center[2] if needed
@@ -487,7 +504,8 @@ if alignement_method != "skip":
     else:  # 'skip'
         print("no process of the boundaries")
 
-    # crop the combined data and mask to the desired shape, when alignment_method is 'skip' it is done beforehand
+    # crop the combined data and mask to the desired shape,
+    # when alignment_method is 'skip' it is done beforehand
     summask = util.crop_pad(
         array=summask, output_shape=output_shape, crop_center=crop_center
     )

@@ -226,8 +226,8 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
-if vmin and vmax:
-    assert vmax > vmin, "vmax should be larger than vmin"
+if (vmin and vmax) and (vmax <= vmin):
+    raise ValueError("vmax should be larger than vmin")
 
 savedir = savedir or datadir
 
@@ -267,7 +267,8 @@ diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
 diff_pattern[np.isnan(diff_pattern)] = 0  # discard nans
 diff_pattern[diff_pattern <= threshold] = 0  # apply the intensity threshold
-assert diff_pattern.ndim == 3, "the diffraction pattern should be a 3D array"
+if diff_pattern.ndim != 3:
+    raise ValueError("the diffraction pattern should be a 3D array")
 nz, ny, nx = diff_pattern.shape
 
 ############################
@@ -284,9 +285,10 @@ if load_mask:
             'a mask should be provided if the parameter "load_mask" is set to True'
         )
     mask, _ = util.load_file(file_path)
-    assert (
-        mask.shape == diff_pattern.shape
-    ), "the mask should have the same shape as the diffraction pattern"
+    if mask.shape != diff_pattern.shape:
+        raise ValueError(
+            "the mask should have the same shape as the diffraction " "pattern"
+        )
     diff_pattern[np.nonzero(mask)] = 0
     del mask
     gc.collect()

@@ -1342,7 +1342,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ##################################################################
     # final check of the shape to comply with FFT shape requirements #
     ##################################################################
-    final_shape = pru.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
+    final_shape = util.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
     com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
     crop_center = pu.find_crop_center(
         array_shape=data.shape, crop_shape=final_shape, pivot=com

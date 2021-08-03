@@ -658,6 +658,54 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     return window
 
 
+def higher_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest larger number that meets some condition.
+
+    Find the closest integer >=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            limit = i
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
+            while (
+                try_smaller_primes(
+                    i, maxprime=maxprime, required_dividers=required_dividers
+                )
+                is False
+            ):
+                i = i + 1
+                if i == limit:
+                    return limit
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    limit = number
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
+    while (
+        try_smaller_primes(
+            number, maxprime=maxprime, required_dividers=required_dividers
+        )
+        is False
+    ):
+        number = number + 1
+        if number == limit:
+            return limit
+    return number
+
+
 def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     """
     Convert an image to a numpy array using pillow.
@@ -1164,6 +1212,28 @@ def plane_fit(indices, label="", threshold=1, debugging=False):
         print("distance.mean() > 1, probably the distribution of points is not flat")
         valid_plane = False
     return params, std_param, valid_plane
+
+
+def primes(number):
+    """
+    Return the prime decomposition of n as a list. Adapted from PyNX.
+
+    :param number: the integer to be decomposed
+    :return: the list of prime dividers of number
+    """
+    valid.valid_item(
+        number, allowed_types=int, min_excluded=0, name="preprocessing_utils.primes"
+    )
+    list_primes = [1]
+    i = 2
+    while i * i <= number:
+        while number % i == 0:
+            list_primes.append(i)
+            number //= i
+        i += 1
+    if number > 1:
+        list_primes.append(number)
+    return list_primes
 
 
 def pseudovoigt(x_axis, amp, cen, sig, ratio):
@@ -1735,6 +1805,52 @@ def skewed_gaussian(x_axis, amp, loc, sig, alpha):
     )
 
 
+def smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Find the closest smaller number that meets some condition.
+
+    Find the closest integer <=n (or list/array of integers), for which the largest
+    prime divider is <=maxprime, and has to include some dividers. The default values
+    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
+    FFT. Adapted from PyNX.
+
+    :param number: the integer number
+    :param maxprime: the largest prime factor acceptable
+    :param required_dividers: a list of required dividers for the returned integer.
+    :return: the integer (or list/array of integers) fulfilling the requirements
+    """
+    if isinstance(number, (list, tuple, np.ndarray)):
+        vn = []
+        for i in number:
+            if i <= 1 or maxprime > i:
+                raise ValueError(f"Number is < {maxprime}")
+            while (
+                try_smaller_primes(
+                    i, maxprime=maxprime, required_dividers=required_dividers
+                )
+                is False
+            ):
+                i = i - 1
+                if i == 0:
+                    return 0
+            vn.append(i)
+        if isinstance(number, np.ndarray):
+            return np.array(vn)
+        return vn
+    if number <= 1 or maxprime > number:
+        raise ValueError(f"Number is < {maxprime}")
+    while (
+        try_smaller_primes(
+            number, maxprime=maxprime, required_dividers=required_dividers
+        )
+        is False
+    ):
+        number = number - 1
+        if number == 0:
+            return 0
+    return number
+
+
 def sum_roi(array, roi, debugging=False):
     """
     Sum the array intensities in the defined region of interest.
@@ -1782,3 +1898,27 @@ def sum_roi(array, roi, debugging=False):
             tuple_colorbar=True,
         )
     return sum_array
+
+
+def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
+    """
+    Check if a number meets some condition.
+
+    Check if the largest prime divider is <=maxprime, and optionally includes some
+    dividers. Adapted from PyNX.
+
+    :param number: the integer number for which the prime decomposition will be checked
+    :param maxprime: the maximum acceptable prime number. This defaults to the
+     largest integer accepted by the clFFT library for OpenCL GPU FFT.
+    :param required_dividers: list of required dividers in the prime decomposition.
+     If None, this check is skipped.
+    :return: True if the conditions are met.
+    """
+    p = primes(number)
+    if max(p) > maxprime:
+        return False
+    if required_dividers is not None:
+        for k in required_dividers:
+            if number % k != 0:
+                return False
+    return True

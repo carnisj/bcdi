@@ -20,11 +20,10 @@ import bcdi.utils.utilities as util
 import bcdi.experiment.experiment_utils as exp
 
 helptext = """
-Create a support from a reconstruction, using the indicated threshold.
-The support can be cropped/padded to a desired shape.
-In real space the CXI convention is used: z downstream, y vertical up, x outboard.
-In reciprocal space, the following convention is used: qx downtream, qz vertical up, qy outboard
-
+Create a support from a reconstruction, using the indicated threshold. The support
+can be cropped/padded to a desired shape. In real space the CXI convention is used:
+z downstream, y vertical up, x outboard. In reciprocal space, the following
+convention is used: qx downtream, qz vertical up, qy outboard.
 """
 
 root_folder = "D:/data/P10_August2020_CDI/data/mag_3_macro1/BCDI/"
@@ -40,12 +39,15 @@ output_shape = (
     540,
     540,
 )  # shape of the array for later phasing (before binning_output)
-# if the data and q-values were binned beforehand, use the binned shape and binning_output=(1,1,1)
+# if the data and q-values were binned beforehand,
+# use the binned shape and binning_output=(1,1,1)
 binning_output = (1, 1, 1)  # binning that will be used in PyNX for later phasing
-qvalues_binned = True  # if True, the q values provided are expected to be binned (binning_pynx & binning_output)
+qvalues_binned = True  # if True, the q values provided are expected to be binned
+# (binning_pynx & binning_output)
 flag_interact = True  # if False, will skip thresholding and masking
 binary_support = True  # True to save the support as an array of 0 and 1
-save_intermediate = False  # if True, will save the masked data just after the interactive masking, before applying
+save_intermediate = False  # if True, will save the masked data just after the
+# interactive masking, before applying
 # other filtering and interpolation
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
@@ -54,12 +56,14 @@ roll_modes = (
     0,
     0,
     0,
-)  # correct a roll of few pixels after the decomposition into modes in PyNX. axis=(0, 1, 2)
+)  # correct a roll of few pixels after the decomposition into modes in PyNX.
+# axis=(0, 1, 2)
 roll_centering = (
     0,
     0,
     0,
-)  # roll applied after masking when centering by center of mass is not optimal axis=(0, 1, 2)
+)  # roll applied after masking when centering by center of mass is not optimal.
+# axis=(0, 1, 2)
 background_plot = (
     "0.5"  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 )
@@ -75,7 +79,8 @@ gaussian_sigma = 4.0  # sigma of the gaussian filter
 ######################################################################
 # parameters for image deconvolution using Richardson-Lucy algorithm #
 ######################################################################
-psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution, leave it to 0 if unwanted
+psf_iterations = 0  # number of iterations of Richardson-Lucy deconvolution,
+# leave it to 0 if unwanted
 psf_shape = (10, 10, 10)
 psf = util.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=False)
 ###########################
@@ -84,36 +89,36 @@ psf = util.gaussian_window(window_shape=psf_shape, sigma=0.3, mu=0.0, debugging=
 energy = 10235  # in eV
 tilt_angle = 0.25  # in degrees
 distance = 5  # in m
-pixel_x = 75e-06  # in m, horizontal pixel size of the detector, including an eventual preprocessing binning
-pixel_y = 75e-06  # in m, vertical pixel size of the detector, including an eventual preprocessing binning
+pixel_x = 75e-06  # in m, horizontal pixel size of the detector,
+# including an eventual preprocessing binning
+pixel_y = 75e-06  # in m, vertical pixel size of the detector,
+# including an eventual preprocessing binning
 ###########################################################################
 # parameters used only when the data is in the detector frame (Bragg CDI) #
 ###########################################################################
-beamline = "ID01"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
+beamline = "ID01"  # name of the beamline, used for data loading and
+# normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 outofplane_angle = 35.2694  # detector delta ID01, delta SIXS, gamma 34ID
 inplane_angle = -2.5110  # detector nu ID01, gamma SIXS, tth 34ID
-grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta ID01, th 34ID, beta SIXS)
+grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves
+# (eta ID01, th 34ID, beta SIXS)
 ##################################
 # end of user-defined parameters #
 ##################################
 
 
 def close_event(event):
-    """
-    This function handles closing events on plots.
-
-    :return: nothing
-    """
+    """This function handles closing events on plots."""
     print(event, "Click on the figure instead of closing it!")
     sys.exit()
 
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
-    if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel. If
+    flag_pause==1 or if the mouse is out of plot axes, it will not register the click.
 
     :param event: mouse click event
     """
@@ -129,7 +134,8 @@ def on_click(event):
                 previous_axis = event.inaxes
         else:  # the click is not in the same subplot, restart collecting points
             print(
-                "Please select mask polygon vertices within the same subplot: restart masking..."
+                "Please select mask polygon vertices within the same subplot:"
+                " restart masking..."
             )
             xy = []
             previous_axis = None
@@ -141,8 +147,9 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, original_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause
-    global xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, info_text, is_ortho, my_cmap
+    global original_data, original_mask, data, mask, frame_index, width, flag_aliens
+    global flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2
+    global previous_axis, info_text, is_ortho, my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -343,9 +350,8 @@ if flag_interact:
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
-    mask[
-        mask == -1
-    ] = 0  # clear the filled points from the mask since we do not want to mask them later
+    mask[mask == -1] = 0
+    # clear the filled points from the mask since we do not want to mask them later
     mask[np.nonzero(mask)] = 1  # ensure that masked voxels appear as 1 in the mask
     data[np.nonzero(mask)] = 0
     del fig_mask, flag_pause, flag_mask, original_data, original_mask
@@ -389,9 +395,8 @@ if flag_interact:
     fig_mask.set_facecolor(background_plot)
     plt.show()
 
-    mask[
-        mask == -1
-    ] = 0  # clear the filled points from the mask since we do not want to mask them later
+    mask[mask == -1] = 0
+    # clear the filled points from the mask since we do not want to mask them later
     mask[np.nonzero(mask)] = 1  # ensure that masked voxels appear as 1 in the mask
     data[np.nonzero(mask)] = 0
     del fig_mask, original_data, original_mask, mask
@@ -523,30 +528,37 @@ if not all(
         qx = q_values["qx"]  # 1D array
         qy = q_values["qy"]  # 1D array
         qz = q_values["qz"]  # 1D array
-        # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
+        # crop q to accomodate a shape change of the original array
+        # (e.g. cropping to fit FFT shape requirement)
         if qvalues_binned:
-            assert (
-                len(qx) >= pynx_shape[0]
-            ), "qx declared binned, its length should be >= pynx_shape[0]"
-            assert (
-                len(qy) >= pynx_shape[2]
-            ), "qy declared binned, its length should be >= pynx_shape[2]"
-            assert (
-                len(qz) >= pynx_shape[1]
-            ), "qz declared binned, its length should be >= pynx_shape[1]"
+            if len(qx) < pynx_shape[0]:
+                raise ValueError(
+                    "qx declared binned, its length should be >= " "pynx_shape[0]"
+                )
+            if len(qy) < pynx_shape[2]:
+                raise ValueError(
+                    "qy declared binned, its length should be >= " "pynx_shape[2]"
+                )
+            if len(qz) < pynx_shape[1]:
+                raise ValueError(
+                    "qz declared binned, its length should be >= " "pynx_shape[1]"
+                )
             qx = util.crop_pad_1d(qx, pynx_shape[0])  # qx along z
             qy = util.crop_pad_1d(qy, pynx_shape[2])  # qy along x
             qz = util.crop_pad_1d(qz, pynx_shape[1])  # qz along y
         else:
-            assert (
-                len(qx) >= unbinned_shape[0]
-            ), "qx declared unbinned, its length should be >= unbinned_shape[0]"
-            assert (
-                len(qy) >= unbinned_shape[2]
-            ), "qy declared unbinned, its length should be >= unbinned_shape[2]"
-            assert (
-                len(qz) >= unbinned_shape[1]
-            ), "qz declared unbinned, its length should be >= unbinned_shape[1]"
+            if len(qx) < unbinned_shape[0]:
+                raise ValueError(
+                    "qx declared unbinned, its length should be >= " "unbinned_shape[0]"
+                )
+            if len(qy) < unbinned_shape[2]:
+                raise ValueError(
+                    "qy declared unbinned, its length should be >= " "unbinned_shape[2]"
+                )
+            if len(qz) < unbinned_shape[1]:
+                raise ValueError(
+                    "qz declared unbinned, its length should be >= " "unbinned_shape[1]"
+                )
             qx = util.crop_pad_1d(qx, unbinned_shape[0])  # qx along z
             qy = util.crop_pad_1d(qy, unbinned_shape[2])  # qy along x
             qz = util.crop_pad_1d(qz, unbinned_shape[1])  # qz along y
@@ -556,7 +568,8 @@ if not all(
         voxelsize_x = 2 * np.pi / (qy.max() - qy.min())  # qy along x
         voxelsize_y = 2 * np.pi / (qz.max() - qz.min())  # qz along y
 
-        # load the q values of the desired shape and calculate corresponding real space voxel sizes
+        # load the q values of the desired shape
+        # and calculate corresponding real space voxel sizes
         file_path = filedialog.askopenfilename(
             initialdir=root_folder,
             title="Select q values for the new shape",
@@ -566,27 +579,37 @@ if not all(
         newqx = q_values["qx"]  # 1D array
         newqy = q_values["qy"]  # 1D array
         newqz = q_values["qz"]  # 1D array
-        # crop q to accomodate a shape change of the original array (e.g. cropping to fit FFT shape requirement)
+        # crop q to accomodate a shape change of the original array
+        # (e.g. cropping to fit FFT shape requirement)
         if qvalues_binned:
-            assert (
-                len(newqx) >= rebinned_shape[0]
-            ), "newqx declared binned, its length should be >= rebinned_shape[0]"
-            assert (
-                len(newqy) >= rebinned_shape[2]
-            ), "newqy declared binned, its length should be >= rebinned_shape[2]"
-            assert (
-                len(newqz) >= rebinned_shape[1]
-            ), "newqz declared binned, its length should be >= rebinned_shape[1]"
+            if len(newqx) < rebinned_shape[0]:
+                raise ValueError(
+                    "newqx declared binned, its length should be >= "
+                    "rebinned_shape[0]"
+                )
+            if len(newqy) < rebinned_shape[2]:
+                raise ValueError(
+                    "newqy declared binned, its length should be >= "
+                    "rebinned_shape[2]"
+                )
+            if len(newqz) < rebinned_shape[1]:
+                raise ValueError(
+                    "newqz declared binned, its length should be >= "
+                    "rebinned_shape[1]"
+                )
         else:
-            assert (
-                len(newqx) >= output_shape[0]
-            ), "newqx declared binned, its length should be >= output_shape[0]"
-            assert (
-                len(newqy) >= output_shape[2]
-            ), "newqy declared binned, its length should be >= output_shape[2]"
-            assert (
-                len(newqz) >= output_shape[1]
-            ), "newqz declared binned, its length should be >= output_shape[1]"
+            if len(newqx) < output_shape[0]:
+                raise ValueError(
+                    "newqx declared binned, its length should be >= " "output_shape[0]"
+                )
+            if len(newqy) < output_shape[2]:
+                raise ValueError(
+                    "newqy declared binned, its length should be >=" " output_shape[2]"
+                )
+            if len(newqz) < output_shape[1]:
+                raise ValueError(
+                    "newqz declared binned, its length should be >=" " output_shape[1]"
+                )
             newqx = util.crop_pad_1d(newqx, output_shape[0])  # qx along z
             newqy = util.crop_pad_1d(newqy, output_shape[2])  # qy along x
             newqz = util.crop_pad_1d(newqz, output_shape[1])  # qz along y

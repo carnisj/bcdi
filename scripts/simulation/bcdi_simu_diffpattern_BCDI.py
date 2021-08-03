@@ -937,7 +937,7 @@ mask = util.crop_pad(mask, crop_size)
 # crop arrays to fulfill FFT requirements during phasing #
 ##########################################################
 nz, ny, nx = simu_data.shape
-nz_crop, ny_crop, nx_crop = pru.smaller_primes(
+nz_crop, ny_crop, nx_crop = util.smaller_primes(
     (nz, ny, nx), maxprime=7, required_dividers=(2,)
 )
 

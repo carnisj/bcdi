@@ -105,11 +105,12 @@ def main(calc_self, user_comment):
     # check input parameters #
     ##########################
     global corr_count, current_point
-    assert (
-        len(origin_qspace) == 3
-    ), "origin_qspace should be a tuple of 3 integer pixel values"
-    assert type(calc_self) is bool, "unexpected typoe for calc_self"
-    assert len(q_range) > 1, "at least 2 values are needed for q_range"
+    if len(origin_qspace) != 3:
+        raise ValueError("origin_qspace should be a tuple of 3 integer pixel values")
+    if type(calc_self) is not bool:
+        raise TypeError(f"got unexpected type {type(calc_self)} for calc_self")
+    if len(q_range) <= 1:
+        raise ValueError("at least 2 values are needed for q_range")
 
     print("the CCF map will be calculated for {:d} q values: ".format(len(q_range)))
     for idx in range(len(q_range)):

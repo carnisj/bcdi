@@ -112,9 +112,8 @@ nbz, nby, nbx = obj.shape
 # rotate object #
 #################
 if align_axes:
-    assert len(align_axes) == len(
-        ref_axes
-    ), "align_axes and ref_axes should have the same length"
+    if len(align_axes) != len(ref_axes):
+        raise ValueError("align_axes and ref_axes should have the same length")
     new_shape = [int(1.2 * nbz), int(1.2 * nby), int(1.2 * nbx)]
     obj = util.crop_pad(array=obj, output_shape=new_shape, debugging=False)
     nbz, nby, nbx = obj.shape

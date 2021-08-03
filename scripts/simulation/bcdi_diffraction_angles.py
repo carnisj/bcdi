@@ -80,14 +80,15 @@ if (
 ):
     print("The angle between reference directions is not 90 degrees")
     sys.exit()
-assert (len(qconv.sampleAxis) + len(qconv.detectorAxis)) == len(
-    bounds
-), "number of specified bounds invalid"
+if len(qconv.sampleAxis) + len(qconv.detectorAxis) != len(bounds):
+    raise ValueError("number of specified bounds invalid")
 nb_free = 0
 for idx in range(len(bounds)):
     if type(bounds[idx]) is tuple:
         nb_free = nb_free + 1
-assert nb_free <= 3, "maximum of three free motors exceeded"
+if nb_free > 3:
+    raise ValueError("maximum of three free motors exceeded")
+
 #############################################
 # calculate the angles of Bragg reflections #
 #############################################
