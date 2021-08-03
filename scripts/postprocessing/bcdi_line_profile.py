@@ -24,7 +24,7 @@ helptext = """
 This script allow to plot and save linecuts through a 2D or 3D object in function of a
 modulus threshold defining the object from the background. Must be given as input:
 the voxel size (possibly different in all directions),  the direction of the cuts and
-a list of points where to apply the cut along this direction.   
+a list of points where to apply the cut along this direction.
 """
 
 datadir = (
@@ -55,7 +55,8 @@ points = {
     (27, 37, 24),
     (27, 37, 25),
 }
-# {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100), (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}w
+# {(0, 5), (0, 25), (0, 50), (0, 75), (0, 100),
+# (0, 125), (0, 150), (0, 175), (0, 200), (0, 225)}w
 
 # list/tuple/set of 2 or 3 indices (2 for 2D object, 3 for 3D)
 # corresponding to the points where the cut alond direction should be performed. The

@@ -17,7 +17,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
 Apodization applied directly on reciprocal space data, using a 3d Gaussian, Tukey or
-Blackman window. 
+Blackman window.
 """
 
 scan = 2227

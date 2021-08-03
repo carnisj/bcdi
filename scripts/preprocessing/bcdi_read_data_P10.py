@@ -290,7 +290,7 @@ def main(parameters):
                     data_stop - data_start,
                     plot_colorbar=True,
                     scale="log",
-                    title="""difference between the last frame and 
+                    title="""difference between the last frame and
                     the first frame of the series""",
                 )
             nb_frames = data.shape[

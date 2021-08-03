@@ -27,7 +27,7 @@ helptext = """
 Calculate the diffraction pattern corresponding to a reconstructed 3D crystal
 (output of phase retrieval). The crystal is expected to be expressed in an orthonormal
 frame, and voxel sizes must be provided (voxel sizes can be different in each
-dimension). 
+dimension).
 
 If q values are provided, the crystal will be resampled so that the extent in q given
 by the direct space voxel sizes matches the extent defined by q values. If q values are
