@@ -127,7 +127,7 @@ def task_docstrings():
 def task_tests():
     """Run unit tests with coverage."""
     return {
-        "actions": [f"coverage run --source=bcdi -m unittest discover"],
+        "actions": ["coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage"],
         "verbosity": 2,
     }
