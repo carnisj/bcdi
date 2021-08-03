@@ -22,14 +22,13 @@ import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.experiment.experiment_utils as exp
 
 helptext = """
-Calculate exact inplane and out-of-plane detector angles from the direct beam and Bragg peak positions,
-based on the beamline geometry.
+Calculate exact inplane and out-of-plane detector angles from the direct beam and
+Bragg peak positions, based on the beamline geometry. For Pt samples it gives also an
+estimation of the temperature based on the thermal expansion.
 
 Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 
-For Pt samples it gives also an estimation of the temperature based on the thermal expansion.
-
-Input: direct beam and Bragg peak position, sample to detector distance, energy
+Input: direct beam and Bragg peak position, sample to detector distance, energy.
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
 scan = 128
@@ -38,7 +37,9 @@ sample_name = "PtNP1"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = "maxcom"  # Bragg peak determination: 'max', 'com' or 'maxcom'.
-normalize_flux = "monitor"  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
+normalize_flux = "monitor"
+# 'monitor' to normalize the intensity by the default monitor values,
+# 'skip' to do nothing
 debug = False  # True to see more plots
 ######################################
 # define beamline related parameters #
@@ -48,12 +49,14 @@ beamline = (
 )
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = None  # {'rocking_angle': 'actuator_1_3'}
-# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# Optional dictionary that can be used to define the entries corresponding to
+# actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 
-custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan,
+# e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(
     len(custom_images)
@@ -72,19 +75,23 @@ custom_motors = {
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
+# typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1355  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 796  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 1355  # horizontal pixel number of the Bragg peak,
+# can be used for the definition of the ROI
+y_bragg = 796  # vertical pixel number of the Bragg peak,
+# can be used for the definition of the ROI
 roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]  #
-# [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar  # HC3207  x_bragg = 430
-# leave it as None to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
+# leave it as None to use the full detector.
+# Use with center_fft='do_nothing' if you want this exact size.
 high_threshold = 1000000  # everything above will be considered as hotpixel
-hotpixels_file = None  #  root_folder + 'hotpixels_cristal.npz'  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
+hotpixels_file = None
+# non empty file path or None
 flatfield_file = (
     None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 )
@@ -104,7 +111,8 @@ sample_offsets = (
     90,
     0,
     0,
-)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
+)
+# tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 directbeam_x = 913.64  # x horizontal,  cch2 in xrayutilities
 directbeam_y = 1055  # y vertical,  cch1 in xrayutilities
@@ -115,11 +123,13 @@ energy = 8170  # in eV, offset of 6eV at ID01
 ################################################
 # parameters related to temperature estimation #
 ################################################
-get_temperature = False  # True to estimate the temperature using the reference spacing of the material. Only for Pt.
+get_temperature = False  # True to estimate the temperature using the reference
+# spacing of the material. Only for Pt.
 reflection = np.array(
     [1, 1, 1]
 )  # measured reflection, use for estimating the temperature
-reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to Pt 3.9236/norm(reflection)
+reference_spacing = None  # for calibrating the thermal expansion,
+# if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = (
     None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 )
@@ -255,7 +265,8 @@ x0 = np.rint(x0).astype(int)
 
 print(f"Bragg peak at (z, y, x): {z0}, {y0}, {x0}")
 print(
-    f"Bragg peak (full detector) at (z, y, x): {z0}, {y0+detector.roi[0]}, {x0+detector.roi[2]}"
+    f"Bragg peak (full detector) at (z, y, x): {z0},"
+    f" {y0+detector.roi[0]}, {x0+detector.roi[2]}"
 )
 
 ######################################################
@@ -316,11 +327,13 @@ y_direct_0 = (
 )  # outofplane_coeff is +1 or -1
 
 print(
-    f"\nDirect beam at (gam={direct_inplane}, del={direct_outofplane}) (X, Y): {directbeam_x}, {directbeam_y}"
+    f"\nDirect beam at (gam={direct_inplane}, "
+    f"del={direct_outofplane}) (X, Y): {directbeam_x}, {directbeam_y}"
 )
 print(f"Direct beam at (gam=0, del=0) (X, Y): ({x_direct_0:.2f}, {y_direct_0:.2f})")
 print(
-    f"\nBragg peak at (gam={setup.inplane_angle}, del={setup.outofplane_angle}) (X, Y): ({bragg_x:.2f}, {bragg_y:.2f})"
+    f"\nBragg peak at (gam={setup.inplane_angle}, "
+    f"del={setup.outofplane_angle}) (X, Y): ({bragg_x:.2f}, {bragg_y:.2f})"
 )
 
 bragg_inplane = setup.inplane_angle + setup.inplane_coeff * (
@@ -337,10 +350,12 @@ bragg_outofplane = (
 )  # outofplane_coeff is +1 or -1
 
 print(
-    f"\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, {setup.outofplane_angle:.4f})"
+    f"\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, "
+    f"{setup.outofplane_angle:.4f})"
 )
 print(
-    f"Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, {bragg_outofplane:.4f})"
+    f"Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, "
+    f"{bragg_outofplane:.4f})"
 )
 
 # update setup with the corrected detector angles
