@@ -88,7 +88,6 @@ my_cmap.set_bad(color="0.7")
 
 def calc_coordination(mysupport, debugging=0):
     """Calculate the coordination number of the support using a 3x3x3 kernel."""
-
     nbz, nby, nbx = mysupport.shape
 
     mykernel = np.ones((3, 3, 3))
