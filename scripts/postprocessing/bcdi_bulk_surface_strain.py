@@ -19,10 +19,9 @@ import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Extract the surface voxel layer of an object recontructed by BCDI phase retrieval and plot histograms of the strain at
-the surface and in the remaining bulk.
-
-Input: a .npz file containing fields 'amp' and 'strain' (e.g., S1301_amp_disp_strain.npz)
+Extract the surface voxel layer of an object recontructed by BCDI phase retrieval and
+plot histograms of the strain at the surface and in the remaining bulk.
+Input: a .npz file containing fields 'amp' and 'strain' (e.g., S130_amp_disp_strain.npz)
 """
 
 scan = 1  # spec scan number
@@ -47,7 +46,8 @@ ylim = [
     0.04,
 ]  # limits used for the vertical axis of histograms, leave None otherwise
 fit_pdf = "skewed_gaussian"  # 'pseudovoigt' or 'skewed_gaussian'
-save_txt = False  # True to save the strain values for the surface, the bulk and the full support in txt files
+save_txt = False  # True to save the strain values for the surface,
+# the bulk and the full support in txt files
 debug = True  # True to see more plots
 tick_length = 4  # in plots
 tick_width = 1.5  # in plots
@@ -58,10 +58,11 @@ tick_width = 1.5  # in plots
 #########################
 # check some parameters #
 #########################
-assert fit_pdf in {
+if fit_pdf not in {
     "pseudovoigt",
     "skewed_gaussian",
-}, "invalid value for fit_pdf parameter"
+}:
+    raise ValueError("invalid value for fit_pdf parameter")
 savedir = savedir or datadir
 pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
@@ -88,14 +89,6 @@ nbz, nby, nbx = amp.shape
 ######################################
 support = np.zeros(amp.shape)
 support[amp > support_threshold * amp.max()] = 1
-
-# gu.multislices_plot(support, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
-# thres = 0.65
-# support2 = np.zeros(amp.shape)
-# support2[amp > thres*amp.max()] = 1
-# print(f"Number of voxel excluded with thres={thres}: {(support - support2).sum()}")
-# gu.multislices_plot(support - support2, sum_frames=False, is_orthogonal=True, reciprocal_space=False)
-
 coordination_matrix = pu.calc_coordination(
     support=support, kernel=np.ones((3, 3, 3)), debugging=debug
 )
@@ -283,10 +276,12 @@ else:
 if xlim is None:
     ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
-    assert len(xlim) == 2, "xlim=[min, max] expected"
+    if len(xlim) != 2:
+        raise ValueError("xlim=[min, max] expected")
     ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
-    assert len(ylim) == 2, "ylim=[min, max] expected"
+    if len(ylim) != 2:
+        raise ValueError("ylim=[min, max] expected")
     ax.set_ylim(ylim[0], ylim[1])
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color="k", linestyle="dotted", linewidth=1.0)
@@ -437,10 +432,12 @@ else:
 if xlim is None:
     ax.set_xlim(-max(abs(x_axis)), max(abs(x_axis)))
 else:
-    assert len(xlim) == 2, "xlim=[min, max] expected"
+    if len(xlim) != 2:
+        raise ValueError("xlim=[min, max] expected")
     ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
-    assert len(ylim) == 2, "ylim=[min, max] expected"
+    if len(ylim) != 2:
+        raise ValueError("ylim=[min, max] expected")
     ax.set_ylim(ylim[0], ylim[1])
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color="k", linestyle="dotted", linewidth=1.0)
@@ -558,10 +555,12 @@ if xlim is None:
         max(abs(surface_xaxis), abs(bulk_xaxis)),
     )
 else:
-    assert len(xlim) == 2, "xlim=[min, max] expected"
+    if len(xlim) != 2:
+        raise ValueError("xlim=[min, max] expected")
     ax.set_xlim(xlim[0], xlim[1])
 if ylim is not None:
-    assert len(ylim) == 2, "ylim=[min, max] expected"
+    if len(ylim) != 2:
+        raise ValueError("ylim=[min, max] expected")
     ax.set_ylim(ylim[0], ylim[1])
 
 ax.axvline(x=0, ymin=0, ymax=1, color="k", linestyle="dotted", linewidth=1.0)

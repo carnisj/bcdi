@@ -66,15 +66,16 @@ nbz, nby, nbx = data.shape
 print("data shape:", data.shape)
 
 if crop_shape:
-    assert len(crop_shape) == 3, "crop should be a sequence of 3 voxels numbers"
-    assert np.all(
-        np.asarray(origin) - np.asarray(crop_shape) // 2 >= 0
-    ), "origin incompatible with crop_shape"
-    assert (
+    if len(crop_shape) != 3:
+        raise ValueError("crop should be a sequence of 3 voxels numbers")
+    if not np.all(np.asarray(origin) - np.asarray(crop_shape) // 2 >= 0):
+        raise ValueError("origin incompatible with crop_shape")
+    if not (
         origin[0] + crop_shape[0] // 2 <= nbz
         and origin[1] + crop_shape[1] // 2 <= nby
         and origin[2] + crop_shape[2] // 2 <= nbx
-    ), "origin incompatible with crop_shape"
+    ):
+        raise ValueError("origin incompatible with crop_shape")
 
     data = util.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
     gc.collect()

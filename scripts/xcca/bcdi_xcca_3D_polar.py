@@ -118,12 +118,10 @@ def main(user_comment):
     ##########################
     global corr_count
 
-    assert (
-        len(q_xcca) == 2
-    ), "Two q values should be provided (it can be the same value)"
-    assert (
-        len(origin_qspace) == 3
-    ), "origin_qspace should be a tuple of 3 integer pixel values"
+    if len(q_xcca) != 2:
+        raise ValueError("Two q values should be provided (it can be the same value)")
+    if len(origin_qspace) != 3:
+        raise ValueError("origin_qspace should be a tuple of 3 integer pixel values")
     q_xcca.sort()
     same_q = q_xcca[0] == q_xcca[1]
     warnings.filterwarnings("ignore")

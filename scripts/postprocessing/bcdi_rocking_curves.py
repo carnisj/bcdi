@@ -21,9 +21,9 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
 helptext = """
-Open a series of rocking curve data and track the position of the Bragg peak over the series.
-
-Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL, MAX IV NANOMAX.
+Open a series of rocking curve data and track the position of the Bragg peak over the
+series. Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL, 
+MAX IV NANOMAX.
 """
 scans = np.arange(1460, 1475 + 1, step=3)  # list or array of scan numbers
 scans = np.concatenate((scans, np.arange(1484, 1586 + 1, 3)))
@@ -41,7 +41,8 @@ x_axis = []
 [x_axis.append(-0.05) for _ in range(15)]
 [x_axis.append(0.3) for _ in range(15)]
 [x_axis.append(0.8) for _ in range(15)]
-# values against which the Bragg peak center of mass evolution will be plotted, leave [] otherwise
+# values against which the Bragg peak center of mass evolution will be plotted,
+# leave [] otherwise
 x_label = "voltage (V)"  # label for the X axis in plots, leave '' otherwise
 comment = "_BCDI_RC"  # comment for the saving filename, should start with _
 strain_range = 0.00005  # range for the plot of the q value
@@ -57,7 +58,8 @@ beamline = (
 )
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 
-custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan,
+# e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(
     len(custom_images)
@@ -77,21 +79,25 @@ rocking_angle = "outofplane"  # "outofplane" or "inplane"
 is_series = False  # specific to series measurement at P10
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS_2018: full path of the alias dictionnary,
+# typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1387  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
-y_bragg = 809  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
+x_bragg = 1387  # horizontal pixel number of the Bragg peak,
+# can be used for the definition of the ROI
+y_bragg = 809  # vertical pixel number of the Bragg peak,
+# can be used for the definition of the ROI
 roi_detector = [
     y_bragg - 200,
     y_bragg + 200,
     x_bragg - 400,
     x_bragg + 400,
 ]  # [Vstart, Vstop, Hstart, Hstop]
-# leave it as None to use the full detector. Use with center_fft='skip' if you want this exact size.
+# leave it as None to use the full detector.
+# Use with center_fft='skip' if you want this exact size.
 debug_pix = 40  # half-width in pixels of the ROI centered on the Bragg peak
 hotpixels_file = None  # root_folder + 'hotpixels.npz'  # non empty file path or None
 flatfield_file = (
@@ -105,8 +111,10 @@ template_imagefile = "_master.h5"
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_x = None  # fix to declare a known detector but with less pixels
+# (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels
+# (e.g. one tile HS), leave None otherwise
 ####################################
 # q calculation related parameters #
 ####################################
@@ -137,9 +145,8 @@ print(f"\n{len(scans)} scans: {scans}")
 print(f"\n {len(x_axis)} x_axis values provided:")
 if len(x_axis) == 0:
     x_axis = np.arange(len(scans))
-assert len(x_axis) == len(
-    scans
-), "the length of x_axis should be equal to the number of scans"
+if len(x_axis) != len(scans):
+    raise ValueError("the length of x_axis should be equal to the number of scans")
 
 if isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
@@ -150,11 +157,12 @@ valid.valid_container(
     item_types=str,
     name="preprocess_bcdi",
 )
-assert peak_method in [
+if peak_method not in [
     "max",
     "com",
     "max_com",
-], 'invalid value for "peak_method" parameter'
+]:
+    raise ValueError('invalid value for "peak_method" parameter')
 
 int_sum = []  # integrated intensity in the detector ROI
 int_max = []  # maximum intensity in the detector ROI
@@ -163,22 +171,21 @@ ycom = []  # center of mass for the second data axis
 xcom = []  # center of mass for the third data axis
 tilt_com = []  # center of mass for the incident rocking angle
 q_com = []  # q value of the center of mass
-check_roi = (
-    []
-)  # a small ROI around the Bragg peak will be stored for each scan, to see if the peak is indeed
+check_roi = []  # a small ROI around the Bragg peak will be stored for each scan,
+# to see if the peak is indeed
 # captured by the rocking curve
 
 #######################
 # Initialize detector #
 #######################
-kwargs = {}  # create dictionnary
-kwargs["is_series"] = is_series
-kwargs[
-    "nb_pixel_x"
-] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
-kwargs[
-    "nb_pixel_y"
-] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs = {
+    "is_series": is_series,
+    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
+    # (e.g. one tile HS)
+    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
+    # (e.g. one tile HS)
+}
+
 detector = exp.Detector(
     name=detector, template_imagefile=template_imagefile, roi=roi_detector, **kwargs
 )
@@ -365,10 +372,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         )  # outofplane_coeff is +1 or -1
 
         print(
-            f"\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, {setup.outofplane_angle:.4f})"
+            f"\nBragg angles before correction (gam, del): ({setup.inplane_angle:.4f}, "
+            f"{setup.outofplane_angle:.4f})"
         )
         print(
-            f"Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, {bragg_outofplane:.4f})"
+            f"Bragg angles after correction (gam, del): ({bragg_inplane:.4f}, "
+            f"{bragg_outofplane:.4f})"
         )
 
         # update setup with the corrected detector angles

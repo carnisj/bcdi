@@ -64,15 +64,16 @@ nbz, nby, nbx = data.shape
 crop_center = list(
     crop_center or [nbz // 2, nby // 2, nbx // 2]
 )  # if None, default to the middle of the array
-assert len(crop_center) == 3, "crop_center should be a list or tuple of three indices"
-assert np.all(
-    np.asarray(crop_center) - np.asarray(roi_size) // 2 >= 0
-), "crop_center incompatible with roi_size"
-assert (
+if len(crop_center) != 3:
+    raise ValueError("crop_center should be a list or tuple of three indices")
+if not np.all(np.asarray(crop_center) - np.asarray(roi_size) // 2 >= 0):
+    raise ValueError("crop_center incompatible with roi_size")
+if not (
     crop_center[0] + roi_size[0] // 2 <= nbz
     and crop_center[1] + roi_size[1] // 2 <= nby
     and crop_center[2] + roi_size[2] // 2 <= nbx
-), "crop_center incompatible with roi_size"
+):
+    raise ValueError("crop_center incompatible with roi_size")
 
 #######################################################
 # crop the data, and optionally the mask and q values #

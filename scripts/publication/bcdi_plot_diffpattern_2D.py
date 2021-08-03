@@ -176,7 +176,8 @@ data[data < photon_threshold] = 0
 # Check the plotting range #
 ############################
 try:
-    assert len(half_range) == 3, "half-range should be a tuple of three pixel numbers"
+    if len(half_range) != 3:
+        raise ValueError("half-range should be a tuple of three pixel numbers")
 except TypeError:
     raise TypeError("half-range should be a tuple of three pixel numbers")
 
@@ -234,11 +235,15 @@ if load_qvalues:
     qz = q_values["qz"]
     qy = q_values["qy"]
     print("Loaded: qx shape:", qx.shape, "qz shape:", qz.shape, "qy shape:", qy.shape)
-    assert (
-        *qx.shape,
-        *qz.shape,
-        *qy.shape,
-    ) == data.shape, "q values and data shape are incompatible"
+    if (
+        not (
+            *qx.shape,
+            *qz.shape,
+            *qy.shape,
+        )
+        == data.shape
+    ):
+        raise ValueError("q values and data shape are incompatible")
 
     # crop the q values to the region of interest used in plots
     qx = util.crop_pad_1d(
