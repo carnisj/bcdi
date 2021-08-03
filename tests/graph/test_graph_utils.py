@@ -21,9 +21,8 @@ def run_tests(test_class):
 
 
 class TestSaveToVti(unittest.TestCase):
-    ########################
-    # tests on save_to_vti #
-    ########################
+    """Tests on save_to_vti."""
+
     def __init__(self, *args, **kwargs):
         super(TestSaveToVti, self).__init__(*args, **kwargs)
         self.saving_dir = os.getcwd() + "/test_output/"

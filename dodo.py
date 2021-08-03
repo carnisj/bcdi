@@ -1,6 +1,4 @@
-"""
-doit configuration for BCDI
-"""
+"""doit configuration for BCDI."""
 
 import coverage
 import os
