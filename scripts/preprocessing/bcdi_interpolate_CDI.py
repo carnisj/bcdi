@@ -99,12 +99,11 @@ def main(parameters):
         """
         nonlocal data, mask, current_point, nb_points
         current_point += 1
-        if result[0]:  # True
-            if not mask[result[2][0], result[2][1], result[2][2]]:
-                data[result[1][0], result[1][1], result[1][2]] = data[
-                    result[2][0], result[2][1], result[2][2]
-                ]
-                mask[result[1][0], result[1][1], result[1][2]] = 0
+        if result[0] and not mask[result[2][0], result[2][1], result[2][2]]:
+            data[result[1][0], result[1][1], result[1][2]] = data[
+                result[2][0], result[2][1], result[2][2]
+            ]
+            mask[result[1][0], result[1][1], result[1][2]] = 0
         if (current_point % 10000) == 0:
             sys.stdout.write(f"\rPoint {current_point:d} / {nb_points:d},")
             sys.stdout.flush()

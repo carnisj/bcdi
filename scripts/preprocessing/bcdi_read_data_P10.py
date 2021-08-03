@@ -85,9 +85,8 @@ params = {
 #########################
 # check some parameters #
 #########################
-if vmin and vmax:
-    if vmax <= vmin:
-        raise ValueError("vmax should be larger than vmin")
+if (vmin and vmax) and vmax <= vmin:
+    raise ValueError("vmax should be larger than vmin")
 
 
 def load_p10_file(my_detector, my_file, file_index, roi, threshold):
