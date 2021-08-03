@@ -21,8 +21,8 @@ plt.switch_backend(
 )  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 
 helptext = """
-Determination of the background in a reciprocal space linecut using an interactive 
-interface. The background-subtracted data is saved in a different .npz file with the 
+Determination of the background in a reciprocal space linecut using an interactive
+interface. The background-subtracted data is saved in a different .npz file with the
 original field names.
 """
 

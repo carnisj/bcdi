@@ -37,15 +37,16 @@ root_directory = "D:/data/P10_August2019_CDI/data/"  # parent directory of the s
 file_list = np.arange(1, 25 + 1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-counter_roi = (
-    []
-)  # plot the integrated intensity in this region of interest. Leave it to [] to use the full detector
-# [Vstart, Vstop, Hstart, Hstop]
-# if data is a series, the condition becomes log10(data.sum(axis=0)) > high_threshold * nb_frames
+counter_roi = []  # plot the integrated intensity in this region of interest.
+# Leave it to [] to use the full detector [Vstart, Vstop, Hstart, Hstop]
+# if data is a series, the condition becomes
+# log10(data.sum(axis=0)) > high_threshold * nb_frames
 save_directory = None
 # images will be saved here, leave it to None otherwise (default to the scan directory)
-is_scan = False  # set to True is the measurement is a scan or a time series, False for a single image
-compare_ends = False  # set to True to plot the difference between the last frame and the first frame
+is_scan = False  # set to True is the measurement is a scan or a time series,
+# False for a single image
+compare_ends = False  # set to True to plot the difference between the last frame
+# and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
 save_to_mat = True  # True to save the 2D summed data to a .mat file
 multiprocessing = True  # True to use multiprocessing
@@ -95,9 +96,12 @@ def load_p10_file(my_detector, my_file, file_index, roi, threshold):
 
     :param my_detector: instance of the class experiment_utils.Detector()
     :param my_file: file name of the data to load
-    :param file_index: index of the data file in the total file list, used to sort frames afterwards
-    :param roi: region of interest used to calculate the counter (integrated intensity in the ROI)
-    :param threshold: threshold applied to each frame, intensities <= threshold are set to 0
+    :param file_index: index of the data file in the total file list, used to sort
+     frames afterwards
+    :param roi: region of interest used to calculate the counter
+     (integrated intensity in the ROI)
+    :param threshold: threshold applied to each frame,
+     intensities <= threshold are set to 0
     :return: the 2D data, 2D mask, counter and file index
     """
     roi_sum = []
@@ -125,10 +129,12 @@ def main(parameters):
 
     def collect_result(result):
         """
-        Callback processing the result after asynchronous multiprocessing. Update the global arrays.
+        Callback processing the result after asynchronous multiprocessing.
 
-        :param result: the output of load_p10_file, containing the 2d data, 2d mask, counter for each frame, and the
-         file index
+        Update the global arrays.
+
+        :param result: the output of load_p10_file, containing the 2d data, 2d mask,
+         counter for each frame, and the file index
         """
         nonlocal sumdata, mask, counter, nb_files, current_point
         # result is a tuple: data, mask, counter, file_index
@@ -247,9 +253,11 @@ def main(parameters):
             )
 
         pool.close()
-        pool.join()  # postpones the execution of next line of code until all processes in the queue are done.
+        pool.join()  # postpones the execution of next line of code
+        # until all processes in the queue are done.
 
-        # sort out counter values (we are using asynchronous multiprocessing, order is not preserved)
+        # sort out counter values
+        # (we are using asynchronous multiprocessing, order is not preserved)
         roi_counter = sorted(counter, key=lambda x: x[1])
 
     else:
@@ -282,7 +290,8 @@ def main(parameters):
                     data_stop - data_start,
                     plot_colorbar=True,
                     scale="log",
-                    title="difference between the last frame and the first frame of the series",
+                    title="""difference between the last frame and 
+                    the first frame of the series""",
                 )
             nb_frames = data.shape[
                 0

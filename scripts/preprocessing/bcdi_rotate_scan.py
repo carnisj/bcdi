@@ -17,7 +17,8 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Rotate a 3D reciprocal space map around some axis. The data is expected to be in an orthonormal frame.
+Rotate a 3D reciprocal space map around some axis. The data is expected to be in an
+orthonormal frame.
 """
 
 scan = 22  # scan number
@@ -27,7 +28,8 @@ datadir = (
     )
     + "/pynx/"
 )
-tilt = 0.0239082357814962  # rotation angle in radians to be applied counter-clockwise around rotation_axis
+tilt = 0.0239082357814962
+# rotation angle in radians to be applied counter-clockwise around rotation_axis
 # 0.086318314 -0.177905782 0.980254396   qy qx qz Matlab
 # -0.177905782 0.980254396 0.086318314   z/qx y/qz x/qy Python CXI/qlab
 # 0.086318314 0.980254396 -0.177905782   x/qy y/qz z/qx for the rotation

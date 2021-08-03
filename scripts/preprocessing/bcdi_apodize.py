@@ -16,7 +16,8 @@ import sys
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """
-Apodization applied directly on reciprocal space data, using a 3d Gaussian, Tukey or Blackman window. 
+Apodization applied directly on reciprocal space data, using a 3d Gaussian, Tukey or
+Blackman window. 
 """
 
 scan = 2227
@@ -106,11 +107,11 @@ if debug:
     # fig, ax = plt.subplots(1, 1)
     # plt.plot(window2[nbz // 2, nby // 2, :], '.r')
     # plt.plot(window3[nbz // 2, nby // 2, :], 'sb')
-    # ax.tick_params(labelbottom=False, labelleft=False, direction=tick_direction, length=tick_length,
-    #                width=tick_width)
+    # ax.tick_params(labelbottom=False, labelleft=False, direction=tick_direction,
+    # length=tick_length, width=tick_width)
     # plt.savefig(datadir + 'windows.png', bbox_inches="tight")
-    # ax.tick_params(labelbottom=True, labelleft=True, direction=tick_direction, length=tick_length,
-    #                width=tick_width)
+    # ax.tick_params(labelbottom=True, labelleft=True, direction=tick_direction,
+    # length=tick_length, width=tick_width)
     # ax.spines['right'].set_linewidth(1.5)
     # ax.spines['left'].set_linewidth(1.5)
     # ax.spines['top'].set_linewidth(1.5)

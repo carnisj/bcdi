@@ -26,15 +26,12 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 helptext = """
-merge3D_qspace.py
 Merge 3D reciprocal space map together
 
 File structure should be (e.g. scan 583):
 data in:        /specdir/S583/data/myscan.nxs
 soecfile in:    /specdir/
 output files will be saved in:   /specdir/S583/pynx/
-
-@author: CARNIS
 """
 
 

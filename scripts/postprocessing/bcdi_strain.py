@@ -34,7 +34,7 @@ import bcdi.utils.validation as valid
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
-and calculate the strain component along the direction of the experimental diffusion 
+and calculate the strain component along the direction of the experimental diffusion
 vector q.
 
 Input: complex amplitude array, output from a phase retrieval program.
@@ -155,9 +155,7 @@ outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard)
 inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up):
 # nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = (
-    1.2 / 256.0
-)  # angular step size for rocking angle, eta ID01, mu SIXS,
+tilt_angle = 1.2 / 256.0  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
 sample_offsets = None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
@@ -905,9 +903,7 @@ else:  # data already orthogonalized using xrayutilities
         # no need to interpolate
         voxel_size = dz_real, dy_real, dx_real  # in nm
 
-    if (
-        data_frame == "laboratory"
-    ):  # the object must be rotated into the crystal frame
+    if data_frame == "laboratory":  # the object must be rotated into the crystal frame
         # before the strain calculation
         print("Rotating the object in the crystal frame for the strain calculation")
 

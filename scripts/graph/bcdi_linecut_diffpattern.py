@@ -20,7 +20,7 @@ import bcdi.utils.validation as valid
 helptext = """
 Graphical user interface for plotting linecuts along particular direction of a 3D array.
 
-For the laboratory frame, the CXI convention is used: z downstream, y vertical, 
+For the laboratory frame, the CXI convention is used: z downstream, y vertical,
 x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 """
 

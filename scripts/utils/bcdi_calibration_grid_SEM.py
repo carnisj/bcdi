@@ -21,9 +21,9 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script allow to plot and save linecuts through a 2D SEM image of a calibration 
-grid. Must be given as input: the voxel size, the direction of the cuts and a list of 
-points where to apply the cut along this direction. A rectangular profile is fitted 
+This script allow to plot and save linecuts through a 2D SEM image of a calibration
+grid. Must be given as input: the voxel size, the direction of the cuts and a list of
+points where to apply the cut along this direction. A rectangular profile is fitted
 to the maxima.
 """
 

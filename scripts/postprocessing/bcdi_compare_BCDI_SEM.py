@@ -22,16 +22,19 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script can be used to compare the lateral sizes of an object measured by CDI and scanning electron micrscopy. Two
-dictionary should be provided as input (one for each technique). The dictionary should contain the following items:
+This script can be used to compare the lateral sizes of an object measured by CDI and
+scanning electron micrscopy. Two dictionary should be provided as input
+(one for each technique). The dictionary should contain the following items:
 {'threshold': 1D array-like values of thresholds,
  'angles':D array-like values of angles 
- 'ang_width_threshold': 2D array-like values (one row for each threshold, the row is the width vs angle of the linecut)}
+ 'ang_width_threshold': 2D array-like values (one row for each threshold,
+ the row is the width vs angle of the linecut)}
 
 These dictionaries can be produced by the script angular_profile.py
 
-After aligning the traces of the width vs angle (e.g. if the object was slightly rotated in one of the measurements),
-the traces are overlaid in order to determine which threshold is correct.     
+After aligning the traces of the width vs angle (e.g. if the object was slightly
+rotated in one of the measurements), the traces are overlaid in order to determine
+which threshold is correct.
 """
 
 datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2_pearson97.5_newpsf/result/linecuts/"
@@ -42,8 +45,10 @@ savedir = (
     datadir + "comparison_SEM/refined_SEM_0.471nm/test/"
 )  # 'comparison_SEM/refined_SEM_0.471nm/'
 # results will be saved here, if None it will default to datadir
-index_sem = 0  # index of the threshold to use for the SEM profile. Leave None to print the available thresholds.
-plot_sem = "single"  # if 'single', will plot only index_sem, if 'fill', it will fill the area between the first
+index_sem = 0  # index of the threshold to use for the SEM profile.
+# Leave None to print the available thresholds.
+plot_sem = "single"  # if 'single', will plot only index_sem,
+# if 'fill', it will fill the area between the first
 # and the last SEM thresholds in grey
 comment = (
     "SEM_0.471"  # string to add to the filename when saving, should start with "_"
@@ -222,7 +227,10 @@ for idx, thres in enumerate(thres_bcdi, start=0):
     line.set_label(f"threshold {thres}")
 
 if plot_sem == "fill":
-    title = f"fill between SEM_thres {sem_dict['threshold'][0]} and {sem_dict['threshold'][-1]}"
+    title = (
+        f"fill between SEM_thres {sem_dict['threshold'][0]} "
+        f"and {sem_dict['threshold'][-1]}"
+    )
 else:
     title = ""
 
@@ -245,9 +253,10 @@ gu.savefig(
     legend_labelsize=12,
 )
 
-##############################################################################################################
-# Plot the evolution of the Pearson correlation coefficient and squared residuals depending on the threshold #
-##############################################################################################################
+#############################################################
+# Plot the evolution of the Pearson correlation coefficient #
+# and squared residuals depending on the threshold          #
+#############################################################
 min_thres_idx = np.unravel_index(residuals.argmin(), shape=residuals.shape)[0]
 fig, ax0 = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
 ax0.plot(

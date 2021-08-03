@@ -19,7 +19,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Create a movie from a 3D real space reconstruction in each direction. Requires 
+Create a movie from a 3D real space reconstruction in each direction. Requires
 imagemagick (https://imagemagick.org) or ffmpeg (http://ffmpeg.zeranoe.com/builds/).
 """
 

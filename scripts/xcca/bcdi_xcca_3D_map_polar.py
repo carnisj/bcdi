@@ -24,17 +24,18 @@ import bcdi.xcca.xcca_utils as xcca
 import bcdi.facet_recognition.facet_utils as fu
 
 helptext = """
-Calculate the angular cross-correlation in a 3D reciprocal space dataset over a range 
-in q values, at the same q value or between two different q values. The 3D dataset is 
-expected to be interpolated on an orthonormal grid. The intensity used for 
-cross-correlation calculation is interpolated using the golden spiral method on a 
-sphere of the desired q radius, using original voxels belonging to a slice at this q 
+Calculate the angular cross-correlation in a 3D reciprocal space dataset over a range
+in q values, at the same q value or between two different q values. The 3D dataset is
+expected to be interpolated on an orthonormal grid. The intensity used for
+cross-correlation calculation is interpolated using the golden spiral method on a
+sphere of the desired q radius, using original voxels belonging to a slice at this q
 value. Downsampling can be applied for faster calculation.
 
 Input: the 3D dataset, an optional 3D mask, (qx, qy, qz) values
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
-Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
+Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.
+"""
 
 datadir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"
 savedir = "D:/data/P10_August2019_CDI/data/gold_2_2_2_00022/pynx/1_4_4_fullrange_xcca/"

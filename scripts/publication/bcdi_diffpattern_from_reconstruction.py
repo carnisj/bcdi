@@ -24,15 +24,17 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Calculate the diffraction pattern corresponding to a reconstructed 3D crystal (output of phase retrieval). The crystal 
-is expected to be expressed in an orthonormal frame, and voxel sizes must be provided (voxel sizes can be different in 
-each dimension). 
+Calculate the diffraction pattern corresponding to a reconstructed 3D crystal
+(output of phase retrieval). The crystal is expected to be expressed in an orthonormal
+frame, and voxel sizes must be provided (voxel sizes can be different in each
+dimension). 
 
-If q values are provided, the crystal will be resampled so that the extent in q given by the direct space voxel sizes 
-matches the extent defined by q values. If q values are not provided, the crystal is padded to the user-defined shape 
-before calculating the diffraction pattern.
+If q values are provided, the crystal will be resampled so that the extent in q given
+by the direct space voxel sizes matches the extent defined by q values. If q values are
+not provided, the crystal is padded to the user-defined shape before calculating the
+diffraction pattern.
 
-The reconstructed crystal file should be a .NPZ with field names 'amp' for the modulus 
+The reconstructed crystal file should be a .NPZ with field names 'amp' for the modulus
 and 'displacement' for the phase. Corresponding q values can be loaded optionally.
 """
 
@@ -43,17 +45,21 @@ datadir = root_folder + sample_name + str(scan) + "_newpsf/result/"
 voxel_sizes = (
     5  # number (if identical for all dimensions) or tuple of 3 voxel sizes in nm
 )
-flip_phase = True  # True to flip the phase (-1*phase is saved in the field 'displacement' of the NPZ file)
+flip_phase = True  # True to flip the phase
+# (-1*phase is saved in the field 'displacement' of the NPZ file)
 peak_value = 189456
 # 189456  # dataset 1
 # 242428  # dataset 2
-# correction due to the loss of normalization with the mode decomposition, leave None otherwise.
-# The diffraction intensity will be normalized so that the integrated intensity in a ROI of 7x7x7 voxels around the
+# correction due to the loss of normalization with the mode decomposition,
+# leave None otherwise.
+# The diffraction intensity will be normalized so that the integrated intensity
+# in a ROI of 7x7x7 voxels around the
 # center of mass of the Bragg peak equals this value.
 # mode_factor = 0.2740 dataset_1_newpsf
 # mode_factor = 0.2806 dataset_1_nopsf
 # mode_factor = 0.2744 dataset_2_pearson97.5_newpsf
-load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+load_qvalues = True  # True to load the q values.
+# It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 padding_shape = (
     300,
     512,
@@ -69,7 +75,8 @@ savedir = (
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = False  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = False  # True to save the summed diffraction pattern in the detector,
+# False to save the central slice only
 comment = ""  # string to add to the filename when saving, should start with "_"
 ##########################
 # settings for the plots #
@@ -259,7 +266,8 @@ if load_qvalues:
     ]
     print(
         f"\nRegridding with the new voxel sizes = "
-        f"({new_voxelsizes[0]:.2f} nm, {new_voxelsizes[1]:.2f} nm, {new_voxelsizes[2]:.2f} nm)"
+        f"({new_voxelsizes[0]:.2f} nm, {new_voxelsizes[1]:.2f} nm, "
+        f"{new_voxelsizes[2]:.2f} nm)"
     )
     obj = pu.regrid(array=obj, old_voxelsize=voxel_sizes, new_voxelsize=new_voxelsizes)
 
@@ -268,7 +276,8 @@ if load_qvalues:
 #######################################
 if qvalues_shape != padding_shape:
     print(
-        f"\nThe shape defined by q_values {qvalues_shape} is different from padding_shape {padding_shape}"
+        f"\nThe shape defined by q_values {qvalues_shape} "
+        f"is different from padding_shape {padding_shape}"
     )
     print(f"Overriding padding_shape with {qvalues_shape}")
     padding_shape = qvalues_shape

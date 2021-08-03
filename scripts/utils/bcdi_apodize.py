@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 helptext = """
-Multiply a diffraction pattern with a 3D apodization window. 
+Multiply a diffraction pattern with a 3D apodization window.
 """
 
 scan = 2227

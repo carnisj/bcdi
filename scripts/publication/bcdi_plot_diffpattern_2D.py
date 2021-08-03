@@ -21,11 +21,13 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Template for figures of the following article: 
-Carnis et al. Scientific Reports 9, 17357 (2019) https://doi.org/10.1038/s41598-019-53774-2
-For simulated data or experimental data, open a npz file (3D diffraction pattern) and save individual figures.
-q values can be provided optionally. 
-For everything else than q values, the convention is the CXI convention: (z downstream, y vertical up, x outboard).
+Template for figures of the following article:
+Carnis et al. Scientific Reports 9, 17357 (2019)
+https://doi.org/10.1038/s41598-019-53774-2
+For simulated data or experimental data, open a npz file (3D diffraction pattern) and
+save individual figures. q values can be provided optionally.
+For everything else than q values, the convention is the CXI convention:
+(z downstream, y vertical up, x outboard).
 For q values, the convention is (qx downstream, qz vertical up, qy outboard).
 """
 
@@ -34,7 +36,8 @@ root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
 sample_name = "B10_syn_S1"
 datadir = root_folder + sample_name + f"_{scan:05d}" + "/pynx/"
 photon_threshold = 0  # everything < this value will be set to 0
-load_qvalues = True  # True to load the q values. It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
+load_qvalues = True  # True to load the q values.
+# It expects a single npz file with fieldnames 'qx', 'qy' and 'qz'
 is_orthogonal = (
     True  # True if the data is in the qx qy qz orthogonal frame. Used for plot labels
 )
@@ -47,7 +50,8 @@ savedir = (
 save_qyqz = True  # True to save the strain in QyQz plane
 save_qyqx = True  # True to save the strain in QyQx plane
 save_qzqx = True  # True to save the strain in QzQx plane
-save_sum = True  # True to save the summed diffraction pattern in the detector, False to save the central slice only
+save_sum = True  # True to save the summed diffraction pattern in the detector,
+# False to save the central slice only
 comment = ""  # should start with _
 ##########################
 # settings for the plots #

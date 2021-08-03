@@ -19,9 +19,9 @@ import sys
 import bcdi.utils.utilities as util
 
 helptext = """
-Fit a reciprocal space radial profile over selected q ranges using different 
-lineshapes. The fit is performed simultaneously  over all q ranges defined by the 
-user; it is possible to define constraints  limiting the number of free fitting 
+Fit a reciprocal space radial profile over selected q ranges using different
+lineshapes. The fit is performed simultaneously  over all q ranges defined by the
+user; it is possible to define constraints  limiting the number of free fitting
 parameters.
 """
 

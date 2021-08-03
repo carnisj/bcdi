@@ -26,11 +26,11 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-Load a 3D BCDI reconstruction (.npz file) containing the field 'amp'. After defining a 
-support using a threshold on the normalized amplitude, calculate the blurring function 
-by Richardson-Lucy deconvolution. Extract the resolution from this blurring function in 
-arbitrary direction. See M. Cherukara et al. Anisotropic nano-scale resolution in 3D 
-Bragg coherent diffraction imaging. 
+Load a 3D BCDI reconstruction (.npz file) containing the field 'amp'. After defining a
+support using a threshold on the normalized amplitude, calculate the blurring function
+by Richardson-Lucy deconvolution. Extract the resolution from this blurring function in
+arbitrary direction. See M. Cherukara et al. Anisotropic nano-scale resolution in 3D
+Bragg coherent diffraction imaging.
 Appl. Phys. Lett. 113, 203101 (2018); https://doi.org/10.1063/1.5055235
 """
 

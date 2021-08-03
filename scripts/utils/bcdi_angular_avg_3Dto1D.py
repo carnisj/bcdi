@@ -16,10 +16,10 @@ import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
 
 helptext = """
-Plot a 1D angular average of a 3D reciprocal space map, based on the position of the 
-origin (direct beam or Bragg peak). If q values are provided, the data can be in an 
-orthonormal frame or not (detector frame in Bragg CDI). The unit expected for q 
-values is 1/nm. If q values are not provided, the data is supposed to be in an 
+Plot a 1D angular average of a 3D reciprocal space map, based on the position of the
+origin (direct beam or Bragg peak). If q values are provided, the data can be in an
+orthonormal frame or not (detector frame in Bragg CDI). The unit expected for q
+values is 1/nm. If q values are not provided, the data is supposed to be in an
 orthonormal frame.
 """
 
