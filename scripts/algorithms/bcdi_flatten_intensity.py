@@ -20,7 +20,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 
 
 helptext = """
-Apply intensity normalization of additive aptially multiplexed patterns with n 
+Apply intensity normalization of additive spatially multiplexed patterns with n 
 encoded phases, as described in:
 R. Jaurez-Salazar et al. Optics and Lasers in Engineering 77, 225-229 (2016).
 
