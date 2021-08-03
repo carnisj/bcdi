@@ -24,10 +24,10 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script allow to plot the width of a 2D object in function of the angle and a 
-modulus threshold defining the object from the background. Must be given as input: 
-the voxel size (possibly different in all directions), the angular step size and an 
-origin point where all linecuts pass by.   
+This script allow to plot the width of a 2D object in function of the angle and a
+modulus threshold defining the object from the background. Must be given as input:
+the voxel size (possibly different in all directions), the angular step size and an
+origin point where all linecuts pass by.
 """
 
 datadir = (

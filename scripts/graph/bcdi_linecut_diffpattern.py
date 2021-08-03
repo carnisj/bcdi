@@ -226,9 +226,8 @@ def press_key(event):
 #########################
 # check some parameters #
 #########################
-if vmin and vmax:
-    if vmax <= vmin:
-        raise ValueError("vmax should be larger than vmin")
+if (vmin and vmax) and (vmax <= vmin):
+    raise ValueError("vmax should be larger than vmin")
 
 savedir = savedir or datadir
 

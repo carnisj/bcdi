@@ -22,9 +22,8 @@ import bcdi.experiment.experiment_utils as exp
 helptext = """
 Create a support from a reconstruction, using the indicated threshold. The support
 can be cropped/padded to a desired shape. In real space the CXI convention is used:
-z downstream, y vertical up, x outboard. In reciprocal space, the following 
-convention is used: qx downtream, qz vertical up, qy outboard
-
+z downstream, y vertical up, x outboard. In reciprocal space, the following
+convention is used: qx downtream, qz vertical up, qy outboard.
 """
 
 root_folder = "D:/data/P10_August2020_CDI/data/mag_3_macro1/BCDI/"
@@ -532,15 +531,15 @@ if not all(
         # crop q to accomodate a shape change of the original array
         # (e.g. cropping to fit FFT shape requirement)
         if qvalues_binned:
-            if not (len(qx) >= pynx_shape[0]):
+            if len(qx) < pynx_shape[0]:
                 raise ValueError(
                     "qx declared binned, its length should be >= " "pynx_shape[0]"
                 )
-            if not (len(qy) >= pynx_shape[2]):
+            if len(qy) < pynx_shape[2]:
                 raise ValueError(
                     "qy declared binned, its length should be >= " "pynx_shape[2]"
                 )
-            if not (len(qz) >= pynx_shape[1]):
+            if len(qz) < pynx_shape[1]:
                 raise ValueError(
                     "qz declared binned, its length should be >= " "pynx_shape[1]"
                 )
@@ -548,15 +547,15 @@ if not all(
             qy = util.crop_pad_1d(qy, pynx_shape[2])  # qy along x
             qz = util.crop_pad_1d(qz, pynx_shape[1])  # qz along y
         else:
-            if not (len(qx) >= unbinned_shape[0]):
+            if len(qx) < unbinned_shape[0]:
                 raise ValueError(
                     "qx declared unbinned, its length should be >= " "unbinned_shape[0]"
                 )
-            if not (len(qy) >= unbinned_shape[2]):
+            if len(qy) < unbinned_shape[2]:
                 raise ValueError(
                     "qy declared unbinned, its length should be >= " "unbinned_shape[2]"
                 )
-            if not (len(qz) >= unbinned_shape[1]):
+            if len(qz) < unbinned_shape[1]:
                 raise ValueError(
                     "qz declared unbinned, its length should be >= " "unbinned_shape[1]"
                 )
@@ -583,31 +582,31 @@ if not all(
         # crop q to accomodate a shape change of the original array
         # (e.g. cropping to fit FFT shape requirement)
         if qvalues_binned:
-            if not (len(newqx) >= rebinned_shape[0]):
+            if len(newqx) < rebinned_shape[0]:
                 raise ValueError(
                     "newqx declared binned, its length should be >= "
                     "rebinned_shape[0]"
                 )
-            if not (len(newqy) >= rebinned_shape[2]):
+            if len(newqy) < rebinned_shape[2]:
                 raise ValueError(
                     "newqy declared binned, its length should be >= "
                     "rebinned_shape[2]"
                 )
-            if not (len(newqz) >= rebinned_shape[1]):
+            if len(newqz) < rebinned_shape[1]:
                 raise ValueError(
                     "newqz declared binned, its length should be >= "
                     "rebinned_shape[1]"
                 )
         else:
-            if not (len(newqx) >= output_shape[0]):
+            if len(newqx) < output_shape[0]:
                 raise ValueError(
                     "newqx declared binned, its length should be >= " "output_shape[0]"
                 )
-            if not (len(newqy) >= output_shape[2]):
+            if len(newqy) < output_shape[2]:
                 raise ValueError(
                     "newqy declared binned, its length should be >=" " output_shape[2]"
                 )
-            if not (len(newqz) >= output_shape[1]):
+            if len(newqz) < output_shape[1]:
                 raise ValueError(
                     "newqz declared binned, its length should be >=" " output_shape[1]"
                 )

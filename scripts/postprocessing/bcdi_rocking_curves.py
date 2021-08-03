@@ -22,7 +22,7 @@ import bcdi.utils.validation as valid
 
 helptext = """
 Open a series of rocking curve data and track the position of the Bragg peak over the
-series. Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL, 
+series. Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL,
 MAX IV NANOMAX.
 """
 scans = np.arange(1460, 1475 + 1, step=3)  # list or array of scan numbers

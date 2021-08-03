@@ -66,9 +66,9 @@ modulation_sigma = 5  # standard deviation of the gaussian for the 'gaussian' me
 ####################
 # check parameters #
 ####################
-if not (1 <= background_order <= 4):
+if not 1 <= background_order <= 4:
     raise ValueError("polynomial fitting of order > 4 not implemented")
-if not (1 <= modulation_order <= 4):
+if not 1 <= modulation_order <= 4:
     raise ValueError("polynomial fitting of order > 4 not implemented")
 if background_method not in [
     "gaussian",
