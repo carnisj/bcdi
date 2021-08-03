@@ -920,7 +920,7 @@ def center_fft(
     # Crop/pad data to fulfill FFT size and user requirements
     if fft_option == "crop_sym_ZYX":
         # crop rocking angle and detector, Bragg peak centered
-        nz1, ny1, nx1 = smaller_primes(
+        nz1, ny1, nx1 = util.smaller_primes(
             (max_nz, max_ny, max_nx), maxprime=7, required_dividers=(2,)
         )
         pad_width = np.zeros(6, dtype=int)
@@ -949,7 +949,7 @@ def center_fft(
 
     elif fft_option == "crop_asym_ZYX":
         # crop rocking angle and detector without centering the Bragg peak
-        nz1, ny1, nx1 = smaller_primes(
+        nz1, ny1, nx1 = util.smaller_primes(
             (nbz, nby, nbx), maxprime=7, required_dividers=(2,)
         )
         pad_width = np.zeros(6, dtype=int)
@@ -981,11 +981,13 @@ def center_fft(
         # and crop detector (Bragg peak centered)
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of three elements")
-        if pad_size[0] != higher_primes(
+        if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[0], "does not meet FFT requirements")
-        ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
+        ny1, nx1 = util.smaller_primes(
+            (max_ny, max_nx), maxprime=7, required_dividers=(2,)
+        )
 
         data = data[:, iy0 - ny1 // 2 : iy0 + ny1 // 2, ix0 - nx1 // 2 : ix0 + nx1 // 2]
         mask = mask[:, iy0 - ny1 // 2 : iy0 + ny1 // 2, ix0 - nx1 // 2 : ix0 + nx1 // 2]
@@ -1023,11 +1025,13 @@ def center_fft(
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of three elements")
         print("pad_size for 1st axis before binning: ", pad_size[0])
-        if pad_size[0] != higher_primes(
+        if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[0], "does not meet FFT requirements")
-        ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
+        ny1, nx1 = util.smaller_primes(
+            (max_ny, max_nx), maxprime=7, required_dividers=(2,)
+        )
 
         data = data[
             :,
@@ -1070,8 +1074,10 @@ def center_fft(
     elif fft_option == "pad_asym_Z_crop_sym_YX":
         # pad rocking angle without centering the Bragg peak
         # and crop detector (Bragg peak centered)
-        ny1, nx1 = smaller_primes((max_ny, max_nx), maxprime=7, required_dividers=(2,))
-        nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
+        ny1, nx1 = util.smaller_primes(
+            (max_ny, max_nx), maxprime=7, required_dividers=(2,)
+        )
+        nz1 = util.higher_primes(nbz, maxprime=7, required_dividers=(2,))
 
         data = data[:, iy0 - ny1 // 2 : iy0 + ny1 // 2, ix0 - nx1 // 2 : ix0 + nx1 // 2]
         mask = mask[:, iy0 - ny1 // 2 : iy0 + ny1 // 2, ix0 - nx1 // 2 : ix0 + nx1 // 2]
@@ -1105,8 +1111,8 @@ def center_fft(
 
     elif fft_option == "pad_asym_Z_crop_asym_YX":
         # pad rocking angle and crop detector without centering the Bragg peak
-        ny1, nx1 = smaller_primes((nby, nbx), maxprime=7, required_dividers=(2,))
-        nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
+        ny1, nx1 = util.smaller_primes((nby, nbx), maxprime=7, required_dividers=(2,))
+        nz1 = util.higher_primes(nbz, maxprime=7, required_dividers=(2,))
 
         data = data[
             :,
@@ -1152,7 +1158,7 @@ def center_fft(
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of three elements")
         print("pad_size for 1st axis before binning: ", pad_size[0])
-        if pad_size[0] != higher_primes(
+        if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[0], "does not meet FFT requirements")
@@ -1185,7 +1191,7 @@ def center_fft(
 
     elif fft_option == "pad_asym_Z":
         # pad rocking angle without centering the Bragg peak, keep detector size
-        nz1 = higher_primes(nbz, maxprime=7, required_dividers=(2,))
+        nz1 = util.higher_primes(nbz, maxprime=7, required_dividers=(2,))
 
         pad_width = np.array(
             [
@@ -1222,15 +1228,15 @@ def center_fft(
             "The 1st axis (stacking dimension) is padded before binning,"
             " detector plane after binning."
         )
-        if pad_size[0] != higher_primes(
+        if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[0], "does not meet FFT requirements")
-        if pad_size[1] != higher_primes(
+        if pad_size[1] != util.higher_primes(
             pad_size[1], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[1], "does not meet FFT requirements")
-        if pad_size[2] != higher_primes(
+        if pad_size[2] != util.higher_primes(
             pad_size[2], maxprime=7, required_dividers=(2,)
         ):
             raise ValueError(pad_size[2], "does not meet FFT requirements")
@@ -1270,9 +1276,9 @@ def center_fft(
     elif fft_option == "pad_asym_ZYX":
         # pad both dimensions without centering the Bragg peak
         nz1, ny1, nx1 = [
-            higher_primes(nbz, maxprime=7, required_dividers=(2,)),
-            higher_primes(nby, maxprime=7, required_dividers=(2,)),
-            higher_primes(nbx, maxprime=7, required_dividers=(2,)),
+            util.higher_primes(nbz, maxprime=7, required_dividers=(2,)),
+            util.higher_primes(nby, maxprime=7, required_dividers=(2,)),
+            util.higher_primes(nbx, maxprime=7, required_dividers=(2,)),
         ]
 
         pad_width = np.array(
@@ -2208,7 +2214,7 @@ def grid_bcdi_xrayutil(
         maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
         maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
     print(f"Maximum number of bins based on the sampling in q: {maxbins}")
-    maxbins = smaller_primes(maxbins, maxprime=7, required_dividers=(2,))
+    maxbins = util.smaller_primes(maxbins, maxprime=7, required_dividers=(2,))
     print(f"Maximum number of bins based on the shape requirements for FFT: {maxbins}")
     # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
     gridder = xu.FuzzyGridder3D(*maxbins)
@@ -2891,55 +2897,6 @@ def grid_cylindrical(
         str(datetime.timedelta(seconds=int(end - start))),
     )
     return interp_array
-
-
-def higher_primes(number, maxprime=13, required_dividers=(4,)):
-    """
-    Find the closest larger number that meets some condition.
-
-    Find the closest integer >=n (or list/array of integers), for which the largest
-    prime divider is <=maxprime, and has to include some dividers. The default values
-    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
-    FFT. Adapted from PyNX.
-
-    :param number: the integer number
-    :param maxprime: the largest prime factor acceptable
-    :param required_dividers: a list of required dividers for the returned integer.
-    :return: the integer (or list/array of integers) fulfilling the requirements
-    """
-    if isinstance(number, (list, tuple, np.ndarray)):
-        vn = []
-        for i in number:
-            limit = i
-            if i <= 1 or maxprime > i:
-                raise ValueError(f"Number is < {maxprime}")
-            while (
-                try_smaller_primes(
-                    i, maxprime=maxprime, required_dividers=required_dividers
-                )
-                is False
-            ):
-                i = i + 1
-                if i == limit:
-                    return limit
-            vn.append(i)
-        if isinstance(number, np.ndarray):
-            return np.array(vn)
-        return vn
-
-    limit = number
-    if number <= 1 or maxprime > number:
-        raise ValueError(f"Number is < {maxprime}")
-    while (
-        try_smaller_primes(
-            number, maxprime=maxprime, required_dividers=required_dividers
-        )
-        is False
-    ):
-        number = number + 1
-        if number == limit:
-            return limit
-    return number
 
 
 def init_qconversion(setup):
@@ -5003,28 +4960,6 @@ def normalize_dataset(
     return array, monitor
 
 
-def primes(number):
-    """
-    Return the prime decomposition of n as a list. Adapted from PyNX.
-
-    :param number: the integer to be decomposed
-    :return: the list of prime dividers of number
-    """
-    valid.valid_item(
-        number, allowed_types=int, min_excluded=0, name="preprocessing_utils.primes"
-    )
-    list_primes = [1]
-    i = 2
-    while i * i <= number:
-        while number % i == 0:
-            list_primes.append(i)
-            number //= i
-        i += 1
-    if number > 1:
-        list_primes.append(number)
-    return list_primes
-
-
 def regrid(
     logfile,
     nb_frames,
@@ -5880,77 +5815,6 @@ def scan_motor_sixs(logfile, motor_name):
     """
     motor_pos = getattr(logfile, motor_name)
     return np.asarray(motor_pos)
-
-
-def smaller_primes(number, maxprime=13, required_dividers=(4,)):
-    """
-    Find the closest smaller number that meets some condition.
-
-    Find the closest integer <=n (or list/array of integers), for which the largest
-    prime divider is <=maxprime, and has to include some dividers. The default values
-    for maxprime is the largest integer accepted by the clFFT library for OpenCL GPU
-    FFT. Adapted from PyNX.
-
-    :param number: the integer number
-    :param maxprime: the largest prime factor acceptable
-    :param required_dividers: a list of required dividers for the returned integer.
-    :return: the integer (or list/array of integers) fulfilling the requirements
-    """
-    if isinstance(number, (list, tuple, np.ndarray)):
-        vn = []
-        for i in number:
-            if i <= 1 or maxprime > i:
-                raise ValueError(f"Number is < {maxprime}")
-            while (
-                try_smaller_primes(
-                    i, maxprime=maxprime, required_dividers=required_dividers
-                )
-                is False
-            ):
-                i = i - 1
-                if i == 0:
-                    return 0
-            vn.append(i)
-        if isinstance(number, np.ndarray):
-            return np.array(vn)
-        return vn
-
-    if number <= 1 or maxprime > number:
-        raise ValueError(f"Number is < {maxprime}")
-    while (
-        try_smaller_primes(
-            number, maxprime=maxprime, required_dividers=required_dividers
-        )
-        is False
-    ):
-        number = number - 1
-        if number == 0:
-            return 0
-    return number
-
-
-def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
-    """
-    Check if a number meets some condition.
-
-    Check if the largest prime divider is <=maxprime, and optionally includes some
-    dividers. Adapted from PyNX.
-
-    :param number: the integer number for which the prime decomposition will be checked
-    :param maxprime: the maximum acceptable prime number. This defaults to the
-     largest integer accepted by the clFFT library for OpenCL GPU FFT.
-    :param required_dividers: list of required dividers in the prime decomposition.
-     If None, this check is skipped.
-    :return: True if the conditions are met.
-    """
-    p = primes(number)
-    if max(p) > maxprime:
-        return False
-    if required_dividers is not None:
-        for k in required_dividers:
-            if number % k != 0:
-                return False
-    return True
 
 
 def wrap(obj, start_angle, range_angle):
