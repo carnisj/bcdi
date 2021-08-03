@@ -58,6 +58,7 @@ sys.path.append(specdir)
 
 hotpixels_file = specdir + "hotpixels.npz"
 flatfield_file = specdir + "flatfield_8.5kev.npz"
+alias_dict = ""
 spec_prefix = "align.spec"
 ccdfiletmp = os.path.join(
     spec_prefix + "_ascan_gamma_%05d.nxs"
@@ -140,7 +141,9 @@ mask = np.zeros((516, 516))
 
 # load first scan to get the data size
 dataset = nxsReady.DataSet(
-    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan, scan="SBS"
+    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan,
+    alias_dict=alias_dict,
+    scan="SBS"
 )
 img_per_scan = dataset.mfilm[1:, :, :].shape[0]  # first image is repeated
 nb_img = img_per_scan * len(scanlist)
@@ -157,7 +160,8 @@ sum_data = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 for index in range(len(scanlist)):
     scan = scanlist[index]
     dataset = nxsReady.DataSet(
-        datadir + ccdfiletmp % scan, ccdfiletmp % scan, scan="SBS"
+        datadir + ccdfiletmp % scan, ccdfiletmp % scan, alias_dict=alias_dict,
+        scan="SBS"
     )
     rawdata[index * img_per_scan : (index + 1) * img_per_scan, :, :] = dataset.mfilm[
         1:, :, :
