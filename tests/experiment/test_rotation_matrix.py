@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from bcdi.experiment.diffractometer import Diffractometer
+from bcdi.experiment.rotation_matrix import RotationMatrix
 
 
 def run_tests(test_class):
@@ -18,11 +18,11 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """Tests related to diffractometer instantiation."""
+    """Tests related to RotationMatrix instantiation."""
 
     def test_create_diffractometer_from_abc(self):
         with self.assertRaises(TypeError):
-            Diffractometer()
+            RotationMatrix()
 
 
 if __name__ == "__main__":
