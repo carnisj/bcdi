@@ -22,18 +22,20 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 helptext = """
-Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer
-function (PRTF). The measured diffraction pattern and reconstructions should be in
-the detector frame, before phase ramp removal and centering.
+Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer function (PRTF).
 
-For the laboratory frame, the CXI convention is used: z downstream, y vertical,
-x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
+The measured diffraction pattern and reconstructions should be in the detector frame, before
+phase ramp removal and centering.
+
+For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
+For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 
@@ -49,33 +51,25 @@ root_folder = (
 )
 save_dir = None  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
-crop_roi = None
-# list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
-# in the.cxi file,
-# it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
-align_pattern = False
-# if True, will align the retrieved diffraction amplitude with the measured one
-flag_interact = False  # True to calculate interactively the PRTF along particular
-# directions of reciprocal space
+crop_roi = None  # list of 6 integers, ROI used if 'center_auto' was True in PyNX, leave None otherwise
+# in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
+align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
+flag_interact = False  # True to calculate interactively the PRTF along particular directions of reciprocal space
 #######################
 # beamline parameters #
 #######################
-beamline = "CRISTAL"  # name of the beamline, used for data loading
-# and normalization by monitor
+beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = {"rocking_angle": "actuator_1_1"}
-# Optional dictionary that can be used to define the entries
-# corresponding to actuators in data files
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 rocking_angle = "inplane"  # "outofplane" or "inplane"
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
-# typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
 ######################################
 # define detector related parameters #
@@ -105,24 +99,21 @@ pre_binning = (
     1,
     1,
     1,
-)  # binning factor applied during preprocessing: rocking curve axis,
-# detector vertical and horizontal axis. This is necessary to calculate correctly q
-# values.
+)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+# horizontal axis. This is necessary to calculate correctly q values.
 phasing_binning = (
     1,
     1,
     1,
 )  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis.
-# If the reconstructed object was further cropped after phasing,
-# it will be automatically padded back to the FFT window
+# If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
 sample_offsets = (
     0,
     0,
     0,
-)  # tuple of offsets in degrees of the sample around
-# (downstream, vertical up, outboard)
+)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
@@ -135,13 +126,10 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 ###########
 # options #
 ###########
-normalize_prtf = True  # set to True when the solution is the first mode
-# then the intensity needs to be normalized
-interpolate_nans = False  # if True, interpolate nans in the PRTF
-# before the interactive interface. Time consuming
+normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
+interpolate_nans = False  # if True, interpolate nans in the PRTF before the interactive interface. Time consuming
 debug = False  # True to show more plots
-background_plot = "0.5"  # in level of grey in [0,1], 0 being dark.
-# For visual comfort when using the GUI
+background_plot = "0.5"  # in level of grey in [0,1], 0 being dark. For visual comfort when using the GUI
 ##########################
 # end of user parameters #
 ##########################
@@ -149,8 +137,8 @@ background_plot = "0.5"  # in level of grey in [0,1], 0 being dark.
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel.
-    If flag_pause==1 or if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
     """
@@ -236,11 +224,11 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
+kwargs = {}  # create dictionnary
+kwargs["is_series"] = is_series
 
-# phasing_binning will be taken into account after the optional data cropping
-# (crop_roi parameter)
-detector = exp.Detector(
+# phasing_binning will be taken into account after the optional data cropping (crop_roi parameter)
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=(1, 1, 1),
@@ -250,7 +238,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -303,8 +291,7 @@ detector.offsets = offsets
 hxrd = xu.experiment.HXRD(
     sample_inplane, sample_outofplane, qconv=qconv
 )  # x downstream, y outboard, z vertical
-# first two arguments in HXRD are the inplane reference direction
-# along the beam and surface normal of the sample
+# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 
 ###################
 # define colormap #
@@ -333,10 +320,9 @@ file_path = filedialog.askopenfilename(
 )
 mask, _ = util.load_file(file_path)
 
-###########################################################
-# crop the diffraction pattern and the mask to compensate #
-# the "auto_center_resize" option used in PyNX            #
-###########################################################
+########################################################################################################
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX #
+########################################################################################################
 # The shape will be equal to 'roi_final' parameter of the .cxi file
 valid.valid_container(
     obj=crop_roi,
@@ -354,10 +340,9 @@ if crop_roi is not None:
         crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3], crop_roi[4] : crop_roi[5]
     ]
 
-###############################################
-# bin the diffraction pattern and the mask to #
-# compensate the "rebin" option used in PyNX  #
-###############################################
+##########################################################################################
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX #
+##########################################################################################
 # update also the detector pixel sizes to take into account the binning
 detector.binning = phasing_binning
 print(
@@ -377,8 +362,7 @@ mask = util.bin_data(array=mask, binning=phasing_binning, debugging=False)
     numx,
 ) = diff_pattern.shape  # this shape will be used for the calculation of q values
 print(
-    f"\nMeasured data shape = {numz}, {numy}, {numx},"
-    f" Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}"
+    f"\nMeasured data shape = {numz}, {numy}, {numx}, Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}"
 )
 diff_pattern[np.nonzero(mask)] = 0
 
@@ -401,8 +385,7 @@ z0, y0, x0 = [
     int(np.rint(x0 - 20 + fine_com[2])),
 ]
 print(
-    f"refined COM: {z0}, {y0}, {x0}, "
-    f"Number of unmasked photons = {diff_pattern.sum():.0f}\n"
+    f"refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n"
 )
 
 fig, _, _ = gu.multislices_plot(
@@ -482,8 +465,7 @@ gc.collect()
 
 if distances_q.shape != diff_pattern.shape:
     print(
-        "\nThe shape of q values and the shape of the diffraction pattern"
-        " are different: check binning parameters!"
+        "\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameters!"
     )
     sys.exit()
 
@@ -518,9 +500,8 @@ if extension == ".h5":
     else:
         comment = "mode"
 
-# check if the shape of the real space object is the same as
-# the measured diffraction pattern. The real space object may have been further
-# cropped to a tight support, to save memory space.
+# check if the shape of the real space object is the same as the measured diffraction pattern
+# the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != diff_pattern.shape:
     print(
         "Reconstructed object shape = ",
@@ -556,16 +537,16 @@ phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account
 print(f"Max(retrieved amplitude) = {abs(phased_fft).max():.1f}")
 phased_com_z, phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
 print(
-    f"COM of the retrieved diffraction pattern after masking: {phased_com_z:.2f},"
-    f" {phased_com_y:.2f}, {phased_com_x:.2f}\n"
+    f"COM of the retrieved diffraction pattern after masking: {phased_com_z:.2f}, {phased_com_y:.2f},"
+    f" {phased_com_x:.2f}\n"
 )
 del mask
 gc.collect()
 
 if normalize_prtf:
     print(
-        "Normalizing the phased data to the sqrt of the measurement"
-        " at the center of mass of the diffraction pattern ..."
+        "Normalizing the phased data to the sqrt of the measurement at the center of mass"
+        " of the diffraction pattern ..."
     )
     norm_factor = (
         np.sqrt(diff_pattern[z0 - 3 : z0 + 4, y0 - 3 : y0 + 4, x0 - 3 : x0 + 4]).sum()
@@ -723,8 +704,7 @@ q_axis = q_axis[:-1]
 # plot and save the 1D PRTF #
 #############################
 defined_q = 10 * q_axis[~np.isnan(prtf_avg)]  # switch to 1/nm
-# create a new variable 'arc_length' to predict q and prtf parametrically
-# (because prtf is not monotonic)
+# create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
 arc_length = np.concatenate(
     (
         np.zeros(1),

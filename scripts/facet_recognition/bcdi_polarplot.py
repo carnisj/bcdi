@@ -21,22 +21,22 @@ import tkinter as tk
 from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
+
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 helptext = """
-Stereographic projection of a measured 3D diffraction pattern or calculated from a
-real-space BCDI reconstruction. A shell dq of reciprocal space located a radius_mean
-(in q) from the Bragg peak is projected from the South pole and the North onto the
-equatorial plane.
+Stereographic projection of a measured 3D diffraction pattern or calculated from a real-space BCDI reconstruction.
+A shell dq of reciprocal space located a radius_mean (in q) from the Bragg peak is projected from the South pole and
+the North onto the equatorial plane.
 
-The coordinate system follows the CXI convention: Z downstream, Y vertical up and X
-outboard. Q values follow the more classical convention: qx downstream, qz vertical
-up, qy outboard.
+The coordinate system follows the CXI convention: Z downstream, Y vertical up and X outboard.
+Q values follow the more classical convention: qx downstream, qz vertical up, qy outboard.
 """
 ######################
 # generic parameters #
@@ -46,52 +46,41 @@ root_folder = "D:/data/Pt THH ex-situ/Data/HS4670/"
 sample_name = "S"  # "S"  #
 comment = ""
 reflection = np.array([0, 2, 0])  # np.array([0, 0, 2])  #   # reflection measured
-projection_axis = 1  # the projection will be performed on the equatorial plane
-# perpendicular to that axis (0, 1 or 2)
+projection_axis = 1  # the projection will be performed on the equatorial plane perpendicular to that axis (0, 1 or 2)
 radius_mean = 0.030  # q from Bragg peak
 dq = 0.001  # width in q of the shell to be projected
-sample_offsets = None  # tuple of offsets in degrees of the sample
-# for each sample circle (outer first).
+sample_offsets = None  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 q_offset = [
     0,
     0,
     0,
 ]  # offset of the projection plane in [qx, qy, qz] (0 = equatorial plane)
-# q_offset applies only to measured diffraction pattern
-# (not obtained from a reconstruction)
+# q_offset applies only to measured diffraction pattern (not obtained from a reconstruction)
 photon_threshold = 0  # threshold applied to the measured diffraction pattern
 contour_range = None  # range(250, 2600, 250)
 # range for the plot contours range(min, max, step), leave it to None for default
-max_angle = 100  # maximum angle in degrees of the stereographic projection
-# (should be larger than 90)
-medianfilter_kernel = 3  # size in each dimension of the 3D kernel for median filtering,
-# leave None otherwise
-plot_planes = True  # if True, plot dotted circles corresponding to
-# planes_south and planes_north indices
+max_angle = 100  # maximum angle in degrees of the stereographic projection (should be larger than 90)
+medianfilter_kernel = 3  # size in each dimension of the 3D kernel for median filtering, leave None otherwise
+plot_planes = True  # if True, plot dotted circles corresponding to planes_south and planes_north indices
 hide_axis = (
     False  # if True, the default axis frame, ticks and ticks labels will be hidden
 )
-planes_south = {}  # create dictionnary for the projection from the South pole,
-# the reference is +reflection
+planes_south = (
+    {}
+)  # create dictionnary for the projection from the South pole, the reference is +reflection
 planes_south["0 2 0"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([0, 2, 0])
 )
 planes_south["1 1 1"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([1, 1, 1])
 )
-# planes_south['1 0 0'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
-# planes_south['1 0 0'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
-# planes_south['1 1 0'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
-# planes_south['-1 1 0'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
-# planes_south['1 -1 1'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
-# planes_south['-1 -1 1'] =
-# simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 0 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 0, 0]))
+# planes_south['1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, 1, 0]))
+# planes_south['-1 1 0'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, 1, 0]))
+# planes_south['1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([1, -1, 1]))
+# planes_south['-1 -1 1'] = simu.angle_vectors(ref_vector=reflection, test_vector=np.array([-1, -1, 1]))
 planes_south["1 2 0"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([1, 2, 0])
 )
@@ -102,24 +91,20 @@ planes_south["2 0 1"] = simu.angle_vectors(
     ref_vector=reflection, test_vector=np.array([2, 0, 1])
 )
 
-planes_north = {}  # create dictionnary for the projection from the North pole,
-# the reference is -reflection
+planes_north = (
+    {}
+)  # create dictionnary for the projection from the North pole, the reference is -reflection
 planes_north["0 -2 0"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([0, -2, 0])
 )
 planes_north["-1 -1 -1"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([-1, -1, -1])
 )
-# planes_north['-1 0 0'] =
-# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
-# planes_north['-1 -1 0'] =
-# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
-# planes_north['-1 1 0'] =
-# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
-# planes_north['-1 -1 1'] =
-# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
-# planes_north['-1 1 1'] =
-# simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
+# planes_north['-1 0 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 0, 0]))
+# planes_north['-1 -1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 0]))
+# planes_north['-1 1 0'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 0]))
+# planes_north['-1 -1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, -1, 1]))
+# planes_north['-1 1 1'] = simu.angle_vectors(ref_vector=-reflection, test_vector=np.array([-1, 1, 1]))
 planes_north["1 -2 0"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([1, -2, 0])
 )
@@ -130,10 +115,9 @@ planes_north["2 0 1"] = simu.angle_vectors(
     ref_vector=-reflection, test_vector=np.array([2, 0, 1])
 )
 debug = False  # True to show more plots, False otherwise
-########################################################
-# parameters for plotting the stereographic projection #
-# starting from the phased real space object only      #
-########################################################
+########################################################################################################
+# parameters for plotting the stereographic projection starting from the phased real space object only #
+########################################################################################################
 reconstructed_data = (
     False  # set it to True if the data is a BCDI reconstruction (real space)
 )
@@ -147,8 +131,9 @@ use_phase = (
 binary_support = (
     False  # if True, the modulus of the reconstruction will be set to a binary support
 )
-phase_factor = -1  # 1, -1, -2*np.pi/d depending on what is in the field phase
-# (phase, -phase, displacement...)
+phase_factor = (
+    -1
+)  # 1, -1, -2*np.pi/d depending on what is in the field phase (phase, -phase, displacement...)
 voxel_size = [
     3.0,
     3.0,
@@ -160,10 +145,8 @@ pad_size = [
     2,
 ]  # list of three int >= 1, will pad to get this number times the initial array size
 # voxel size does not change, hence it corresponds to upsampling the diffraction pattern
-upsampling_ratio = 2  # int >=1, upsample the real space object by this factor
-# (voxel size divided by upsampling_ratio)
-# it corresponds to increasing the size of the detector while keeping
-# detector pixel size constant
+upsampling_ratio = 2  # int >=1, upsample the real space object by this factor (voxel size divided by upsampling_ratio)
+# it corresponds to increasing the size of the detector while keeping detector pixel size constant
 #################################################################################
 # define beamline related parameters, not used for the phased real space object #
 #################################################################################
@@ -171,49 +154,39 @@ beamline = (
     "ID01"  # name of the beamline, used for data loading and normalization by monitor
 )
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-custom_scan = False  # True for a stack of images acquired without scan,
-# e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = (
     None  # np.arange(11665, 11764, 1)  # list of image numbers for the custom_scan
 )
-custom_monitor = None  # np.ones(len(custom_images))
-# monitor values for normalization for the custom_scan
+custom_monitor = None  # np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 custom_motors = None
-# {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False),
-# "phi": 0, "nu": -0.75, "delta": 35.978}
+# {"eta": np.linspace(16.989, 18.969596, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 35.978}
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
-follow_bragg = False  # only for energy scans, set to True if the detector was
-# also scanned to follow the Bragg peak
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = "psic_nano_20141204"
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
-# not used for CRISTAL and SIXS_2019
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary,
-# typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for SIXS_2019: ''
 # template for P10: sample_name + '_%05d'
 # template for CRISTAL: ''
 filtered_data = True  # set to True if the data is already a 3D array, False otherwise
-is_orthogonal = False  # True is the filtered_data is already orthogonalized,
-# q values need to be provided
-normalize_flux = "skip"  # 'monitor' to normalize the intensity by the default
-# monitor values, 'skip' to do nothing
-#######################################################
-# define detector related parameters and region of    #
-# interest, not used for the phased real space object #
-#######################################################
+is_orthogonal = False  # True is the filtered_data is already orthogonalized, q values need to be provided
+normalize_flux = "skip"  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
+########################################################################################################
+# define detector related parameters and region of interest, not used for the phased real space object #
+########################################################################################################
 detector = "Maxipix"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 # x_bragg = 451  # horizontal pixel number of the Bragg peak
 # y_bragg = 1450  # vertical pixel number of the Bragg peak
 # roi_detector = [1202, 1610, x_bragg - 256, x_bragg + 256]  # HC3207  x_bragg = 430
 roi_detector = []  # [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # Ar
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
-# leave it as [] to use the full detector.
-# Use with center_fft='do_nothing' if you want this exact size.
+# leave it as [] to use the full detector. Use with center_fft='do_nothing' if you want this exact size.
 hotpixels_file = ""  # root_folder + 'hotpixels.npz'  #
 flatfield_file = root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = "Pt4_%04d.edf"  # .gz'
@@ -227,12 +200,10 @@ binning = [
     1,
     1,
 ]  # binning to apply to the measured diffraction pattern in each dimension
-###################################################################
-# define parameters for xrayutilities, used for orthogonalization #
-# not used for the phased real space object                       #
-###################################################################
-# xrayutilities uses the xyz crystal frame: for incident angle = 0,
-# x is downstream, y outboard, and z vertical up
+##############################################################################################################
+# define parameters for xrayutilities, used for orthogonalization, not used for the phased real space object #
+##############################################################################################################
+# xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 sdd = (
     1.26  # 0.865  # sample to detector distance in m, not important if you use raw data
 )
@@ -246,11 +217,9 @@ sample_inplane = (
 sample_outofplane = (0, 0, 1)  # surface normal of the sample at 0 angles
 offset_inplane = 0  # outer detector angle offset, not important if you use raw data
 cch1 = 369.5  # vertical
-# cch1 parameter from xrayutilities 2D detector calibration,
-# the detector roi is taken into account below
+# cch1 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
 cch2 = 138.5  # horizontal
-# cch2 parameter from xrayutilities 2D detector calibration,
-# the detector roi is taken into account below
+# cch2 parameter from xrayutilities 2D detector calibration, the detector roi is taken into account below
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 0  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -268,14 +237,14 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(
+detector = Detector(
     name=detector, datadir="", template_imagefile=template_imagefile, roi=roi_detector
 )
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -302,8 +271,7 @@ detector.offsets = offsets
 hxrd = xu.experiment.HXRD(
     sample_inplane, sample_outofplane, qconv=qconv
 )  # x downstream, y outboard, z vertical
-# first two arguments in HXRD are the inplane reference direction
-# along the beam and surface normal of the sample
+# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
 cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
 hxrd.Ang2Q.init_area(
@@ -320,8 +288,7 @@ hxrd.Ang2Q.init_area(
     tiltazimuth=tiltazimuth,
     tilt=tilt,
 )
-# the first two arguments in init_area are the direction of the detector,
-# checked for ID01 and SIXS
+# the first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
 #############
 # load data #
@@ -548,8 +515,7 @@ else:  # load a reconstructed real space object
     #########################################
     # normalize and apply modulus threshold #
     #########################################
-    # It is important to apply the threshold just before FFT calculation,
-    # otherwise the FFT is noisy because of
+    # It is important to apply the threshold just before FFT calculation, otherwise the FFT is noisy because of
     # interpolation artefacts
     obj = obj / abs(obj).max()
     obj[abs(obj) < threshold_amp] = 0
@@ -603,8 +569,7 @@ else:  # load a reconstructed real space object
 nz, ny, nx = data.shape
 if medianfilter_kernel:  # apply some noise filtering
     print(
-        f"Applying median filtering {medianfilter_kernel}x"
-        f"{medianfilter_kernel}x{medianfilter_kernel}"
+        f"Applying median filtering {medianfilter_kernel}x{medianfilter_kernel}x{medianfilter_kernel}"
     )
     data = scipy.signal.medfilt(data, medianfilter_kernel)
 

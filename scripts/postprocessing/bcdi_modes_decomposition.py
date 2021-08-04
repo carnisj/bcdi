@@ -34,10 +34,9 @@ datadir = "D:/data/P10_August2020_CDI/data/mag_3_macro1/centrosym/"
 user_comment = ""  # string, should start with "_"
 nb_mode = 1  # number of modes to return in the mode array
 alignment_method = "support"  # 'modulus' or 'support'
-# if 'modulus', use the center of mass of the modulus.
-# If 'support', use the center of mass of a support object defined by support_threshold
-support_threshold = 0.2  # threshold on the normalized modulus to define the support
-# if alignement_method is 'support'
+# if 'modulus', use the center of mass of the modulus. If 'support', use the center of mass of a support object defined
+# by support_threshold
+support_threshold = 0.2  # threshold on the normalized modulus to define the support if alignement_method is 'support'
 debug = True  # True to see debugging plots
 #########################
 # check some parameters #
@@ -54,8 +53,7 @@ valid.valid_item(
 )
 if alignment_method not in {"modulus", "support"}:
     raise ValueError(
-        f"wrong value for alignment_method {alignment_method}, "
-        'allowed are "support" and "modulus"'
+        f'wrong value for alignment_method {alignment_method}, allowed are "support" and "modulus"'
     )
 valid.valid_item(value=debug, allowed_types=bool, name="modes_decomposition")
 

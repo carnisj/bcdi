@@ -18,32 +18,28 @@ import gc
 import os
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 
 helptext = """
-Using a support created from a reconstructed object (real space), calculate the
-diffraction pattern depending on several parameters: detector size, detector distance,
-presence/width of a detector gap, Poisson noise, user-defined phase.
+Using a support created from a reconstructed object (real space), calculate the diffraction pattern depending on several
+parameters: detector size, detector distance, presence/width of a detector gap, Poisson noise, user-defined phase.
 
-The provided reconstructed object is expected to be orthogonalized, in the laboratory
-frame.
-"""
+The provided reconstructed object is expected to be orthogonalized, in the laboratory frame. """
 
 scan = 2227  # spec scan number
 datadir = "C:/Users/Jerome/Documents/data/BCDI_isosurface/S" + str(scan) + "/test/"
 # "D:/data/BCDI_isosurface/S"+str(scan)+"/test/"
 
-original_sdd = 0.50678  # 1.0137
-# in m, sample to detector distance of the provided reconstruction
+original_sdd = 0.50678  # 1.0137  # in m, sample to detector distance of the provided reconstruction
 simulated_sdd = (
     0.50678  # in m, sample to detector distance for the simulated diffraction pattern
 )
-sdd_change_mode = "real_space"  # 'real_space' or 'reciprocal_space',
-# for compensating the detector distance change
+sdd_change_mode = "real_space"  # 'real_space' or 'reciprocal_space', for compensating the detector distance change
 # in real_space, it will interpolate the support
 # if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
 energy = 9000.0 - 6  # x-ray energy in eV, 6eV offset at ID01
@@ -54,10 +50,8 @@ photon_threshold = 0  # 0.75
 photon_number = (
     5e7  # * 1011681 / 469091 # total number of photons in the array, usually around 5e7
 )
-pad_ortho = False  # True to pad before interpolating into detector frame,
-# False after (saves memory)
-# True is the only choice if the compensated object is larger than the original
-# array shape (it gets truncated)
+pad_ortho = False  # True to pad before interpolating into detector frame, False after (saves memory)
+# True is the only choice if the compensated object is larger than the original array shape (it gets truncated)
 orthogonal_frame = (
     False  # set to False to interpolate the diffraction pattern in the detector frame
 )
@@ -75,8 +69,7 @@ grazing_angle = 0  # in degrees, incident angle for in-plane rocking curves (eta
 tilt_angle = 0.0102  # angular step size for rocking angle, eta ID01
 detector = "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 
-set_gap = True
-# set to True if you want to use the detector gap in the simulation (updates the mask)
+set_gap = True  # set to True if you want to use the detector gap in the simulation (updates the mask)
 gap_width = 6  # number of pixels to mask
 gap_pixel_start = 550
 
@@ -88,8 +81,7 @@ original_size = [
     400,
     400,
     400,
-]  # size of the FFT array before binning.
-# It will be modify to take into account binning
+]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 binning = (1, 1, 1)  # binning factor during phasing
 pad_size = [
@@ -97,12 +89,10 @@ pad_size = [
     1000,
     1000,
 ]  # will pad the array by this amount of zeroed pixels in z, y, x at both ends
-# if only a number (e.g. 3), will pad to get three times the initial array size
-# ! max size ~ [800, 800, 800]
+# if only a number (e.g. 3), will pad to get three times the initial array size  # ! max size ~ [800, 800, 800]
 crop_size = [300, 300, 300]  # will crop the array to this size
 
-ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis
-# before rotating back (nexus)
+ref_axis_outplane = "y"  # "y"  # "z"  # q is supposed to be aligned along that axis before rotating back (nexus)
 phase_range = np.pi  # for plots
 strain_range = 0.001  # for plots
 debug = False  # True to see all plots
@@ -124,8 +114,8 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-detector = exp.Detector(name=detector)
-setup = exp.Setup(
+detector = Detector(name=detector)
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -330,8 +320,7 @@ if debug and not flat_phase:
         )
 
         # save amp & phase to VTK
-        # in VTK, x is downstream, y vertical, z inboard,
-        # thus need to flip the last axis
+        # in VTK, x is downstream, y vertical, z inboard, thus need to flip the last axis
         gu.save_to_vti(
             filename=os.path.join(
                 datadir, "S" + str(scan) + "_amp-phase-strain_SIMU" + comment + ".vti"
@@ -403,10 +392,9 @@ original_obj = support * np.exp(1j * phase)
 del phase, support
 gc.collect()
 
-###################################################
-# compensate padding in order to keep reciprocal  #
-# space resolution (detector pixel size) constant #
-###################################################
+##################################################################################################
+# compensate padding in order to keep reciprocal space resolution (detector pixel size) constant #
+##################################################################################################
 # compensate padding in real space
 print("\nOriginal voxel size", voxel_size, "nm")
 dqz = 2 * np.pi / (nz * voxel_size * 10)  # in inverse angstroms
@@ -465,8 +453,7 @@ print(
 )
 print("Padding has no effect on real-space voxel size.\n")
 print(
-    "Interpolating the object to keep the q resolution constant "
-    "(i.e. the detector pixel size constant)."
+    "Interpolating the object to keep the q resolution constant (i.e. the detector pixel size constant)."
 )
 print("Multiplication factor for the real-space voxel size:  pad_size/original_size")
 
@@ -549,8 +536,7 @@ print(
 
 # interpolate the support
 if pad_ortho:  # pad before interpolating into detector frame
-    # this is the only choice if the compensated object is larger
-    # than the initial array shape
+    # this is the only choice if the compensated object is larger than the initial array shape
     print(
         "Padding to data size: ",
         pad_size,
@@ -577,16 +563,13 @@ newz, newy, newx = np.meshgrid(
 
 if sdd_change_mode == "real_space":
     print(
-        "Interpolating the real-space object to accomodate "
-        "the change in detector distance."
+        "Interpolating the real-space object to accomodate the change in detector distance."
     )
     print(
-        "Multiplication factor for the real-space voxel size:  "
-        "original_sdd / simulated_sdd\n"
+        "Multiplication factor for the real-space voxel size:  original_sdd / simulated_sdd\n"
     )
-    # if the detector is 2 times farther away, the pixel size is two times smaller
-    # (2 times better sampling) hence the q range is two times smaller and the
-    # real-space voxel size two times larger
+    # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
+    # hence the q range is two times smaller and the real-space voxel size two times larger
 
     rgi = RegularGridInterpolator(
         (
@@ -656,8 +639,7 @@ if debug:
         abs(obj),
         sum_frames=True,
         cmap=my_cmap,
-        title="Orthogonal support interpolated for \npadding & detector distance "
-        "change compensation\n",
+        title="Orthogonal support interpolated for \npadding & detector distance change compensation\n",
     )
     if orthogonal_frame:
         data = fftshift(abs(fftn(original_obj)) ** 2)
@@ -718,8 +700,7 @@ if not orthogonal_frame:
     # support = support / support.max()
     # support[support < 0.05] = 0
     # support[np.nonzero(support)] = 1
-    # np.savez_compressed(datadir + 'S' + str(scan) +
-    # 'support_nonortho400.npz', obj=support)
+    # np.savez_compressed(datadir + 'S' + str(scan) + 'support_nonortho400.npz', obj=support)
 
 ##############################################################
 # pad the array (after interpolation because of memory cost) #
@@ -779,15 +760,12 @@ gc.collect()
 #################################################################################
 if (sdd_change_mode == "reciprocal_space") and (original_sdd != simulated_sdd):
     print(
-        "Interpolating the diffraction pattern to accomodate "
-        "the change in detector distance."
+        "Interpolating the diffraction pattern to accomodate the change in detector distance."
     )
     print(
-        "Multiplication factor for the detector pixel size:  "
-        "simulated_sdd/original_sdd\n"
+        "Multiplication factor for the detector pixel size:  simulated_sdd/original_sdd\n"
     )
-    # if the detector is 2 times farther away,
-    # the pixel size is two times smaller (2 times better sampling)
+    # if the detector is 2 times farther away, the pixel size is two times smaller (2 times better sampling)
     # and the q range is two times smaller
 
     newz, newy, newx = np.meshgrid(
@@ -960,7 +938,7 @@ mask = util.crop_pad(mask, crop_size)
 # crop arrays to fulfill FFT requirements during phasing #
 ##########################################################
 nz, ny, nx = simu_data.shape
-nz_crop, ny_crop, nx_crop = util.smaller_primes(
+nz_crop, ny_crop, nx_crop = pru.smaller_primes(
     (nz, ny, nx), maxprime=7, required_dividers=(2,)
 )
 

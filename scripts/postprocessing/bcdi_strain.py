@@ -25,45 +25,42 @@ import pprint
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 helptext = """
-Interpolate the output of the phase retrieval into an orthonormal frame,
-and calculate the strain component along the direction of the experimental diffusion
-vector q.
+Interpolate the output of the phase retrieval into an orthonormal frame, and calculate the strain component along the
+direction of the experimental diffusion vector q.
 
-Input: complex amplitude array, output from a phase retrieval program.
-Output: data in an orthonormal frame (laboratory or crystal frame), amp_disp_strain
-array.The disp array should be divided by q to get the displacement (disp = -1*phase
-here).
+Input: complex amplitude array, output from a phase retrieval program
+
+Output: data in an orthonormal frame (laboratory or crystal frame), amp_disp_strain array
+        disp array should be divided by q to get the displacement (disp = -1*phase here)
 
 Laboratory frame: z downstream, y vertical, x outboard (CXI convention)
 Crystal reciprocal frame: qx downstream, qz vertical, qy outboard
 Detector convention: when out_of_plane angle=0   Y=-y , when in_plane angle=0   X=x
 
-In arrays, when plotting the first parameter is the row (vertical axis), and the
-second the column (horizontal axis). Therefore the data structure is data[qx, qz,
-qy] for reciprocal space, or data[z, y, x] for real space
+In arrays, when plotting the first parameter is the row (vertical axis), and the second the column (horizontal axis).
+Therefore the data structure is data[qx, qz, qy] for reciprocal space, or data[z, y, x] for real space
 """
 
 scan = 76  # spec scan number
 root_folder = "C:/Users/Jerome/Documents/data/debug/data/"
 # folder of the experiment, where all scans are stored
 save_dir = None
-# images will be saved here,
-# leave it to None otherwise (default to data directory's parent)
+# images will be saved here, leave it to None otherwise (default to data directory's parent)
 sample_name = "S"  # "S"  # string in front of the scan number in the folder name.
 comment = ""  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
 #########################################################
-sort_method = "variance/mean"
-# 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
+sort_method = "variance/mean"  # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
@@ -72,8 +69,7 @@ original_size = [
     252,
     294,
     360,
-]  # size of the FFT array before binning.
-# It will be modify to take into account binning
+]  # size of the FFT array before binning. It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (
@@ -86,20 +82,16 @@ output_size = (
     100,
     100,
 )  # (z, y, x) Fix the size of the output array, leave None to use the object size
-keep_size = False  # True to keep the initial array size for orthogonalization (slower)
-# it will be cropped otherwise
-fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical
-# transformation. If a single value is provided, the voxel size will be identical is
-# all 3 directions. Set it to None to use the default voxel size
+keep_size = False  # True to keep the initial array size for orthogonalization (slower), it will be cropped otherwise
+fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical transformation. If a single value is
+# provided, the voxel size will be identical is all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
 #############################################################
 # parameters related to displacement and strain calculation #
 #############################################################
-data_frame = "detector"
-# 'crystal' if the data was interpolated into the crystal frame using (xrayutilities) or
+data_frame = "detector"  # 'crystal' if the data was interpolated into the crystal frame using (xrayutilities) or
 # (transformation matrix + align_q=True)
-# 'laboratory' if the data was interpolated into the laboratory frame using
-# the transformation matrix (align_q = False)
+# 'laboratory' if the data was interpolated into the laboratory frame using the transformation matrix (align_q = False)
 # 'detector' if the data is still in the detector frame
 ref_axis_q = (
     "y"  # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
@@ -108,16 +100,12 @@ ref_axis_q = (
 save_frame = "laboratory"  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
-# 'lab_flat_sample' to save the data in the laboratory frame,
-# with all sample angles rotated back to 0. The rotations for 'laboratory' and
-# 'lab_flat_sample' are realized after the strain calculation
+# 'lab_flat_sample' to save the data in the laboratory frame, with all sample angles rotated back to 0
+# rotations for 'laboratory' and 'lab_flat_sample' are realized after the strain calculation
 # (which is done in the crystal frame along ref_axis_q)
-isosurface_strain = 0.2  # threshold use for removing the outer layer
-# (strain is undefined at the exact surface voxel)
-strain_method = "default"  # 'default' or 'defect'.
-# If 'defect', will offset the phase in a loop and keep the smallest
-# magnitude value for the strain.
-# See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
+isosurface_strain = 0.2  # threshold use for removing the outer layer (strain is undefined at the exact surface voxel)
+strain_method = "default"  # 'default' or 'defect'. If 'defect', will offset the phase in a loop and keep the smallest
+# magnitude value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
 phase_offset = 0  # manual offset to add to the phase, should be 0 in most cases
 phase_offset_origin = (
     None  # the phase at this voxel will be set to phase_offset, None otherwise
@@ -126,22 +114,18 @@ offset_method = "mean"  # 'COM' or 'mean', method for removing the offset in the
 centering_method = (
     "max_com"  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 )
-# TODO: where is q for energy scans?
-#  Should we just rotate the reconstruction to have q along one axis,
+# TODO: where is q for energy scans? Should we just rotate the reconstruction to have q along one axis,
 #  instead of using sample offsets?
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization
-# by monitor and orthogonalisation
+beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 actuators = {"rocking_angle": "actuator_1_3"}
-# Optional dictionary that can be used to define the entries
-# corresponding to actuators in data files
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard,
-# "inplane" for a sample rotation
+rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd = 0.914  # 1.26  # sample to detector distance in m
@@ -149,27 +133,23 @@ energy = 8530.0  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array(
     [1, 0, 0]
 )  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard):
-# delta ID01, delta SIXS, gamma 34ID
+outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard): delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up):
-# nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up): nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 1.2 / 256.0  # angular step size for rocking angle, eta ID01, mu SIXS,
-# does not matter for energy scan
-sample_offsets = None
-# tuple of offsets in degrees of the sample for each sample circle (outer first).
+tilt_angle = (
+    1.2 / 256.0
+)  # angular step size for rocking angle, eta ID01, mu SIXS, does not matter for energy scan
+sample_offsets = None  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary,
-# typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
 ##########################
 # setup for custom scans #
 ##########################
-custom_scan = False  # set it to True for a stack of images acquired without scan,
-# e.g. with ct in a macro, or when
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available, or for 34ID
 custom_motors = {
     "delta": inplane_angle,
@@ -181,12 +161,9 @@ custom_motors = {
 # detector related parameters #
 ###############################
 detector = "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-pixel_size = None
-# use this to declare the pixel size of the "Dummy" detector if different from 55e-6
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+pixel_size = None  # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
 template_imagefile = "mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -199,29 +176,23 @@ template_imagefile = "mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs"
 # parameters related to the refraction correction #
 ###################################################
 correct_refraction = False  # True for correcting the phase shift due to refraction
-optical_path_method = "threshold"
-# 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
-# support  for the optical path calculation, if 'defect' (holes) it tries to remove
-# only outer layers even if
+optical_path_method = "threshold"  # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
+# support  for the optical path calculation, if 'defect' (holes) it tries to remove only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
 dispersion = 5.0328e-05  # delta
 # Pt:  3.0761E-05 @ 10300eV, 5.0328E-05 @ 8170eV
-# 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV,
-# 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
+# 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV, 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
 absorption = 4.1969e-06  # beta
 # Pt:  2.0982E-06 @ 10300eV, 4.8341E-06 @ 8170eV
 # 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_unwrap_refraction = 0.05  # threshold used to calculate the optical path
-# the threshold for refraction/absorption corrections should be low,
-# to correct for an object larger than the real one,
+# the threshold for refraction/absorption corrections should be low, to correct for an object larger than the real one,
 # otherwise it messes up the phase
 ###########
 # options #
 ###########
-simu_flag = False  # set to True if it is simulation,
-# the parameter invert_phase will be set to 0
-invert_phase = True  # True for the displacement to have the right sign
-# (FFT convention), False only for simulations
+simu_flag = False  # set to True if it is simulation, the parameter invert_phase will be set to 0
+invert_phase = True  # True for the displacement to have the right sign (FFT convention), False only for simulations
 flip_reconstruction = False  # True if you want to get the conjugate object
 phase_ramp_removal = (
     "gradient"  # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
@@ -239,13 +210,11 @@ roll_modes = (
     0,
     0,
     0,
-)  # axis=(0, 1, 2), correct a roll of few pixels
-# after the decomposition into modes in PyNX
+)  # axis=(0, 1, 2), correct a roll of few pixels after the decomposition into modes in PyNX
 ############################################
 # parameters related to data visualization #
 ############################################
-align_axis = False  # for visualization, if True rotates the crystal to align
-# axis_to_align along ref_axis after the
+align_axis = False  # for visualization, if True rotates the crystal to align axis_to_align along ref_axis after the
 # calculation of the strain
 ref_axis = "y"  # will align axis_to_align to that axis
 axis_to_align = np.array(
@@ -266,8 +235,7 @@ get_temperature = False  # only available for platinum at the moment
 reflection = np.array(
     [1, 1, 1]
 )  # measured reflection, use for estimating the temperature
-reference_spacing = None  # for calibrating the thermal expansion,
-# if None it is fixed to 3.9236/norm(reflection) Pt
+reference_spacing = None  # for calibrating the thermal expansion, if None it is fixed to 3.9236/norm(reflection) Pt
 reference_temperature = (
     None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 )
@@ -314,8 +282,7 @@ if fix_voxel:
         raise TypeError("fix_voxel should be a sequence of three positive numbers")
     if any(val <= 0 for val in fix_voxel):
         raise ValueError(
-            "fix_voxel should be a positive number or "
-            "a sequence of three positive numbers"
+            "fix_voxel should be a positive number or a sequence of three positive numbers"
         )
 
 if actuators is not None and not isinstance(actuators, dict):
@@ -341,8 +308,7 @@ if save_frame not in {"crystal", "laboratory", "lab_flat_sample"}:
 
 if data_frame == "crystal" and save_frame != "crystal":
     print(
-        "data already in the crystal frame before phase retrieval,"
-        " it is impossible to come back to the laboratory "
+        "data already in the crystal frame before phase retrieval, it is impossible to come back to the laboratory "
         "frame, parameter 'save_frame' defaulted to 'crystal'"
     )
     save_frame = "crystal"
@@ -415,16 +381,21 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "pixel_size": pixel_size,  # to declare the pixel size of the "Dummy" detector
-}
-
-detector = exp.Detector(
+kwargs = {}  # create dictionnary
+kwargs["preprocessing_binning"] = preprocessing_binning
+if nb_pixel_x:
+    kwargs[
+        "nb_pixel_x"
+    ] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+if nb_pixel_y:
+    kwargs[
+        "nb_pixel_y"
+    ] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+if pixel_size:
+    kwargs[
+        "pixel_size"
+    ] = pixel_size  # to declare the pixel size of the "Dummy" detector
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=phasing_binning,
@@ -436,7 +407,7 @@ detector = exp.Detector(
 ####################################
 # correct the tilt_angle for binning
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -468,10 +439,9 @@ logfile = setup.create_logfile(
     scan_number=scan, root_folder=root_folder, filename=detector.specfile
 )
 
-#########################################################
-# get the motor position of goniometer circles which    #
-# are below the rocking angle (e.g., chi for eta/omega) #
-#########################################################
+############################################################################################################
+# get the motor position of goniometer circles which are below the rocking angle (e.g., chi for eta/omega) #
+############################################################################################################
 _, setup.grazing_angle, _, _ = setup.diffractometer.goniometer_values(
     logfile=logfile, scan_number=scan, setup=setup
 )
@@ -560,8 +530,7 @@ for counter, value in enumerate(sorted_obj):
         obj = pu.flip_reconstruction(obj, debugging=True)
 
     if extension == ".h5":
-        centering_method = "do_nothing"  # do not center, data is already cropped
-        # just on support for mode decomposition
+        centering_method = "do_nothing"  # do not center, data is already cropped just on support for mode decomposition
         # correct a roll after the decomposition into modes in PyNX
         obj = np.roll(obj, roll_modes, axis=(0, 1, 2))
         fig, _, _ = gu.multislices_plot(
@@ -712,10 +681,9 @@ if apodize_flag:
     )
     comment = comment + "_apodize_" + apodize_window
 
-################################################################
-# save the phase with the ramp for PRTF calculations,          #
-# otherwise the object will be misaligned with the measurement #
-################################################################
+####################################################################################################################
+# save the phase with the ramp for PRTF calculations, otherwise the object will be misaligned with the measurement #
+####################################################################################################################
 np.savez_compressed(
     detector.savedir + "S" + str(scan) + "_avg_obj_prtf" + comment,
     obj=amp * np.exp(1j * phase),
@@ -736,8 +704,7 @@ gc.collect()
 ######################
 if centering_method == "max":
     avg_obj = pu.center_max(avg_obj)
-    # shift based on max value,
-    # required if it spans across the edge of the array before COM
+    # shift based on max value, required if it spans across the edge of the array before COM
 elif centering_method == "com":
     avg_obj = pu.center_com(avg_obj)
 elif centering_method == "max_com":
@@ -815,8 +782,7 @@ if debug:
         f"Angle with y in xy plane = {np.arctan(-q_lab[2]/q_lab[1])*180/np.pi:.2f} deg"
     )
     print(
-        f"Angle with z in xz plane = {180+np.arctan(q_lab[2]/q_lab[0])*180/np.pi:.2f} "
-        "deg\n"
+        f"Angle with z in xz plane = {180+np.arctan(q_lab[2]/q_lab[0])*180/np.pi:.2f} deg\n"
     )
 
 planar_dist = planar_dist / 10  # switch to nm
@@ -859,8 +825,7 @@ if data_frame == "detector":
         title="amplitude",
     )
 
-else:  # data already orthogonalized using xrayutilities
-    # or the linearized transformation matrix
+else:  # data already orthogonalized using xrayutilities or the linearized transformation matrix
     obj_ortho = avg_obj
     try:
         print("Select the file containing QxQzQy")
@@ -887,8 +852,7 @@ else:  # data already orthogonalized using xrayutilities
         2 * np.pi / abs(qx.max() - qx.min()) / 10
     )  # in nm qx=z in nexus convention
     print(
-        f"direct space voxel size from q values: ({dz_real:.2f} nm,"
-        f" {dy_real:.2f} nm, {dx_real:.2f} nm)"
+        f"direct space voxel size from q values: ({dz_real:.2f} nm, {dy_real:.2f} nm, {dx_real:.2f} nm)"
     )
     if fix_voxel:
         voxel_size = fix_voxel
@@ -903,8 +867,9 @@ else:  # data already orthogonalized using xrayutilities
         # no need to interpolate
         voxel_size = dz_real, dy_real, dx_real  # in nm
 
-    if data_frame == "laboratory":  # the object must be rotated into the crystal frame
-        # before the strain calculation
+    if (
+        data_frame == "laboratory"
+    ):  # the object must be rotated into the crystal frame before the strain calculation
         print("Rotating the object in the crystal frame for the strain calculation")
 
         amp, phase = util.rotate_crystal(
@@ -966,10 +931,8 @@ if correct_refraction:  # or correct_absorption:
 
     kin = setup.incident_wavevector
     kout = setup.exit_wavevector
-    # kin and kout were calculated in the laboratory frame,
-    # but after the geometric transformation of the crystal, this
-    # latter is always in the crystal frame (for simpler strain calculation).
-    # We need to transform kin and kout back
+    # kin and kout were calculated in the laboratory frame, but after the geometric transformation of the crystal, this
+    # latter is always in the crystal frame (for simpler strain calculation). We need to transform kin and kout back
     # into the crystal frame (also, xrayutilities output is in crystal frame)
     kin = util.rotate_vector(
         vectors=[kin[2], kin[1], kin[0]],
@@ -1015,10 +978,9 @@ if correct_refraction:  # or correct_absorption:
             is_orthogonal=True,
             reciprocal_space=False,
         )
-    correct_absorption = False
-    if correct_absorption:
-        # TODO: it is correct to compensate also
-        #  the X-ray absorption in the reconstructed modulus?
+
+    if False:  # correct_absorption:
+        # TODO: it is correct to compensate also the X-ray absorption in the reconstructed modulus?
         amp_correction = np.exp(
             2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path
         )
@@ -1091,11 +1053,9 @@ strain = pu.get_strain(
     debugging=debug,
 )
 
-################################################
-# optionally rotates back the crystal into the #
-# laboratory frame (for debugging purpose)     #
-################################################
-q_final = None
+#########################################################################################
+# optionally rotates back the crystal into the laboratory frame (for debugging purpose) #
+#########################################################################################
 if save_frame in {"laboratory", "lab_flat_sample"}:
     comment = comment + "_labframe"
     print("\nRotating back the crystal in laboratory frame")
@@ -1130,8 +1090,7 @@ if save_frame == "lab_flat_sample":
         title=("amp", "phase", "strain"),
     )
 if save_frame == "crystal":
-    # rotate also q_lab to have it along ref_axis_q,
-    # as a cross-checkm, vectors needs to be in xyz order
+    # rotate also q_lab to have it along ref_axis_q, as a cross-checkm, vectors needs to be in xyz order
     comment = comment + "_crystalframe"
     q_final = util.rotate_vector(
         vectors=q_lab[::-1],
@@ -1139,12 +1098,10 @@ if save_frame == "crystal":
         reference_axis=q_lab[::-1],
     )
 
-###############################################
-# rotates the crystal e.g. for easier slicing #
-# of the result along a particular direction  #
-###############################################
-# typically this is an inplane rotation, q should stay aligned with the axis
-# along which the strain was calculated
+##########################################################################################
+# rotates the crystal e.g. for easier slicing of the result along a particular direction #
+##########################################################################################
+# typically this is an inplane rotation, q should stay aligned with the axis along which the strain was calculated
 if align_axis:
     print("\nRotating arrays for visualization")
     amp, phase, strain = util.rotate_crystal(
@@ -1179,8 +1136,7 @@ print(f"\nFinal data shape: {amp.shape}")
 # save result to vtk #
 ######################
 print(
-    f"\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm,"
-    f" {voxel_size[2]:.2f} nm)"
+    f"\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm, {voxel_size[2]:.2f} nm)"
 )
 bulk = pu.find_bulk(amp=amp, support_threshold=isosurface_strain, method="threshold")
 if save:
@@ -1244,9 +1200,8 @@ gc.collect()
 ##############################
 pixel_spacing = [tick_spacing / vox for vox in voxel_size]
 print(
-    "\nPhase extent without / with thresholding the modulus "
-    f"(threshold={isosurface_strain}): {phase.max()-phase.min():.2f} rad, "
-    f"{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad"
+    f"\nPhase extent without / with thresholding the modulus (threshold={isosurface_strain}): "
+    f"{phase.max()-phase.min():.2f} rad, {phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad"
 )
 piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
 print(

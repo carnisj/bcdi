@@ -10,7 +10,7 @@
 import numpy as np
 import xrayutilities as xu
 import sys
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.setup import Setup
 import bcdi.simulation.simulation_utils as simu
 import bcdi.preprocessing.preprocessing_utils as pru
 
@@ -18,8 +18,7 @@ helptext = """
 Calculate the position of the Bragg peaks for a material and a particular
 diffractometer setup. The crystal frame uses the following convention: x downstream,
 y outboard, z vertical.
-Supported beamlines:  ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
-"""
+Supported beamlines:  ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10"""
 
 material = xu.materials.Pt  # load material from materials submodule
 beamline = "P10"  # 'ID01' or 'P10'
@@ -60,7 +59,7 @@ bounds = (
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     energy=energy,
     beam_direction=beam_direction,
@@ -81,15 +80,14 @@ if (
 ):
     print("The angle between reference directions is not 90 degrees")
     sys.exit()
-if len(qconv.sampleAxis) + len(qconv.detectorAxis) != len(bounds):
-    raise ValueError("number of specified bounds invalid")
+assert (len(qconv.sampleAxis) + len(qconv.detectorAxis)) == len(
+    bounds
+), "number of specified bounds invalid"
 nb_free = 0
 for idx in range(len(bounds)):
     if type(bounds[idx]) is tuple:
         nb_free = nb_free + 1
-if nb_free > 3:
-    raise ValueError("maximum of three free motors exceeded")
-
+assert nb_free <= 3, "maximum of three free motors exceeded"
 #############################################
 # calculate the angles of Bragg reflections #
 #############################################

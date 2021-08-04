@@ -17,8 +17,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
 helptext = """
-Rotate a 3D reciprocal space map around some axis. The data is expected to be in an
-orthonormal frame.
+Rotate a 3D reciprocal space map around some axis. The data is expected to be in an orthonormal frame.
 """
 
 scan = 22  # scan number
@@ -28,8 +27,7 @@ datadir = (
     )
     + "/pynx/"
 )
-tilt = 0.0239082357814962
-# rotation angle in radians to be applied counter-clockwise around rotation_axis
+tilt = 0.0239082357814962  # rotation angle in radians to be applied counter-clockwise around rotation_axis
 # 0.086318314 -0.177905782 0.980254396   qy qx qz Matlab
 # -0.177905782 0.980254396 0.086318314   z/qx y/qz x/qy Python CXI/qlab
 # 0.086318314 0.980254396 -0.177905782   x/qy y/qz z/qx for the rotation
@@ -68,16 +66,15 @@ nbz, nby, nbx = data.shape
 print("data shape:", data.shape)
 
 if crop_shape:
-    if len(crop_shape) != 3:
-        raise ValueError("crop should be a sequence of 3 voxels numbers")
-    if not np.all(np.asarray(origin) - np.asarray(crop_shape) // 2 >= 0):
-        raise ValueError("origin incompatible with crop_shape")
-    if not (
+    assert len(crop_shape) == 3, "crop should be a sequence of 3 voxels numbers"
+    assert np.all(
+        np.asarray(origin) - np.asarray(crop_shape) // 2 >= 0
+    ), "origin incompatible with crop_shape"
+    assert (
         origin[0] + crop_shape[0] // 2 <= nbz
         and origin[1] + crop_shape[1] // 2 <= nby
         and origin[2] + crop_shape[2] // 2 <= nbx
-    ):
-        raise ValueError("origin incompatible with crop_shape")
+    ), "origin incompatible with crop_shape"
 
     data = util.crop_pad(array=data, output_shape=crop_shape, crop_center=origin)
     gc.collect()

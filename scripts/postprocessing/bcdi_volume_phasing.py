@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 import os
 
 helptext = """
-Calculate the volume of the reconstruction for different isosurfaces, save and plot
-the result.
+Calculate the volume of the reconstruction for different isosurfaces, save and plot the result.
 """
 
 datadir = "D:/review paper/BCDI_isosurface/S2227/simu/crop400phase/no_apodization/avg1/"

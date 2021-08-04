@@ -26,28 +26,29 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.validation as valid
 
 helptext = """
-Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize,
-filter and regrid the data. Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL,
-SOLEIL SIXS and PETRAIII P10.
+Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize, filter and regrid the data.
+
+Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS and PETRAIII P10.
+
 Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
+
 File structure should be (e.g. scan 1):
 specfile, background, hotpixels file and flatfield file in:    /rootdir/
+data in:                                                       /rootdir/S1/data/
 
-The data is expected in: /rootdir/S1/data/
-Output files are saved in:
-/rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on the 'use_rawdata' parameter.
+output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
 scans = [22]  # list or array of scan numbers
 root_folder = "D:/data/P10_August2019_CDI/data/"
-save_dir = "D:/data/P10_August2019_CDI/test/"
-# images will be saved here, leave it to None otherwise
+save_dir = "D:/data/P10_August2019_CDI/test/"  # images will be saved here, leave it to None otherwise
 # (default to data directory's parent)
 sample_name = [
     "gold_2_2_2"
@@ -67,25 +68,20 @@ background_plot = (
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_method = "skip"  # 'skip' for no normalization,
-# 'monitor' to use the default monitor, 'sum_roi' to normalize
+normalize_method = "skip"  # 'skip' for no normalization, 'monitor' to use the default monitor, 'sum_roi' to normalize
 # by the intensity summed in normalize_roi
-normalize_roi = None
-# roi for the integration of intensity used as a monitor for data normalization
+normalize_roi = None  # roi for the integration of intensity used as a monitor for data normalization
 # [Vstart, Vstop, Hstart, Hstop]
 #################################
 # parameters for data filtering #
 #################################
-mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero
-# may be dead pixels
+mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 flag_medianfilter = "skip"
 # set to 'median' for applying med2filter [3,3]
-# set to 'interp_isolated' to interpolate isolated empty pixels based on
-# 'medfilt_order' parameter
+# set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
 # set to 'skip' will skip filtering
-medfilt_order = 8  # for custom median filter,
-# number of pixels with intensity surrounding the empty pixel
+medfilt_order = 8  # for custom median filter, number of pixels with intensity surrounding the empty pixel
 #################################################
 # parameters used when reloading processed data #
 #################################################
@@ -118,19 +114,15 @@ beamline = (
 rocking_angle = "inplane"  # "outofplane" or "inplane"
 is_series = True  # specific to series measurement at P10
 
-custom_scan = False  # set it to True for a stack of images acquired without scan,
-# e.g. with ct in a macro, or when
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
 custom_images = None  # [10*i+929+j for i in range(92) for j in range(8)]
-# custom_images.append(1849)  # np.arange(11353, 11453, 1)
-# list of image numbers for the custom_scan
-custom_monitor = None  # np.ones(len(custom_images))
-# monitor values for normalization for the custom_scan
+# custom_images.append(1849)  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
+custom_monitor = None  # np.ones(len(custom_images))  # monitor values for normalization for the custom_scan
 
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary,
-# typically root_folder + 'alias_dict_2019.txt'
+# template for SIXS_2018: full path of the alias dictionnary, typically root_folder + 'alias_dict_2019.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
@@ -140,8 +132,7 @@ direct_beam = (
     1349,
     1321,
 )  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
-# unbinned detector.
-# This parameter is important for gridding the data onto the laboratory frame.
+# unbinned detector. This parameter is important for gridding the data onto the laboratory frame.
 roi_detector = [
     direct_beam[0] - 250,
     direct_beam[0] + 250,
@@ -151,10 +142,8 @@ roi_detector = [
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as None to use the full detector.
 photon_threshold = 0  # data[data < photon_threshold] = 0
-photon_filter = "loading"  # 'loading' or 'postprocessing',
-# when the photon threshold should be applied
-# if 'loading', it is applied before binning;
-# if 'postprocessing', it is applied at the end of the script before saving
+photon_filter = "loading"  # 'loading' or 'postprocessing', when the photon threshold should be applied
+# if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = (
     None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
@@ -170,21 +159,17 @@ template_imagefile = "_master.h5"  # ''_data_%06d.h5'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ######################################################################
 # parameters used for interpolating the data in an orthonormal frame #
 ######################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame
-# True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 correct_curvature = (
     False  # True to correcture q values for the curvature of Ewald sphere
 )
-fit_datarange = True  # if True, crop the final array within data range,
-# avoiding areas at the corners of the window viewed from the top, data is circular,
-# but the interpolation window is rectangular, with nan values outside of data
+fit_datarange = True  # if True, crop the final array within data range, avoiding areas at the corners of the window
+# viewed from the top, data is circular, but the interpolation window is rectangular, with nan values outside of data
 sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
 energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
 custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
@@ -197,15 +182,19 @@ custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
 
 
 def close_event(event):
-    """This function handles closing events on plots."""
+    """
+    This function handles closing events on plots.
+
+    :return: nothing
+    """
     print(event, "Click on the figure instead of closing it!")
     sys.exit()
 
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel. If
-    flag_pause==1 or if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
     """
@@ -221,8 +210,7 @@ def on_click(event):
                 previous_axis = event.inaxes
         else:  # the click is not in the same subplot, restart collecting points
             print(
-                "Please select mask polygon vertices within the same subplot: "
-                "restart masking..."
+                "Please select mask polygon vertices within the same subplot: restart masking..."
             )
             xy = []
             previous_axis = None
@@ -234,9 +222,9 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, original_mask, updated_mask, data, mask, frame_index, width
-    global flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1
-    global ax2, previous_axis, detector_plane, info_text, my_cmap
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+    global flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, previous_axis, detector_plane, info_text
+    global my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -361,8 +349,7 @@ if reload_previous:
     create_savedir = False
     user_comment += "_reloaded"
     print(
-        "\nReloading... update the direct beam position "
-        "taking into account preprocessing_binning"
+        "\nReloading... update the direct beam position taking into account preprocessing_binning"
     )
     direct_beam = (
         direct_beam[0] // preprocessing_binning[1],
@@ -386,19 +373,16 @@ else:
     plot_title = ["QzQx", "QyQx", "QyQz"]
     if reload_orthogonal:  # data already gridded, one can bin the first axis
         pass
-    else:  # data in the detector frame,
-        # one cannot bin the first axis because it is done during interpolation
+    else:  # data in the detector frame, one cannot bin the first axis because it is done during interpolation
         print(
-            "\nuse_rawdata=False: defaulting the binning factor "
-            "along the stacking dimension to 1"
+            "\nuse_rawdata=False: defaulting the binning factor along the stacking dimension to 1"
         )
-        # the vertical axis y being the rotation axis,
-        # binning along z downstream and x outboard will be the same
+        # the vertical axis y being the rotation axis, binning along z downstream and x outboard will be the same
         binning[0] = 1
         if preprocessing_binning[0] != 1:
             print(
-                "preprocessing_binning along axis 0 should be 1 "
-                "for reloaded data to be gridded (angles will not match)"
+                "preprocessing_binning along axis 0 should be 1 for reloaded data to be gridded"
+                " (angles will not match)"
             )
             sys.exit()
 
@@ -422,23 +406,24 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-}
+kwargs = {}  # create dictionnary
+kwargs["is_series"] = is_series
+kwargs["preprocessing_binning"] = preprocessing_binning
+kwargs[
+    "nb_pixel_x"
+] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs[
+    "nb_pixel_y"
+] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
-detector = exp.Detector(
+detector = Detector(
     name=detector, roi=roi_detector, sum_roi=normalize_roi, binning=binning, **kwargs
 )
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -618,10 +603,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             "\nMaximum symmetrical range with defined data along"
             " detector horizontal direction: 2*{0} pixels".format(min_range)
         )
-        if min_range <= 0:
-            raise ValueError(
-                "error in calculating min_range, check the direct beam " "position"
-            )
+        assert (
+            min_range > 0
+        ), "error in calculating min_range, check the direct beam position"
 
         if save_rawdata:
             np.savez_compressed(
@@ -629,8 +613,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 data=data,
             )
             if save_to_mat:
-                # save to .mat, the new order is x y z
-                # (outboard, vertical up, downstream)
+                # save to .mat, the new order is x y z (outboard, vertical up, downstream)
                 savemat(
                     detector.savedir
                     + "S"
@@ -803,8 +786,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 del tmp_data
                 gc.collect()
 
-    else:  # reload_orthogonal=True, the data is already gridded,
-        # binning was realized along each axis
+    else:  # reload_orthogonal=True, the data is already gridded, binning was realized along each axis
         binning_comment = (
             f"_{detector.preprocessing_binning[0]*detector.binning[0]}"
             f"_{detector.preprocessing_binning[1]*detector.binning[1]}"
@@ -818,8 +800,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # optional masking of zero photon events #
     ##########################################
     if mask_zero_event:
-        # mask points when there is no intensity along the whole rocking curve
-        # probably dead pixels
+        # mask points when there is no intensity along the whole rocking curve - probably dead pixels
         temp_mask = np.zeros((ny, nx))
         temp_mask[np.sum(data, axis=0) == 0] = 1
         mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
@@ -1216,10 +1197,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         else:
             print("fit_datarange: q values are not provided")
 
-    ##############################################################
-    # only for non gridded data, bin the stacking axis           #
-    # the detector plane was already binned during data loading  #
-    ##############################################################
+    ###############################################################################################################
+    # only for non gridded data, bin the stacking axis, the detector plane was already binned during data loading #
+    ###############################################################################################################
     if (
         detector.binning[0] != 1 and not reload_orthogonal
     ):  # for data to be gridded, binning[0] is set to 1

@@ -17,7 +17,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import os
 
 helptext = """
-Read .edf image (ESRF data format).
+Read .edf image (ESRF data format)
 """
 
 img = 8758
@@ -40,8 +40,7 @@ normalize_method = (
     0  # 1 to normalize using max, 2 to normalize the data using filter, 0 otherwise
 )
 logscale = 1  # 1 for log scale
-# ####### below is useful only if you want to normalize
-# with filter (normalize_method = 2)
+# ####### below is useful only if you want to normalize with filter (normalize_method = 2) ############
 filter_nb = 1
 filter_factor = 3.8  # 3.8 at 8keV, 2.5 at 9keV
 ##################################################################################
@@ -76,8 +75,7 @@ my_cmap = LinearSegmentedColormap("my_colormap", cdict, 256)
 ##################################################################################
 root = tk.Tk()
 root.withdraw()
-# file_path = filedialog.askopenfilenames(initialdir=datadir,
-# filetypes=[("EDF.GZ", "*.edf.gz"), ("EDF", "*.edf")])
+# file_path = filedialog.askopenfilenames(initialdir=datadir, filetypes=[("EDF.GZ", "*.edf.gz"), ("EDF", "*.edf")])
 # e = fabio.open(file_path[0])
 e = fabio.open(ccdfiletmp % img)
 data = e.data

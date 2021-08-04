@@ -14,13 +14,13 @@ except ModuleNotFoundError:
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
 
 helptext = """
-Open a rocking curve data, plot the mask, the monitor and the stack along the first
-axis.
+Open a rocking curve data, plot the mask, the monitor and the stack along the first axis.
 
 It is usefull when you want to localize the Bragg peak for ROI determination.
 
@@ -32,8 +32,7 @@ root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 sample_name = "PtNP1"  # string in front of the scan number in the folder name
 save_dir = (
     root_folder + "dataset_1_newpsf/test/"
-)  # images will be saved here, leave it to None otherwise
-# (default to data directory's parent)
+)  # images will be saved here, leave it to None otherwise (default to data directory's parent)
 save_mask = False  # set to True to save the mask
 debug = True  # True to see more plots
 binning = (1, 1, 1)  # binning to apply to the data
@@ -46,12 +45,10 @@ beamline = (
 )
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
 actuators = None  # {'rocking_angle': 'actuator_1_3'}
-# Optional dictionary that can be used to define the entries corresponding to
-# actuators in data files
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-custom_scan = False  # True for a stack of images acquired without scan,
-# e.g. with ct in a macro (no info in spec file)
+custom_scan = False  # True for a stack of images acquired without scan, e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
 custom_monitor = np.ones(
     len(custom_images)
@@ -70,34 +67,28 @@ custom_motors = {
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
 is_series = True  # specific to series measurement at P10
 specfile_name = ""
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
-# not used for CRISTAL and SIXS_2019
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
-# typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
 ###############################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M" or 'Merlin'
-x_bragg = 1355  # horizontal pixel number of the Bragg peak,
-# leave None for automatic detection (using the max)
-y_bragg = 796  # vertical pixel number of the Bragg peak,
-# leave None for automatic detection (using the max)
+x_bragg = 1355  # horizontal pixel number of the Bragg peak, leave None for automatic detection (using the max)
+y_bragg = 796  # vertical pixel number of the Bragg peak, leave None for automatic detection (using the max)
 roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # roi_detector = [y_bragg - 168, y_bragg + 168, x_bragg - 140, x_bragg + 140]  # CH5309
 # roi_detector = [552, 1064, x_bragg - 240, x_bragg + 240]  # P10 2018
 # roi_detector = [y_bragg - 290, y_bragg + 350, x_bragg - 350, x_bragg + 350]  # PtRh Ar
 # [Vstart, Vstop, Hstart, Hstop]
-# leave None to use the full detector. Use with center_fft='skip'
-# if you want this exact size.
+# leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 peak_method = "max"  # Bragg peak determination: 'max', 'com' or 'maxcom'.
 normalize = (
     "monitor"  # 'monitor' to return the default monitor values, 'skip' to do nothing
 )
 high_threshold = 500000  # everything above will be considered as hotpixel
-hotpixels_file = ""  # root_folder + 'hotpixels_cristal.npz'
-# root_folder + 'merlin_mask_190222_14keV.h5'  #
+hotpixels_file = ""  # root_folder + 'hotpixels_cristal.npz'  # root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ""  # root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
@@ -106,10 +97,8 @@ template_imagefile = "_master.h5"
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ######################
 # setup for the plot #
 ######################
@@ -138,22 +127,22 @@ flatfield = pru.load_flatfield(flatfield_file)
 hotpix_array = pru.load_hotpixels(hotpixels_file)
 if normalize not in {"skip", "monitor"}:
     raise ValueError(
-        f"Invalid setting {normalize} for normalize,"
-        " allowed values are 'skip' and 'monitor'"
+        f"Invalid setting {normalize} for normalize, allowed values are 'skip' and 'monitor'"
     )
 
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-}
+kwargs = {}  # create dictionnary
+kwargs["is_series"] = is_series
+kwargs[
+    "nb_pixel_x"
+] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs[
+    "nb_pixel_y"
+] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
 
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
@@ -164,7 +153,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     rocking_angle=rocking_angle,
@@ -259,8 +248,8 @@ if data.ndim == 3:
 
     peak_int = int(data[z0, y0, x0])
     print(
-        "Bragg peak (indices in the eventually binned ROI) at (z, y, x):"
-        f" {z0}, {y0}, {x0}, intensity = {peak_int}"
+        f"Bragg peak (indices in the eventually binned ROI) at (z, y, x): {z0}, {y0}, {x0},"
+        f" intensity = {peak_int}"
     )
 
     for idx in range(numz):
@@ -297,8 +286,7 @@ if data.ndim == 3:
 
     # apply low threshold
     data[data <= low_threshold] = 0
-    # data = data[data.shape[0]//2, :, :]
-    # select the first frame e.g. for detector mesh scan
+    # data = data[data.shape[0]//2, :, :]  # select the first frame e.g. for detector mesh scan
     data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
     title = f"data.sum(axis=0)   peak method={peak_method}\n"
 else:  # 2D
@@ -349,8 +337,7 @@ gu.combined_plots(
 
 max_y, max_x = np.unravel_index(abs(data).argmax(), data.shape)
 print(
-    f"Max of the concatenated data along axis 0 at (y, x): ({max_y}, {max_x})  "
-    f"Max = {int(data[max_y, max_x])}"
+    f"Max of the concatenated data along axis 0 at (y, x): ({max_y}, {max_x})  Max = {int(data[max_y, max_x])}"
 )
 
 # plot the region of interest centered on the peak

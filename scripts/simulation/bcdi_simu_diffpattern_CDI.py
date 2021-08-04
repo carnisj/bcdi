@@ -10,16 +10,15 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 
 helptext = """
-Calculate the position of the Bragg peaks for a mesocrystal given the lattice type,
-the unit cell parameter and beamline-related parameters.
+Calculate the position of the Bragg peaks for a mesocrystal given the lattice type, the unit cell parameter
+and beamline-related parameters.
 
-Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
-"""
+Laboratory frame convention (CXI): z downstream, y vertical up, x outboard."""
 
 savedir = "D:/data/P10_August2019/data/magnetite_A2_new_00013/pynx/"
 ################
@@ -35,8 +34,7 @@ angles = [
     -9,
     34,
     -25,
-]  # in degrees, rotation around qx downstream, qz vertical up and
-# qy outboard respectively
+]  # in degrees, rotation around qx downstream, qz vertical up and qy outboard respectively
 #######################
 # beamline parameters #
 #######################
@@ -51,8 +49,9 @@ direct_beam = (
     1187,
 )  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = []  # [direct_beam[0] - 972, direct_beam[0] + 972,
-# direct_beam[1] - 883, direct_beam[1] + 883]
+roi_detector = (
+    []
+)  # [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop], leave [] to use the full detector
 binning = [4, 4, 4]  # binning of the detector
 ###########
@@ -67,15 +66,14 @@ debug = True  # True to see more plots
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, binning=binning, roi=roi_detector)
+detector = Detector(name=detector, binning=binning, roi=roi_detector)
 
 nbz, nby, nbx = (
     int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2])),
     int(np.floor((detector.roi[1] - detector.roi[0]) / detector.binning[1])),
     int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2])),
 )
-# for P10 data the rotation is around y vertical,
-# hence gridded data range & binning in z and x are identical
+# for P10 data the rotation is around y vertical, hence gridded data range & binning in z and x are identical
 print("Data shape:", nbz, nby, nbx)
 
 ###################
@@ -99,8 +97,7 @@ pivot, _, q_values, lattice, peaks = simu.lattice(
     euler_angles=angles,
     offset_indices=False,
 )
-# peaks in the format [[h, l, k], ...]:
-# CXI convention downstream , vertical up, outboard
+# peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 for idx in range(len(peaks)):
     print("Miller indices:", peaks[idx], "    at pixels:", lattice[idx])
 

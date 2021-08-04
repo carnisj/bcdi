@@ -31,8 +31,7 @@ fit = True  # if True, fit the histogram with lineshape
 lineshape = "pseudovoigt"
 fit_range = [0.5, 1.0]
 histogram_Yaxis = "linear"  # 'log' or 'linear'
-cutoff_amp = 0.05  # use only points with a modulus larger than this value
-# to calculate mean, std and the histogram
+cutoff_amp = 0.05  # use only points with a modulus larger than this value to calculate mean, std and the histogram
 save = False  # True to save the histogram plot
 ##########################
 # end of user parameters #

@@ -27,7 +27,8 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
@@ -35,11 +36,9 @@ import bcdi.utils.validation as valid
 
 
 helptext = """
-Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
-filter the data.
+Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and filter the data.
 
-Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS, PETRAIII P10 and
-APS 34ID-C.
+Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS, PETRAIII P10 and APS 34ID-C.
 
 Output: data and mask as numpy .npz or Matlab .mat 3D arrays for phasing
 
@@ -47,8 +46,7 @@ File structure should be (e.g. scan 1):
 specfile, hotpixels file and flatfield file in:    /rootdir/
 data in:                                           /rootdir/S1/data/
 
-output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on the
-'use_rawdata' option
+output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 'use_rawdata' option
 """
 
 scans = 76  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
@@ -56,16 +54,12 @@ scans = 76  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
-# folder of the experiment, where all scans are stored
+root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"  # folder of the experiment, where all scans are stored
 save_dir = None  # images will be saved here, leave it to None otherwise
-data_dirname = None  # leave None to use the beamline default,
-# '' empty string when there is no subfolder
+data_dirname = None  # leave None to use the beamline default, '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
-# (default to scan_folder/pynx/ or scan_folder/pynxraw/
-# depending on the setting of use_rawdata)
-sample_name = "B15_syn_S1_2"  # str or list of str of sample names
-# (string in front of the scan number in the folder name).
+# (default to scan_folder/pynx/ or scan_folder/pynxraw/ depending on the setting of use_rawdata)
+sample_name = "B15_syn_S1_2"  # str or list of str of sample names (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
@@ -83,12 +77,12 @@ background_plot = (
 #########################################################
 centering = "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
-fix_bragg = []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
-# considering the full detector
+fix_bragg = (
+    []
+)  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector
 # It is useful if hotpixels or intense aliens. Leave it [] otherwise.
 fix_size = []  # crop the array to predefined size considering the full detector,
-# leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
-# ROI will be defaulted to []
+# leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop]. ROI will be defaulted to []
 center_fft = "skip"
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
@@ -97,21 +91,17 @@ pad_size = []  # size after padding, e.g. [256, 512, 512]. Use this to pad the a
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_flux = "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
-# the default monitor values, 'skip' to do nothing
+normalize_flux = "monitor"  # 'skip'  # 'monitor' to normalize the intensity by the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
-mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero
-# may be dead pixels
+mask_zero_event = False  # mask pixels where the sum along the rocking curve is zero - may be dead pixels
 flag_medianfilter = "skip"
 # set to 'median' for applying med2filter [3,3]
-# set to 'interp_isolated' to interpolate isolated empty pixels based on
-# 'medfilt_order' parameter
+# set to 'interp_isolated' to interpolate isolated empty pixels based on 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
 # set to 'skip' will skip filtering
-medfilt_order = 7  # for custom median filter,
-# number of pixels with intensity surrounding the empty pixel
+medfilt_order = 7  # for custom median filter, number of pixels with intensity surrounding the empty pixel
 #################################################
 # parameters used when reloading processed data #
 #################################################
@@ -140,32 +130,29 @@ save_asint = (
 beamline = (
     "P10"  # name of the beamline, used for data loading and normalization by monitor
 )
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
-# 'NANOMAX', '34ID'
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX', '34ID'
 actuators = None  # {'rocking_angle': 'actuator_1_1'}
-# Optional dictionary that can be used to define the entries corresponding to
-# actuators in data files (useful at CRISTAL where the location of data keeps changing)
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
+# (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 
-custom_scan = False  # set it to True for a stack of images acquired without scan,
-# e.g. with ct in a macro, or when
+custom_scan = False  # set it to True for a stack of images acquired without scan, e.g. with ct in a macro, or when
 # there is no spec/log file available
-custom_images = [3]  # np.arange(11353, 11453, 1)
-# list of image numbers for the custom_scan, None otherwise
+custom_images = [
+    3
+]  # np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan, None otherwise
 custom_monitor = np.ones(
     51
 )  # monitor values for normalization for the custom_scan, None otherwise
 
-rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
-# "inplane" for a sample rotation around y vertical up, "energy"
+rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard, "inplane" for a sample rotation
+# around y vertical up, "energy"
 
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary or
-# None to use the one in the package folder
+# template for SIXS: full path of the alias dictionnary or None to use the one in the package folder
 # template for all other beamlines: ''
 ###############################
 # detector related parameters #
@@ -178,24 +165,17 @@ linearity_func = (
 # np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
-# You can use def instead of a lambda expression but the input array should be 1d
-# (flattened 2D detector array).
-x_bragg = 414  # horizontal pixel number of the Bragg peak,
-# can be used for the definition of the ROI
-y_bragg = 842  # vertical pixel number of the Bragg peak,
-# can be used for the definition of the ROI
+# You can use def instead of a lambda expression but the input array should be 1d (flattened 2D detector array).
+x_bragg = 414  # horizontal pixel number of the Bragg peak, can be used for the definition of the ROI
+y_bragg = 842  # vertical pixel number of the Bragg peak, can be used for the definition of the ROI
 roi_detector = None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
-# leave None to use the full detector.
-# Use with center_fft='skip' if you want this exact size.
+# leave None to use the full detector. Use with center_fft='skip' if you want this exact size.
 photon_threshold = 0  # data[data < photon_threshold] = 0
-photon_filter = "loading"  # 'loading' or 'postprocessing',
-# when the photon threshold should be applied
-# if 'loading', it is applied before binning; if 'postprocessing',
-# it is applied at the end of the script before saving
+photon_filter = "loading"  # 'loading' or 'postprocessing', when the photon threshold should be applied
+# if 'loading', it is applied before binning; if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
-hotpixels_file = None  # root_folder + 'hotpixels_cristal.npz'
-# root_folder + 'mask_merlin.npy'  # non empty file path or None
+hotpixels_file = None  # root_folder + 'hotpixels_cristal.npz'  # root_folder + 'mask_merlin.npy'  # non empty file path or None
 flatfield_file = (
     None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 )
@@ -207,21 +187,16 @@ template_imagefile = "_master.h5"
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
+nb_pixel_x = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
+nb_pixel_y = None  # fix to declare a known detector but with less pixels (e.g. one tile HS), leave None otherwise
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame
-# True for using data in detector frame
+use_rawdata = False  # False for using data gridded in laboratory frame/ True for using data in detector frame
 interp_method = "linearization"  # 'xrayutilities' or 'linearization'
-fill_value_mask = 0  # 0 (not masked) or 1 (masked).
-# It will define how the pixels outside of the data range are
-# processed during the interpolation. Because of the large number of masked pixels,
-# phase retrieval converges better if the pixels are not masked (0 intensity
-# imposed). The data is by default set to 0 outside of the defined range.
+fill_value_mask = 0  # 0 (not masked) or 1 (masked). It will define how the pixels outside of the data range are
+# processed during the interpolation. Because of the large number of masked pixels, phase retrieval converges better if
+# the pixels are not masked (0 intensity imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (
     1,
     0,
@@ -232,28 +207,22 @@ sample_offsets = (
     0,
     0,
 )  # tuple of offsets in degrees of the sample for each sample circle (outer first).
-# convention: the sample offsets will be subtracted to the motor values.
-# Leave None if no offset.
+# convention: the sample offsets will be subtracted to the motor values. Leave None if no offset.
 sdd = 1.84  # in m, sample to detector distance in m
 energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
-custom_motors = None
-# {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
+custom_motors = None  # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
-# example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False),
-# "phi": 0, "nu": -0.75, "delta": 36.65}
+# example: {"eta": np.linspace(16.989, 18.989, num=100, endpoint=False), "phi": 0, "nu": -0.75, "delta": 36.65}
 # ID01: eta, chi, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # SIXS: beta, mu, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
 # NANOMAX: theta, phi, gamma, delta, energy, radius
-# 34ID: mu, phi (incident angle), chi, theta (inplane),
-# delta (inplane), gamma (outofplane)
-#######################################################
-# parameters when orthogonalizing the data before     #
-# phasing  using the linearized transformation matrix #
-######################################################
-align_q = True  # used only when interp_method is 'linearization',
-# if True it rotates the crystal to align q
+# 34ID: mu, phi (incident angle), chi, theta (inplane), delta (inplane), gamma (outofplane)
+#######################################################################################################
+# parameters when orthogonalizing the data before phasing  using the linearized transformation matrix #
+#######################################################################################################
+align_q = True  # used only when interp_method is 'linearization', if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
 outofplane_angle = (
@@ -267,25 +236,20 @@ inplane_angle = (
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
 ################################################################################
-# xrayutilities uses the xyz crystal frame: for incident angle = 0,
-# x is downstream, y outboard, and z vertical up
+# xrayutilities uses the xyz crystal frame: for incident angle = 0, x is downstream, y outboard, and z vertical up
 sample_inplane = (
     1,
     0,
     0,
-)
-# sample inplane reference direction along the beam at 0 angles in xrayutilities frame
+)  # sample inplane reference direction along the beam at 0 angles in xrayutilities frame
 sample_outofplane = (
     0,
     0,
     1,
 )  # surface normal of the sample at 0 angles in xrayutilities frame
-offset_inplane = 0  # outer detector angle offset as determined by
-# xrayutilities area detector initialization
-cch1 = 208  # direct beam vertical position in the full unbinned detector for
-# xrayutilities 2D detector calibration
-cch2 = 154  # direct beam horizontal position in the full unbinned detector for
-# xrayutilities 2D detector calibration
+offset_inplane = 0  # outer detector angle offset as determined by xrayutilities area detector initialization
+cch1 = 208  # direct beam vertical position in the full unbinned detector for xrayutilities 2D detector calibration
+cch2 = 154  # direct beam horizontal position in the full unbinned detector for xrayutilities 2D detector calibration
 detrot = 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth = 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
 tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
@@ -306,9 +270,8 @@ def close_event(event):
 
 def on_click(event):
     """
-    Function to interact with a plot, return the position of clicked pixel.
-
-    If flag_pause==1 or if the mouse is out of plot axes, it will not register the click
+    Function to interact with a plot, return the position of clicked pixel. If flag_pause==1 or
+    if the mouse is out of plot axes, it will not register the click
 
     :param event: mouse click event
     """
@@ -324,8 +287,7 @@ def on_click(event):
                 previous_axis = event.inaxes
         else:  # the click is not in the same subplot, restart collecting points
             print(
-                "Please select mask polygon vertices within "
-                "the same subplot: restart masking..."
+                "Please select mask polygon vertices within the same subplot: restart masking..."
             )
             xy = []
             previous_axis = None
@@ -337,7 +299,8 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask
+    global flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -450,8 +413,7 @@ if len(scans) > 1:
     if center_fft not in ["crop_asymmetric_ZYX", "pad_Z", "pad_asymmetric_ZYX"]:
         center_fft = "skip"
         # avoid croping the detector plane XY while centering the Bragg peak
-        # otherwise outputs may have a different size,
-        # which will be problematic for combining or comparing them
+        # otherwise outputs may have a different size, which will be problematic for combining or comparing them
 if len(fix_size) != 0:
     print('"fix_size" parameter provided, roi_detector will be set to []')
     roi_detector = []
@@ -477,8 +439,7 @@ else:
 if rocking_angle == "energy":
     use_rawdata = False  # you need to interpolate the data in QxQyQz for energy scans
     print(
-        "Energy scan: defaulting use_rawdata to False,"
-        " the data will be interpolated using xrayutilities"
+        "Energy scan: defaulting use_rawdata to False, the data will be interpolated using xrayutilities"
     )
 
 if reload_orthogonal:
@@ -491,8 +452,7 @@ if use_rawdata:
 else:
     if interp_method not in {"xrayutilities", "linearization"}:
         raise ValueError(
-            "Incorrect value for interp_method,"
-            ' allowed values are "xrayutilities" and "linearization"'
+            'Incorrect value for interp_method, allowed values are "xrayutilities" and "linearization"'
         )
     if rocking_angle == "energy":
         interp_method = "xrayutilities"
@@ -542,17 +502,17 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "linearity_func": linearity_func,
-}
-
-detector = exp.Detector(
+kwargs = {}  # create dictionnary
+kwargs["is_series"] = is_series
+kwargs["preprocessing_binning"] = preprocessing_binning
+kwargs[
+    "nb_pixel_x"
+] = nb_pixel_x  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs[
+    "nb_pixel_y"
+] = nb_pixel_y  # fix to declare a known detector but with less pixels (e.g. one tile HS)
+kwargs["linearity_func"] = linearity_func
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
@@ -563,7 +523,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -634,8 +594,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         comment += "_ortho"
         if interp_method == "linearization":
             comment += "_lin"
-            # load the goniometer positions needed in the calculation
-            # of the transformation matrix
+            # load the goniometer positions needed in the calculation of the transformation matrix
             (
                 tilt_angle,
                 setup.grazing_angle,
@@ -648,8 +607,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 follow_bragg=follow_bragg,
             )
             setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
-            # override detector motor positions if the corrected values
-            # (taking into account the direct beam position)
+            # override detector motor positions if the corrected values (taking into account the direct beam position)
             # are provided by the user
             setup.inplane_angle = (
                 inplane_angle if inplane_angle is not None else inplane
@@ -793,8 +751,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 data=data,
             )
             if save_to_mat:
-                # save to .mat, the new order is x y z
-                # (outboard, vertical up, downstream)
+                # save to .mat, the new order is x y z (outboard, vertical up, downstream)
                 savemat(
                     detector.savedir
                     + "S"
@@ -838,16 +795,14 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 hxrd = xu.experiment.HXRD(
                     sample_inplane, sample_outofplane, en=energy, qconv=qconv
                 )
-                # the first 2 arguments in HXRD are the inplane reference direction
-                # along the beam and surface normal of the sample
+                # the first 2 arguments in HXRD are the inplane reference direction along the beam and surface normal
+                # of the sample
 
-                # Update the direct beam vertical position,
-                # take into account the roi and binning
+                # Update the direct beam vertical position, take into account the roi and binning
                 cch1 = (cch1 - detector.roi[0]) / (
                     detector.preprocessing_binning[1] * detector.binning[1]
                 )
-                # Update the direct beam horizontal position,
-                # take into account the roi and binning
+                # Update the direct beam horizontal position, take into account the roi and binning
                 cch2 = (cch2 - detector.roi[2]) / (
                     detector.preprocessing_binning[2] * detector.binning[2]
                 )
@@ -877,8 +832,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     tiltazimuth=tiltazimuth,
                     tilt=tilt,
                 )
-                # first two arguments in init_area are the direction of the detector,
-                # checked for ID01 and SIXS
+                # first two arguments in init_area are the direction of the detector, checked for ID01 and SIXS
 
                 data, mask, q_values, frames_logical = pru.grid_bcdi_xrayutil(
                     data=data,
@@ -893,10 +847,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     debugging=debug,
                 )
             else:  # 'linearization'
-                # for q values, the frame used is
-                # (qx downstream, qy outboard, qz vertical up)
-                # for reference_axis, the frame is z downstream, y vertical up,
-                # x outboard but the order must be x,y,z
+                # for q values, the frame used is (qx downstream, qy outboard, qz vertical up)
+                # for reference_axis, the frame is z downstream, y vertical up, x outboard but the order must be x,y,z
                 data, mask, q_values = pru.grid_bcdi_labframe(
                     data=data,
                     mask=mask,
@@ -987,8 +939,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # optional masking of zero photon events #
     ##########################################
     if mask_zero_event:
-        # mask points when there is no intensity along the whole rocking curve
-        # probably dead pixels
+        # mask points when there is no intensity along the whole rocking curve - probably dead pixels
         temp_mask = np.zeros((ny, nx))
         temp_mask[np.sum(data, axis=0) == 0] = 1
         mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
@@ -1009,8 +960,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
     if debug:
         plt.savefig(
-            detector.savedir + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_"
-            f"{detector.binning[0]}_"
+            detector.savedir
+            + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_{detector.binning[0]}_"
             f"{detector.binning[1]}_{detector.binning[2]}.png"
         )
     if flag_interact:
@@ -1372,10 +1323,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         if not flag_interact:
             plt.close(fig)
 
-    ##################################################
-    # bin the stacking axis if needed, the detector  #
-    # plane was already binned when loading the data #
-    ##################################################
+    ################################################################################################
+    # bin the stacking axis if needed, the detector plane was already binned when loading the data #
+    ################################################################################################
     if (
         detector.binning[0] != 1 and not reload_orthogonal
     ):  # data was already binned for reload_orthogonal
@@ -1393,7 +1343,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ##################################################################
     # final check of the shape to comply with FFT shape requirements #
     ##################################################################
-    final_shape = util.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
+    final_shape = pru.smaller_primes(data.shape, maxprime=7, required_dividers=(2,))
     com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(data)))
     crop_center = pu.find_crop_center(
         array_shape=data.shape, crop_shape=final_shape, pivot=com

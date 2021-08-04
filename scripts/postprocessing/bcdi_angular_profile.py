@@ -24,10 +24,9 @@ import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
-This script allow to plot the width of a 2D object in function of the angle and a
-modulus threshold defining the object from the background. Must be given as input:
-the voxel size (possibly different in all directions), the angular step size and an
-origin point where all linecuts pass by.
+This script allow to plot the width of a 2D object in function of the angle and a modulus threshold defining the object 
+from the background. Must be given as input: the voxel size (possibly different in all directions), the angular step 
+size and an origin point where all linecuts pass by.   
 """
 
 datadir = (
@@ -47,25 +46,20 @@ upsampling_factor = (
 threshold = np.linspace(
     0.25, 0.55, num=11
 )  # [0.471, 0.5, 0.526]  # np.round(np.linspace(0.2, 0.5, num=10), decimals=3)
-# number or list of numbers between 0 and 1,
-# modulus threshold defining the normalized object from the background
+# number or list of numbers between 0 and 1, modulus threshold defining the normalized object from the background
 angular_step = 1  # in degrees, the linecut directions will be automatically calculated
-# in the orthonormal reference frame is given by the array axes.
-# It will be corrected for anisotropic voxel sizes.
+# in the orthonormal reference frame is given by the array axes. It will be corrected for anisotropic voxel sizes.
 roi = None  # (470, 550, 710, 790)  # P2_001a.tif
 # (470, 550, 710, 790)  # P2_001a.tif
 # (220, 680, 620, 1120)  # P2_018.tif
-# ROI centered around the crystal of interest in the 2D image
-# the center of mass will be determined within this ROI when origin is not defined.
-# Leave None to use the full array.
-origin = None  # origin where all the line cuts pass by
-# (indices considering the array cropped to roi).
+# ROI centered around the crystal of interest in the 2D image, the center of mass will be
+# determined within this ROI when origin is not defined. Leave None to use the full array.
+origin = None  # origin where all the line cuts pass by (indices considering the array cropped to roi).
 # If None, it will use the center of mass of the modulus in the region defined by roi
 voxel_size = 5
 # 2.070393374741201 * 0.96829786  # P2_001a.tif
 # 0.3448275862068966 * 0.96829786  # P2_018.tif
-# positive real number or tuple of 2 or 3 positive real number
-# (2 for 2D object, 3 for 3D) (in nm)
+# positive real number or tuple of 2 or 3 positive real number (2 for 2D object, 3 for 3D) (in nm)
 sum_axis = 1  # if the object is 3D, it will be summed along that axis
 debug = False  # True to print the output dictionary and plot the legend
 tick_length = 8  # in plots
@@ -173,8 +167,9 @@ valid.valid_container(
     min_included=0,
     name="angular_profile",
 )
-if not (roi[0] < roi[1] <= nby and roi[2] < roi[3] <= nbx):
-    raise ValueError("roi incompatible with the array shape")
+assert (
+    roi[0] < roi[1] <= nby and roi[2] < roi[3] <= nbx
+), "roi incompatible with the array shape"
 
 obj = obj[roi[0] : roi[1], roi[2] : roi[3]].astype(float)
 
@@ -241,10 +236,9 @@ gu.savefig(
 comment = comment + f"_{angular_step}deg"
 result = {}
 
-#########################################################
-# 3D case (BCDI): loop over thresholds first            #
-# (the threshold needs to be applied before projecting) #
-#########################################################
+####################################################################################################
+# 3D case (BCDI): loop over thresholds first (the threshold needs to be applied before projecting) #
+####################################################################################################
 if ndim == 3:
     # remove the voxel size along the projection axis
     voxel_size = list(voxel_size)
@@ -280,10 +274,9 @@ if ndim == 3:
     # store the result in the dictionary
     result["ang_width_threshold"] = ang_width
 
-###################################################
-# 2D case (SEM): one can create the linecut for   #
-# each direction first and apply thresholds later #
-###################################################
+#################################################################################################
+# 2D case (SEM): one can create the linecut for each direction first and apply thresholds later #
+#################################################################################################
 else:
     ##############################################################################
     # calculate the evolution of the width vs threshold for different directions #
@@ -307,8 +300,7 @@ else:
                 width[idy] = dist_interp[crossings.max()] - dist_interp[crossings.min()]
             else:
                 width[idy] = 0
-        # store the result in a dictionary
-        # (cuts can have different lengths depending on the direction)
+        # store the result in a dictionary (cuts can have different lengths depending on the direction)
         result[f"direction ({direction[0]:.4f},{direction[1]:.4f})"] = {
             "angle": angles[idx],
             "distance": distance,
@@ -322,8 +314,7 @@ else:
         ax = plt.subplot(111)
         plot_nb = 0
         for key, value in result.items():
-            # value is a dictionary
-            # {'angle': angles[idx], 'distance': distance, 'cut': cut}
+            # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
             (line,) = ax.plot(
                 value["distance"],
                 value["cut"],
@@ -364,15 +355,12 @@ else:
         angular_width = np.empty(nb_dir)
         count = 0
         for key, value in result.items():  # iterating over the directions
-            # value is a dictionary
-            # {'angle': angles[idx], 'distance': distance, 'cut': cut}
+            # value is a dictionary {'angle': angles[idx], 'distance': distance, 'cut': cut}
             tmp_angles[count] = value["angle"]  # index related to the angle/direction
-            if thres != value["threshold"][idx]:
-                raise ValueError("ordering error in threshold")
+            assert thres == value["threshold"][idx], "ordering error in threshold"
             angular_width[count] = value["width"][idx]  # index related to the threshold
             count += 1
-        if not np.all(np.isclose(tmp_angles, angles)):
-            raise ValueError("ordering error in angles")
+        assert np.all(np.isclose(tmp_angles, angles)), "ordering error in angles"
         ang_width_threshold[idx, :] = angular_width
 
     # update the dictionary
@@ -384,6 +372,7 @@ else:
 fig = plt.figure(figsize=(12, 9))
 ax = plt.subplot(111)
 for idx, thres in enumerate(threshold):
+    # print(result[f'ang_width_threshold'][idx].min(), result[f'ang_width_threshold'][idx].max())
     (line,) = ax.plot(
         angles,
         result["ang_width_threshold"][idx],

@@ -17,21 +17,19 @@ import time
 import datetime
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 
 helptext = """
-Calculate the position of the Bragg peaks for a mesocrystal given the lattice type,
-the unit cell parameter and beamline-related parameters. Assign 3D Gaussians to each
-lattice point and rotates the unit cell in order to maximize the cross-correlation of
-the simulated data with experimental data. The experimental data should be sparse
+Calculate the position of the Bragg peaks for a mesocrystal given the lattice type, the unit cell parameter
+and beamline-related parameters. Assign 3D Gaussians to each lattice point and rotates the unit cell in order to
+maximize the cross-correlation of the simulated data with experimental data. The experimental data should be sparse
 (using a photon threshold), and Bragg peaks maximum must be clearly identifiable.
 
 Laboratory frame convention (CXI): z downstream, y vertical up, x outboard.
-Reciprocal space basis:            qx downstream, qz vertical up, qy outboard.
-"""
+Reciprocal space basis:            qx downstream, qz vertical up, qy outboard."""
 
 datadir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/pynx/"
 savedir = "D:/data/P10_March2020_CDI/test_april/data/align_06_00248/simu/"
@@ -42,8 +40,7 @@ comment = ""  # should start with _
 unitcell = "fcc"  # supported unit cells: 'cubic', 'bcc', 'fcc', 'bct'
 # It can be a number or tuple of numbers depending on the unit cell.
 unitcell_ranges = [22.9, 22.9]  # in nm, values of the unit cell parameters to test
-# cubic, FCC or BCC unit cells: [start, stop].
-# BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
+# cubic, FCC or BCC unit cells: [start, stop]. BCT unit cell: [start1, stop1, start2, stop2]   (stop is included)
 unitcell_step = 0.05  # in nm
 #########################
 # unit cell orientation #
@@ -56,8 +53,7 @@ angles_ranges = [
     -45,
     45,
 ]  # [start, stop, start, stop, start, stop], in degrees
-# ranges to span for the rotation around qx downstream, qz vertical up and
-# qy outboard respectively (stop is included)
+# ranges to span for the rotation around qx downstream, qz vertical up and qy outboard respectively (stop is included)
 angular_step = 5  # in degrees
 #######################
 # beamline parameters #
@@ -73,9 +69,9 @@ direct_beam = (
     1127,
 )  # tuple of int (vertical, horizontal): position of the direct beam in pixels
 # this parameter is important for gridding the data onto the laboratory frame
-roi_detector = []
-# [direct_beam[0] - 972, direct_beam[0] + 972,
-# direct_beam[1] - 883, direct_beam[1] + 883]
+roi_detector = (
+    []
+)  # [direct_beam[0] - 972, direct_beam[0] + 972, direct_beam[1] - 883, direct_beam[1] + 883]
 # [Vstart, Vstop, Hstart, Hstop], leave [] to use the full detector
 binning = [4, 4, 4]  # binning of the detector
 ##########################
@@ -99,7 +95,7 @@ bckg_method = "normalize"  # 'subtract' or 'normalize'
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, binning=binning, roi=roi_detector)
+detector = Detector(name=detector, binning=binning, roi=roi_detector)
 
 ###################
 # define colormap #
@@ -201,8 +197,7 @@ comment = (
 
 if (nbz != nz) or (nby != ny) or (nbx != nx):
     print(
-        "The experimental data and calculated q values have different shape,"
-        ' check "roi_detector" parameter!'
+        'The experimental data and calculated q values have different shape, check "roi_detector" parameter!'
     )
     sys.exit()
 
@@ -407,8 +402,7 @@ if unitcell == "bct":
                             euler_angles=(alpha, beta, gamma),
                             offset_indices=False,
                         )
-                        # peaks in the format [[h, l, k], ...]:
-                        # CXI convention downstream , vertical up, outboard
+                        # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
                         # assign the peak shape to each lattice point
                         struct_array = simu.assign_peakshape(
@@ -418,8 +412,7 @@ if unitcell == "bct":
                             pivot=pivot,
                         )
 
-                        # calculate the correlation between experimental data
-                        # and simulated data
+                        # calculate the correlation between experimental data and simulated data
                         corr[idz, idy, idx, idw, idv] = np.multiply(
                             bragg_peaks, struct_array[nonzero_indices]
                         ).sum()
@@ -449,8 +442,7 @@ else:
                         euler_angles=(alpha, beta, gamma),
                         offset_indices=False,
                     )
-                    # peaks in the format [[h, l, k], ...]:
-                    # CXI convention downstream , vertical up, outboard
+                    # peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
                     # assign the peak shape to each lattice point
                     struct_array = simu.assign_peakshape(
@@ -460,8 +452,7 @@ else:
                         pivot=pivot,
                     )
 
-                    # calculate the correlation between experimental data
-                    # and simulated data
+                    # calculate the correlation between experimental data and simulated data
                     corr[idz, idy, idx, idw] = np.multiply(
                         bragg_peaks, struct_array[nonzero_indices]
                     ).sum()
@@ -489,8 +480,9 @@ if unitcell == "bct":  # corr is 5D
         + " nm"
     )
     print(
-        "Maximum correlation for (angle_qx, angle_qz, angle_qy) = "
-        "{:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma)
+        "Maximum correlation for (angle_qx, angle_qz, angle_qy) = {:.2f}, {:.2f}, {:.2f}".format(
+            alpha, beta, gamma
+        )
     )
     print("Maximum correlation for a", text)
     corr_angles = np.copy(corr[:, :, :, piw, piv])
@@ -548,8 +540,9 @@ else:  # corr is 4D
         + " nm"
     )
     print(
-        "Maximum correlation for (angle_qx, angle_qz, angle_qy) = "
-        "{:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma)
+        "Maximum correlation for (angle_qx, angle_qz, angle_qy) = {:.2f}, {:.2f}, {:.2f}".format(
+            alpha, beta, gamma
+        )
     )
     print("Maximum correlation for a", text)
     corr_angles = np.copy(corr[:, :, :, piw])
@@ -662,8 +655,7 @@ _, _, _, rot_lattice, peaks = simu.lattice(
     euler_angles=(alpha, beta, gamma),
     offset_indices=False,
 )
-# peaks in the format [[h, l, k], ...]:
-# CXI convention downstream , vertical up, outboard
+# peaks in the format [[h, l, k], ...]: CXI convention downstream , vertical up, outboard
 
 nb_peaks = len(peaks)
 print("Simulated Bragg peaks hkls and position:")

@@ -22,17 +22,19 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 helptext = """
-Calculate the resolution of a 2D BCDI reconstruction using the phase retrieval
-transfer function (PRTF). The measured diffraction pattern and reconstructions should
-be in the detector frame, before phase ramp removal and centering.
+Calculate the resolution of a 2D BCDI reconstruction using the phase retrieval transfer function (PRTF).
 
-For the laboratory frame, the CXI convention is used: z downstream, y vertical,
-x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
+The measured diffraction pattern and reconstructions should be in the detector frame, before
+phase ramp removal and centering.
+
+For the laboratory frame, the CXI convention is used: z downstream, y vertical, x outboard
+For q, the usual convention is used: qx downstream, qz vertical, qy outboard
 
 Supported beamline: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL
 
@@ -54,10 +56,8 @@ crop_roi = [
     3,
     387,
 ]  # ROI used if 'center_auto' was True in PyNX, leave [] otherwise
-# in the.cxi file,
-# it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
-align_pattern = False
-# if True, will align the retrieved diffraction amplitude with the measured one
+# in the.cxi file, it is the parameter 'entry_1/image_1/process_1/configuration/roi_final'
+align_pattern = False  # if True, will align the retrieved diffraction amplitude with the measured one
 slicing_axis = 1  # 0 for first axis, 1 for second, 2 for third
 #######################
 # beamline parameters #
@@ -67,20 +67,16 @@ beamline = (
 )
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = {}
-# Optional dictionary that can be used to define the entries corresponding to
-# actuators in data files
+# Optional dictionary that can be used to define the entries corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
+follow_bragg = False  # only for energy scans, set to True if the detector was also scanned to follow the Bragg peak
 specfile_name = "alignment"
-# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
-# not used for CRISTAL and SIXS_2019
+# .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018, not used for CRISTAL and SIXS_2019
 # template for ID01: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
-# typically: root_folder + 'alias_dict.txt'
+# template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt', typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
 #############################################################
 # define detector related parameters and region of interest #
@@ -110,24 +106,21 @@ pre_binning = (
     1,
     3,
     1,
-)  # binning factor applied during preprocessing: rocking curve axis,
-# detector vertical and horizontal axis. This is necessary to calculate correctly q
-# values. Use (1, binning_Y, binning_X) for 2D data.
+)  # binning factor applied during preprocessing: rocking curve axis, detector vertical and
+# horizontal axis. This is necessary to calculate correctly q values. Use (1, binning_Y, binning_X) for 2D data.
 phasing_binning = (
     1,
     2,
     2,
 )  # binning factor applied during phasing: rocking curve axis, detector vertical and
 # horizontal axis. Use (1, binning_Y, binning_X) for 2D data.
-# If the reconstructed object was further cropped after phasing,
-# it will be automatically padded back to the FFT window
+# If the reconstructed object was further cropped after phasing, it will be automatically padded back to the FFT window
 # shape used during phasing (after binning) before calculating the Fourier transform.
 sample_offsets = (
     0,
     0,
     0,
-)  # tuple of offsets in degrees of the sample around
-# (downstream, vertical up, outboard)
+)  # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 ###############################
 # only needed for simulations #
@@ -140,8 +133,7 @@ tilt_simu = 0.0102  # angular step size for rocking angle, eta @ ID01
 ###########
 # options #
 ###########
-normalize_prtf = True  # set to True when the solution is the first mode
-# then the intensity needs to be normalized
+normalize_prtf = True  # set to True when the solution is the first mode - then the intensity needs to be normalized
 debug = False  # True to show more plots
 ##########################
 # end of user parameters #
@@ -150,9 +142,10 @@ debug = False  # True to show more plots
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
+kwargs = {}  # create dictionnary
+kwargs["is_series"] = is_series
 
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=(1, 1, 1),
@@ -162,7 +155,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -209,8 +202,7 @@ detector.offsets = offsets
 hxrd = xu.experiment.HXRD(
     sample_inplane, sample_outofplane, qconv=qconv
 )  # x downstream, y outboard, z vertical
-# first two arguments in HXRD are the inplane reference direction
-# along the beam and surface normal of the sample
+# first two arguments in HXRD are the inplane reference direction along the beam and surface normal of the sample
 
 ###################
 # define colormap #
@@ -240,10 +232,9 @@ file_path = filedialog.askopenfilename(
 )
 mask_2D, _ = util.load_file(file_path)
 
-###########################################################
-# crop the diffraction pattern and the mask to compensate #
-# the "auto_center_resize" option used in PyNX            #
-###########################################################
+########################################################################################################
+# crop the diffraction pattern and the mask to compensate the "auto_center_resize" option used in PyNX #
+########################################################################################################
 # The shape will be equal to 'roi_final' parameter of the .cxi file
 if len(crop_roi) == 4:
     slice_2D = slice_2D[crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3]]
@@ -252,10 +243,9 @@ elif len(crop_roi) != 0:
     print("Crop_roi should be a list of 6 integers or a blank list!")
     sys.exit()
 
-###############################################
-# bin the diffraction pattern and the mask to #
-# compensate the "rebin" option used in PyNX  #
-###############################################
+##########################################################################################
+# bin the diffraction pattern and the mask to compensate the "rebin" option used in PyNX #
+##########################################################################################
 # update also the detector pixel sizes to take into account the binning
 detector.binning = phasing_binning
 print(
@@ -290,8 +280,7 @@ file_path = filedialog.askopenfilename(
 diff_pattern, _ = util.load_file(file_path)
 diff_pattern = diff_pattern.astype(float)
 
-# crop the diffraction pattern to compensate
-# the "auto_center_resize" option used in PyNX.
+# crop the diffraction pattern to compensate the "auto_center_resize" option used in PyNX.
 # The shape will be equal to 'roi_final' parameter of the .cxi file
 diff_pattern = diff_pattern[:, crop_roi[0] : crop_roi[1], crop_roi[2] : crop_roi[3]]
 
@@ -326,8 +315,7 @@ z0, y0, x0 = [
     int(np.rint(x0 - 20 + fine_com[2])),
 ]
 print(
-    f"refined COM: {z0}, {y0}, {x0}, "
-    f"Number of unmasked photons = {diff_pattern.sum():.0f}\n"
+    f"refined COM: {z0}, {y0}, {x0}, Number of unmasked photons = {diff_pattern.sum():.0f}\n"
 )
 
 fig, _, _ = gu.multislices_plot(
@@ -401,8 +389,7 @@ gc.collect()
 
 if distances_q.shape != diff_pattern.shape:
     print(
-        "\nThe shape of q values and the shape of the diffraction pattern "
-        "are different: check binning parameter"
+        "\nThe shape of q values and the shape of the diffraction pattern are different: check binning parameter"
     )
     sys.exit()
 
@@ -434,8 +421,7 @@ else:
 
 if distances_q.shape != slice_2D.shape:
     print(
-        "\nThe shape of 2D q values and the shape of "
-        "the 2D diffraction pattern are different!"
+        "\nThe shape of 2D q values and the shape of the 2D diffraction pattern are different!"
     )
     sys.exit()
 
@@ -459,13 +445,11 @@ print("Opening ", file_path)
 if extension == ".h5":
     comment = comment + "_mode"
 
-# check if the shape of the real space object is the same as
-# the measured 2D diffraction pattern. The real space object may have been further
-# cropped to a tight support, to save memory space.
+# check if the shape of the real space object is the same as the measured 2D diffraction pattern
+# the real space object may have been further cropped to a tight support, to save memory space.
 if obj.shape != slice_2D.shape:
     print(
-        f"Reconstructed object shape = {obj.shape},"
-        " different from the 2D diffraction slice: crop/pad"
+        f"Reconstructed object shape = {obj.shape}, different from the 2D diffraction slice: crop/pad"
     )
     obj = util.crop_pad_2d(array=obj, output_shape=slice_2D.shape, debugging=False)
 
@@ -507,8 +491,7 @@ phased_fft[np.nonzero(mask_2D)] = 0  # do not take mask voxels into account
 print(f"Max(retrieved amplitude) = {abs(phased_fft).max():.1f}")
 phased_com_y, phased_com_x = center_of_mass(abs(phased_fft))
 print(
-    f"COM of the retrieved diffraction pattern after masking: {phased_com_y:.2f},"
-    f" {phased_com_x:.2f}\n"
+    f"COM of the retrieved diffraction pattern after masking: {phased_com_y:.2f}, {phased_com_x:.2f}\n"
 )
 del mask_2D
 gc.collect()
@@ -566,8 +549,7 @@ if normalize_prtf:
 #############################
 defined_q = 10 * q_axis[~np.isnan(prtf_avg)]  # switch to 1/nm
 
-# create a new variable 'arc_length' to predict q and prtf parametrically
-# (because prtf is not monotonic)
+# create a new variable 'arc_length' to predict q and prtf parametrically (because prtf is not monotonic)
 arc_length = np.concatenate(
     (
         np.zeros(1),

@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 helptext = """
-starting from a 2D complex object (output of phasing program), center the object,
-remove the phase ramp, the phase offset and wrap the phase.
+starting from a 2D complex object (output of phasing program), center the object, 
+remove the phase ramp, the phase offset and wrap the phase
 """
 
 
