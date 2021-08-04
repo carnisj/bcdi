@@ -8,7 +8,15 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+<<<<<<< HEAD
 from bcdi.experiment.setup import Setup
+=======
+<<<<<<< HEAD:tests/algorithms/test_algorithms_utils.py
+import bcdi.algorithms.algorithms_utils as alg
+=======
+from bcdi.experiment.setup import Setup
+>>>>>>> added tests:tests/experiment/test_setup.py
+>>>>>>> added tests
 
 
 def run_tests(test_class):

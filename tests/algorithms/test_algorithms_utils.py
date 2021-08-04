@@ -18,10 +18,11 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """Tests."""
+    """Tests related to setup instantiation."""
 
-    def test_dummy(self):
-        self.assertTrue(True)
+    def test_create_diffractometer_from_abc(self):
+        with self.assertRaises(TypeError):
+            Setup()
 
 
 if __name__ == "__main__":
