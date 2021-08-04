@@ -142,9 +142,10 @@ mask = np.zeros((516, 516))
 
 # load first scan to get the data size
 dataset = nxsReady.DataSet(
-    datadir + ccdfiletmp % start_scan, ccdfiletmp % start_scan,
+    datadir + ccdfiletmp % start_scan,
+    ccdfiletmp % start_scan,
     alias_dict=alias_dict,
-    scan="SBS"
+    scan="SBS",
 )
 img_per_scan = dataset.mfilm[1:, :, :].shape[0]  # first image is repeated
 nb_img = img_per_scan * len(scanlist)
@@ -161,8 +162,10 @@ sum_data = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 for index in range(len(scanlist)):
     scan = scanlist[index]
     dataset = nxsReady.DataSet(
-        datadir + ccdfiletmp % scan, ccdfiletmp % scan, alias_dict=alias_dict,
-        scan="SBS"
+        datadir + ccdfiletmp % scan,
+        ccdfiletmp % scan,
+        alias_dict=alias_dict,
+        scan="SBS",
     )
     rawdata[index * img_per_scan : (index + 1) * img_per_scan, :, :] = dataset.mfilm[
         1:, :, :
