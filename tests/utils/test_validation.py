@@ -558,7 +558,7 @@ class TestValidItem(unittest.TestCase):
         )
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     run_tests(TestValidContainer)
     run_tests(TestValidKwargs)
     run_tests(TestValidItem)

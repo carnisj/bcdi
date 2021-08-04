@@ -238,9 +238,7 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
         plt.pause(0.1)
     # TODO: check with RMS of amplitude
     var_mean = vardata[vardata != np.inf].mean()
-    vardata[
-        meandata == 0
-    ] = var_mean  # pixels were data=0 (hence 1/variance=inf)
+    vardata[meandata == 0] = var_mean  # pixels were data=0 (hence 1/variance=inf)
     # are set to the mean of 1/var
     indices_badpixels = np.nonzero(
         vardata > var_mean * var_threshold

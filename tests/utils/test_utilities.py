@@ -67,5 +67,5 @@ class TestInRange(unittest.TestCase):
         self.assertTrue(util.in_range(point=(0, 0, 119), extent=self.extent))
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     run_tests(TestInRange)

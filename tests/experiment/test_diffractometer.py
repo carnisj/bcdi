@@ -25,5 +25,5 @@ class Test(unittest.TestCase):
             exp.Diffractometer(sample_offsets=[])
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     run_tests(Test)
