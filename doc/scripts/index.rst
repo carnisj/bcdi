@@ -3,8 +3,8 @@
 
 .. _scripts:
 
-Scripts Reference
-=================
+Scripts Reference:
+==================
 
 .. _algorithm:
 

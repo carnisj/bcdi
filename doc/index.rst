@@ -15,13 +15,23 @@ Welcome to BCDI's documentation!
    
 Command-line scripts
 ====================
-:doc:`scripts/index`
-    Documentation of the scripts included in BCDI.
+
+Documentation of the scripts included in BCDI.
+
+.. toctree::
+   :maxdepth: 1
+
+   scripts/index.rst
 
 API Documentation
 =================
-:doc:`modules/index`
-    Documentation of the modules included in BCDI.
+
+Documentation of the modules included in BCDI.
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/index.rst
 
 Indices and tables
 ==================
