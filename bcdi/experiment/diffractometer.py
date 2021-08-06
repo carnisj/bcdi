@@ -502,8 +502,6 @@ class Diffractometer34ID(Diffractometer):
 
         """
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
@@ -595,8 +593,6 @@ class DiffractometerCRISTAL(Diffractometer):
 
         """
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
@@ -877,8 +873,6 @@ class DiffractometerID01(Diffractometer):
                 )
 
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         valid.valid_item(
             scan_number, allowed_types=int, min_excluded=0, name="scan_number"
         )
@@ -1082,8 +1076,6 @@ class DiffractometerNANOMAX(Diffractometer):
 
         """
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
@@ -1204,8 +1196,6 @@ class DiffractometerP10(Diffractometer):
 
         """
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
@@ -1379,8 +1369,6 @@ class DiffractometerSIXS(Diffractometer):
                 )
 
         # check some parameter
-        if not isinstance(setup, Setup):
-            raise TypeError("setup should be of type experiment.experiment_utils.Setup")
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 

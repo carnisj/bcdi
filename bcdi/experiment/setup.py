@@ -9,6 +9,7 @@
 
 """Setup class that defines the experimental geometry."""
 from collections.abc import Sequence
+import gc
 import h5py
 from math import isclose
 from numbers import Number, Real

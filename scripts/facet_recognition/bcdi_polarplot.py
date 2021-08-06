@@ -22,7 +22,6 @@ from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
 from bcdi.experiment.detector import Detector
 from bcdi.experiment.setup import Setup
 import bcdi.facet_recognition.facet_utils as fu
