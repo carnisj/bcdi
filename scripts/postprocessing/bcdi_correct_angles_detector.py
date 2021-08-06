@@ -19,7 +19,8 @@ from tkinter import filedialog
 import sys
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 helptext = """
 Calculate exact inplane and out-of-plane detector angles from the direct beam and
@@ -141,7 +142,7 @@ plt.ion()
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
@@ -151,7 +152,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,

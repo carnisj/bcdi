@@ -15,7 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
@@ -186,14 +187,14 @@ kwargs = {
     # (e.g. one tile HS)
 }
 
-detector = exp.Detector(
+detector = Detector(
     name=detector, template_imagefile=template_imagefile, roi=roi_detector, **kwargs
 )
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,

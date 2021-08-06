@@ -22,7 +22,8 @@ from matplotlib.widgets import RectangleSelector
 import numpy as np
 import os
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 
 matplotlib.use("Qt5Agg")
@@ -261,7 +262,7 @@ plt.ion()
 #################################################
 kwargs = {"is_series": is_series}  # create dictionnary
 
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     datadir="",
     template_imagefile=template_imagefile,
@@ -271,7 +272,7 @@ detector = exp.Detector(
 )
 crop_roi = crop_roi or (0, detector.nb_pixel_y, 0, detector.nb_pixel_x)
 detector.roi = crop_roi
-setup = exp.Setup(beamline=beamline, detector=detector)
+setup = Setup(beamline=beamline, detector=detector)
 
 if setup.beamline == "P10":
     specfile_name = sample_name + "_{:05d}".format(scan)

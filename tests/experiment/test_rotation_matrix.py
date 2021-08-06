@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.rotation_matrix import RotationMatrix
 
 
 def run_tests(test_class):
@@ -18,10 +18,11 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """Tests."""
+    """Tests related to rotation matrix instantiation."""
 
-    def test_dummy(self):
-        self.assertTrue(True)
+    def test_instantiation_missing_parameter(self):
+        with self.assertRaises(TypeError):
+            RotationMatrix()
 
 
 if __name__ == "__main__":

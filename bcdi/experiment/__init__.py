@@ -16,5 +16,6 @@ Classes
 - ``Detector``         -- detector declaration
 - ``Diffractometer``   -- diffractometer, one child class for each supported beamline
 - ``Setup``            -- class gathering various parameters about the setup
+- ``RotationMatrix``   -- rotation matrix given the rotation axis and the angle
 
 """

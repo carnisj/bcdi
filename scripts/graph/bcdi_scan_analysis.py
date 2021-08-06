@@ -27,8 +27,9 @@ import matplotlib.ticker as ticker
 import os
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.experiment.experiment_utils as exp
 import bcdi.preprocessing.preprocessing_utils as pru
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 
 
 scan = 7  # scan number as it appears in the folder name
@@ -254,7 +255,7 @@ plt.ion()
 # initialize detector, setup, paths and logfile #
 #################################################
 kwargs = {"is_series": is_series}  # create dictionnary
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     datadir="",
     template_imagefile=template_imagefile,
@@ -263,7 +264,7 @@ detector = exp.Detector(
     **kwargs,
 )
 
-setup = exp.Setup(beamline=beamline, detector=detector)
+setup = Setup(beamline=beamline, detector=detector)
 
 if setup.beamline == "P10":
     specfile_name = sample_name + "_{:05d}".format(scan)

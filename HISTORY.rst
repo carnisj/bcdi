@@ -1,3 +1,5 @@
+* Refractor: split bcdi.experiment.experiment_utils module into smaller modules
+
 Version 0.1.2
 -------------
 

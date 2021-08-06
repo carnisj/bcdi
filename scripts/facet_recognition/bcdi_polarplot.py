@@ -22,7 +22,8 @@ from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
@@ -268,14 +269,14 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(
+detector = Detector(
     name=detector, datadir="", template_imagefile=template_imagefile, roi=roi_detector
 )
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,

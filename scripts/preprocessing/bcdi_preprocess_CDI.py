@@ -26,7 +26,8 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.validation as valid
@@ -431,14 +432,14 @@ kwargs = {
     # (e.g. one tile HS)
 }
 
-detector = exp.Detector(
+detector = Detector(
     name=detector, roi=roi_detector, sum_roi=normalize_roi, binning=binning, **kwargs
 )
 
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
