@@ -621,7 +621,7 @@ if not all(
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())  # qz along y
 
     else:  # data in detector frame
-        setup = SetupPostprocessing(
+        setup = Setup(
             beamline=beamline,
             energy=energy,
             outofplane_angle=outofplane_angle,
