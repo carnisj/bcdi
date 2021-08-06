@@ -14,7 +14,6 @@ from numbers import Number, Real
 from bcdi.utils import validation as valid
 
 
-
 class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.

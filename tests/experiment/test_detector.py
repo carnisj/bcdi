@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from bcdi.experiment.diffractometer import Diffractometer
+from bcdi.experiment.detector import Detector
 
 
 def run_tests(test_class):
@@ -18,11 +18,11 @@ def run_tests(test_class):
 
 
 class Test(unittest.TestCase):
-    """Tests related to diffractometer instantiation."""
+    """Tests related to detector instantiation."""
 
-    def test_create_diffractometer_from_abc(self):
+    def test_instantiation_missing_parameter(self):
         with self.assertRaises(TypeError):
-            Diffractometer(sample_offsets=[])
+            Detector()
 
 
 if __name__ == "__main__":

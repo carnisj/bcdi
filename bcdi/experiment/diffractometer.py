@@ -18,7 +18,6 @@ from bcdi.utils import validation as valid
 from .rotation_matrix import RotationMatrix
 
 
-
 class Diffractometer(ABC):
     """
     Base class for defining diffractometers.
