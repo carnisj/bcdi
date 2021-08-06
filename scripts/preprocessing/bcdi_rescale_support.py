@@ -17,7 +17,8 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as algu
 import bcdi.utils.utilities as util
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.setup import Setup
+
 
 helptext = """
 Create a support from a reconstruction, using the indicated threshold. The support
@@ -620,7 +621,7 @@ if not all(
         newvoxelsize_y = 2 * np.pi / (newqz.max() - newqz.min())  # qz along y
 
     else:  # data in detector frame
-        setup = exp.SetupPostprocessing(
+        setup = SetupPostprocessing(
             beamline=beamline,
             energy=energy,
             outofplane_angle=outofplane_angle,

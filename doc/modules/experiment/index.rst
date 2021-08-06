@@ -13,8 +13,26 @@
 API Reference
 -------------
 
-experiment_utils
-^^^^^^^^^^^^^^^^
+setup
+^^^^^
 
-.. automodule:: bcdi.experiment.experiment_utils
+.. automodule:: bcdi.experiment.setup
    :members:
+
+detector
+^^^^^^^^
+
+.. automodule:: bcdi.experiment.detector
+    :members:
+
+diffractometer
+^^^^^^^^^^^^^^
+
+.. automodule:: bcdi.experiment.diffractometer
+    :members:
+
+rotation_matrix
+^^^^^^^^^^^^^^^
+
+.. automodule:: bcdi.experiment.rotation_matrix
+    :members:

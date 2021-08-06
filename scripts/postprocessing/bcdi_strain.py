@@ -25,7 +25,8 @@ import pprint
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
@@ -424,7 +425,7 @@ kwargs = {
     "pixel_size": pixel_size,  # to declare the pixel size of the "Dummy" detector
 }
 
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=phasing_binning,
@@ -436,7 +437,7 @@ detector = exp.Detector(
 ####################################
 # correct the tilt_angle for binning
 tilt_angle = tilt_angle * preprocessing_binning[0] * phasing_binning[0]
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,

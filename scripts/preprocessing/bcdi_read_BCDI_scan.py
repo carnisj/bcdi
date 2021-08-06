@@ -14,7 +14,8 @@ except ModuleNotFoundError:
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import Detector
+from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
 
@@ -153,7 +154,7 @@ kwargs = {
     # (e.g. one tile HS)
 }
 
-detector = exp.Detector(
+detector = Detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
@@ -164,7 +165,7 @@ detector = exp.Detector(
 ####################
 # Initialize setup #
 ####################
-setup = exp.Setup(
+setup = Setup(
     beamline=beamline,
     detector=detector,
     rocking_angle=rocking_angle,
