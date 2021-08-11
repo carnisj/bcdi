@@ -7,7 +7,15 @@ Please note that this project is released with a
 [Contributor Code of Conduct][code-of-conduct]. By participating in this project 
 you agree to abide by its terms.
 
-### *Never push changes directly to the master branch, even if you have permissions.*
+
+### *"Short-lived, single feature branches are the way to go."*
+
+Keep your changes focused on a single feature. Don't try to solve several unrelated 
+issues in the same pull request. This makes reviewing changes impractical. If your 
+branch is not short-lived, there is also a high probability that you will need to 
+rebase it before submitting your changes for review.
+
+### *"Never push changes directly to the master branch, even if you have permissions."*
 
 Several continuous integration workflows are configured for the repository, they 
 need to pass successfully before considering merging modifications into the master 
@@ -44,8 +52,6 @@ branch.
 - Push the changes to your fork on GitHub: `git push origin master`
 
 ## 4. Work on your new feature and create a pull request
-
-***"Short-lived, single feature branches are the way to go."***
 
 - Do not work on your master branch, but create a feature branch and give it a 
   descriptive name. This command will create the branch, and switch you to it:
