@@ -1,4 +1,4 @@
-.. bcdi documentation master file, created by
+.. bcdi documentation main file, created by
    sphinx-quickstart on Fri Apr 26 20:19:10 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.

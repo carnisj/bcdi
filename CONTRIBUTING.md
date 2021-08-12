@@ -15,10 +15,10 @@ issues in the same pull request. This makes reviewing changes impractical. If yo
 branch is not short-lived, there is also a high probability that you will need to 
 rebase it before submitting your changes for review.
 
-### *"Never push changes directly to the master branch, even if you have permissions."*
+### *"Never push changes directly to the main branch, even if you have permissions."*
 
 Several continuous integration workflows are configured for the repository, they 
-need to pass successfully before considering merging modifications into the master 
+need to pass successfully before considering merging modifications into the main 
 branch.
 
 ## 1. Create your fork and local clone of the repository
@@ -46,14 +46,14 @@ branch.
   
 ## 3. Update your local clone with the latest changes from the upstream repository
 
-- Be sure that you are on your master branch: `git checkout master`
+- Be sure that you are on your main branch: `git checkout main`
 - Fetch the most recent changes from remotes: `git fetch --all`
-- Merge the upstream changes into your own project: `git merge upstream/master` 
-- Push the changes to your fork on GitHub: `git push origin master`
+- Merge the upstream changes into your own project: `git merge upstream/main` 
+- Push the changes to your fork on GitHub: `git push origin main`
 
 ## 4. Work on your new feature and create a pull request
 
-- Do not work on your master branch, but create a feature branch and give it a 
+- Do not work on your main branch, but create a feature branch and give it a 
   descriptive name. This command will create the branch, and switch you to it:
   `git checkout -b branch-name`
 - To check the branches that you have and which branch you are on, type: `git branch`
@@ -70,32 +70,32 @@ branch.
    
 ## 5. Create a pull request
 
-- If they were several changes committed to the upstream master branch while you 
+- If they were several changes committed to the upstream main branch while you 
   were working on your feature branch, you may want/need to [rebase your branch][rb] 
   (to get a clean history). For this, you need to:
-  - Update your local master branch (section 3). This should be a simple 
-    fast-forward merge since you never committed to your master branch. If you did 
-    commit to your master branch, see * below.
-  - Rebase your feature branch on your master branch (note that there may be 
-    conflicts, if the upstream master changes affect the same portion of code as 
+  - Update your local main branch (section 3). This should be a simple 
+    fast-forward merge since you never committed to your main branch. If you did 
+    commit to your main branch, see * below.
+  - Rebase your feature branch on your main branch (note that there may be 
+    conflicts, if the upstream main changes affect the same portion of code as 
     yours):
     - `git checkout branchname`
-    - `git rebase master`
+    - `git rebase main`
     - `git push`
 - [Submit a pull request][pr].
 - Wait for your pull request to be reviewed and merged.
   
-\* If you committed to your master branch, you may consider first rebasing it on the 
-upstream master: 
+\* If you committed to your main branch, you may consider first rebasing it on the 
+upstream main: 
  - `git fetch upstream`
- - `git checkout master`
- - `git rebase upstream/master`
- - `git push -f origin master`
+ - `git checkout main`
+ - `git rebase upstream/main`
+ - `git push -f origin main`
 
 ## 6. Delete your feature branch and start over
 
 - Once your pull request has been merged, delete the local and remote branches:
-  - Switch to your local master branch: `git checkout master`
+  - Switch to your local main branch: `git checkout main`
   - Delete the remote branch: `git push origin :branch-name`
   - Delete the local branch: `git branch -D branch-name`
   - You may have to clean the stale branch: `git remote prune origin`
