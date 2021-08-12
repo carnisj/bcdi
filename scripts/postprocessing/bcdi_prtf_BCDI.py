@@ -31,7 +31,8 @@ import bcdi.utils.validation as valid
 helptext = """
 Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer
 function (PRTF). The measured diffraction pattern and reconstructions should be in
-the detector frame, before phase ramp removal and centering.
+the detector frame, before phase ramp removal and centering. An optional mask can be
+provided.
 
 For the laboratory frame, the CXI convention is used: z downstream, y vertical,
 x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
@@ -45,9 +46,8 @@ Path structure:
 
 scan = 74
 sample_name = "S"  # "SN"  #
-root_folder = (
-    "D:/data/CRISTAL_March2021/"  # folder of the experiment, where all scans are stored
-)
+root_folder = "D:/data/CRISTAL_March2021/"
+# folder of the experiment, where all scans are stored
 save_dir = None  # PRTF will be saved here, leave None otherwise
 comment = ""  # should start with _
 crop_roi = None
@@ -122,9 +122,8 @@ sample_offsets = (
     0,
     0,
     0,
-)  # tuple of offsets in degrees of the sample around
-# (downstream, vertical up, outboard)
-# convention: the sample offsets will be subtracted to the motor values
+)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+# the sample offsets will be subtracted to the motor values. Leave None if no offset.
 ###############################
 # only needed for simulations #
 ###############################
@@ -332,7 +331,10 @@ file_path = filedialog.askopenfilename(
     title="Select mask",
     filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
 )
-mask, _ = util.load_file(file_path)
+try:
+    mask, _ = util.load_file(file_path)
+except ValueError:
+    mask = np.zeros(diff_pattern.shape, dtype=int)
 
 ###########################################################
 # crop the diffraction pattern and the mask to compensate #
