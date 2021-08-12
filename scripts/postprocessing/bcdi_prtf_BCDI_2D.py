@@ -30,7 +30,8 @@ import bcdi.utils.utilities as util
 helptext = """
 Calculate the resolution of a 2D BCDI reconstruction using the phase retrieval
 transfer function (PRTF). The measured diffraction pattern and reconstructions should
-be in the detector frame, before phase ramp removal and centering.
+be in the detector frame, before phase ramp removal and centering. An optional mask
+can be provided.
 
 For the laboratory frame, the CXI convention is used: z downstream, y vertical,
 x outboard. For q, the usual convention is used: qx downstream, qz vertical, qy outboard
