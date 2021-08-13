@@ -8,7 +8,9 @@ Version 0.1.3
 
 * Refactor: enforce project's guidelines for the code style and the docstrings
 
-* Create a dodo.py file (doit package) to simplify contributor's life
+* Create a dodo.py file (doit package) to simplify the life of contributors: now they
+  just need to run doit at the same level as setup.py and verify that all checks pass
+  before sending their pull request
 
 * Create a CONTRIBUTING.md file
 
