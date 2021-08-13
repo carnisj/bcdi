@@ -1,7 +1,16 @@
+Version 0.1.3
+-------------
+
 * Refactor: allow the user to not provide a mask in the BCDI PRTF calculations (3D and
   2D)
 
 * Refractor: split bcdi.experiment.experiment_utils module into smaller modules
+
+* Refactor: enforce project's guidelines for the code style and the docstrings
+
+* Create a dodo.py file (doit package) to simplify contributor's life
+
+* Create a CONTRIBUTING.md file
 
 Version 0.1.2
 -------------
