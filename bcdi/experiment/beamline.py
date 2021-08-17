@@ -11,36 +11,85 @@
 from abc import ABC, abstractmethod
 
 
+def create_beamline(name):
+    """
+    Create the instance of the beamline.
+
+    :param name: str, name of the beamline
+    :return: the corresponding beamline instance
+    """
+    if name == "ID01":
+        return BeamlineID01(name=name)
+    elif name in {"SIXS_2018", "SIXS_2019"}:
+        return BeamlineSIXS(name=name)
+    elif name == "34ID":
+        return Beamline34ID(name=name)
+    elif name == "P10":
+        return BeamlineP10(name=name)
+    elif name == "CRISTAL":
+        return BeamlineCRISTAL(name=name)
+    elif name == "NANOMAX":
+        return BeamlineNANOMAX(name=name)
+    else:
+        raise ValueError(f"Beamline {name} not supported")
+
+
 class Beamline(ABC):
     """
     Base class for defining a beamline.
-
-    :param beamline_name: str, name of the beamline
     """
-
-    valid_beamlines = {
-            "ID01",
-            "SIXS_2018",
-            "SIXS_2019",
-            "34ID",
-            "P10",
-            "CRISTAL",
-            "NANOMAX",
-        }
-
-    def __init__(self, beamline_name):
-        self.beamline_name = beamline_name
+    def __init__(self, name):
+        self._name = name
 
     @property
-    def beamline_name(self):
+    def name(self):
         """Name of the beamline."""
-        return self._beamline_name
+        return self._name
 
-    @beamline_name.setter
-    def beamline_name(self, name):
-        if name not in self.valid_beamlines:
-            raise ValueError(
-                f"Invalid beamline name, valid are {self.valid_beamlines}"
-            )
-        self._beamline_name = name
 
+class BeamlineCRISTAL(Beamline):
+    """
+    Definition of CRISTAL beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)
+
+
+class BeamlineID01(Beamline):
+    """
+    Definition of ID01 beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)
+
+
+class BeamlineNANOMAX(Beamline):
+    """
+    Definition of NANOMAX beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)
+
+
+class BeamlineP10(Beamline):
+    """
+    Definition of P10 beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)
+
+
+class BeamlineSIXS(Beamline):
+    """
+    Definition of SIXS beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)
+
+
+class Beamline34ID(Beamline):
+    """
+    Definition of 34ID beamline.
+    """
+    def __init__(self, name):
+        super().__init__(name=name)

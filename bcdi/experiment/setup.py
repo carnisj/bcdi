@@ -22,7 +22,6 @@ from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
 from .diffractometer import (
-    Diffractometer,
     Diffractometer34ID,
     DiffractometerCRISTAL,
     DiffractometerID01,
@@ -30,6 +29,7 @@ from .diffractometer import (
     DiffractometerP10,
     DiffractometerSIXS,
 )
+from .beamline import create_beamline
 from .detector import Detector
 
 
@@ -204,22 +204,12 @@ class Setup:
 
     @property
     def beamline(self):
-        """Name of the beamline."""
-        return self._beamline
+        """Instance of the beamline."""
+        return self._beamline.name
 
     @beamline.setter
-    def beamline(self, value):
-        if value not in {
-            "ID01",
-            "SIXS_2018",
-            "SIXS_2019",
-            "34ID",
-            "P10",
-            "CRISTAL",
-            "NANOMAX",
-        }:
-            raise ValueError(f"Beamline {value} not supported")
-        self._beamline = value
+    def beamline(self, name):
+        self._beamline = create_beamline(name=name)
 
     @property
     def custom_images(self):
