@@ -38,6 +38,10 @@ class Beamline(ABC):
     """
     Base class for defining a beamline.
     """
+    detector_orientation = {"y-": 1, "y+": -1, "z-": 1, "z+":-1}
+    # "y-" detector horizontal axis inboard, as it should be in the CXI convention
+    # "z-" detector vertical axis down, as it should be in the CXI convention
+
     def __init__(self, name):
         self._name = name
 
@@ -54,6 +58,8 @@ class Beamline(ABC):
 
         This is beamline-dependent. The frame convention of xrayutilities is the
         following: x downstream, y outboard, z vertical up.
+
+        :return: "y+" or "y-"
         """
 
     @property
@@ -64,6 +70,8 @@ class Beamline(ABC):
 
         This is beamline-dependent. The frame convention of xrayutilities is the
         following: x downstream, y outboard, z vertical up.
+
+        :return: "z+" or "z-"
         """
 
     @property
@@ -75,6 +83,20 @@ class Beamline(ABC):
         Define a coefficient +/- 1 depending on the detector inplane rotation direction
         and the detector inplane orientation. The frame convention is the one of
         xrayutilities: x downstream, y outboard, z vertical up. See
+        scripts/postprocessing/correct_angles_detector.py for a use case.
+
+        :return: +1 or -1
+        """
+
+    @property
+    @abstractmethod
+    def outofplane_coeff(self):
+        """
+        Coefficient related to the detector vertical orientation.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction and the detector out of  plane orientation. The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up. See
         scripts/postprocessing/correct_angles_detector.py for a use case.
 
         :return: +1 or -1
@@ -102,7 +124,12 @@ class BeamlineCRISTAL(Beamline):
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_hor
+        return -1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]
 
 
 class BeamlineID01(Beamline):
@@ -126,7 +153,12 @@ class BeamlineID01(Beamline):
     @property
     def inplane_coeff(self):
         # nu is clockwise, we see the detector from downstream
-        return 1 * self.detector_hor
+        return 1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]
 
 
 class BeamlineNANOMAX(Beamline):
@@ -150,7 +182,12 @@ class BeamlineNANOMAX(Beamline):
     @property
     def inplane_coeff(self):
         # gamma is clockwise, we see the detector from downstream
-        return 1 * self.detector_hor
+        return 1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]
 
 
 class BeamlineP10(Beamline):
@@ -174,7 +211,12 @@ class BeamlineP10(Beamline):
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_hor
+        return -1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]
 
 
 class BeamlineSIXS(Beamline):
@@ -198,7 +240,12 @@ class BeamlineSIXS(Beamline):
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_hor
+        return -1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]
 
 
 class Beamline34ID(Beamline):
@@ -222,4 +269,9 @@ class Beamline34ID(Beamline):
     @property
     def inplane_coeff(self):
         # delta is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_hor
+        return -1 * self.detector_orientation[self.detector_hor]
+
+    @property
+    def outofplane_coeff(self):
+        # the out of plane detector rotation is clockwise
+        return 1 * self.detector_orientation[self.detector_ver]

@@ -315,34 +315,20 @@ class Setup:
     @property
     def detector_hor(self):
         """
-        Coefficient corresponding to the horizontal detector orientation.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        Expose the detector_hor beamline property to the outer world.
 
         :return: +/-1 depending on the detector horizontal orientation
         """
-        if self._beamline.detector_hor == "y-":
-            # inboard, as it should be in the CXI convention
-            return 1
-        else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
-            return -1
+        return self._beamline.detector_orientation[self._beamline.detector_hor]
 
     @property
     def detector_ver(self):
         """
-        Coefficient corresponding to the vertical detector orientation.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        Expose the detector_ver beamline property to the outer world.
 
         :return: +/-1 depending on the detector vertical orientation
         """
-        if self._beamline.detector_ver == "z-":
-            # vertical down, as it should be in the CXI convention
-            return 1
-        else:  # 'z+', vertical up,  opposite to what it should be in the CXI convention
-            return -1
+        return self._beamline.detector_orientation[self._beamline.detector_ver]
 
     @property
     def diffractometer(self):
@@ -630,17 +616,14 @@ class Setup:
     @property
     def outofplane_coeff(self):
         """
-        Coefficient related to the detector vertical orientation.
+        Expose the outofplane_coeff beamline property to the outer world.
 
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction and the detector out of  plane orientation. The frame convention is
-        the one of xrayutilities: x downstream, y outboard, z vertical up. See
-        postprocessing/scripts/correct_angles_detector.py for an example.
+        Return a coefficient +/- 1 depending on the detector out of plane rotation
+        direction and the detector out of plane orientation.
 
         :return: +1 or -1
         """
-        # the out of plane detector rotation is clockwise for all beamlines
-        return 1 * self.detector_ver
+        return self._beamline.outofplane_coeff
 
     @property
     def params(self):
