@@ -607,37 +607,14 @@ class Setup:
     @property
     def inplane_coeff(self):
         """
-        Coefficient related to the detector inplane orientation.
+        Expose the inplane_coeff beamline property to the outer world.
 
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        postprocessing/scripts/correct_angles_detector.py for an example.
+        Return a coefficient +/- 1 depending on the detector inplane rotation direction
+        and the detector inplane orientation.
 
         :return: +1 or -1
         """
-        coeff_inplane = 0
-
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = -1 * self.detector_hor
-        elif self.beamline == "ID01":
-            # nu is clockwise, we see the detector from downstream
-            coeff_inplane = 1 * self.detector_hor
-        elif self.beamline == "34ID":
-            # delta is anti-clockwise, we see the detector from the front
-            coeff_inplane = -1 * self.detector_hor
-        elif self.beamline == "P10":
-            # gamma is anti-clockwise, we see the detector from the front
-            coeff_inplane = -1 * self.detector_hor
-        elif self.beamline == "CRISTAL":
-            # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = -1 * self.detector_hor
-        elif self.beamline == "NANOMAX":
-            # gamma is clockwise, we see the detector from downstream
-            coeff_inplane = 1 * self.detector_hor
-
-        return coeff_inplane
+        return self._beamline.inplane_coeff
 
     @property
     def outofplane_angle(self):
