@@ -323,7 +323,7 @@ class Setup:
         :return: +/-1 depending on the detector horizontal orientation
         """
         if self._beamline.detector_hor == "y-":
-            # inboard,  as it should be in the CXI convention
+            # inboard, as it should be in the CXI convention
             return 1
         else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
             return -1
@@ -331,23 +331,18 @@ class Setup:
     @property
     def detector_ver(self):
         """
-        Vertical detector orientation expressed in the frame of xrayutilities.
+        Coefficient corresponding to the vertical detector orientation.
 
         This is beamline-dependent. The frame convention of xrayutilities is the
         following: x downstream, y outboard, z vertical up.
+
+        :return: +/-1 depending on the detector vertical orientation
         """
-        if self.beamline in {
-            "ID01",
-            "SIXS_2018",
-            "SIXS_2019",
-            "CRISTAL",
-            "NANOMAX",
-            "P10",
-            "34ID",
-        }:
-            # origin is at the top, detector Y along vertical down
-            return "z-"
-        return "z+"
+        if self._beamline.detector_ver == "z-":
+            # vertical down, as it should be in the CXI convention
+            return 1
+        else:  # 'z+', vertical up,  opposite to what it should be in the CXI convention
+            return -1
 
     @property
     def diffractometer(self):
@@ -667,13 +662,8 @@ class Setup:
 
         :return: +1 or -1
         """
-        if self.detector_ver == "z+":  # origin of pixels at the bottom
-            ver_coeff = 1
-        else:  # 'z-'  origin of pixels at the top
-            ver_coeff = -1
         # the out of plane detector rotation is clockwise for all beamlines
-        coeff_outofplane = -1 * ver_coeff
-        return coeff_outofplane
+        return 1 * self.detector_ver
 
     @property
     def params(self):
@@ -2063,13 +2053,6 @@ class Setup:
         q_offset = np.zeros(3)
         nbz, nby, nbx = array_shape
 
-        if (
-            self.detector_ver == "z-"
-        ):  # vertical down,  as it should be in the CXI convention
-            ver_coeff = 1
-        else:  # 'z+', vertical up,  opposite to what it should be in the CXI convention
-            ver_coeff = -1
-
         if self.beamline == "ID01":
             if verbose:
                 print("using ESRF ID01 PSIC geometry")
@@ -2098,7 +2081,7 @@ class Setup:
                     2
                     * np.pi
                     / lambdaz
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -2161,7 +2144,7 @@ class Setup:
                     2
                     * np.pi
                     / lambdaz
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -2233,7 +2216,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2305,7 +2288,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2391,7 +2374,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             -np.sin(inplane) * np.sin(outofplane),
@@ -2452,7 +2435,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             -np.sin(inplane) * np.sin(outofplane),
@@ -2524,7 +2507,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2584,7 +2567,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2656,7 +2639,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2755,7 +2738,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),
@@ -2816,7 +2799,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_y
-                    * ver_coeff
+                    * self.detector_ver
                     * np.array(
                         [
                             np.sin(inplane) * np.sin(outofplane),

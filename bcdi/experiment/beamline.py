@@ -66,6 +66,17 @@ class BeamlineCRISTAL(Beamline):
         # direction
         return "y+"
 
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
+
 
 class BeamlineID01(Beamline):
     """
@@ -85,6 +96,17 @@ class BeamlineID01(Beamline):
         # we look at the detector from downstream, detector X is along the outboard
         # direction
         return "y+"
+
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
 
 
 class BeamlineNANOMAX(Beamline):
@@ -106,6 +128,17 @@ class BeamlineNANOMAX(Beamline):
         # direction
         return "y+"
 
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
+
 
 class BeamlineP10(Beamline):
     """
@@ -125,6 +158,17 @@ class BeamlineP10(Beamline):
         # we look at the detector from upstream, detector X is opposite to the outboard
         # direction
         return "y-"
+
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
 
 
 class BeamlineSIXS(Beamline):
@@ -146,6 +190,17 @@ class BeamlineSIXS(Beamline):
         # direction
         return "y+"
 
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
+
 
 class Beamline34ID(Beamline):
     """
@@ -165,3 +220,14 @@ class Beamline34ID(Beamline):
         # we look at the detector from upstream, detector X is opposite to the outboard
         # direction
         return "y-"
+
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # origin is at the top, detector Y along vertical down
+        return "z-"
