@@ -313,25 +313,9 @@ class Setup:
         self._detector = value
 
     @property
-    def detector_hor(self):
-        """
-        Horizontal detector orientation for xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
-        if self.beamline in {"ID01", "SIXS_2018", "SIXS_2019", "CRISTAL", "NANOMAX"}:
-            # we look at the detector from downstream,
-            # detector X along the outboard direction
-            return "y+"
-        # we look at the detector from upstream,
-        # detector X opposite to the outboard direction
-        return "y-"
-
-    @property
     def detector_ver(self):
         """
-        Vertical detector orientation for xrayutilities.
+        Vertical detector orientation expressed in the frame of xrayutilities.
 
         This is beamline-dependent. The frame convention of xrayutilities is the
         following: x downstream, y outboard, z vertical up.
@@ -623,7 +607,7 @@ class Setup:
         """
         coeff_inplane = 0
 
-        if self.detector_hor == "y+":
+        if self._beamline.detector_hor == "y+":
             hor_coeff = 1
         else:  # 'y-'
             hor_coeff = -1
@@ -2067,7 +2051,8 @@ class Setup:
         tilt = np.radians(tilt_angle)
         q_offset = np.zeros(3)
         nbz, nby, nbx = array_shape
-        if self.detector_hor == "y-":  # inboard,  as it should be in the CXI convention
+        if self._beamline.detector_hor == "y-":
+            # inboard,  as it should be in the CXI convention
             hor_coeff = 1
         else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
             hor_coeff = -1

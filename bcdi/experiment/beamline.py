@@ -54,6 +54,18 @@ class BeamlineCRISTAL(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from downstream, detector X is along the outboard
+        # direction
+        return "y+"
+
 
 class BeamlineID01(Beamline):
     """
@@ -61,6 +73,18 @@ class BeamlineID01(Beamline):
     """
     def __init__(self, name):
         super().__init__(name=name)
+
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from downstream, detector X is along the outboard
+        # direction
+        return "y+"
 
 
 class BeamlineNANOMAX(Beamline):
@@ -70,6 +94,18 @@ class BeamlineNANOMAX(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from downstream, detector X is along the outboard
+        # direction
+        return "y+"
+
 
 class BeamlineP10(Beamline):
     """
@@ -77,6 +113,18 @@ class BeamlineP10(Beamline):
     """
     def __init__(self, name):
         super().__init__(name=name)
+
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from upstream, detector X is opposite to the outboard
+        # direction
+        return "y-"
 
 
 class BeamlineSIXS(Beamline):
@@ -86,6 +134,18 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from downstream, detector X is along the outboard
+        # direction
+        return "y+"
+
 
 class Beamline34ID(Beamline):
     """
@@ -93,3 +153,15 @@ class Beamline34ID(Beamline):
     """
     def __init__(self, name):
         super().__init__(name=name)
+
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+        """
+        # we look at the detector from upstream, detector X is opposite to the outboard
+        # direction
+        return "y-"
