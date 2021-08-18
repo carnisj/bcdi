@@ -90,39 +90,17 @@ class BeamlineCRISTAL(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from downstream, detector X is along the outboard
         # direction
         return "y+"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # gamma is anti-clockwise, we see the detector from downstream
         return -1 * self.detector_hor
 
@@ -136,39 +114,17 @@ class BeamlineID01(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from downstream, detector X is along the outboard
         # direction
         return "y+"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # nu is clockwise, we see the detector from downstream
         return 1 * self.detector_hor
 
@@ -182,39 +138,17 @@ class BeamlineNANOMAX(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from downstream, detector X is along the outboard
         # direction
         return "y+"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # gamma is clockwise, we see the detector from downstream
         return 1 * self.detector_hor
 
@@ -228,39 +162,17 @@ class BeamlineP10(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from upstream, detector X is opposite to the outboard
         # direction
         return "y-"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # gamma is anti-clockwise, we see the detector from the front
         return -1 * self.detector_hor
 
@@ -274,39 +186,17 @@ class BeamlineSIXS(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from downstream, detector X is along the outboard
         # direction
         return "y+"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # gamma is anti-clockwise, we see the detector from downstream
         return -1 * self.detector_hor
 
@@ -320,38 +210,16 @@ class Beamline34ID(Beamline):
 
     @property
     def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # we look at the detector from upstream, detector X is opposite to the outboard
         # direction
         return "y-"
 
     @property
     def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the frame of xrayutilities.
-
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
-        """
         # origin is at the top, detector Y along vertical down
         return "z-"
 
     @property
     def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
         # delta is anti-clockwise, we see the detector from the front
         return -1 * self.detector_hor
