@@ -313,6 +313,22 @@ class Setup:
         self._detector = value
 
     @property
+    def detector_hor(self):
+        """
+        Coefficient corresponding to the horizontal detector orientation.
+
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+
+        :return: +/-1 depending on the detector horizontal orientation
+        """
+        if self._beamline.detector_hor == "y-":
+            # inboard,  as it should be in the CXI convention
+            return 1
+        else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
+            return -1
+
+    @property
     def detector_ver(self):
         """
         Vertical detector orientation expressed in the frame of xrayutilities.
@@ -607,29 +623,24 @@ class Setup:
         """
         coeff_inplane = 0
 
-        if self._beamline.detector_hor == "y+":
-            hor_coeff = 1
-        else:  # 'y-'
-            hor_coeff = -1
-
         if self.beamline in {"SIXS_2018", "SIXS_2019"}:
             # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
+            coeff_inplane = -1 * self.detector_hor
         elif self.beamline == "ID01":
             # nu is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
+            coeff_inplane = 1 * self.detector_hor
         elif self.beamline == "34ID":
             # delta is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
+            coeff_inplane = -1 * self.detector_hor
         elif self.beamline == "P10":
             # gamma is anti-clockwise, we see the detector from the front
-            coeff_inplane = 1 * hor_coeff
+            coeff_inplane = -1 * self.detector_hor
         elif self.beamline == "CRISTAL":
             # gamma is anti-clockwise, we see the detector from downstream
-            coeff_inplane = 1 * hor_coeff
+            coeff_inplane = -1 * self.detector_hor
         elif self.beamline == "NANOMAX":
             # gamma is clockwise, we see the detector from downstream
-            coeff_inplane = -1 * hor_coeff
+            coeff_inplane = 1 * self.detector_hor
 
         return coeff_inplane
 
@@ -2051,11 +2062,7 @@ class Setup:
         tilt = np.radians(tilt_angle)
         q_offset = np.zeros(3)
         nbz, nby, nbx = array_shape
-        if self._beamline.detector_hor == "y-":
-            # inboard,  as it should be in the CXI convention
-            hor_coeff = 1
-        else:  # 'y+', outboard,  opposite to what it should be in the CXI convention
-            hor_coeff = -1
+
         if (
             self.detector_ver == "z-"
         ):  # vertical down,  as it should be in the CXI convention
@@ -2082,7 +2089,7 @@ class Setup:
                     2
                     * np.pi
                     / lambdaz
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array(
                         [-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
                     )
@@ -2145,7 +2152,7 @@ class Setup:
                     2
                     * np.pi
                     / lambdaz
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array(
                         [-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)]
                     )
@@ -2218,7 +2225,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2290,7 +2297,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2376,7 +2383,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2437,7 +2444,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2509,7 +2516,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2569,7 +2576,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2635,7 +2642,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array(
                         [
                             -np.cos(inplane),
@@ -2740,7 +2747,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
@@ -2801,7 +2808,7 @@ class Setup:
                     * np.pi
                     / lambdaz
                     * pixel_x
-                    * hor_coeff
+                    * self.detector_hor
                     * np.array([-np.cos(inplane), 0, np.sin(inplane)])
                 )
                 mymatrix[:, 1] = (
