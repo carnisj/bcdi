@@ -9,6 +9,7 @@
 
 """Beamline-related classes."""
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 def create_beamline(name):
@@ -74,6 +75,21 @@ class Beamline(ABC):
         :return: "z+" or "z-"
         """
 
+    @staticmethod
+    @abstractmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout.
+
+        It uses the setup parameters. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: X-ray wavelength in meters.
+        :param inplane_angle: horizontal detector angle, in degrees.
+        :param outofplane_angle: vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
+
     @property
     @abstractmethod
     def inplane_coeff(self):
@@ -121,6 +137,21 @@ class BeamlineCRISTAL(Beamline):
         # origin is at the top, detector Y along vertical down
         return "z-"
 
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # gamma is anti-clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
+
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
@@ -149,6 +180,21 @@ class BeamlineID01(Beamline):
     def detector_ver(self):
         # origin is at the top, detector Y along vertical down
         return "z-"
+
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # nu is clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                -np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
 
     @property
     def inplane_coeff(self):
@@ -179,6 +225,21 @@ class BeamlineNANOMAX(Beamline):
         # origin is at the top, detector Y along vertical down
         return "z-"
 
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # gamma is clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                -np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
+
     @property
     def inplane_coeff(self):
         # gamma is clockwise, we see the detector from downstream
@@ -207,6 +268,21 @@ class BeamlineP10(Beamline):
     def detector_ver(self):
         # origin is at the top, detector Y along vertical down
         return "z-"
+
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # gamma is anti-clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
 
     @property
     def inplane_coeff(self):
@@ -237,6 +313,21 @@ class BeamlineSIXS(Beamline):
         # origin is at the top, detector Y along vertical down
         return "z-"
 
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # gamma is anti-clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
+
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
@@ -265,6 +356,21 @@ class Beamline34ID(Beamline):
     def detector_ver(self):
         # origin is at the top, detector Y along vertical down
         return "z-"
+
+    @staticmethod
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        # gamma is anti-clockwise
+        kout = (2 * np.pi / wavelength * np.array(
+            [
+                np.cos(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # z
+                np.sin(np.pi * outofplane_angle / 180),  # y
+                np.sin(np.pi * inplane_angle / 180)
+                * np.cos(np.pi * outofplane_angle / 180),  # x
+            ]
+        )
+        )
+        return kout
 
     @property
     def inplane_coeff(self):

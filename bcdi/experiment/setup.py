@@ -328,7 +328,7 @@ class Setup:
 
     @property
     def diffractometer(self):
-        """Return the diffractometer instance."""
+        """Public interface to access the diffractometer instance."""
         return self._diffractometer
 
     @property
@@ -403,106 +403,11 @@ class Setup:
 
         :return: kout vector
         """
-        kout = np.zeros(3)
-
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "ID01":
-            # nu is clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        -np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "34ID":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "NANOMAX":
-            # gamma is clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        -np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "P10":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-        elif self.beamline == "CRISTAL":
-            # gamma is anti-clockwise
-            kout = (
-                2
-                * np.pi
-                / self.wavelength
-                * np.array(
-                    [
-                        np.cos(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),  # z
-                        np.sin(np.pi * self.outofplane_angle / 180),  # y
-                        np.sin(np.pi * self.inplane_angle / 180)
-                        * np.cos(np.pi * self.outofplane_angle / 180),
-                    ]
-                )
-            )  # x
-
-        return kout
+        return self._beamline.exit_wavevector(
+            wavelength=self.wavelength,
+            inplane_angle=self.inplane_angle,
+            outofplane_angle=self.outofplane_angle,
+        )
 
     @property
     def filtered_data(self):
