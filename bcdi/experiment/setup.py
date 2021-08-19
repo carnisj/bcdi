@@ -21,14 +21,7 @@ from scipy.interpolate import RegularGridInterpolator
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
-from .diffractometer import (
-    Diffractometer34ID,
-    DiffractometerCRISTAL,
-    DiffractometerID01,
-    DiffractometerNANOMAX,
-    DiffractometerP10,
-    DiffractometerSIXS,
-)
+from .diffractometer import create_diffractometer
 from .beamline import create_beamline
 from .detector import Detector
 
@@ -121,7 +114,7 @@ class Setup:
         # kwargs for preprocessing forward CDI data
         self.direct_beam = kwargs.get("direct_beam")
         # kwargs for loading and preprocessing data
-        sample_offsets = kwargs.get("sample_offsets")
+        sample_offsets = kwargs.get("sample_offsets")  # sequence
         self.filtered_data = kwargs.get("filtered_data", False)  # boolean
         self.custom_scan = kwargs.get("custom_scan", False)  # boolean
         self.custom_images = kwargs.get("custom_images")  # list or tuple
@@ -146,7 +139,10 @@ class Setup:
         self.grazing_angle = grazing_angle
 
         # create the Diffractometer instance
-        self._diffractometer = self.create_diffractometer(sample_offsets)
+        self._diffractometer = create_diffractometer(
+            beamline=self.beamline,
+            sample_offsets=sample_offsets
+        )
 
     @property
     def actuators(self):
@@ -782,21 +778,6 @@ class Setup:
             logfile = h5py.File(ccdfiletmp, "r")
 
         return logfile
-
-    def create_diffractometer(self, sample_offsets):
-        """Create a Diffractometer instance depending on the beamline."""
-        if self.beamline == "ID01":
-            return DiffractometerID01(sample_offsets)
-        if self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            return DiffractometerSIXS(sample_offsets)
-        if self.beamline == "34ID":
-            return Diffractometer34ID(sample_offsets)
-        if self.beamline == "P10":
-            return DiffractometerP10(sample_offsets)
-        if self.beamline == "CRISTAL":
-            return DiffractometerCRISTAL(sample_offsets)
-        if self.beamline == "NANOMAX":
-            return DiffractometerNANOMAX(sample_offsets)
 
     def detector_frame(
         self,

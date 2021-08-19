@@ -18,6 +18,34 @@ from bcdi.utils import validation as valid
 from .rotation_matrix import RotationMatrix
 
 
+def create_diffractometer(beamline, sample_offsets):
+    """
+    Create a Diffractometer instance depending on the beamline.
+
+    :param beamline: str, name of the beamline
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
+    :return:  the corresponding diffractometer instance
+    """
+    if beamline == "ID01":
+        return DiffractometerID01(sample_offsets)
+    elif beamline in {"SIXS_2018", "SIXS_2019"}:
+        return DiffractometerSIXS(sample_offsets)
+    elif beamline == "34ID":
+        return Diffractometer34ID(sample_offsets)
+    elif beamline == "P10":
+        return DiffractometerP10(sample_offsets)
+    elif beamline == "CRISTAL":
+        return DiffractometerCRISTAL(sample_offsets)
+    elif beamline == "NANOMAX":
+        return DiffractometerNANOMAX(sample_offsets)
+    else:
+        raise NotImplementedError("No diffractometer implemented for the "
+                                  f"beamline {sample_offsets}")
+
+
 class Diffractometer(ABC):
     """
     Base class for defining diffractometers.
@@ -25,10 +53,10 @@ class Diffractometer(ABC):
     The frame used is the laboratory frame with the CXI convention (z downstream,
     y vertical up, x outboard).
 
-    :param sample_offsets: list or tuple of three angles in degrees, corresponding to
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
      the offsets of each of the sample circles (the offset for the most outer circle
-     should be at index 0). Convention: the sample offsets will be subtracted to
-     measurement the motor values.
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
     :param sample_circles: list of sample circles from outer to inner (e.g. mu eta
      chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
      'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
@@ -113,7 +141,7 @@ class Diffractometer(ABC):
     @property
     def sample_offsets(self):
         """
-        List or tuple of three sample angular offsets in degrees.
+        List or tuple of sample angular offsets in degrees.
 
         These angles correspond to the offsets of each f the sample circles (the
         offset for the most outer circle should be at index 0). Convention: the
