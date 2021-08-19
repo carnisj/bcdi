@@ -10,6 +10,9 @@
 """Beamline-related classes."""
 from abc import ABC, abstractmethod
 import numpy as np
+import os
+import h5py
+from silx.io.specfile import SpecFile
 
 
 def create_beamline(name):
@@ -46,11 +49,25 @@ class Beamline(ABC):
     def __init__(self, name):
         self._name = name
 
-    @property
-    def name(self):
-        """Name of the beamline."""
-        return self._name
+    @staticmethod
+    @abstractmethod
+    def create_logfile(params):
+        """
+        Create the logfile, which can be a log/spec file or the data itself.
 
+        The nature of this file is beamline dependent.
+
+        :param params: dictionnary of the setup parameters including the following keys:
+          - 'scan_number': the scan number to load.
+          - 'root_folder': the root directory of the experiment, where is e.g. the
+            specfile/.fio file.
+          - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
+          - 'datadir': the data directory
+          - 'template_imagefile': the template for data/image file names
+
+        :return: logfile
+        """
+        
     @property
     @abstractmethod
     def detector_hor(self):
@@ -77,16 +94,18 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
-        :param wavelength: X-ray wavelength in meters.
-        :param inplane_angle: horizontal detector angle, in degrees.
-        :param outofplane_angle: vertical detector angle, in degrees.
+        :param params: dictionnary of the setup parameters including the following keys:
+          - 'wavelength_m': X-ray wavelength in meters.
+          - 'inplane_angle': horizontal detector angle, in degrees.
+          - 'outofplane_angle': vertical detector angle, in degrees.
+          
         :return: kout vector as a numpy array of shape (3)
         """
 
@@ -104,6 +123,11 @@ class Beamline(ABC):
         :return: +1 or -1
         """
 
+    @property
+    def name(self):
+        """Name of the beamline."""
+        return self._name
+    
     @property
     @abstractmethod
     def outofplane_coeff(self):
@@ -126,6 +150,14 @@ class BeamlineCRISTAL(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @staticmethod
+    def create_logfile(params):
+        # no specfile, load directly the dataset
+        ccdfiletmp = os.path.join(
+            params["datadir"] + params["template_imagefile'"] % params["scan_number"]
+        )
+        return h5py.File(ccdfiletmp, "r")
+
     @property
     def detector_hor(self):
         # we look at the detector from downstream, detector X is along the outboard
@@ -138,15 +170,15 @@ class BeamlineCRISTAL(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):        
         # gamma is anti-clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )
@@ -170,6 +202,11 @@ class BeamlineID01(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @staticmethod
+    def create_logfile(params):
+        # load the spec file
+        return SpecFile(params["root_folder"] + params["filename"] + ".spec")
+
     @property
     def detector_hor(self):
         # we look at the detector from downstream, detector X is along the outboard
@@ -182,15 +219,15 @@ class BeamlineID01(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         # nu is clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                -np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                -np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )
@@ -214,6 +251,13 @@ class BeamlineNANOMAX(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @staticmethod
+    def create_logfile(params):
+        ccdfiletmp = os.path.join(
+            params["datadir"] + params["template_imagefile"] % params["scan_number"]
+        )
+        return h5py.File(ccdfiletmp, "r")
+
     @property
     def detector_hor(self):
         # we look at the detector from downstream, detector X is along the outboard
@@ -226,15 +270,15 @@ class BeamlineNANOMAX(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         # gamma is clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                -np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                -np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )
@@ -258,6 +302,12 @@ class BeamlineP10(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @staticmethod
+    def create_logfile(params):
+        # load .fio file
+        return params["root_folder"] + params["filename"] + "/" + params["filename"] + \
+               ".fio"
+
     @property
     def detector_hor(self):
         # we look at the detector from upstream, detector X is opposite to the outboard
@@ -270,15 +320,15 @@ class BeamlineP10(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         # gamma is anti-clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )
@@ -302,6 +352,26 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    def create_logfile(self, params):
+        shortname = params["template_imagefile"] % params["scan_number"]
+        if self.name == "SIXS_2018":
+            # no specfile, load directly the dataset
+            import bcdi.preprocessing.nxsReady as nxsReady
+            return nxsReady.DataSet(
+                longname=params["datadir"] + shortname,
+                shortname=shortname,
+                alias_dict=params["filename"],
+                scan="SBS",
+            )
+        if self.name == "SIXS_2019":
+            # no specfile, load directly the dataset
+            import bcdi.preprocessing.ReadNxs3 as ReadNxs3
+            return ReadNxs3.DataSet(
+                directory=params["datadir"],
+                filename=shortname,
+                alias_dict=params["filename"],
+            )
+
     @property
     def detector_hor(self):
         # we look at the detector from downstream, detector X is along the outboard
@@ -314,15 +384,15 @@ class BeamlineSIXS(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         # gamma is anti-clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )
@@ -346,6 +416,10 @@ class Beamline34ID(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
+    @staticmethod
+    def create_logfile(params):
+        raise NotImplementedError("create_logfile method not implemented for 34ID")
+
     @property
     def detector_hor(self):
         # we look at the detector from upstream, detector X is opposite to the outboard
@@ -358,15 +432,15 @@ class Beamline34ID(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(params):
         # gamma is anti-clockwise
-        kout = (2 * np.pi / wavelength * np.array(
+        kout = (2 * np.pi / params["wavelength_m"] * np.array(
             [
-                np.cos(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # z
-                np.sin(np.pi * outofplane_angle / 180),  # y
-                np.sin(np.pi * inplane_angle / 180)
-                * np.cos(np.pi * outofplane_angle / 180),  # x
+                np.cos(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
+                np.sin(np.pi * params["outofplane_angle"] / 180),  # y
+                np.sin(np.pi * params["inplane_angle"] / 180)
+                * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
             ]
         )
         )

@@ -403,11 +403,12 @@ class Setup:
 
         :return: kout vector
         """
-        return self._beamline.exit_wavevector(
-            wavelength=self.wavelength,
-            inplane_angle=self.inplane_angle,
-            outofplane_angle=self.outofplane_angle,
-        )
+        params = {
+            "inplane_angle": self.inplane_angle,
+            "outofplane_angle": self.outofplane_angle,
+            "wavelength": self.wavelength,
+        }
+        return self._beamline.exit_wavevector(params=params)
 
     @property
     def filtered_data(self):
@@ -553,6 +554,7 @@ class Setup:
             "sample_inplane": self.sample_inplane,
             "sample_outofplane": self.sample_outofplane,
             "offset_inplane_deg": self.offset_inplane,
+            "wavelength_m": self.wavelength,
         }
 
     @property
@@ -641,48 +643,14 @@ class Setup:
         :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
         :return: logfile
         """
-        logfile = None
-
-        if self.beamline == "CRISTAL":  # no specfile, load directly the dataset
-            ccdfiletmp = os.path.join(
-                self.detector.datadir + self.detector.template_imagefile % scan_number
-            )
-            logfile = h5py.File(ccdfiletmp, "r")
-
-        elif self.beamline == "P10":  # load .fio file
-            logfile = root_folder + filename + "/" + filename + ".fio"
-
-        elif self.beamline == "SIXS_2018":  # no specfile, load directly the dataset
-            import bcdi.preprocessing.nxsReady as nxsReady
-
-            logfile = nxsReady.DataSet(
-                longname=self.detector.datadir
-                + self.detector.template_imagefile % scan_number,
-                shortname=self.detector.template_imagefile % scan_number,
-                alias_dict=filename,
-                scan="SBS",
-            )
-        elif self.beamline == "SIXS_2019":  # no specfile, load directly the dataset
-            import bcdi.preprocessing.ReadNxs3 as ReadNxs3
-
-            logfile = ReadNxs3.DataSet(
-                directory=self.detector.datadir,
-                filename=self.detector.template_imagefile % scan_number,
-                alias_dict=filename,
-            )
-
-        elif self.beamline == "ID01":  # load spec file
-            from silx.io.specfile import SpecFile
-
-            logfile = SpecFile(root_folder + filename + ".spec")
-
-        elif self.beamline == "NANOMAX":
-            ccdfiletmp = os.path.join(
-                self.detector.datadir + self.detector.template_imagefile % scan_number
-            )
-            logfile = h5py.File(ccdfiletmp, "r")
-
-        return logfile
+        params = {
+            "scan_number": scan_number,
+            "root_folder": root_folder,
+            "filename": filename,
+            "datadir": self.detector.datadir,
+            "template_imagefile": self.detector.template_imagefile,
+        }
+        return self._beamline.create_logfile(params=params)
 
     def detector_frame(
         self,
