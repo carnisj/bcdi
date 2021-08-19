@@ -58,6 +58,7 @@ class Beamline(ABC):
         The nature of this file is beamline dependent.
 
         :param params: dictionnary of the setup parameters including the following keys:
+
           - 'scan_number': the scan number to load.
           - 'root_folder': the root directory of the experiment, where is e.g. the
             specfile/.fio file.
@@ -102,11 +103,52 @@ class Beamline(ABC):
         laboratory frame (z downstream, y vertical, x outboard).
 
         :param params: dictionnary of the setup parameters including the following keys:
+
           - 'wavelength_m': X-ray wavelength in meters.
           - 'inplane_angle': horizontal detector angle, in degrees.
           - 'outofplane_angle': vertical detector angle, in degrees.
           
         :return: kout vector as a numpy array of shape (3)
+        """
+
+    @staticmethod
+    @abstractmethod
+    def init_paths(params):
+        """
+        Initialize paths used for data processing and logging.
+
+        :param params: dictionnary of the setup parameters including the following keys:
+
+         - 'sample_name': string in front of the scan number in the data folder
+           name.
+         - 'scan_number': the scan number
+         - 'root_folder': folder of the experiment, where all scans are stored
+         - 'save_dir': path of the directory where to save the analysis results,
+           can be None
+         - 'specfile_name': beamline-dependent string:
+
+           - ID01: name of the spec file without '.spec'
+           - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
+             root_folder+'alias_dict_2019.txt')
+           - empty string for all other beamlines
+
+         - 'template_imagefile': beamline-dependent template for the data files:
+
+           - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+           - Cristal: 'S%d.nxs'
+           - P10: '_master.h5'
+           - NANOMAX: '%06d.h5'
+           - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
         """
 
     @property
@@ -184,6 +226,15 @@ class BeamlineCRISTAL(Beamline):
         )
         return kout
 
+    @staticmethod
+    def init_paths(params):
+        homedir = params["root_folder"] + params["sample_name"] +\
+                  params["scan_number"] + "/"
+        default_dirname = "data/"
+        specfile = params["specfile_name"]
+        template_imagefile = params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
+
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
@@ -232,6 +283,15 @@ class BeamlineID01(Beamline):
         )
         )
         return kout
+
+    @staticmethod
+    def init_paths(params):
+        homedir = params["root_folder"] + params["sample_name"] +\
+                  params["scan_number"] + "/"
+        default_dirname = "data/"
+        specfile = params["specfile_name"]
+        template_imagefile = params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
 
     @property
     def inplane_coeff(self):
@@ -284,6 +344,15 @@ class BeamlineNANOMAX(Beamline):
         )
         return kout
 
+    @staticmethod
+    def init_paths(params):
+        homedir = params["root_folder"] + params["sample_name"] +\
+                  "{:06d}".format(params["scan_number"]) + "/"
+        default_dirname = "data/"
+        specfile = params["specfile_name"]
+        template_imagefile = params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
+
     @property
     def inplane_coeff(self):
         # gamma is clockwise, we see the detector from downstream
@@ -333,6 +402,14 @@ class BeamlineP10(Beamline):
         )
         )
         return kout
+
+    @staticmethod
+    def init_paths(params):
+        specfile = params["sample_name"] + "_{:05d}".format(params["scan_number"])
+        homedir = params["root_folder"] + specfile + "/"
+        default_dirname = "e4m/"
+        template_imagefile = specfile + params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
 
     @property
     def inplane_coeff(self):
@@ -398,6 +475,27 @@ class BeamlineSIXS(Beamline):
         )
         return kout
 
+    @staticmethod
+    def init_paths(params):
+        homedir = params["root_folder"] + params["sample_name"] +\
+                  params["scan_number"] + "/"
+        default_dirname = "data/"
+
+        if params["specfile_name"] is None:
+            # default to the alias dictionnary located within the package
+            specfile = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    os.pardir,
+                    "preprocessing/alias_dict_2021.txt",
+                )
+            )
+        else:
+            specfile = params["specfile_name"]
+
+        template_imagefile = params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
+
     @property
     def inplane_coeff(self):
         # gamma is anti-clockwise, we see the detector from downstream
@@ -445,6 +543,15 @@ class Beamline34ID(Beamline):
         )
         )
         return kout
+
+    @staticmethod
+    def init_paths(params):
+        homedir = params["root_folder"] + params["sample_name"] +\
+                  params["scan_number"] + "/"
+        default_dirname = "data/"
+        specfile = params["specfile_name"]
+        template_imagefile = params["template_imagefile"]
+        return homedir, default_dirname, specfile, template_imagefile
 
     @property
     def inplane_coeff(self):

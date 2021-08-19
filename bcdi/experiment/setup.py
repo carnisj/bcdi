@@ -30,8 +30,7 @@ class Setup:
     """
     Class for defining the experimental geometry.
 
-    :param beamline: name of the beamline, among {'ID01','SIXS_2018','SIXS_2019',
-     '34ID','P10','CRISTAL','NANOMAX'}
+    :param beamline: str, name of the beamline
     :param detector: an instance of the cass experiment_utils.Detector()
     :param beam_direction: direction of the incident X-ray beam in the frame
      (z downstream,y vertical up,x outboard)
@@ -844,40 +843,29 @@ class Setup:
             allow_none=True,
             name="Setup.init_paths",
         )
+        # update the detector instance
         (
             self.detector.rootdir,
             self.detector.sample_name,
             self.detector.template_file,
         ) = (root_folder, sample_name, template_imagefile)
 
-        if self.beamline == "P10":
-            specfile = sample_name + "_{:05d}".format(scan_number)
-            homedir = root_folder + specfile + "/"
-            default_dirname = "e4m/"
-            template_imagefile = specfile + template_imagefile
-        elif self.beamline == "NANOMAX":
-            homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
-            default_dirname = "data/"
-            specfile = specfile_name
-        elif self.beamline in {"SIXS_2018", "SIXS_2019"}:
-            homedir = root_folder + sample_name + str(scan_number) + "/"
-            default_dirname = "data/"
-            if (
-                specfile_name is None
-            ):  # default to the alias dictionnary located within the package
-                specfile_name = os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        os.pardir,
-                        "preprocessing/alias_dict_2021.txt",
-                    )
-                )
-            specfile = specfile_name
-        else:
-            homedir = root_folder + sample_name + str(scan_number) + "/"
-            default_dirname = "data/"
-            specfile = specfile_name
+        params = {
+            "sample_name": sample_name,
+            "scan_number": str(scan_number),
+            "root_folder": root_folder,
+            "save_dir": save_dir,
+            "specfile_name": specfile_name,
+            "template_imagefile": template_imagefile,
+            "data_dirname": data_dirname,
+            "save_dirname": save_dirname,
+        }
 
+        # create beamline-dependent path parameters
+        homedir, default_dirname, specfile, template_imagefile =\
+            self._beamline.init_paths(params)
+
+        # define the data directory
         if data_dirname is not None:
             if len(data_dirname) == 0:  # no subfolder
                 datadir = homedir
@@ -885,26 +873,26 @@ class Setup:
                 datadir = homedir + data_dirname
         else:
             datadir = homedir + default_dirname
+        if not datadir.endswith("/"):
+            datadir += "/"
 
+        # define and create the saving directory
         if save_dir:
             savedir = save_dir
         else:
             savedir = homedir + save_dirname + "/"
-
         if not savedir.endswith("/"):
             savedir += "/"
-        if not datadir.endswith("/"):
-            datadir += "/"
+        if create_savedir:
+            pathlib.Path(self.detector.savedir).mkdir(parents=True, exist_ok=True)
 
+        # update the detector instance
         (
             self.detector.savedir,
             self.detector.datadir,
             self.detector.specfile,
             self.detector.template_imagefile,
         ) = (savedir, datadir, specfile, template_imagefile)
-
-        if create_savedir:
-            pathlib.Path(self.detector.savedir).mkdir(parents=True, exist_ok=True)
 
         if verbose:
             if not self.custom_scan:
