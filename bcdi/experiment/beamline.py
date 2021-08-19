@@ -9,8 +9,6 @@
 
 """Beamline-related classes."""
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from numbers import Real
 import numpy as np
 import os
 import h5py
