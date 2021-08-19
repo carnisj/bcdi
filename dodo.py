@@ -119,7 +119,7 @@ def task_clean_coverage():
 def task_docstrings():
     """Run pydocstyle on the modules."""
     return {
-        "actions": ["pydocstyle bcdi --ignore=D107,D212,D203"],
+        "actions": ["pydocstyle bcdi --ignore=D102,D107,D212,D203"],
         "verbosity": 2,
     }
 

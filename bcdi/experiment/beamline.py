@@ -42,9 +42,7 @@ def create_beamline(name):
 
 
 class Beamline(ABC):
-    """
-    Base class for defining a beamline.
-    """
+    """Base class for defining a beamline."""
 
     detector_orientation = {"y-": 1, "y+": -1, "z-": 1, "z+": -1}
     # "y-" detector horizontal axis inboard, as it should be in the CXI convention
