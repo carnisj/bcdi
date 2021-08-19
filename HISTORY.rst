@@ -1,3 +1,7 @@
+
+* Feature: create a Beamline class with one child class for each beamline, move
+  all beamline-dependent methods from Setup to the respective class
+
 Version 0.1.3
 -------------
 
