@@ -308,18 +308,24 @@ class Setup:
         """
         Expose the detector_hor beamline property to the outer world.
 
-        :return: +/-1 depending on the detector horizontal orientation
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+
+        :return: "y+" or "y-" depending on the detector horizontal orientation
         """
-        return self._beamline.detector_orientation[self._beamline.detector_hor]
+        return self._beamline.detector_hor
 
     @property
     def detector_ver(self):
         """
         Expose the detector_ver beamline property to the outer world.
 
-        :return: +/-1 depending on the detector vertical orientation
+        This is beamline-dependent. The frame convention of xrayutilities is the
+        following: x downstream, y outboard, z vertical up.
+
+        :return: "z+" or "z-" depending on the detector vertical orientation
         """
-        return self._beamline.detector_orientation[self._beamline.detector_ver]
+        return self._beamline.detector_ver
 
     @property
     def diffractometer(self):
