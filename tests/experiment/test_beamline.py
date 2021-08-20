@@ -54,6 +54,41 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             )
         )
 
+    def test_init_paths(self):
+        params = {
+            "root_folder": "D:/test/",
+            "sample_name": "Pt_",
+            "scan_number": "75",
+            "specfile_name": "",
+            "template_imagefile": "S%d.nxs",
+        }
+        (
+            homedir,
+            default_dirname,
+            specfile,
+            template_imagefile,
+        ) = self.beamline.init_paths(params)
+        self.assertEqual(homedir, "D:/test/Pt_75/")
+        self.assertEqual(default_dirname, "data/")
+        self.assertEqual(specfile, "")
+        self.assertEqual(template_imagefile, "S%d.nxs")
+
+    def test_init_paths_scan_nb_int(self):
+        params = {
+            "root_folder": "D:/test/",
+            "sample_name": "Pt_",
+            "scan_number": 75,
+            "specfile_name": "",
+            "template_imagefile": "S%d.nxs",
+        }
+        (
+            homedir,
+            default_dirname,
+            specfile,
+            template_imagefile,
+        ) = self.beamline.init_paths(params)
+        self.assertEqual(homedir, "D:/test/Pt_75/")
+
 
 if __name__ == "__main__":
     run_tests(TestBeamline)

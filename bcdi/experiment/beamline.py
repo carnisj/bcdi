@@ -121,7 +121,7 @@ class Beamline(ABC):
 
          - 'sample_name': string in front of the scan number in the data folder
            name.
-         - 'scan_number': the scan number
+         - 'scan_number': string, the scan number
          - 'root_folder': folder of the experiment, where all scans are stored
          - 'save_dir': path of the directory where to save the analysis results,
            can be None
@@ -265,7 +265,10 @@ class BeamlineCRISTAL(Beamline):
     @staticmethod
     def init_paths(params):
         homedir = (
-            params["root_folder"] + params["sample_name"] + params["scan_number"] + "/"
+            params["root_folder"]
+            + params["sample_name"]
+            + str(params["scan_number"])
+            + "/"
         )
         default_dirname = "data/"
         specfile = params["specfile_name"]
@@ -462,7 +465,10 @@ class BeamlineID01(Beamline):
     @staticmethod
     def init_paths(params):
         homedir = (
-            params["root_folder"] + params["sample_name"] + params["scan_number"] + "/"
+            params["root_folder"]
+            + params["sample_name"]
+            + str(params["scan_number"])
+            + "/"
         )
         default_dirname = "data/"
         specfile = params["specfile_name"]
@@ -1106,7 +1112,10 @@ class BeamlineSIXS(Beamline):
     @staticmethod
     def init_paths(params):
         homedir = (
-            params["root_folder"] + params["sample_name"] + params["scan_number"] + "/"
+            params["root_folder"]
+            + params["sample_name"]
+            + str(params["scan_number"])
+            + "/"
         )
         default_dirname = "data/"
 
@@ -1287,7 +1296,10 @@ class Beamline34ID(Beamline):
     @staticmethod
     def init_paths(params):
         homedir = (
-            params["root_folder"] + params["sample_name"] + params["scan_number"] + "/"
+            params["root_folder"]
+            + params["sample_name"]
+            + str(params["scan_number"])
+            + "/"
         )
         default_dirname = "data/"
         specfile = params["specfile_name"]
