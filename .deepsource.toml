@@ -16,5 +16,6 @@ name = "black"
 enabled = true
 
 test_patterns = [
-    "tests/**",
+  "tests/**",
+  "test_*.py"
 ]
