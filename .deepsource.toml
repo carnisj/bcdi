@@ -15,5 +15,6 @@ enabled = true
 name = "black"
 enabled = true
 
-[[test_patterns]]
-name = "tests/**"
+test_patterns = [
+    "tests/**",
+]
