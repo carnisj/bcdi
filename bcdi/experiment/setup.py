@@ -1870,6 +1870,7 @@ class Setup:
             "inplane": inplane,
             "outofplane": outofplane,
             "grazing_angle": grazing_angle,
+            "rocking_angle": self.rocking_angle,
             "tilt": tilt,
         }
 
