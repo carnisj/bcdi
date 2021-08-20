@@ -407,7 +407,7 @@ class Setup:
         params = {
             "inplane_angle": self.inplane_angle,
             "outofplane_angle": self.outofplane_angle,
-            "wavelength": self.wavelength,
+            "wavelength_m": self.wavelength,
         }
         return self._beamline.exit_wavevector(params=params)
 
