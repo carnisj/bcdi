@@ -38,18 +38,17 @@ def create_beamline(name):
     """
     if name == "ID01":
         return BeamlineID01(name=name)
-    elif name in {"SIXS_2018", "SIXS_2019"}:
+    if name in {"SIXS_2018", "SIXS_2019"}:
         return BeamlineSIXS(name=name)
-    elif name == "34ID":
+    if name == "34ID":
         return Beamline34ID(name=name)
-    elif name == "P10":
+    if name == "P10":
         return BeamlineP10(name=name)
-    elif name == "CRISTAL":
+    if name == "CRISTAL":
         return BeamlineCRISTAL(name=name)
-    elif name == "NANOMAX":
+    if name == "NANOMAX":
         return BeamlineNANOMAX(name=name)
-    else:
-        raise ValueError(f"Beamline {name} not supported")
+    raise ValueError(f"Beamline {name} not supported")
 
 
 class Beamline(ABC):

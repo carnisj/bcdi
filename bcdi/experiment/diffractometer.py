@@ -31,20 +31,19 @@ def create_diffractometer(beamline, sample_offsets):
     """
     if beamline == "ID01":
         return DiffractometerID01(sample_offsets)
-    elif beamline in {"SIXS_2018", "SIXS_2019"}:
+    if beamline in {"SIXS_2018", "SIXS_2019"}:
         return DiffractometerSIXS(sample_offsets)
-    elif beamline == "34ID":
+    if beamline == "34ID":
         return Diffractometer34ID(sample_offsets)
-    elif beamline == "P10":
+    if beamline == "P10":
         return DiffractometerP10(sample_offsets)
-    elif beamline == "CRISTAL":
+    if beamline == "CRISTAL":
         return DiffractometerCRISTAL(sample_offsets)
-    elif beamline == "NANOMAX":
+    if beamline == "NANOMAX":
         return DiffractometerNANOMAX(sample_offsets)
-    else:
-        raise NotImplementedError(
-            "No diffractometer implemented for the " f"beamline {sample_offsets}"
-        )
+    raise NotImplementedError(
+        "No diffractometer implemented for the " f"beamline {sample_offsets}"
+    )
 
 
 class Diffractometer(ABC):
