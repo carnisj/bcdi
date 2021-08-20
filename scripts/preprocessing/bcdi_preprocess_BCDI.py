@@ -57,9 +57,10 @@ scans = 76  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
+root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
 # folder of the experiment, where all scans are stored
-save_dir = None  # images will be saved here, leave it to None otherwise
+save_dir = root_folder + "test/"  # images will be saved here, leave it to None
+# otherwise
 data_dirname = None  # leave None to use the beamline default,
 # '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
@@ -70,7 +71,7 @@ sample_name = "B15_syn_S1_2"  # str or list of str of sample names
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 1, 1)  # binning to apply to the data
+binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
@@ -116,14 +117,14 @@ medfilt_order = 7  # for custom median filter,
 #################################################
 # parameters used when reloading processed data #
 #################################################
-reload_previous = True  # True to resume a previous masking (load data and mask)
+reload_previous = False  # True to resume a previous masking (load data and mask)
 reload_orthogonal = (
     False  # True if the reloaded data is already intepolated in an orthonormal frame
 )
 preprocessing_binning = (
     1,
-    2,
-    2,
+    1,
+    1,
 )  # binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
@@ -181,11 +182,11 @@ linearity_func = (
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d
 # (flattened 2D detector array).
-x_bragg = 414  # horizontal pixel number of the Bragg peak,
+x_bragg = 1577   # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-y_bragg = 842  # vertical pixel number of the Bragg peak,
+y_bragg = 833  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector = None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
+roi_detector = [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
@@ -229,8 +230,9 @@ beam_direction = (
     0,
 )  # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets = (
-    90,
     0,
+    0,
+    90,
     0,
 )  # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
