@@ -164,6 +164,7 @@ setup(
             "doit",
             "pycodestyle",
             "pydocstyle",
+            "pyfakefs",
             "twine",
             "wheel",
         ],

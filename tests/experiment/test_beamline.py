@@ -8,6 +8,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import os
+from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 
@@ -26,10 +28,19 @@ class TestBeamline(unittest.TestCase):
             Beamline(name="ID01")
 
 
-class TestBeamlineCRISTAL(unittest.TestCase):
+class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
     """Tests related to CRISTAL beamline instantiation."""
 
     def setUp(self):
+        self.setUpPyfakefs()
+        self.root_dir = "D:/data/Cristal/"
+        self.sample_name = "S"
+        self.scan_number = 1
+        self.template_imagefile = self.sample_name + "%d.nxs"
+        datadir = self.root_dir + self.sample_name + str(self.scan_number)
+        os.makedirs(datadir)
+        with open(datadir + "test.nxs", 'w') as f:
+            f.write('dummy')
         self.beamline = create_beamline("CRISTAL")
 
     def test_detector_hor(self):
@@ -56,11 +67,11 @@ class TestBeamlineCRISTAL(unittest.TestCase):
 
     def test_init_paths(self):
         params = {
-            "root_folder": "D:/test/",
-            "sample_name": "Pt_",
-            "scan_number": "75",
+            "root_folder": self.root_dir,
+            "sample_name": self.sample_name,
+            "scan_number": self.scan_number,
             "specfile_name": "",
-            "template_imagefile": "S%d.nxs",
+            "template_imagefile": self.template_imagefile,
         }
         (
             homedir,
@@ -68,26 +79,18 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             specfile,
             template_imagefile,
         ) = self.beamline.init_paths(params)
-        self.assertEqual(homedir, "D:/test/Pt_75/")
+        self.assertEqual(homedir,
+                         self.root_dir + self.sample_name + str(self.scan_number) + "/"
+                         )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, "")
-        self.assertEqual(template_imagefile, "S%d.nxs")
+        self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
 
-    def test_init_paths_scan_nb_int(self):
-        params = {
-            "root_folder": "D:/test/",
-            "sample_name": "Pt_",
-            "scan_number": 75,
-            "specfile_name": "",
-            "template_imagefile": "S%d.nxs",
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(params)
-        self.assertEqual(homedir, "D:/test/Pt_75/")
+    def test_inplane_coeff(self):
+        self.assertEqual(self.beamline.inplane_coeff, 1)
+
+    def test_outofplane_coeff(self):
+        self.assertEqual(self.beamline.inplane_coeff, 1)
 
 
 if __name__ == "__main__":

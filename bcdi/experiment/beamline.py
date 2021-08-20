@@ -121,7 +121,7 @@ class Beamline(ABC):
 
          - 'sample_name': string in front of the scan number in the data folder
            name.
-         - 'scan_number': string, the scan number
+         - 'scan_number': int, the scan number
          - 'root_folder': folder of the experiment, where all scans are stored
          - 'save_dir': path of the directory where to save the analysis results,
            can be None
@@ -228,7 +228,7 @@ class BeamlineCRISTAL(Beamline):
     def create_logfile(params):
         # no specfile, load directly the dataset
         ccdfiletmp = os.path.join(
-            params["datadir"] + params["template_imagefile'"] % params["scan_number"]
+            params["datadir"] + params["template_imagefile"] % params["scan_number"]
         )
         return h5py.File(ccdfiletmp, "r")
 
