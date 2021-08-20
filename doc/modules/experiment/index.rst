@@ -13,11 +13,11 @@
 API Reference
 -------------
 
-setup
-^^^^^
+beamline
+^^^^^^^^
 
-.. automodule:: bcdi.experiment.setup
-   :members:
+.. automodule:: bcdi.experiment.beamline
+   :members: create_beamline, Beamline
 
 detector
 ^^^^^^^^
@@ -36,3 +36,9 @@ rotation_matrix
 
 .. automodule:: bcdi.experiment.rotation_matrix
     :members:
+
+setup
+^^^^^
+
+.. automodule:: bcdi.experiment.setup
+   :members:

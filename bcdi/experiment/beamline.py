@@ -7,7 +7,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-"""Beamline-related classes."""
+"""
+Beamline-related classes.
+
+The methods in child classes have the same signature as in the base class. The available
+beamlines are:
+
+- BeamlineID01
+- BeamlineSIXS
+- Beamline34ID
+- BeamlineP10
+- BeamlineCRISTAL
+- BeamlineNANOMAX
+
+"""
 from abc import ABC, abstractmethod
 import numpy as np
 import os
