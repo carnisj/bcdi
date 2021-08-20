@@ -53,12 +53,14 @@ qy] for reciprocal space, or data[z, y, x] for real space
 """
 
 scan = 76  # spec scan number
-root_folder = "C:/Users/Jerome/Documents/data/debug/data/"
+root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
 # folder of the experiment, where all scans are stored
-save_dir = None
+save_dir = root_folder + "test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-sample_name = "S"  # "S"  # string in front of the scan number in the folder name.
+sample_name = (
+    "B15_syn_S1_2"  # "S"  # string in front of the scan number in the folder name.
+)
 comment = ""  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
@@ -69,18 +71,14 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [
-    252,
-    294,
-    360,
-]  # size of the FFT array before binning.
+original_size = [150, 256, 500]  # size of the FFT array before binning.
 # It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
 preprocessing_binning = (
     1,
-    1,
-    1,
+    2,
+    2,
 )  # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size = (
     100,
@@ -133,32 +131,32 @@ centering_method = (
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "CRISTAL"  # name of the beamline, used for data loading and normalization
+beamline = "P10"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
-actuators = {"rocking_angle": "actuator_1_3"}
+actuators = None
 # Optional dictionary that can be used to define the entries
 # corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard,
+rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 0.914  # 1.26  # sample to detector distance in m
-energy = 8530.0  # x-ray energy in eV, 6eV offset at ID01
+sdd = 1.84  # 1.26  # sample to detector distance in m
+energy = 8170  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array(
     [1, 0, 0]
 )  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 21.4791  # detector angle in deg (rotation around x outboard):
+outofplane_angle = 42.6093  # detector angle in deg (rotation around x outboard):
 # delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = 39.1504  # detector angle in deg(rotation around y vertical up):
+inplane_angle = -0.5783  # detector angle in deg(rotation around y vertical up):
 # nu ID01, gamma SIXS, tth 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 1.2 / 256.0  # angular step size for rocking angle, eta ID01, mu SIXS,
+tilt_angle = 0.00537  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
-sample_offsets = None
+sample_offsets = (0, 0, 90, 0)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
@@ -181,14 +179,14 @@ custom_motors = {
 ###############################
 # detector related parameters #
 ###############################
-detector = "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
+detector = "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 nb_pixel_x = None  # fix to declare a known detector but with less pixels
 # (e.g. one tile HS), leave None otherwise
 nb_pixel_y = None  # fix to declare a known detector but with less pixels
 # (e.g. one tile HS), leave None otherwise
 pixel_size = None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile = "mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs"
+template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -199,7 +197,7 @@ template_imagefile = "mgtx2-mgty2-mgphi-2021-03-25_14-35-59_%04d.nxs"
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = False  # True for correcting the phase shift due to refraction
+correct_refraction = True  # True for correcting the phase shift due to refraction
 optical_path_method = "threshold"
 # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove

@@ -27,6 +27,7 @@ dependencies:
   - doit
   - pycodestyle
   - pydocstyle
+  - pyfakefs
   - sphinx
   - twine
   - wheel

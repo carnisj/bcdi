@@ -32,9 +32,9 @@ Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 Input: direct beam and Bragg peak position, sample to detector distance, energy.
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 128
-root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
-sample_name = "PtNP1"
+scan = 76
+root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
+sample_name = "B15_syn_S1_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = "maxcom"  # Bragg peak determination: 'max', 'com' or 'maxcom'.
@@ -109,8 +109,9 @@ template_imagefile = "_master.h5"
 ###################################
 beam_direction = (1, 0, 0)  # beam along z
 sample_offsets = (
-    90,
     0,
+    0,
+    90,
     0,
 )
 # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
