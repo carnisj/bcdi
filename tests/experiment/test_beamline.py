@@ -39,8 +39,8 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.template_imagefile = self.sample_name + "%d.nxs"
         datadir = self.root_dir + self.sample_name + str(self.scan_number)
         os.makedirs(datadir)
-        with open(datadir + "test.nxs", 'w') as f:
-            f.write('dummy')
+        with open(datadir + "test.nxs", "w") as f:
+            f.write("dummy")
         self.beamline = create_beamline("CRISTAL")
 
     def test_detector_hor(self):
@@ -79,9 +79,9 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
             specfile,
             template_imagefile,
         ) = self.beamline.init_paths(params)
-        self.assertEqual(homedir,
-                         self.root_dir + self.sample_name + str(self.scan_number) + "/"
-                         )
+        self.assertEqual(
+            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
+        )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, "")
         self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
