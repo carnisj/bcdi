@@ -1090,6 +1090,7 @@ class BeamlineSIXS(Beamline):
                 filename=shortname,
                 alias_dict=params["filename"],
             )
+        raise NotImplementedError(f"{self.name} is not implemented")
 
     @property
     def detector_hor(self):
