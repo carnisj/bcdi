@@ -890,7 +890,7 @@ class Setup:
         if not savedir.endswith("/"):
             savedir += "/"
         if create_savedir:
-            pathlib.Path(self.detector.savedir).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
         # update the detector instance
         (
