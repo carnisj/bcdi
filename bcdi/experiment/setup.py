@@ -854,7 +854,7 @@ class Setup:
 
         params = {
             "sample_name": sample_name,
-            "scan_number": str(scan_number),
+            "scan_number": scan_number,
             "root_folder": root_folder,
             "save_dir": save_dir,
             "specfile_name": specfile_name,
