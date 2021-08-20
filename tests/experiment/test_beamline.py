@@ -30,17 +30,13 @@ class TestBeamlineCRISTAL(unittest.TestCase):
     """Tests related to CRISTAL beamline instantiation."""
 
     def setUp(self):
-        self.beamline = create_beamline("ID01")
+        self.beamline = create_beamline("CRISTAL")
 
     def test_detector_hor(self):
-        self.assertTrue(
-            self.beamline.detector_hor == "y+"
-        )
+        self.assertTrue(self.beamline.detector_hor == "y+")
 
     def test_detector_ver(self):
-        self.assertTrue(
-            self.beamline.detector_hor == "z-"
-        )
+        self.assertTrue(self.beamline.detector_ver == "z-")
 
     def test_exit_wavevector(self):
         params = {
@@ -54,7 +50,7 @@ class TestBeamlineCRISTAL(unittest.TestCase):
                 self.beamline.exit_wavevector(params),
                 np.array([0.0, 1.0, 0.0]),
                 rtol=1e-09,
-                atol=1e-09
+                atol=1e-09,
             )
         )
 
