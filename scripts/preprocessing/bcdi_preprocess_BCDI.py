@@ -182,7 +182,7 @@ linearity_func = (
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d
 # (flattened 2D detector array).
-x_bragg = 1577   # horizontal pixel number of the Bragg peak,
+x_bragg = 1577  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg = 833  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI

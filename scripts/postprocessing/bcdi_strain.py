@@ -58,7 +58,9 @@ root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
 save_dir = root_folder + "test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-sample_name = "B15_syn_S1_2"  # "S"  # string in front of the scan number in the folder name.
+sample_name = (
+    "B15_syn_S1_2"  # "S"  # string in front of the scan number in the folder name.
+)
 comment = ""  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
@@ -69,11 +71,7 @@ correlation_threshold = 0.90
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size = [
-    150,
-    256,
-    500
-]  # size of the FFT array before binning.
+original_size = [150, 256, 500]  # size of the FFT array before binning.
 # It will be modify to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
 phasing_binning = (1, 1, 1)  # binning factor applied during phase retrieval
@@ -188,7 +186,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels
 # (e.g. one tile HS), leave None otherwise
 pixel_size = None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile = '_master.h5'
+template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
