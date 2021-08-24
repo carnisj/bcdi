@@ -42,7 +42,7 @@ def create_diffractometer(beamline, sample_offsets):
     if beamline == "NANOMAX":
         return DiffractometerNANOMAX(sample_offsets)
     raise NotImplementedError(
-        "No diffractometer implemented for the " f"beamline {sample_offsets}"
+        f"No diffractometer implemented for the beamline {beamline}"
     )
 
 
