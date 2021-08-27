@@ -54,11 +54,16 @@ def create_beamline(name):
 
 class Beamline(ABC):
     """Base class for defining a beamline."""
-
-    detector_orientation = {"y-": 1, "y+": -1, "z-": 1, "z+": -1}
+    detector_xrayutil = {"y-": 1, "y+": -1, "z-": 1, "z+": -1}  # lookup table,
+    # where axes are expressed in xrayutilities frame: (x downstream, y outboard,
+    # z vertical up).
     # "y-" detector horizontal axis inboard, as it should be in the CXI convention
     # "z-" detector vertical axis down, as it should be in the CXI convention
 
+    detector_labframe = {"y+": -1, "y-": 1, "x+": -1, "x-": 1}  # lookup table, 
+    # where axes are expressed in the laboratory frame (z downstream, y vertical up,
+    # x outboard).
+    
     def __init__(self, name):
         self._name = name
 
@@ -162,17 +167,19 @@ class Beamline(ABC):
 
         """
 
-    @property
     @abstractmethod
-    def inplane_coeff(self):
+    def inplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector inplane orientation.
 
         Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+        
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
 
+        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
 
@@ -181,17 +188,19 @@ class Beamline(ABC):
         """Name of the beamline."""
         return self._name
 
-    @property
     @abstractmethod
-    def outofplane_coeff(self):
+    def outofplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector vertical orientation.
 
         Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction and the detector out of  plane orientation. The frame convention is
-        the one of xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up. 
+        
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
 
+        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
 
@@ -322,15 +331,39 @@ class BeamlineCRISTAL(Beamline):
         template_imagefile = params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at CRISTAL.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        gamma is anti-clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up. 
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -362,7 +395,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -370,7 +403,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -418,7 +451,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -426,7 +459,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -557,15 +590,39 @@ class BeamlineID01(Beamline):
         template_imagefile = params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # nu is clockwise, we see the detector from downstream
-        return 1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at ID01.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        nu is clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up.
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -599,14 +656,14 @@ class BeamlineID01(Beamline):
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)])
             )
             mymatrix[:, 1] = (
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -653,14 +710,14 @@ class BeamlineID01(Beamline):
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)])
             )
             mymatrix[:, 1] = (
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -794,15 +851,39 @@ class BeamlineNANOMAX(Beamline):
         template_imagefile = params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is clockwise, we see the detector from downstream
-        return 1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at Nanomax.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        gamma is clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up.
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -835,7 +916,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -843,7 +924,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         -np.sin(inplane) * np.sin(outofplane),
@@ -891,7 +972,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -899,7 +980,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         -np.sin(inplane) * np.sin(outofplane),
@@ -1025,15 +1106,39 @@ class BeamlineP10(Beamline):
         template_imagefile = specfile + params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at P10.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        gamma is anti-clockwise, we see the detector from the front.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up.
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -1065,7 +1170,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1073,7 +1178,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1132,7 +1237,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1140,7 +1245,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1329,14 +1434,39 @@ class BeamlineSIXS(Beamline):
         return homedir, default_dirname, specfile, template_imagefile
 
     @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at SIXS.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        gamma is anti-clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up.
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -1368,7 +1498,7 @@ class BeamlineSIXS(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array(
                     [
                         -np.cos(inplane),
@@ -1382,7 +1512,7 @@ class BeamlineSIXS(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1526,15 +1656,40 @@ class Beamline34ID(Beamline):
         template_imagefile = params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # delta is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        # 
+        """
+        Coefficient related to the detector inplane orientation at SIXS.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard). The frame convention is the one of
+        xrayutilities: x downstream, y outboard, z vertical up. 
+
+        delta is anti-clockwise, we see the detector from the front.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[0]] *
+                self.detector_xrayutil[self.detector_hor])
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward). The frame convention is
+        the one of xrayutilities: x downstream, y outboard, z vertical up.
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (self.detector_labframe[diffractometer.detector_circles[1]] *
+                self.detector_xrayutil[self.detector_ver])
 
     def transformation_matrix(self, params, verbose=True):
         wavelength = params["wavelength"]
@@ -1566,7 +1721,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1574,7 +1729,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1621,7 +1776,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.detector_xrayutil[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1629,7 +1784,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.detector_xrayutil[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
