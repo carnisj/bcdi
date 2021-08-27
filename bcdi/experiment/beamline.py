@@ -129,11 +129,11 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def init_paths(params):
+    def init_paths(**kwargs):
         """
         Initialize paths used for data processing and logging.
 
-        :param params: dictionnary of the setup parameters including the following keys:
+        :param kwargs: dictionnary of the setup parameters including the following keys:
 
          - 'sample_name': string in front of the scan number in the data folder
            name.
@@ -319,17 +319,26 @@ class BeamlineCRISTAL(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at CRISTAL.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.nxs'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = (root_folder + sample_name + str(scan_number) + "/")
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
     def inplane_coeff(self, diffractometer):
         """
@@ -578,17 +587,29 @@ class BeamlineID01(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, specfile_name,
+                   template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at ID01.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param specfile_name: name of the spec file without '.spec'
+        :param template_imagefile: template for the data files, e.g.
+         'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = (root_folder + sample_name + str(scan_number) + "/")
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def inplane_coeff(self, diffractometer):
         """
@@ -839,17 +860,26 @@ class BeamlineNANOMAX(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + "{:06d}".format(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at Nanomax.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '%06d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = (root_folder + sample_name + "{:06d}".format(scan_number) + "/")
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
     def inplane_coeff(self, diffractometer):
         """
@@ -1099,11 +1129,28 @@ class BeamlineP10(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        specfile = params["sample_name"] + "_{:05d}".format(params["scan_number"])
-        homedir = params["root_folder"] + specfile + "/"
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at P10.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '_master.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+
+        specfile = sample_name + "_{:05d}".format(scan_number)
+        homedir = root_folder + specfile + "/"
         default_dirname = "e4m/"
-        template_imagefile = specfile + params["template_imagefile"]
+        template_imagefile = specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     def inplane_coeff(self, diffractometer):
@@ -1409,16 +1456,32 @@ class BeamlineSIXS(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, specfile_name,
+                   template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at SIXS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param specfile_name: None or full path of the alias dictionnary (e.g.
+         root_folder+'alias_dict_2019.txt')
+        :param template_imagefile: template for the data files, e.g.
+         'align.spec_ascan_mu_%05d.nxs' (SIXS_2018), 'spare_ascan_mu_%05d.nxs'
+         (SIXS_2019).
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = (root_folder + sample_name + str(scan_number) + "/")
         default_dirname = "data/"
 
-        if params["specfile_name"] is None:
+        if specfile_name is None:
             # default to the alias dictionnary located within the package
             specfile = os.path.abspath(
                 os.path.join(
@@ -1428,9 +1491,9 @@ class BeamlineSIXS(Beamline):
                 )
             )
         else:
-            specfile = params["specfile_name"]
+            specfile = specfile_name
 
-        template_imagefile = params["template_imagefile"]
+        template_imagefile = template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     @property
@@ -1644,17 +1707,27 @@ class Beamline34ID(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at SIXS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g.
+         'Sample%dC_ES_data_51_256_256.npz'.
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = (root_folder + sample_name + str(scan_number) + "/")
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
     def inplane_coeff(self, diffractometer):
         # 

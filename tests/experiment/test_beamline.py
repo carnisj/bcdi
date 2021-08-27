@@ -78,7 +78,7 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self.beamline.init_paths(params)
+        ) = self.beamline.init_paths(**params)
         self.assertEqual(
             homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
         )

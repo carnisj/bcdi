@@ -850,24 +850,22 @@ class Setup:
             self.detector.template_file,
         ) = (root_folder, sample_name, template_imagefile)
 
-        params = {
-            "sample_name": sample_name,
-            "scan_number": scan_number,
-            "root_folder": root_folder,
-            "save_dir": save_dir,
-            "specfile_name": specfile_name,
-            "template_imagefile": template_imagefile,
-            "data_dirname": data_dirname,
-            "save_dirname": save_dirname,
-        }
-
         # create beamline-dependent path parameters
         (
             homedir,
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self._beamline.init_paths(params)
+        ) = self._beamline.init_paths(
+            sample_name=sample_name,
+            scan_number=scan_number,
+            root_folder=root_folder,
+            save_dir=save_dir,
+            specfile_name=specfile_name,
+            template_imagefile=template_imagefile,
+            data_dirname=data_dirname,
+            save_dirname=save_dirname,
+        )
 
         # define the data directory
         if data_dirname is not None:
