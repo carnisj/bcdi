@@ -53,12 +53,11 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         params = {
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
-            "wavelength_m": 2 * np.pi,
+            "wavelength": 2 * np.pi,
         }
-        print(self.beamline.exit_wavevector(params))
         self.assertTrue(
             np.allclose(
-                self.beamline.exit_wavevector(params),
+                self.beamline.exit_wavevector(**params),
                 np.array([0.0, 1.0, 0.0]),
                 rtol=1e-09,
                 atol=1e-09,

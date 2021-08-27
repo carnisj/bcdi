@@ -109,19 +109,16 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def exit_wavevector(params):
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
-        :param params: dictionnary of the setup parameters including the following keys:
-
-          - 'wavelength_m': X-ray wavelength in meters.
-          - 'inplane_angle': horizontal detector angle, in degrees.
-          - 'outofplane_angle': vertical detector angle, in degrees.
-
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
         :return: kout vector as a numpy array of shape (3)
         """
 
@@ -269,19 +266,29 @@ class BeamlineCRISTAL(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at CRISTAL.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
@@ -479,19 +486,29 @@ class BeamlineID01(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # nu is clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at ID01.
+
+        nu is clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    -np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
@@ -691,19 +708,29 @@ class BeamlineNANOMAX(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at Nanomax.
+
+        gamma is clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    -np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
@@ -902,19 +929,29 @@ class BeamlineP10(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at P10.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
@@ -1163,19 +1200,29 @@ class BeamlineSIXS(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at SIXS.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
@@ -1348,19 +1395,29 @@ class Beamline34ID(Beamline):
         return "z-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at 34ID-C.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )

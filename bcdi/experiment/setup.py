@@ -404,12 +404,11 @@ class Setup:
 
         :return: kout vector
         """
-        params = {
-            "inplane_angle": self.inplane_angle,
-            "outofplane_angle": self.outofplane_angle,
-            "wavelength_m": self.wavelength,
-        }
-        return self._beamline.exit_wavevector(params=params)
+        return self._beamline.exit_wavevector(
+            inplane_angle=self.inplane_angle,
+            outofplane_angle=self.outofplane_angle,
+            wavelength=self.wavelength,
+        )
 
     @property
     def filtered_data(self):
