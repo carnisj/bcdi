@@ -256,13 +256,28 @@ class BeamlineCRISTAL(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y+"
+        """
         return "y+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
@@ -476,13 +491,28 @@ class BeamlineID01(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y+"
+        """
         return "y+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
@@ -698,13 +728,28 @@ class BeamlineNANOMAX(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y+"
+        """
         return "y+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
@@ -919,13 +964,28 @@ class BeamlineP10(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from upstream, detector X is opposite to the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y-"
+        """
         return "y-"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
@@ -1190,13 +1250,28 @@ class BeamlineSIXS(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y+"
+        """
         return "y+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
@@ -1385,13 +1460,28 @@ class Beamline34ID(Beamline):
 
     @property
     def detector_hor(self):
-        # we look at the detector from upstream, detector X is opposite to the outboard
-        # direction
+        """
+        Horizontal detector orientation expressed in the frame of xrayutilities.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The frame convention of xrayutilities is the following: x downstream,
+        y outboard, z vertical up.
+
+        :return: "y-"
+        """
         return "y-"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
+        """
+        Vertical detector orientation expressed in the frame of xrayutilities.
+
+        The origin is at the top, detector Y along vertical down. The frame
+        convention of xrayutilities is the following: x downstream, y outboard,
+        z vertical up.
+
+        :return: "z-"
+        """
         return "z-"
 
     @staticmethod
