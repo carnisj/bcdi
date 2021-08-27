@@ -525,7 +525,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self._beamline.outofplane_coeff
+        return self._beamline.outofplane_coeff(self.diffractometer)
 
     @property
     def params(self):

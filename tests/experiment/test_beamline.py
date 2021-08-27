@@ -90,7 +90,7 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
 
 
 if __name__ == "__main__":
