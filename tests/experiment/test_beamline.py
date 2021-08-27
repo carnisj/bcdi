@@ -12,7 +12,7 @@ import os
 from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
-
+from bcdi.experiment.diffractometer import DiffractometerCRISTAL
 
 def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
@@ -42,6 +42,7 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         with open(datadir + "test.nxs", "w") as f:
             f.write("dummy")
         self.beamline = create_beamline("CRISTAL")
+        self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
 
     def test_detector_hor(self):
         self.assertTrue(self.beamline.detector_hor == "y+")
@@ -86,10 +87,10 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff, 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff, 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
 
 
 if __name__ == "__main__":
