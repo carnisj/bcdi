@@ -1332,7 +1332,8 @@ class Beamline34ID(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(**kwargs):
+        """Method not implemented."""
         raise NotImplementedError("create_logfile method not implemented for 34ID")
 
     @property
