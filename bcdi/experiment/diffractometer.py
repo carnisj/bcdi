@@ -12,7 +12,7 @@ Beamline-related diffractometer classes.
 
 These classes are not meant to be instantiated directly but via a Setup instance. The
 methods in child classes have the same signature as in the base class. The available
-beamlines are:
+diffractometers are:
 
 - DiffractometerID01
 - DiffractometerSIXS
