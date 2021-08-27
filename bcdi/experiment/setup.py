@@ -644,14 +644,13 @@ class Setup:
         :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
         :return: logfile
         """
-        params = {
-            "scan_number": scan_number,
-            "root_folder": root_folder,
-            "filename": filename,
-            "datadir": self.detector.datadir,
-            "template_imagefile": self.detector.template_imagefile,
-        }
-        return self._beamline.create_logfile(params=params)
+        return self._beamline.create_logfile(
+            scan_number=scan_number,
+            root_folder=root_folder,
+            filename=filename,
+            datadir=self.detector.datadir,
+            template_imagefile=self.detector.template_imagefile,
+            )
 
     def detector_frame(
         self,
