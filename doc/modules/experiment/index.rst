@@ -17,7 +17,7 @@ beamline
 ^^^^^^^^
 
 .. automodule:: bcdi.experiment.beamline
-   :members: create_beamline, Beamline
+   :members:
 
 detector
 ^^^^^^^^
