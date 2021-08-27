@@ -244,7 +244,7 @@ class BeamlineCRISTAL(Beamline):
         Create the logfile, which is the data itself for CRISTAL.
 
         :param datadir: str, the data directory
-        :param template_imagefile: the template for data file name, e.g. 'S%d.nxs'
+        :param template_imagefile: str, template for data file name, e.g. 'S%d.nxs'
         :param scan_number: int, the scan number to load
         :return: logfile
         """
@@ -458,7 +458,7 @@ class BeamlineID01(Beamline):
         Create the logfile, which is the spec file for ID01.
 
         :param root_folder: str, the root directory of the experiment, where is e.g. the
-         specfile/.fio file.
+         specfile file.
         :param filename: str, name of the spec file without '.spec'
         :return: logfile
         """
@@ -662,10 +662,21 @@ class BeamlineNANOMAX(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
-        ccdfiletmp = os.path.join(
-            params["datadir"] + params["template_imagefile"] % params["scan_number"]
-        )
+    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+        """
+        Create the logfile, which is the data itself for Nanomax.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
+        :param scan_number: int, the scan number to load
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError("scan_number should be an integer, "
+                            f"got {type(scan_number)}")
+        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
     @property
@@ -865,15 +876,19 @@ class BeamlineP10(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(root_folder, filename, **kwargs):
+        """
+        Create the logfile, which is the .fio file for P10.
+
+        :param root_folder: str, the root directory of the experiment, where the scan
+         folders are located.
+        :param filename: str, name of the .fio file (without ".fio")
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {root_folder, filename}):
+            raise TypeError("root_folder and filename should be strings")
         # load .fio file
-        return (
-            params["root_folder"]
-            + params["filename"]
-            + "/"
-            + params["filename"]
-            + ".fio"
-        )
+        return root_folder + filename + "/" + filename + ".fio"
 
     @property
     def detector_hor(self):
@@ -1092,16 +1107,37 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
-    def create_logfile(self, params):
-        shortname = params["template_imagefile"] % params["scan_number"]
+    def create_logfile(self, datadir, template_imagefile, scan_number,
+                       filename, **kwargs):
+        """
+        Create the logfile, which is the data itself for SIXS.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name:
+
+           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+
+        :param scan_number: int, the scan number to load
+        :param filename: str, name of the alias dictionary
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in
+                   {datadir, template_imagefile, filename}):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError("scan_number should be an integer, "
+                            f"got {type(scan_number)}")
+
+        shortname = template_imagefile % scan_number
         if self.name == "SIXS_2018":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.nxsReady as nxsReady
 
             return nxsReady.DataSet(
-                longname=params["datadir"] + shortname,
+                longname=datadir + shortname,
                 shortname=shortname,
-                alias_dict=params["filename"],
+                alias_dict=filename,
                 scan="SBS",
             )
         if self.name == "SIXS_2019":
@@ -1109,9 +1145,9 @@ class BeamlineSIXS(Beamline):
             import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
             return ReadNxs3.DataSet(
-                directory=params["datadir"],
+                directory=datadir,
                 filename=shortname,
-                alias_dict=params["filename"],
+                alias_dict=filename,
             )
         raise NotImplementedError(f"{self.name} is not implemented")
 
