@@ -64,13 +64,14 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def create_logfile(params):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which can be a log/spec file or the data itself.
 
         The nature of this file is beamline dependent.
 
-        :param params: dictionnary of the setup parameters including the following keys:
+        :param kwargs: beamline_specific parameters, which may include part of the
+         totality of the following keys:
 
           - 'scan_number': the scan number to load.
           - 'root_folder': the root directory of the experiment, where is e.g. the
@@ -238,11 +239,22 @@ class BeamlineCRISTAL(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+        """
+        Create the logfile, which is the data itself for CRISTAL.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: the template for data file name, e.g. 'S%d.nxs'
+        :param scan_number: int, the scan number to load
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError("scan_number should be an integer, "
+                            f"got {type(scan_number)}")
         # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(
-            params["datadir"] + params["template_imagefile"] % params["scan_number"]
-        )
+        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
     @property
@@ -441,9 +453,19 @@ class BeamlineID01(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(root_folder, filename, **kwargs):
+        """
+        Create the logfile, which is the spec file for ID01.
+
+        :param root_folder: str, the root directory of the experiment, where is e.g. the
+         specfile/.fio file.
+        :param filename: str, name of the spec file without '.spec'
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {root_folder, filename}):
+            raise ValueError("root_folder and filename should be strings")
         # load the spec file
-        return SpecFile(params["root_folder"] + params["filename"] + ".spec")
+        return SpecFile(root_folder + filename + ".spec")
 
     @property
     def detector_hor(self):
