@@ -195,3 +195,5 @@ class TestBeamlineSIXS2019(unittest.TestCase):
 
 if __name__ == "__main__":
     run_tests(TestBeamline)
+    run_tests(TestBeamlineCRISTAL)
+    run_tests(TestBeamlineSIXS2019)
