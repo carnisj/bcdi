@@ -74,6 +74,17 @@ class Setup:
 
     """
 
+    labframe_to_xrayutil = {
+        "x+": "y+",
+        "x-": "y-",
+        "y+": "z+",
+        "y-": "z-",
+        "z+": "x+",
+        "z-": "x-",
+    }  # conversion table from the laboratory frame (CXI convention)
+    # (z downstream, y vertical up, x outboard) to the frame of xrayutilities
+    # (x downstream, y outboard, z vertical up)
+
     def __init__(
         self,
         beamline,
@@ -186,7 +197,7 @@ class Setup:
     @property
     def beam_direction_xrutils(self):
         """
-        Direction of the incident X-ray beam.
+        Direction of the incident X-ray beam in xrayutilities frame.
 
         xrayutilities frame convention: (x downstream, y outboard, z vertical up).
         """
@@ -304,28 +315,30 @@ class Setup:
         self._detector = value
 
     @property
-    def detector_hor(self):
+    def detector_hor_xrutil(self):
         """
-        Expose the detector_hor beamline property to the outer world.
+        Convert the detector horizontal orientation to xrayutilities frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        The laboratory frame convention is (z downstream, y vertical, x outboard).
+        The frame convention of xrayutilities is (x downstream, y outboard,
+        z vertical up).
 
-        :return: "y+" or "y-" depending on the detector horizontal orientation
+        :return: "x+" or "x-" depending on the detector horizontal orientation
         """
-        return self._beamline.detector_hor
+        return self.labframe_to_xrayutil[self._beamline.detector_hor]
 
     @property
-    def detector_ver(self):
+    def detector_ver_xrutil(self):
         """
-        Expose the detector_ver beamline property to the outer world.
+        Convert the detector vertical orientation to xrayutilities frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        The laboratory frame convention is (z downstream, y vertical, x outboard).
+        The frame convention of xrayutilities is (x downstream, y outboard,
+        z vertical up).
 
         :return: "z+" or "z-" depending on the detector vertical orientation
         """
-        return self._beamline.detector_ver
+        return self.labframe_to_xrayutil[self._beamline.detector_ver]
 
     @property
     def diffractometer(self):
@@ -404,12 +417,11 @@ class Setup:
 
         :return: kout vector
         """
-        params = {
-            "inplane_angle": self.inplane_angle,
-            "outofplane_angle": self.outofplane_angle,
-            "wavelength_m": self.wavelength,
-        }
-        return self._beamline.exit_wavevector(params=params)
+        return self._beamline.exit_wavevector(
+            inplane_angle=self.inplane_angle,
+            outofplane_angle=self.outofplane_angle,
+            wavelength=self.wavelength,
+        )
 
     @property
     def filtered_data(self):
@@ -503,7 +515,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self._beamline.inplane_coeff
+        return self._beamline.inplane_coeff(self.diffractometer)
 
     @property
     def outofplane_angle(self):
@@ -526,7 +538,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self._beamline.outofplane_coeff
+        return self._beamline.outofplane_coeff(self.diffractometer)
 
     @property
     def params(self):
@@ -644,14 +656,13 @@ class Setup:
         :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
         :return: logfile
         """
-        params = {
-            "scan_number": scan_number,
-            "root_folder": root_folder,
-            "filename": filename,
-            "datadir": self.detector.datadir,
-            "template_imagefile": self.detector.template_imagefile,
-        }
-        return self._beamline.create_logfile(params=params)
+        return self._beamline.create_logfile(
+            scan_number=scan_number,
+            root_folder=root_folder,
+            filename=filename,
+            datadir=self.detector.datadir,
+            template_imagefile=self.detector.template_imagefile,
+        )
 
     def detector_frame(
         self,
@@ -852,24 +863,22 @@ class Setup:
             self.detector.template_file,
         ) = (root_folder, sample_name, template_imagefile)
 
-        params = {
-            "sample_name": sample_name,
-            "scan_number": scan_number,
-            "root_folder": root_folder,
-            "save_dir": save_dir,
-            "specfile_name": specfile_name,
-            "template_imagefile": template_imagefile,
-            "data_dirname": data_dirname,
-            "save_dirname": save_dirname,
-        }
-
         # create beamline-dependent path parameters
         (
             homedir,
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self._beamline.init_paths(params)
+        ) = self._beamline.init_paths(
+            sample_name=sample_name,
+            scan_number=scan_number,
+            root_folder=root_folder,
+            save_dir=save_dir,
+            specfile_name=specfile_name,
+            template_imagefile=template_imagefile,
+            data_dirname=data_dirname,
+            save_dirname=save_dirname,
+        )
 
         # define the data directory
         if data_dirname is not None:
@@ -1862,20 +1871,17 @@ class Setup:
         ###########################################################
         # calculate the transformation matrix in reciprocal space #
         ###########################################################
-        params = {
-            "wavelength": wavelength,
-            "distance": distance,
-            "pixel_x": pixel_x,
-            "pixel_y": pixel_y,
-            "inplane": inplane,
-            "outofplane": outofplane,
-            "grazing_angle": grazing_angle,
-            "rocking_angle": self.rocking_angle,
-            "tilt": tilt,
-        }
-
         mymatrix, q_offset = self._beamline.transformation_matrix(
-            params, verbose=verbose
+            wavelength=wavelength,
+            distance=distance,
+            pixel_x=pixel_x,
+            pixel_y=pixel_y,
+            inplane=inplane,
+            outofplane=outofplane,
+            grazing_angle=grazing_angle,
+            rocking_angle=self.rocking_angle,
+            tilt=tilt,
+            verbose=verbose,
         )
 
         ###############################################################

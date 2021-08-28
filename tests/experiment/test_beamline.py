@@ -12,6 +12,7 @@ import os
 from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
+from bcdi.experiment.diffractometer import DiffractometerCRISTAL
 
 
 def run_tests(test_class):
@@ -42,23 +43,23 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         with open(datadir + "test.nxs", "w") as f:
             f.write("dummy")
         self.beamline = create_beamline("CRISTAL")
+        self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
 
     def test_detector_hor(self):
-        self.assertTrue(self.beamline.detector_hor == "y+")
+        self.assertTrue(self.beamline.detector_hor == "x+")
 
     def test_detector_ver(self):
-        self.assertTrue(self.beamline.detector_ver == "z-")
+        self.assertTrue(self.beamline.detector_ver == "y-")
 
     def test_exit_wavevector(self):
         params = {
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
-            "wavelength_m": 2 * np.pi,
+            "wavelength": 2 * np.pi,
         }
-        print(self.beamline.exit_wavevector(params))
         self.assertTrue(
             np.allclose(
-                self.beamline.exit_wavevector(params),
+                self.beamline.exit_wavevector(**params),
                 np.array([0.0, 1.0, 0.0]),
                 rtol=1e-09,
                 atol=1e-09,
@@ -78,7 +79,7 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self.beamline.init_paths(params)
+        ) = self.beamline.init_paths(**params)
         self.assertEqual(
             homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
         )
@@ -87,10 +88,10 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff, 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff, 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
 
 
 if __name__ == "__main__":

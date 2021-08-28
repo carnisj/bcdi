@@ -867,8 +867,8 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 )
                 # detector init_area method, pixel sizes are the binned ones
                 hxrd.Ang2Q.init_area(
-                    setup.detector_ver,
-                    setup.detector_hor,
+                    setup.detector_ver_xrutil,
+                    setup.detector_hor_xrutil,
                     cch1=cch1,
                     cch2=cch2,
                     Nch1=nch1,

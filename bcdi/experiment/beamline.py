@@ -10,7 +10,8 @@
 """
 Beamline-related classes.
 
-The methods in child classes have the same signature as in the base class. The available
+These classes are not meant to be instantiated directly but via a Setup instance. The
+methods in child classes have the same signature as in the base class. The available
 beamlines are:
 
 - BeamlineID01
@@ -54,22 +55,26 @@ def create_beamline(name):
 class Beamline(ABC):
     """Base class for defining a beamline."""
 
-    detector_orientation = {"y-": 1, "y+": -1, "z-": 1, "z+": -1}
-    # "y-" detector horizontal axis inboard, as it should be in the CXI convention
-    # "z-" detector vertical axis down, as it should be in the CXI convention
+    orientation_lookup = {"x-": 1, "x+": -1, "y-": 1, "y+": -1}  # lookup table for the
+    # detector orientation and rotation direction, where axes are expressed in the
+    # laboratory frame (z downstream, y vertical up, x outboard).
+    # Expected detector orientation:
+    # "x-" detector horizontal axis inboard, as it should be in the CXI convention
+    # "y-" detector vertical axis down, as it should be in the CXI convention
 
     def __init__(self, name):
         self._name = name
 
     @staticmethod
     @abstractmethod
-    def create_logfile(params):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which can be a log/spec file or the data itself.
 
         The nature of this file is beamline dependent.
 
-        :param params: dictionnary of the setup parameters including the following keys:
+        :param kwargs: beamline_specific parameters, which may include part of the
+         totality of the following keys:
 
           - 'scan_number': the scan number to load.
           - 'root_folder': the root directory of the experiment, where is e.g. the
@@ -85,51 +90,48 @@ class Beamline(ABC):
     @abstractmethod
     def detector_hor(self):
         """
-        Horizontal detector orientation expressed in the frame of xrayutilities.
+        Horizontal detector orientation expressed in the laboratory frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        This is beamline-dependent. The laboratory frame convention is
+        (z downstream, y vertical, x outboard).
 
-        :return: "y+" or "y-"
+        :return: "x+" or "x-"
         """
 
     @property
     @abstractmethod
     def detector_ver(self):
         """
-        Vertical detector orientation expressed in the frame of xrayutilities.
+        Vertical detector orientation expressed in the laboratory frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        This is beamline-dependent. The laboratory frame convention is
+        (z downstream, y vertical, x outboard).
 
-        :return: "z+" or "z-"
+        :return: "y+" or "y-"
         """
 
     @staticmethod
     @abstractmethod
-    def exit_wavevector(params):
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
-        :param params: dictionnary of the setup parameters including the following keys:
-
-          - 'wavelength_m': X-ray wavelength in meters.
-          - 'inplane_angle': horizontal detector angle, in degrees.
-          - 'outofplane_angle': vertical detector angle, in degrees.
-
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
         :return: kout vector as a numpy array of shape (3)
         """
 
     @staticmethod
     @abstractmethod
-    def init_paths(params):
+    def init_paths(**kwargs):
         """
         Initialize paths used for data processing and logging.
 
-        :param params: dictionnary of the setup parameters including the following keys:
+        :param kwargs: dictionnary of the setup parameters including the following keys:
 
          - 'sample_name': string in front of the scan number in the data folder
            name.
@@ -163,17 +165,18 @@ class Beamline(ABC):
 
         """
 
-    @property
     @abstractmethod
-    def inplane_coeff(self):
+    def inplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector inplane orientation.
 
         Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        and the detector inplane orientation. The frame convention is the one of
-        xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
+
+        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
 
@@ -182,44 +185,52 @@ class Beamline(ABC):
         """Name of the beamline."""
         return self._name
 
-    @property
     @abstractmethod
-    def outofplane_coeff(self):
+    def outofplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector vertical orientation.
 
         Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction and the detector out of  plane orientation. The frame convention is
-        the one of xrayutilities: x downstream, y outboard, z vertical up. See
-        scripts/postprocessing/correct_angles_detector.py for a use case.
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
 
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
+
+        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
 
     @abstractmethod
-    def transformation_matrix(self, params, verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param params: dictionnary of the setup parameters including the following keys:
-
-         - 'wavelength': X-ray wasvelength in nm
-         - 'distance': detector distance in nm
-         - 'pixel_x': horizontal detector pixel size in nm
-         - 'pixel_y': vertical detector pixel size in nm
-         - 'inplane': horizontal detector angle in radians
-         - 'outofplane': vertical detector angle in radians
-         - 'grazing_angle': angle or list of angles of the sample circles which are
-           below the rotated circle
-         - 'tilt': angular step of the rocking curve in radians
-         - 'rocking_angle': "outofplane", "inplane" or "energy"
-         - 'array_shape': shape of the 3D array to orthogonalize
-
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
         :param verbose: True to have printed comments
-
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -237,77 +248,172 @@ class BeamlineCRISTAL(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+        """
+        Create the logfile, which is the data itself for CRISTAL.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name, e.g. 'S%d.nxs'
+        :param scan_number: int, the scan number to load
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
         # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(
-            params["datadir"] + params["template_imagefile"] % params["scan_number"]
-        )
+        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
-        return "y+"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory
+        frame convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at CRISTAL.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at CRISTAL.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.nxs'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at CRISTAL.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        gamma is anti-clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -327,7 +433,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -335,7 +441,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -383,7 +489,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -391,7 +497,7 @@ class BeamlineCRISTAL(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -440,74 +546,176 @@ class BeamlineID01(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(root_folder, filename, **kwargs):
+        """
+        Create the logfile, which is the spec file for ID01.
+
+        :param root_folder: str, the root directory of the experiment, where is e.g. the
+         specfile file.
+        :param filename: str, name of the spec file without '.spec'
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {root_folder, filename}):
+            raise ValueError("root_folder and filename should be strings")
         # load the spec file
-        return SpecFile(params["root_folder"] + params["filename"] + ".spec")
+        return SpecFile(root_folder + filename + ".spec")
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
-        return "y+"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # nu is clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at ID01.
+
+        nu is clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    -np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(
+        root_folder,
+        sample_name,
+        scan_number,
+        specfile_name,
+        template_imagefile,
+        **kwargs,
+    ):
+        """
+        Initialize paths used for data processing and logging at ID01.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param specfile_name: name of the spec file without '.spec'
+        :param template_imagefile: template for the data files, e.g.
+         'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, specfile_name, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # nu is clockwise, we see the detector from downstream
-        return 1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at ID01.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        nu is clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -529,14 +737,14 @@ class BeamlineID01(Beamline):
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)])
             )
             mymatrix[:, 1] = (
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -583,14 +791,14 @@ class BeamlineID01(Beamline):
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-pixel_x * np.cos(inplane), 0, -pixel_x * np.sin(inplane)])
             )
             mymatrix[:, 1] = (
                 2
                 * np.pi
                 / lambdaz
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         -pixel_y * np.sin(inplane) * np.sin(outofplane),
@@ -639,76 +847,171 @@ class BeamlineNANOMAX(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
-        ccdfiletmp = os.path.join(
-            params["datadir"] + params["template_imagefile"] % params["scan_number"]
-        )
+    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+        """
+        Create the logfile, which is the data itself for Nanomax.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
+        :param scan_number: int, the scan number to load
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
+        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
-        return "y+"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at Nanomax.
+
+        gamma is clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    -np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + "{:06d}".format(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at Nanomax.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '%06d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is clockwise, we see the detector from downstream
-        return 1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at Nanomax.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        gamma is clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -729,7 +1032,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -737,7 +1040,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         -np.sin(inplane) * np.sin(outofplane),
@@ -785,7 +1088,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, -np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -793,7 +1096,7 @@ class BeamlineNANOMAX(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         -np.sin(inplane) * np.sin(outofplane),
@@ -842,75 +1145,169 @@ class BeamlineP10(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(root_folder, filename, **kwargs):
+        """
+        Create the logfile, which is the .fio file for P10.
+
+        :param root_folder: str, the root directory of the experiment, where the scan
+         folders are located.
+        :param filename: str, name of the .fio file (without ".fio")
+        :return: logfile
+        """
+        if not all(isinstance(val, str) for val in {root_folder, filename}):
+            raise TypeError("root_folder and filename should be strings")
         # load .fio file
-        return (
-            params["root_folder"]
-            + params["filename"]
-            + "/"
-            + params["filename"]
-            + ".fio"
-        )
+        return root_folder + filename + "/" + filename + ".fio"
 
     @property
     def detector_hor(self):
-        # we look at the detector from upstream, detector X is opposite to the outboard
-        # direction
-        return "y-"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x-"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at P10.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        specfile = params["sample_name"] + "_{:05d}".format(params["scan_number"])
-        homedir = params["root_folder"] + specfile + "/"
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at P10.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '_master.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        specfile = sample_name + "_{:05d}".format(scan_number)
+        homedir = root_folder + specfile + "/"
         default_dirname = "e4m/"
-        template_imagefile = specfile + params["template_imagefile"]
+        template_imagefile = specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at P10.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        gamma is anti-clockwise, we see the detector from the front.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -930,7 +1327,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -938,7 +1335,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -997,7 +1394,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1005,7 +1402,7 @@ class BeamlineP10(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1069,16 +1466,40 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
-    def create_logfile(self, params):
-        shortname = params["template_imagefile"] % params["scan_number"]
+    def create_logfile(
+        self, datadir, template_imagefile, scan_number, filename, **kwargs
+    ):
+        """
+        Create the logfile, which is the data itself for SIXS.
+
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name:
+
+           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+
+        :param scan_number: int, the scan number to load
+        :param filename: str, name of the alias dictionary
+        :return: logfile
+        """
+        if not all(
+            isinstance(val, str) for val in {datadir, template_imagefile, filename}
+        ):
+            raise TypeError("datadir and template_imagefile should be strings")
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
+
+        shortname = template_imagefile % scan_number
         if self.name == "SIXS_2018":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.nxsReady as nxsReady
 
             return nxsReady.DataSet(
-                longname=params["datadir"] + shortname,
+                longname=datadir + shortname,
                 shortname=shortname,
-                alias_dict=params["filename"],
+                alias_dict=filename,
                 scan="SBS",
             )
         if self.name == "SIXS_2019":
@@ -1086,53 +1507,95 @@ class BeamlineSIXS(Beamline):
             import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
             return ReadNxs3.DataSet(
-                directory=params["datadir"],
+                directory=datadir,
                 filename=shortname,
-                alias_dict=params["filename"],
+                alias_dict=filename,
             )
         raise NotImplementedError(f"{self.name} is not implemented")
 
     @property
     def detector_hor(self):
-        # we look at the detector from downstream, detector X is along the outboard
-        # direction
-        return "y+"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from downstream, detector X is along the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x+"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at SIXS.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(
+        root_folder,
+        sample_name,
+        scan_number,
+        specfile_name,
+        template_imagefile,
+        **kwargs,
+    ):
+        """
+        Initialize paths used for data processing and logging at SIXS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param specfile_name: None or full path of the alias dictionnary (e.g.
+         root_folder+'alias_dict_2019.txt')
+        :param template_imagefile: template for the data files, e.g.
+         'align.spec_ascan_mu_%05d.nxs' (SIXS_2018), 'spare_ascan_mu_%05d.nxs'
+         (SIXS_2019).
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
 
-        if params["specfile_name"] is None:
+        if specfile_name is None:
             # default to the alias dictionnary located within the package
             specfile = os.path.abspath(
                 os.path.join(
@@ -1142,32 +1605,85 @@ class BeamlineSIXS(Beamline):
                 )
             )
         else:
-            specfile = params["specfile_name"]
+            specfile = specfile_name
 
-        template_imagefile = params["template_imagefile"]
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # gamma is anti-clockwise, we see the detector from downstream
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector inplane orientation at SIXS.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        gamma is anti-clockwise, we see the detector from downstream.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -1187,7 +1703,7 @@ class BeamlineSIXS(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array(
                     [
                         -np.cos(inplane),
@@ -1201,7 +1717,7 @@ class BeamlineSIXS(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1273,73 +1789,159 @@ class Beamline34ID(Beamline):
         super().__init__(name=name)
 
     @staticmethod
-    def create_logfile(params):
+    def create_logfile(**kwargs):
+        """Create logfile for 34ID-C."""
         raise NotImplementedError("create_logfile method not implemented for 34ID")
 
     @property
     def detector_hor(self):
-        # we look at the detector from upstream, detector X is opposite to the outboard
-        # direction
-        return "y-"
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x-"
 
     @property
     def detector_ver(self):
-        # origin is at the top, detector Y along vertical down
-        return "z-"
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
 
     @staticmethod
-    def exit_wavevector(params):
-        # gamma is anti-clockwise
+    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout at 34ID-C.
+
+        gamma is anti-clockwise. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
         kout = (
             2
             * np.pi
-            / params["wavelength_m"]
+            / wavelength
             * np.array(
                 [
-                    np.cos(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # z
-                    np.sin(np.pi * params["outofplane_angle"] / 180),  # y
-                    np.sin(np.pi * params["inplane_angle"] / 180)
-                    * np.cos(np.pi * params["outofplane_angle"] / 180),  # x
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
         )
         return kout
 
     @staticmethod
-    def init_paths(params):
-        homedir = (
-            params["root_folder"]
-            + params["sample_name"]
-            + str(params["scan_number"])
-            + "/"
-        )
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at SIXS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g.
+         'Sample%dC_ES_data_51_256_256.npz'.
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        specfile = params["specfile_name"]
-        template_imagefile = params["template_imagefile"]
-        return homedir, default_dirname, specfile, template_imagefile
+        return homedir, default_dirname, "", template_imagefile
 
-    @property
-    def inplane_coeff(self):
-        # delta is anti-clockwise, we see the detector from the front
-        return -1 * self.detector_orientation[self.detector_hor]
+    def inplane_coeff(self, diffractometer):
+        #
+        """
+        Coefficient related to the detector inplane orientation at SIXS.
 
-    @property
-    def outofplane_coeff(self):
-        # the out of plane detector rotation is clockwise
-        return 1 * self.detector_orientation[self.detector_ver]
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+        delta is anti-clockwise, we see the detector from the front.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self, diffractometer):
+        """
+        Coefficient related to the detector vertical orientation at CRISTAL.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        The out of plane detector rotation is clockwise.
+
+        :param diffractometer: Diffractometer instance of the beamline.
+        :return: +1 or -1
+        """
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -1359,7 +1961,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1367,7 +1969,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),
@@ -1414,7 +2016,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_x
-                * self.detector_orientation[self.detector_hor]
+                * self.orientation_lookup[self.detector_hor]
                 * np.array([-np.cos(inplane), 0, np.sin(inplane)])
             )
             mymatrix[:, 1] = (
@@ -1422,7 +2024,7 @@ class Beamline34ID(Beamline):
                 * np.pi
                 / lambdaz
                 * pixel_y
-                * self.detector_orientation[self.detector_ver]
+                * self.orientation_lookup[self.detector_ver]
                 * np.array(
                     [
                         np.sin(inplane) * np.sin(outofplane),

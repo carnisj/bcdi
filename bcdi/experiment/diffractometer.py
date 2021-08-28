@@ -7,7 +7,22 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-"""Diffractometer class."""
+"""
+Beamline-related diffractometer classes.
+
+These classes are not meant to be instantiated directly but via a Setup instance. The
+methods in child classes have the same signature as in the base class. The available
+diffractometers are:
+
+- DiffractometerID01
+- DiffractometerSIXS
+- Diffractometer34ID
+- DiffractometerP10
+- DiffractometerCRISTAL
+- DiffractometerNANOMAX
+
+"""
+
 from abc import ABC, abstractmethod
 from functools import reduce
 from numbers import Number, Real
@@ -42,7 +57,7 @@ def create_diffractometer(beamline, sample_offsets):
     if beamline == "NANOMAX":
         return DiffractometerNANOMAX(sample_offsets)
     raise NotImplementedError(
-        "No diffractometer implemented for the " f"beamline {sample_offsets}"
+        f"No diffractometer implemented for the beamline {beamline}"
     )
 
 
