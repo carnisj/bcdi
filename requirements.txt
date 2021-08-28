@@ -7,8 +7,6 @@ h5py
 traits
 importlib_resources
 xrayutilities
-pyqt5
-pyqtgraph
 vtk
 fabio
 silx
@@ -20,7 +18,6 @@ coverage
 doit
 pycodestyle
 pydocstyle
-pyfakefs
 sphinx
 twine
 wheel
