@@ -1607,7 +1607,6 @@ class BeamlineSIXS(Beamline):
         else:
             specfile = specfile_name
 
-        template_imagefile = template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     def inplane_coeff(self, diffractometer):
