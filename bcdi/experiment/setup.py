@@ -922,6 +922,27 @@ class Setup:
                     f"template_imagefile = '{self.detector.template_file}'\n"
                 )
 
+    def init_qconversion(self):
+        """
+        Initialize the qconv object for xrayutilities depending on the setup parameters.
+
+        The convention in xrayutilities is x downstream, z vertical up, y outboard.
+        Note: the user-defined motor offsets are applied directly when reading motor
+        positions, therefore do not need to be taken into account in xrayutilities apart
+        from the detector inplane offset determined by the area detector calibration.
+
+        :return: a tuple containing:
+
+         - the qconv object for xrayutilities
+         - a tuple of motor offsets used later for q calculation
+
+        """
+        return self._beamline.init_qconversion(
+            conversion_table=self.labframe_to_xrayutil,
+            beam_direction=self.beam_direction_xrutils,
+            offset_inplane=self.offset_inplane,
+            diffractometer=self.diffractometer)
+
     def ortho_directspace(
         self,
         arrays,

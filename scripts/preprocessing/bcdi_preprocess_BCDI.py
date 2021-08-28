@@ -836,7 +836,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             gc.collect()
 
             if interp_method == "xrayutilities":
-                qconv, offsets = pru.init_qconversion(setup)
+                qconv, offsets = setup.init_qconversion()
                 detector.offsets = offsets
                 hxrd = xu.experiment.HXRD(
                     sample_inplane, sample_outofplane, en=energy, qconv=qconv

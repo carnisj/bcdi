@@ -68,7 +68,7 @@ setup = exp.Setup(
     sample_outofplane=sample_outofplane,
 )
 
-qconv, _ = pru.init_qconversion(setup)
+qconv, _ = setup.init_qconversion()
 
 #################################################################
 # initialize experimental class with directions from experiment #

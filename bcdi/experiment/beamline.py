@@ -28,6 +28,7 @@ import os
 import h5py
 from math import isclose
 from silx.io.specfile import SpecFile
+import xrayutilities as xu
 
 
 def create_beamline(name):
@@ -164,6 +165,60 @@ class Beamline(ABC):
          - template_imagefile: the template for data/image file names
 
         """
+
+    @staticmethod
+    def init_qconversion(conversion_table, beam_direction, offset_inplane,
+                         diffractometer):
+        """
+        Initialize the qconv object for xrayutilities depending on the setup parameters.
+
+        The convention in xrayutilities is x downstream, z vertical up, y outboard.
+        Note: the user-defined motor offsets are applied directly when reading motor
+        positions, therefore do not need to be taken into account in xrayutilities apart
+        from the detector inplane offset determined by the area detector calibration.
+
+        :param conversion_table: dictionary where keys are axes in the laboratory frame
+         (z downstream, y vertical up, x outboard) and values are the corresponding
+         axes in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+         E.g. {"x+": "y+", "x-": "y-", "y+": "z+", "y-": "z-", "z+": "x+", "z-": "x-"}
+        :param beam_direction: direction of the incident X-ray beam in the frame of
+         xrayutilities.
+        :param offset_inplane: inplane offset of the detector defined as the outer angle
+         in xrayutilities area detector calibration.
+        :param diffractometer: instance of the class Diffractometer
+        :return: a tuple containing:
+
+         - the qconv object for xrayutilities
+         - a tuple of motor offsets used later for q calculation
+
+        """
+        sample_circles = [conversion_table[val] for val in
+                          diffractometer.sample_circles]
+        detector_circles = [conversion_table[val] for val in
+                            diffractometer.detector_circles]
+        qconv = xu.experiment.QConversion(
+            sample_circles, detector_circles, r_i=beam_direction
+        )
+
+        # create the tuple of offsets, all 0 except for the detector inplane circle
+        # first, look for the index of the inplane detector circle
+        index = None
+        for idx, val in enumerate(detector_circles):
+            if val.startswith("z"):
+                index = idx
+
+        # create the tuple of offsets
+        if index is None:
+            print("no detector inplane circle detected, discarding 'offset_inplane'")
+            offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
+        else:
+            offsets = [0 for _ in range(len(sample_circles)+index)]
+            offsets.append(offset_inplane)
+            offsets = [offsets.append(0) for _ in range(len(detector_circles)-index-1)]
+        if len(offsets) != len(sample_circles) + len(detector_circles):
+            raise ValueError("Wrong length for 'offsets'")
+
+        return qconv, offsets
 
     @abstractmethod
     def inplane_coeff(self, diffractometer):
