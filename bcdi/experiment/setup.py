@@ -653,7 +653,8 @@ class Setup:
         :param scan_number: the scan number to load
         :param root_folder: the root directory of the experiment, where is the
          specfile/.fio file
-        :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
+        :param filename: the file name to load, or the absolute path of
+         'alias_dict.txt' for SIXS
         :return: logfile
         """
         return self._beamline.create_logfile(

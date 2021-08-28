@@ -127,6 +127,45 @@ class Beamline(ABC):
         """
 
     @staticmethod
+    def find_inplane(diffractometer):
+        """
+        Find the index of the detector inplane circle.
+
+        It looks for the index of the detector inplane rotation in the detector_circles
+        property of the diffractometer ("y+" or "y-") . The coordinate
+        convention is the laboratory  frame (z downstream, y vertical up, x outboard).
+
+        :param: diffractometer: an instance of the class Diffractometer
+        :return: int, the index. None if not found.
+        """
+        index = None
+        for idx, val in enumerate(diffractometer.detector_circles):
+            if val.startswith("y"):
+                index = idx
+        return index
+
+    @staticmethod
+    def find_outofplane(diffractometer):
+        """
+        Find the index of the detector out-of-plane circle.
+
+        It looks for the index of the detector out-of-plane rotation in the
+        detector_circles property of the diffractometer (typically "x-") . The
+        coordinate convention is the laboratory  frame (z downstream, y vertical up,
+        x outboard). This is useful only for SIXS where there are two out-of-plane
+        detector rotations due to the beta circle. We need the index of the most inner
+        circle, not beta.
+
+        :param: diffractometer: an instance of the class Diffractometer
+        :return: int, the index. None if not found.
+        """
+        index = None
+        for idx, val in enumerate(diffractometer.detector_circles):
+            if val.startswith("x"):
+                index = idx
+        return index
+
+    @staticmethod
     @abstractmethod
     def init_paths(**kwargs):
         """
@@ -166,8 +205,7 @@ class Beamline(ABC):
 
         """
 
-    @staticmethod
-    def init_qconversion(conversion_table, beam_direction, offset_inplane,
+    def init_qconversion(self, conversion_table, beam_direction, offset_inplane,
                          diffractometer):
         """
         Initialize the qconv object for xrayutilities depending on the setup parameters.
@@ -192,6 +230,10 @@ class Beamline(ABC):
          - a tuple of motor offsets used later for q calculation
 
         """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane(diffractometer=diffractometer)
+
+        # convert axes from the laboratory frame to the frame of xrayutilies
         sample_circles = [conversion_table[val] for val in
                           diffractometer.sample_circles]
         detector_circles = [conversion_table[val] for val in
@@ -201,13 +243,6 @@ class Beamline(ABC):
         )
 
         # create the tuple of offsets, all 0 except for the detector inplane circle
-        # first, look for the index of the inplane detector circle
-        index = None
-        for idx, val in enumerate(detector_circles):
-            if val.startswith("z"):
-                index = idx
-
-        # create the tuple of offsets
         if index is None:
             print("no detector inplane circle detected, discarding 'offset_inplane'")
             offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
@@ -218,7 +253,6 @@ class Beamline(ABC):
 
         return qconv, offsets
 
-    @abstractmethod
     def inplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector inplane orientation.
@@ -232,13 +266,18 @@ class Beamline(ABC):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane(diffractometer=diffractometer)
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[index]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     @property
     def name(self):
         """Name of the beamline."""
         return self._name
 
-    @abstractmethod
     def outofplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector vertical orientation.
@@ -252,6 +291,12 @@ class Beamline(ABC):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
+        # look for the index of the out-of-plane detector circle
+        index = self.find_outofplane(diffractometer=diffractometer)
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[index]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
     @abstractmethod
     def transformation_matrix(
@@ -391,42 +436,6 @@ class BeamlineCRISTAL(Beamline):
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
-
-    def inplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector inplane orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        gamma is anti-clockwise, we see the detector from downstream.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
 
     def transformation_matrix(
         self,
@@ -694,42 +703,6 @@ class BeamlineID01(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
-    def inplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector inplane orientation at ID01.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        nu is clockwise, we see the detector from downstream.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
-
     def transformation_matrix(
         self,
         wavelength,
@@ -989,42 +962,6 @@ class BeamlineNANOMAX(Beamline):
         homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
-
-    def inplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector inplane orientation at Nanomax.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        gamma is clockwise, we see the detector from downstream.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
 
     def transformation_matrix(
         self,
@@ -1286,42 +1223,6 @@ class BeamlineP10(Beamline):
         template_imagefile = specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
-    def inplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector inplane orientation at P10.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        gamma is anti-clockwise, we see the detector from the front.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
-
     def transformation_matrix(
         self,
         wavelength,
@@ -1532,7 +1433,7 @@ class BeamlineSIXS(Beamline):
            - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 
         :param scan_number: int, the scan number to load
-        :param filename: str, name of the alias dictionary
+        :param filename: str, absolute path of 'alias_dict.txt'
         :return: logfile
         """
         if not all(
@@ -1661,42 +1562,6 @@ class BeamlineSIXS(Beamline):
             specfile = specfile_name
 
         return homedir, default_dirname, specfile, template_imagefile
-
-    def inplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector inplane orientation at SIXS.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        gamma is anti-clockwise, we see the detector from downstream.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
 
     def transformation_matrix(
         self,
@@ -1918,43 +1783,6 @@ class Beamline34ID(Beamline):
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
-
-    def inplane_coeff(self, diffractometer):
-        #
-        """
-        Coefficient related to the detector inplane orientation at SIXS.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        delta is anti-clockwise, we see the detector from the front.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[0]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self, diffractometer):
-        """
-        Coefficient related to the detector vertical orientation at CRISTAL.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        The out of plane detector rotation is clockwise.
-
-        :param diffractometer: Diffractometer instance of the beamline.
-        :return: +1 or -1
-        """
-        return (
-            self.orientation_lookup[diffractometer.detector_circles[1]]
-            * self.orientation_lookup[self.detector_ver]
-        )
 
     def transformation_matrix(
         self,
