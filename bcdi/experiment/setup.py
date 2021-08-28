@@ -73,6 +73,16 @@ class Setup:
        of data keeps changing)
 
     """
+    labframe_to_xrayutil = {
+        "x+": "y+",
+        "x-": "y-",
+        "y+": "z+",
+        "y-": "z-",
+        "z+": "x+",
+        "z-": "x-",
+    }  # conversion table from the laboratory frame (CXI convention)
+    # (z downstream, y vertical up, x outboard) to the frame of xrayutilities
+    # (x downstream, y outboard, z vertical up)
 
     def __init__(
         self,
@@ -186,7 +196,7 @@ class Setup:
     @property
     def beam_direction_xrutils(self):
         """
-        Direction of the incident X-ray beam.
+        Direction of the incident X-ray beam in xrayutilities frame.
 
         xrayutilities frame convention: (x downstream, y outboard, z vertical up).
         """
@@ -304,28 +314,31 @@ class Setup:
         self._detector = value
 
     @property
-    def detector_hor(self):
+    def detector_hor_xrutil(self):
         """
-        Expose the detector_hor beamline property to the outer world.
+        Convert the detector horizontal orientation to xrayutilities frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        The laboratory frame convention is (z downstream, y vertical, x outboard).
+        The frame convention of xrayutilities is (x downstream, y outboard,
+        z vertical up).
 
-        :return: "y+" or "y-" depending on the detector horizontal orientation
+        :return: "x+" or "x-" depending on the detector horizontal orientation
         """
-        return self._beamline.detector_hor
+        return self.labframe_to_xrayutil[self._beamline.detector_hor]
 
     @property
-    def detector_ver(self):
+    def detector_ver_xrutil(self):
         """
-        Expose the detector_ver beamline property to the outer world.
+        Convert the detector vertical orientation to xrayutilities frame.
 
-        This is beamline-dependent. The frame convention of xrayutilities is the
-        following: x downstream, y outboard, z vertical up.
+        The laboratory frame convention is (z downstream, y vertical, x outboard).
+        The frame convention of xrayutilities is (x downstream, y outboard,
+        z vertical up).
 
         :return: "z+" or "z-" depending on the detector vertical orientation
         """
-        return self._beamline.detector_ver
+
+        return self.labframe_to_xrayutil[self._beamline.detector_ver]
 
     @property
     def diffractometer(self):

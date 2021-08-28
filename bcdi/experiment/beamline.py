@@ -1527,7 +1527,6 @@ class BeamlineSIXS(Beamline):
         template_imagefile = template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
-    @property
     def inplane_coeff(self, diffractometer):
         """
         Coefficient related to the detector inplane orientation at SIXS.
