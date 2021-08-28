@@ -45,10 +45,10 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
 
     def test_detector_hor(self):
-        self.assertTrue(self.beamline.detector_hor == "y+")
+        self.assertTrue(self.beamline.detector_hor == "x+")
 
     def test_detector_ver(self):
-        self.assertTrue(self.beamline.detector_ver == "z-")
+        self.assertTrue(self.beamline.detector_ver == "y-")
 
     def test_exit_wavevector(self):
         params = {
