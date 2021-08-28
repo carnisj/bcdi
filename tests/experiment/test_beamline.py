@@ -12,7 +12,11 @@ import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 from bcdi.experiment.diffractometer import (
     DiffractometerCRISTAL,
-    DiffractometerSIXS
+    DiffractometerNANOMAX,
+    DiffractometerID01,
+    DiffractometerP10,
+    Diffractometer34ID,
+    DiffractometerSIXS,
 )
 
 # conversion table from the laboratory frame (CXI convention)
@@ -40,6 +44,46 @@ class TestBeamline(unittest.TestCase):
     def test_create_beamline_from_abc(self):
         with self.assertRaises(TypeError):
             Beamline(name="ID01")
+
+    def test_find_inplane_NANOMAX(self):
+        beamline = create_beamline("NANOMAX")
+        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
+        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+
+    def test_find_outofplane_NANOMAX(self):
+        beamline = create_beamline("NANOMAX")
+        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
+        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+
+    def test_find_inplane_ID01(self):
+        beamline = create_beamline("ID01")
+        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
+        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+
+    def test_find_outofplane_ID01(self):
+        beamline = create_beamline("ID01")
+        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
+        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+
+    def test_find_inplane_P10(self):
+        beamline = create_beamline("P10")
+        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
+        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+
+    def test_find_outofplane_P10(self):
+        beamline = create_beamline("P10")
+        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
+        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+
+    def test_find_inplane_34ID(self):
+        beamline = create_beamline("34ID")
+        diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
+        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+
+    def test_find_outofplane_34ID(self):
+        beamline = create_beamline("34ID")
+        diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
+        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
 
 
 class TestBeamlineCRISTAL(unittest.TestCase):
@@ -77,6 +121,12 @@ class TestBeamlineCRISTAL(unittest.TestCase):
                 atol=1e-09,
             )
         )
+
+    def test_find_inplane_CRISTAL(self):
+        self.assertTrue(self.beamline.find_inplane(self.diffractometer) == 0)
+
+    def test_find_outofplane_CRISTAL(self):
+        self.assertTrue(self.beamline.find_outofplane(self.diffractometer) == 1)
 
     def test_init_paths(self):
         params = {
@@ -155,6 +205,12 @@ class TestBeamlineSIXS2019(unittest.TestCase):
                 atol=1e-09,
             )
         )
+
+    def test_find_inplane_SIXS(self):
+        self.assertTrue(self.beamline.find_inplane(self.diffractometer) == 1)
+
+    def test_find_outofplane_SIXS(self):
+        self.assertTrue(self.beamline.find_outofplane(self.diffractometer) == 2)
 
     def test_init_paths(self):
         params = {
