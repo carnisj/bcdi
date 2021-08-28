@@ -8,11 +8,18 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-import os
-from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 from bcdi.experiment.diffractometer import DiffractometerCRISTAL
+
+labframe_to_xrayutil = {
+    "x+": "y+",
+    "x-": "y-",
+    "y+": "z+",
+    "y-": "z-",
+    "z+": "x+",
+    "z-": "x-",
+}
 
 
 def run_tests(test_class):
@@ -29,21 +36,19 @@ class TestBeamline(unittest.TestCase):
             Beamline(name="ID01")
 
 
-class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
+class TestBeamlineCRISTAL(unittest.TestCase):
     """Tests related to CRISTAL beamline instantiation."""
 
     def setUp(self):
-        self.setUpPyfakefs()
+        self.conversion_table = labframe_to_xrayutil
         self.root_dir = "D:/data/Cristal/"
         self.sample_name = "S"
         self.scan_number = 1
         self.template_imagefile = self.sample_name + "%d.nxs"
-        datadir = self.root_dir + self.sample_name + str(self.scan_number)
-        os.makedirs(datadir)
-        with open(datadir + "test.nxs", "w") as f:
-            f.write("dummy")
         self.beamline = create_beamline("CRISTAL")
         self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
+        self.beam_direction = np.array([1, 0, 0])
+        self.offset_inplane = 1
 
     def test_detector_hor(self):
         self.assertTrue(self.beamline.detector_hor == "x+")
@@ -86,6 +91,19 @@ class TestBeamlineCRISTAL(fake_filesystem_unittest.TestCase):
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, "")
         self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
+
+    def test_init_qconversion(self):
+        qconv, offsets = self.beamline.init_qconversion(
+            conversion_table=self.conversion_table,
+            beam_direction=self.beam_direction,
+            offset_inplane=self.offset_inplane,
+            diffractometer=self.diffractometer,
+        )
+        nb_circles = len(self.diffractometer.sample_circles) +\
+            len(self.diffractometer.detector_circles)
+        print(offsets)
+        self.assertEqual(len(offsets), nb_circles)
+        self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
         self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)

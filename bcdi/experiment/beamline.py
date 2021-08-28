@@ -214,9 +214,7 @@ class Beamline(ABC):
         else:
             offsets = [0 for _ in range(len(sample_circles)+index)]
             offsets.append(offset_inplane)
-            offsets = [offsets.append(0) for _ in range(len(detector_circles)-index-1)]
-        if len(offsets) != len(sample_circles) + len(detector_circles):
-            raise ValueError("Wrong length for 'offsets'")
+            [offsets.append(0) for _ in range(len(detector_circles)-index-1)]
 
         return qconv, offsets
 
