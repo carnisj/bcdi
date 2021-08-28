@@ -1858,20 +1858,17 @@ class Setup:
         ###########################################################
         # calculate the transformation matrix in reciprocal space #
         ###########################################################
-        params = {
-            "wavelength": wavelength,
-            "distance": distance,
-            "pixel_x": pixel_x,
-            "pixel_y": pixel_y,
-            "inplane": inplane,
-            "outofplane": outofplane,
-            "grazing_angle": grazing_angle,
-            "rocking_angle": self.rocking_angle,
-            "tilt": tilt,
-        }
-
         mymatrix, q_offset = self._beamline.transformation_matrix(
-            params, verbose=verbose
+            wavelength=wavelength,
+            distance=distance,
+            pixel_x=pixel_x,
+            pixel_y=pixel_y,
+            inplane=inplane,
+            outofplane=outofplane,
+            grazing_angle=grazing_angle,
+            rocking_angle=self.rocking_angle,
+            tilt=tilt,
+            verbose=verbose
         )
 
         ###############################################################

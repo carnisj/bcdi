@@ -205,29 +205,26 @@ class Beamline(ABC):
         """
 
     @abstractmethod
-    def transformation_matrix(self, params, verbose=True):
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param params: dictionnary of the setup parameters including the following keys:
-
-         - 'wavelength': X-ray wasvelength in nm
-         - 'distance': detector distance in nm
-         - 'pixel_x': horizontal detector pixel size in nm
-         - 'pixel_y': vertical detector pixel size in nm
-         - 'inplane': horizontal detector angle in radians
-         - 'outofplane': vertical detector angle in radians
-         - 'grazing_angle': angle or list of angles of the sample circles which are
-           below the rotated circle
-         - 'tilt': angular step of the rocking curve in radians
-         - 'rocking_angle': "outofplane", "inplane" or "energy"
-         - 'array_shape': shape of the 3D array to orthogonalize
-
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
         :param verbose: True to have printed comments
-
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -374,17 +371,35 @@ class BeamlineCRISTAL(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -645,17 +660,35 @@ class BeamlineID01(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -915,17 +948,35 @@ class BeamlineNANOMAX(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -1187,17 +1238,35 @@ class BeamlineP10(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -1531,17 +1600,35 @@ class BeamlineSIXS(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
@@ -1764,17 +1851,35 @@ class Beamline34ID(Beamline):
         return (self.detector_labframe[diffractometer.detector_circles[1]] *
                 self.detector_xrayutil[self.detector_ver])
 
-    def transformation_matrix(self, params, verbose=True):
-        wavelength = params["wavelength"]
-        distance = params["distance"]
+    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
+                              outofplane, grazing_angle, tilt, rocking_angle,
+                              verbose=True):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
         lambdaz = wavelength * distance
-        pixel_x = params["pixel_x"]
-        pixel_y = params["pixel_y"]
-        inplane = params["inplane"]
-        outofplane = params["outofplane"]
-        grazing_angle = params["grazing_angle"]
-        tilt = params["tilt"]
-        rocking_angle = params["rocking_angle"]
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
 
