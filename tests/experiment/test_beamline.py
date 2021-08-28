@@ -15,7 +15,9 @@ from bcdi.experiment.diffractometer import (
     DiffractometerSIXS
 )
 
-
+# conversion table from the laboratory frame (CXI convention)
+# (z downstream, y vertical up, x outboard) to the frame of xrayutilities
+# (x downstream, y outboard, z vertical up)
 labframe_to_xrayutil = {
     "x+": "y+",
     "x-": "y-",
