@@ -73,6 +73,7 @@ class Setup:
        of data keeps changing)
 
     """
+
     labframe_to_xrayutil = {
         "x+": "y+",
         "x-": "y-",
@@ -337,7 +338,6 @@ class Setup:
 
         :return: "z+" or "z-" depending on the detector vertical orientation
         """
-
         return self.labframe_to_xrayutil[self._beamline.detector_ver]
 
     @property
@@ -662,7 +662,7 @@ class Setup:
             filename=filename,
             datadir=self.detector.datadir,
             template_imagefile=self.detector.template_imagefile,
-            )
+        )
 
     def detector_frame(
         self,
@@ -1881,7 +1881,7 @@ class Setup:
             grazing_angle=grazing_angle,
             rocking_angle=self.rocking_angle,
             tilt=tilt,
-            verbose=verbose
+            verbose=verbose,
         )
 
         ###############################################################

@@ -54,8 +54,9 @@ def create_beamline(name):
 
 class Beamline(ABC):
     """Base class for defining a beamline."""
+
     orientation_lookup = {"x-": 1, "x+": -1, "y-": 1, "y+": -1}  # lookup table for the
-    # detector orientation and rotation direction, where axes are expressed in the 
+    # detector orientation and rotation direction, where axes are expressed in the
     # laboratory frame (z downstream, y vertical up, x outboard).
     # Expected detector orientation:
     # "x-" detector horizontal axis inboard, as it should be in the CXI convention
@@ -172,7 +173,7 @@ class Beamline(ABC):
         Define a coefficient +/- 1 depending on the detector inplane rotation direction
         (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
         (1 for inboard, -1 for outboard).
-        
+
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
         :param diffractometer: Diffractometer instance of the beamline.
@@ -192,7 +193,7 @@ class Beamline(ABC):
         Define a coefficient +/- 1 depending on the detector out of plane rotation
         direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
         plane orientation (1 for downward, -1 for upward).
-        
+
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
         :param diffractometer: Diffractometer instance of the beamline.
@@ -200,9 +201,19 @@ class Beamline(ABC):
         """
 
     @abstractmethod
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -249,8 +260,9 @@ class BeamlineCRISTAL(Beamline):
         if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
             raise TypeError("datadir and template_imagefile should be strings")
         if not isinstance(scan_number, int):
-            raise TypeError("scan_number should be an integer, "
-                            f"got {type(scan_number)}")
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
         # no specfile, load directly the dataset
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
@@ -323,7 +335,7 @@ class BeamlineCRISTAL(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = (root_folder + sample_name + str(scan_number) + "/")
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
@@ -340,8 +352,10 @@ class BeamlineCRISTAL(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -356,12 +370,24 @@ class BeamlineCRISTAL(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -585,8 +611,14 @@ class BeamlineID01(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, specfile_name,
-                   template_imagefile, **kwargs):
+    def init_paths(
+        root_folder,
+        sample_name,
+        scan_number,
+        specfile_name,
+        template_imagefile,
+        **kwargs,
+    ):
         """
         Initialize paths used for data processing and logging at ID01.
 
@@ -605,7 +637,7 @@ class BeamlineID01(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = (root_folder + sample_name + str(scan_number) + "/")
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
@@ -622,8 +654,10 @@ class BeamlineID01(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -638,12 +672,24 @@ class BeamlineID01(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -813,8 +859,9 @@ class BeamlineNANOMAX(Beamline):
         if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
             raise TypeError("datadir and template_imagefile should be strings")
         if not isinstance(scan_number, int):
-            raise TypeError("scan_number should be an integer, "
-                            f"got {type(scan_number)}")
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
@@ -886,7 +933,7 @@ class BeamlineNANOMAX(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = (root_folder + sample_name + "{:06d}".format(scan_number) + "/")
+        homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
@@ -903,8 +950,10 @@ class BeamlineNANOMAX(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -919,12 +968,24 @@ class BeamlineNANOMAX(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -1166,7 +1227,6 @@ class BeamlineP10(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-
         specfile = sample_name + "_{:05d}".format(scan_number)
         homedir = root_folder + specfile + "/"
         default_dirname = "e4m/"
@@ -1186,8 +1246,10 @@ class BeamlineP10(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -1202,12 +1264,24 @@ class BeamlineP10(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -1392,8 +1466,9 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name):
         super().__init__(name=name)
 
-    def create_logfile(self, datadir, template_imagefile, scan_number,
-                       filename, **kwargs):
+    def create_logfile(
+        self, datadir, template_imagefile, scan_number, filename, **kwargs
+    ):
         """
         Create the logfile, which is the data itself for SIXS.
 
@@ -1407,12 +1482,14 @@ class BeamlineSIXS(Beamline):
         :param filename: str, name of the alias dictionary
         :return: logfile
         """
-        if not all(isinstance(val, str) for val in
-                   {datadir, template_imagefile, filename}):
+        if not all(
+            isinstance(val, str) for val in {datadir, template_imagefile, filename}
+        ):
             raise TypeError("datadir and template_imagefile should be strings")
         if not isinstance(scan_number, int):
-            raise TypeError("scan_number should be an integer, "
-                            f"got {type(scan_number)}")
+            raise TypeError(
+                "scan_number should be an integer, " f"got {type(scan_number)}"
+            )
 
         shortname = template_imagefile % scan_number
         if self.name == "SIXS_2018":
@@ -1487,8 +1564,14 @@ class BeamlineSIXS(Beamline):
         return kout
 
     @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, specfile_name,
-                   template_imagefile, **kwargs):
+    def init_paths(
+        root_folder,
+        sample_name,
+        scan_number,
+        specfile_name,
+        template_imagefile,
+        **kwargs,
+    ):
         """
         Initialize paths used for data processing and logging at SIXS.
 
@@ -1509,7 +1592,7 @@ class BeamlineSIXS(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = (root_folder + sample_name + str(scan_number) + "/")
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
 
         if specfile_name is None:
@@ -1540,8 +1623,10 @@ class BeamlineSIXS(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -1556,12 +1641,24 @@ class BeamlineSIXS(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -1694,7 +1791,7 @@ class Beamline34ID(Beamline):
 
     @staticmethod
     def create_logfile(**kwargs):
-        """Method not implemented."""
+        """Create logfile for 34ID-C."""
         raise NotImplementedError("create_logfile method not implemented for 34ID")
 
     @property
@@ -1766,12 +1863,12 @@ class Beamline34ID(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = (root_folder + sample_name + str(scan_number) + "/")
+        homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
     def inplane_coeff(self, diffractometer):
-        # 
+        #
         """
         Coefficient related to the detector inplane orientation at SIXS.
 
@@ -1784,8 +1881,10 @@ class Beamline34ID(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[0]] *
-                self.orientation_lookup[self.detector_hor])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[0]]
+            * self.orientation_lookup[self.detector_hor]
+        )
 
     def outofplane_coeff(self, diffractometer):
         """
@@ -1800,12 +1899,24 @@ class Beamline34ID(Beamline):
         :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
-        return (self.orientation_lookup[diffractometer.detector_circles[1]] *
-                self.orientation_lookup[self.detector_ver])
+        return (
+            self.orientation_lookup[diffractometer.detector_circles[1]]
+            * self.orientation_lookup[self.detector_ver]
+        )
 
-    def transformation_matrix(self, wavelength, distance, pixel_x, pixel_y, inplane,
-                              outofplane, grazing_angle, tilt, rocking_angle,
-                              verbose=True):
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 

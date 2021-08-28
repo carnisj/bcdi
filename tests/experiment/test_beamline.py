@@ -14,6 +14,7 @@ import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 from bcdi.experiment.diffractometer import DiffractometerCRISTAL
 
+
 def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
     runner = unittest.TextTestRunner(verbosity=2)
