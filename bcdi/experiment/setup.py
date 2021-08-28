@@ -418,6 +418,7 @@ class Setup:
         :return: kout vector
         """
         return self._beamline.exit_wavevector(
+            diffractometer=self.diffractometer,
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
             wavelength=self.wavelength,
