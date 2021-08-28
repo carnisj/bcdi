@@ -111,20 +111,40 @@ class Beamline(ABC):
         :return: "y+" or "y-"
         """
 
-    @staticmethod
-    @abstractmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(self, diffractometer, wavelength, inplane_angle,
+                        outofplane_angle):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
+        :param diffractometer: an instance of the class Diffractometer
         :param wavelength: float, X-ray wavelength in meters.
         :param inplane_angle: float, horizontal detector angle, in degrees.
         :param outofplane_angle: float, vertical detector angle, in degrees.
         :return: kout vector as a numpy array of shape (3)
         """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane(diffractometer=diffractometer)
+
+        factor = self.orientation_lookup[diffractometer.detector_circles[index]]
+
+        kout = (
+            2
+            * np.pi
+            / wavelength
+            * np.array(
+                [
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -1 * factor * np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
+                ]
+            )
+        )
+        return kout
 
     @staticmethod
     def find_inplane(diffractometer):
@@ -387,35 +407,6 @@ class BeamlineCRISTAL(Beamline):
         return "y-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at CRISTAL.
-
-        gamma is anti-clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
-
-    @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
         Initialize paths used for data processing and logging at CRISTAL.
@@ -642,35 +633,6 @@ class BeamlineID01(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
-
-    @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at ID01.
-
-        nu is clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    -np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
 
     @staticmethod
     def init_paths(
@@ -913,35 +875,6 @@ class BeamlineNANOMAX(Beamline):
         return "y-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at Nanomax.
-
-        gamma is clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    -np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
-
-    @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
         Initialize paths used for data processing and logging at Nanomax.
@@ -1169,35 +1102,6 @@ class BeamlineP10(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
-
-    @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at P10.
-
-        gamma is anti-clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1489,35 +1393,6 @@ class BeamlineSIXS(Beamline):
         return "y-"
 
     @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at SIXS.
-
-        gamma is anti-clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
-
-    @staticmethod
     def init_paths(
         root_folder,
         sample_name,
@@ -1731,35 +1606,6 @@ class Beamline34ID(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
-
-    @staticmethod
-    def exit_wavevector(wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout at 34ID-C.
-
-        gamma is anti-clockwise. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):

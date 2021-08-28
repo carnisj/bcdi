@@ -62,6 +62,7 @@ class TestBeamlineCRISTAL(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
+            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -139,6 +140,7 @@ class TestBeamlineSIXS2019(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
+            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
