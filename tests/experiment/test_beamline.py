@@ -150,7 +150,7 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
 
     def test_init_qconversion(self):
-        qconv, offsets = self.beamline.init_qconversion(
+        _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
