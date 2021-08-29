@@ -9,7 +9,7 @@
 
 """Class definition which handles the detector config used for data acquisition."""
 import numpy as np
-from numbers import Number, Real
+from numbers import Real
 import os
 
 from bcdi.utils import validation as valid
