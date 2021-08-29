@@ -2086,7 +2086,7 @@ class DiffractometerP10(Diffractometer):
 
                     # a single frame from the (eventual) series is loaded
                     ccdraw, mask2d, temp_mon = self.load_frame(
-                        frame=tmp_data[idx, :, :],
+                        frame=tmp_data,
                         mask2d=mask2d,
                         monitor=monitor[idx],
                         frames_per_point=1,
