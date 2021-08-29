@@ -462,11 +462,9 @@ class Diffractometer(ABC):
 
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of cropping/padding the length changes. A frame whose index is set
-           to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
 
@@ -852,11 +850,8 @@ class DiffractometerCRISTAL(Diffractometer):
         :return:
 
          - the 3D data array in the detector frame
-         - the 3D mask array
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of cropping/padding the length changes. A frame whose index is set
-           to 1 means that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
         # initialize the 2D mask
@@ -944,7 +939,9 @@ class DiffractometerCRISTAL(Diffractometer):
                      ]
             if bin_during_loading:
                 ccdraw = util.bin_data(
-                    ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
+                    ccdraw,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
                 )
             data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
@@ -954,27 +951,7 @@ class DiffractometerCRISTAL(Diffractometer):
         # update the mask
         mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
                           loading_roi[2]: loading_roi[3]]
-        if bin_during_loading:
-            mask_2d = util.bin_data(
-                mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-            mask_2d[np.nonzero(mask_2d)] = 1
-        
-        # check for abnormally behaving pixels
-        data, mask_2d = pru.check_pixels(data=data, mask=mask_2d, debugging=debugging)
-        mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-        mask3d[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-
-        # check for empty frames (no beam)
-        frames_logical = np.zeros(nb_img)
-        frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
-        if frames_logical.sum() != nb_img:
-            print("\nEmpty frame detected, cropping the data\n")
-        data = data[np.nonzero(frames_logical)]
-        mask3d = mask3d[np.nonzero(frames_logical)]
-
-        return data, mask3d, monitor, frames_logical
+        return data, mask_2d, monitor
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1324,11 +1301,9 @@ class DiffractometerID01(Diffractometer):
         :param debugging: set to True to see plots
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
         # initialize the 2D mask
@@ -1426,7 +1401,9 @@ class DiffractometerID01(Diffractometer):
                      ]
             if bin_during_loading:
                 ccdraw = util.bin_data(
-                    ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
+                    ccdraw,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
                 )
             data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
@@ -1436,21 +1413,7 @@ class DiffractometerID01(Diffractometer):
         # update the mask
         mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
                           loading_roi[2]: loading_roi[3]]
-        if bin_during_loading:
-            mask_2d = util.bin_data(
-                mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-            mask_2d[np.nonzero(mask_2d)] = 1
-            
-        # check for abnormally behaving pixels
-        data, mask_2d = pru.check_pixels(data=data, mask=mask_2d, debugging=debugging)
-        mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-        mask3d[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-
-        frames_logical = np.ones(nb_img)
-
-        return data, mask3d, monitor, frames_logical
+        return data, mask_2d, monitor
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1696,6 +1659,7 @@ class DiffractometerNANOMAX(Diffractometer):
             hotpixels=None,
             background=None,
             normalize="skip",
+            bin_during_loading=False,
             debugging=False,
             **kwargs,
     ):
@@ -1710,14 +1674,14 @@ class DiffractometerNANOMAX(Diffractometer):
         :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
          return a monitor based on the integrated intensity in the region of interest
          defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
         if debugging:
@@ -1757,10 +1721,28 @@ class DiffractometerNANOMAX(Diffractometer):
             min(detector.nb_pixel_x, detector.roi[3]),
         ]
 
-        data = np.empty(
-            (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-            dtype=float,
-        )
+        # initialize the data array
+        if bin_during_loading:
+            print(
+                "Binning the data: detector vertical axis by",
+                detector.binning[1],
+                ", detector horizontal axis by",
+                detector.binning[2],
+            )
+            data = np.empty(
+                (
+                    nb_img,
+                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
+                ),
+                dtype=float,
+            )
+        else:
+            data = np.empty(
+                (nb_img, loading_roi[1] - loading_roi[0],
+                 loading_roi[3] - loading_roi[2]),
+                dtype=float,
+            )
 
         # get the monitor values
         if normalize == "sum_roi":
@@ -1788,24 +1770,21 @@ class DiffractometerNANOMAX(Diffractometer):
             ccdraw = ccdraw[
                      loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
                      ]
+            if bin_during_loading:
+                ccdraw = util.bin_data(
+                    ccdraw,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
+                )
             data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
+
         print("")
-        
         # update the mask
         mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
                           loading_roi[2]: loading_roi[3]]
-        
-        # check for abnormally behaving pixels
-        data, mask_2d = pru.check_pixels(data=data, mask=mask_2d, debugging=debugging)
-        mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-        mask3d[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-
-        frames_logical = np.ones(nb_img)
-
-        return data, mask3d, monitor, frames_logical
+        return data, mask_2d, monitor
     
     def motor_positions(self, logfile, setup):
         """
@@ -1980,11 +1959,9 @@ class DiffractometerP10(Diffractometer):
         :param debugging: set to True to see plots
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
         # initialize the 2D mask
@@ -2095,7 +2072,7 @@ class DiffractometerP10(Diffractometer):
                         ccdraw = util.bin_data(
                             ccdraw,
                             (detector.binning[1], detector.binning[2]),
-                            debugging=False,
+                            debugging=debugging,
                         )
                     series_data.append(ccdraw)
                     if not is_series:
@@ -2131,20 +2108,7 @@ class DiffractometerP10(Diffractometer):
         # update the mask
         mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
                           loading_roi[2]: loading_roi[3]]
-        if bin_during_loading:
-            mask_2d = util.bin_data(
-                mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-            mask_2d[np.nonzero(mask_2d)] = 1
-        
-        # check for abnormally behaving pixels
-        data, mask_2d = pru.check_pixels(data=data, mask=mask_2d, debugging=debugging)
-        mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-        mask3d[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-
-        frames_logical = np.ones(nb_img)
-        return data, mask3d, monitor, frames_logical
+        return data, mask_2d, monitor
 
     def motor_positions(self, logfile, setup):
         """
@@ -2391,11 +2355,9 @@ class DiffractometerSIXS(Diffractometer):
         :param debugging: set to True to see plots
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 2D mask array
          - the monitor values for normalization
-         - frames_logical: array of initial length the number of measured frames.
-           In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used, -1 means padded (added) frame.
 
         """
         # initialize the 2D mask
@@ -2489,7 +2451,9 @@ class DiffractometerSIXS(Diffractometer):
                      ]
             if bin_during_loading:
                 ccdraw = util.bin_data(
-                    ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
+                    ccdraw,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
                 )
             data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
@@ -2499,20 +2463,7 @@ class DiffractometerSIXS(Diffractometer):
         # update the mask
         mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
                           loading_roi[2]: loading_roi[3]]
-        if bin_during_loading:
-            mask_2d = util.bin_data(
-                mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-            mask_2d[np.nonzero(mask_2d)] = 1
-        
-        # check for abnormally behaving pixels
-        data, mask_2d = pru.check_pixels(data=data, mask=mask_2d, debugging=debugging)
-        mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-        mask3d[np.isnan(data)] = 1
-        data[np.isnan(data)] = 0
-
-        frames_logical = np.ones(tmp_data.shape[0])
-        return data, mask3d, monitor, frames_logical
+        return data, mask_2d, monitor
     
     def motor_positions(self, logfile, setup, **kwargs):
         """

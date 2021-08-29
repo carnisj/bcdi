@@ -1432,6 +1432,42 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
+def check_empty_frames(data, mask=None):
+    """
+    Check if there is intensity for all frames.
+
+    In case of beam dump, some frames may be empty. The data and optional mask will be
+    cropped to remove those empty frames.
+
+    :param data: a numpy 3D array
+    :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
+     same shape as data
+    :return:
+
+     - cropped data as a numpy 3D array
+     - cropped mask as a numpy 3D array
+     - frames_logical as a numpy 1D array: 0 if the frame was empty, 1 otherwise
+
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError("data should be a numpy array")
+    if data.ndim != 3:
+        raise ValueError("data should be a 3D array")
+    if mask is not None:
+        if not isinstance(mask, np.ndarray):
+            raise TypeError("mask should be a numpy array")
+        if mask.shape != data.shape:
+            raise ValueError("mask should have th same shape as data")
+
+    frames_logical = np.zeros(data.shape[0])
+    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if frames_logical.sum() != data.shape[0]:
+        print("\nEmpty frame detected, cropping the data\n")
+    data = data[np.nonzero(frames_logical)]
+    mask = mask[np.nonzero(frames_logical)]
+    return data, mask, frames_logical
+
+
 def check_pixels(data, mask, debugging=False):
     """
     Check for hot pixels in the data using the mean value and the variance.
@@ -3094,7 +3130,7 @@ def load_custom_data(
      interest defined by detector.sum_roi, 'skip' to do nothing
     :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL',
      'P10', 'NANOMAX' '34ID'
-    :param detector: the detector instance: Class experiment_utils.Detector()
+    :param detector: an instance of the class Detector
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
@@ -3102,8 +3138,16 @@ def load_custom_data(
      while loading. It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
+
+     - the 3D data array in the detector frame
+     - the 2D mask array
+     - the monitor values for normalization
+
     """
+    # initialize the 2D mask
     mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    # create the template for the image files
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
     nb_frames = None
 
@@ -3118,7 +3162,7 @@ def load_custom_data(
         data_stack = npzfile[list(npzfile.files)[0]]
         nb_img = data_stack.shape[0]
 
-    # define the loading ROI, the detector ROI may be larger than the physical
+    # define the loading ROI, the user-defined ROI may be larger than the physical
     # detector size
     if (
         detector.roi[0] < 0
@@ -3137,6 +3181,7 @@ def load_custom_data(
         min(detector.nb_pixel_x, detector.roi[3]),
     ]
 
+    # initialize the data array
     if bin_during_loading:
         print(
             "Binning the data: detector vertical axis by",
@@ -3158,6 +3203,7 @@ def load_custom_data(
             dtype=float,
         )
 
+    # get the monitor values
     if normalize == "sum_roi":
         monitor = np.zeros(nb_img)
     elif normalize == "monitor":
@@ -3165,6 +3211,7 @@ def load_custom_data(
     else:  # skip
         monitor = np.ones(nb_img)
 
+    # loop over frames, mask the detector and normalize / bin
     for idx in range(nb_img):
         if data_stack is not None:
             ccdraw = data_stack[idx, :, :]
@@ -3208,26 +3255,19 @@ def load_custom_data(
         ]
         if bin_during_loading:
             ccdraw = util.bin_data(
-                ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
+                ccdraw,
+                (detector.binning[1], detector.binning[2]),
+                debugging=debugging,
             )
         data[idx, :, :] = ccdraw
         sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    frames_logical = np.ones(nb_img)
-
-    return data, mask3d, monitor, frames_logical
+    print("")
+    # update the mask
+    mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
+                      loading_roi[2]: loading_roi[3]]
+    return data, mask_2d, monitor
 
 
 def load_data(
@@ -3283,51 +3323,58 @@ def load_data(
         detector.nb_pixel_x // detector.binning[2],
     )
 
-    if setup.custom_scan and not setup.filtered_data:
-        data, mask3d, monitor, frames_logical = load_custom_data(
-            custom_images=setup.custom_images,
-            custom_monitor=setup.custom_monitor,
-            beamline=setup.beamline,
-            normalize=normalize,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            debugging=debugging,
-        )
-    elif setup.filtered_data:
+    if setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
     else:
-        data, mask3d, monitor, frames_logical = setup.diffractometer.load_data(
-            logfile=logfile,
-            beamline=setup.beamline,
-            scan_number=scan_number,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            bin_during_loading=bin_during_loading,
-            debugging=debugging,
-        )
-
-    # remove indices where frames_logical=0
-    nbz, nby, nbx = data.shape
-    nb_frames = (frames_logical != 0).sum()
-    newdata = np.zeros((nb_frames, nby, nbx))
-    newmask = np.zeros((nb_frames, nby, nbx))
-    # do not process the monitor here, it is done in normalize_dataset()
-
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
-            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
+        if setup.custom_scan:
+            data, mask2d, monitor = load_custom_data(
+                custom_images=setup.custom_images,
+                custom_monitor=setup.custom_monitor,
+                beamline=setup.beamline,
+                normalize=normalize,
+                detector=detector,
+                flatfield=flatfield,
+                hotpixels=hotpixels,
+                background=background,
+                debugging=debugging,
+            )
         else:
-            nb_overlap = nb_overlap + 1
+            data, mask2d, monitor = setup.diffractometer.load_data(
+                logfile=logfile,
+                beamline=setup.beamline,
+                scan_number=scan_number,
+                detector=detector,
+                flatfield=flatfield,
+                hotpixels=hotpixels,
+                background=background,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
 
-    return newdata, newmask, monitor, frames_logical.astype(int)
+        # bin the 2D mask if necessary
+        if bin_during_loading:
+            mask2d = util.bin_data(
+                mask2d, (detector.binning[1], detector.binning[2]), debugging=False
+            )
+            mask2d[np.nonzero(mask2d)] = 1
+
+        # check for abnormally behaving pixels
+        data, mask2d = check_pixels(data=data, mask=mask2d, debugging=debugging)
+        mask3d = np.repeat(mask2d[np.newaxis, :, :], data.shape[0], axis=0)
+        mask3d[np.isnan(data)] = 1
+        data[np.isnan(data)] = 0
+
+        # check for empty frames (no beam)
+        data, mask3d, frames_logical = check_empty_frames(
+            data=data,
+            mask=mask3d,
+            monitor=monitor
+        )
+        # TODO check normalize_dataset()
+        # do not process the monitor here, it is done in normalize_dataset()
+    return data, mask3d, monitor, frames_logical.astype(int)
 
 
 def load_filtered_data(detector):
