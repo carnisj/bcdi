@@ -649,7 +649,9 @@ class Setup:
 
     def create_logfile(self, scan_number, root_folder, filename):
         """
-        Create the logfile used in gridmap().
+        Create the logfile, which can be a log/spec file or the data itself.
+
+        The nature of this file is beamline dependent.
 
         :param scan_number: the scan number to load
         :param root_folder: the root directory of the experiment, where is the
