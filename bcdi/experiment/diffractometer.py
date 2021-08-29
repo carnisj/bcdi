@@ -657,7 +657,7 @@ class Diffractometer34ID(Diffractometer):
             return detector_angles
         return tilt, grazing, inplane, outofplane
 
-    def load_data(self):
+    def load_data(self, **kwargs):
         """Load 34ID-C data including detector/background corrections."""
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
 
@@ -1305,6 +1305,7 @@ class DiffractometerID01(Diffractometer):
             normalize="skip",
             bin_during_loading=False,
             debugging=False,
+            **kwargs
     ):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
@@ -1696,6 +1697,7 @@ class DiffractometerNANOMAX(Diffractometer):
             background=None,
             normalize="skip",
             debugging=False,
+            **kwargs,
     ):
         """
         Load Nanomax data, apply filters and concatenate it for phasing.
@@ -1960,6 +1962,7 @@ class DiffractometerP10(Diffractometer):
             normalize="skip",
             bin_during_loading=False,
             debugging=False,
+            **kwargs
     ):
         """
         Load P10 data, apply filters and concatenate it for phasing.
@@ -2369,6 +2372,7 @@ class DiffractometerSIXS(Diffractometer):
             normalize="skip",
             bin_during_loading=False,
             debugging=False,
+            **kwargs
     ):
         """
         Load SIXS data, apply filters and concatenate it for phasing.
