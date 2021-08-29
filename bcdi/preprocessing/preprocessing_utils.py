@@ -1561,65 +1561,6 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
-def cristal_load_motor(datafile, root, actuator_name, field_name):
-    """
-    Try to load the CRISTAL dataset at the defined entry and returns it.
-
-    Patterns keep changing at CRISTAL.
-
-    :param datafile: h5py File object of CRISTAL .nxs scan file
-    :param root: string, path of the data up to the last subfolder (not included).
-     This part is expected to not change over time
-    :param actuator_name: string, name of the actuator (e.g. 'I06-C-C07-EX-DIF-KPHI').
-     Lowercase and uppercase will
-     be tested when trying to load the data.
-    :param field_name: name of the field under the actuator name (e.g. 'position')
-    :return: the dataset if found or 0
-    """
-    # check input arguments
-    valid.valid_container(
-        root, container_types=str, min_length=1, name="cristal_load_motor"
-    )
-    if not root.startswith("/"):
-        root = "/" + root
-    valid.valid_container(
-        actuator_name, container_types=str, min_length=1, name="cristal_load_motor"
-    )
-
-    # check if there is an entry for the actuator
-    if actuator_name not in datafile[root].keys():
-        actuator_name = actuator_name.lower()
-        if actuator_name not in datafile[root].keys():
-            actuator_name = actuator_name.upper()
-            if actuator_name not in datafile[root].keys():
-                print(f"\nCould not find the entry for the actuator'{actuator_name}'")
-                print(f"list of available actuators: {list(datafile[root].keys())}\n")
-                return 0
-
-    # check if the field is a valid entry for the actuator
-    try:
-        dataset = datafile[root + "/" + actuator_name + "/" + field_name][:]
-    except KeyError:  # try lowercase
-        try:
-            dataset = datafile[root + "/" + actuator_name + "/" + field_name.lower()][:]
-        except KeyError:  # try uppercase
-            try:
-                dataset = datafile[
-                    root + "/" + actuator_name + "/" + field_name.upper()
-                ][:]
-            except KeyError:  # nothing else that we can do
-                print(
-                    f"\nCould not find the field '{field_name}' "
-                    f"in the actuator'{actuator_name}'"
-                )
-                print(
-                    "list of available fields: "
-                    f"{list(datafile[root + '/' + actuator_name].keys())}\n"
-                )
-                return 0
-    return dataset
-
-
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     """
     Correct the data for the curvature of Ewald sphere.
