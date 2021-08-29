@@ -4326,37 +4326,18 @@ def load_sixs_data(
     return data, mask3d, monitor, frames_logical
 
 
-def load_monitor(scan_number, logfile, setup, **kwargs):
+def load_monitor(scan_number, logfile, setup):
     """
     Load the default monitor for intensity normalization of the considered beamline.
 
     :param scan_number: the scan number to load
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - 'nb_frames': int, number of detector frames in the stacked dataset
-
     :return: the default monitor values
     """
-    # check and load kwargs
-    valid.valid_kwargs(
-        kwargs=kwargs,
-        allowed_kwargs={"nb_frames"},
-        name="preprocessing_utils.load_monitor",
-    )
-    nb_frames = kwargs.get("nb_frames")
-    valid.valid_item(
-        nb_frames,
-        allowed_types=int,
-        min_excluded=0,
-        allow_none=True,
-        name="preprocessing_utils.load_monitor",
-    )
-
     return setup.diffractometer.read_monitor(
         scan_number=scan_number,
         logfile=logfile,
-        nb_frames=nb_frames,
         beamline=setup.beamline,
         actuators=setup.actuators,
     )
