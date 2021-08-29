@@ -1432,7 +1432,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
-def check_empty_frames(data, mask=None):
+def check_empty_frames(data, mask=None, monitor=None):
     """
     Check if there is intensity for all frames.
 
@@ -1442,11 +1442,15 @@ def check_empty_frames(data, mask=None):
     :param data: a numpy 3D array
     :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
      same shape as data
+    :param monitor: a numpy 1D array of shape equal to data.shape[0]
     :return:
 
      - cropped data as a numpy 3D array
      - cropped mask as a numpy 3D array
-     - frames_logical as a numpy 1D array: 0 if the frame was empty, 1 otherwise
+     - cropped monitor as a numpy 1D array
+     - frames_logical: 1D array of length equal to the number of measured frames.
+       In case of cropping the length of the stack of frames changes. A frame whose
+       index is set to 1 means that it is used, 0 means not used.
 
     """
     if not isinstance(data, np.ndarray):
@@ -1457,7 +1461,12 @@ def check_empty_frames(data, mask=None):
         if not isinstance(mask, np.ndarray):
             raise TypeError("mask should be a numpy array")
         if mask.shape != data.shape:
-            raise ValueError("mask should have th same shape as data")
+            raise ValueError("mask should have the same shape as data")
+    if monitor is not None:
+        if not isinstance(monitor, np.ndarray):
+            raise TypeError("monitor should be a numpy array")
+        if monitor.ndim != 1 or len(monitor) != data.shape[0]:
+            raise ValueError("monitor be a 1D array of length data.shae[0]")
 
     frames_logical = np.zeros(data.shape[0])
     frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
@@ -1465,7 +1474,8 @@ def check_empty_frames(data, mask=None):
         print("\nEmpty frame detected, cropping the data\n")
     data = data[np.nonzero(frames_logical)]
     mask = mask[np.nonzero(frames_logical)]
-    return data, mask, frames_logical
+    monitor = monitor[np.nonzero(frames_logical)]
+    return data, mask, monitor, frames_logical
 
 
 def check_pixels(data, mask, debugging=False):
@@ -2886,8 +2896,7 @@ def load_bcdi_data(
         print("Intensity normalization using " + normalize)
         rawdata, monitor = normalize_dataset(
             array=rawdata,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=debugging,
@@ -3039,8 +3048,7 @@ def load_cdi_data(
         print("Intensity normalization using " + normalize)
         rawdata, monitor = normalize_dataset(
             array=rawdata,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=True,
@@ -3294,9 +3302,9 @@ def load_data(
 
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
+     - frames_logical: 1D array of length equal to the number of measured frames.
+       In case of cropping the length of the stack of frames changes. A frame whose
+       index is set to 1 means that it is used, 0 means not used.
 
     """
     print(
@@ -3359,13 +3367,11 @@ def load_data(
         data[np.isnan(data)] = 0
 
         # check for empty frames (no beam)
-        data, mask3d, frames_logical = check_empty_frames(
+        data, mask, monitor, frames_logical = check_empty_frames(
             data=data,
             mask=mask3d,
             monitor=monitor
         )
-        # TODO check normalize_dataset()
-        # do not process the monitor here, it is done in normalize_dataset()
     return data, mask3d, monitor, frames_logical.astype(int)
 
 
@@ -3645,23 +3651,19 @@ def motor_positions_p10_saxs(logfile, setup):
 
 
 def normalize_dataset(
-    array, raw_monitor, frames_logical, savedir=None, norm_to_min=True, debugging=False
+    array, monitor, savedir=None, norm_to_min=True, debugging=False
 ):
     """
     Normalize array using the monitor values.
 
     :param array: the 3D array to be normalized
-    :param raw_monitor: the monitor values
-    :param frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+    :param monitor: the monitor values
     :param savedir: path where to save the debugging figure
-    :param norm_to_min: normalize to min(monitor) instead of max(monitor),
+    :param norm_to_min: bool, True to normalize to min(monitor) instead of max(monitor),
      avoid multiplying the noise
-    :type norm_to_min: bool
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: bool, True to see plots
     :return:
+
      - normalized dataset
      - updated monitor
      - a title for plotting
@@ -3683,59 +3685,24 @@ def normalize_dataset(
             axis=1
         )  # the first axis is the normalization axis
 
-    # crop/pad monitor depending on frames_logical array
-    monitor = np.zeros((frames_logical != 0).sum())
-    nb_overlap = 0
-    nb_padded = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx] == -1:  # padded frame, no monitor value for this
-            if norm_to_min:
-                monitor[idx - nb_overlap] = raw_monitor.min()
-            else:  # norm to max
-                monitor[idx - nb_overlap] = raw_monitor.max()
-            nb_padded = nb_padded + 1
-        elif frames_logical[idx] == 1:
-            monitor[idx - nb_overlap] = raw_monitor[idx - nb_padded]
-        else:
-            nb_overlap = nb_overlap + 1
-
-    if nb_padded != 0:
-        if norm_to_min:
-            print(
-                "Monitor value set to raw_monitor.min() for ",
-                nb_padded,
-                " frames padded",
-            )
-        else:  # norm to max
-            print(
-                "Monitor value set to raw_monitor.max() for ",
-                nb_padded,
-                " frames padded",
-            )
-
     print(
         "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
             monitor.min(), monitor.max(), monitor.mean()
         )
     )
-    if norm_to_min:
-        print("Data normalization by monitor.min()/monitor\n")
-    else:
-        print("Data normalization by monitor.max()/monitor\n")
 
     if norm_to_min:
+        print("Data normalization by monitor.min()/monitor\n")
         monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
+        print("Data normalization by monitor.max()/monitor\n")
         monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
     if len(monitor) != nbz:
         raise ValueError(
-            "The frame number and the monitor data length are different:" " Got ",
-            nbz,
-            "frames but ",
-            len(monitor),
-            " monitor values",
+            "The frame number and the monitor data length are different:",
+            f"got {nbz} frames but {len(monitor)} monitor values",
         )
 
     for idx in range(nbz):
@@ -3767,11 +3734,6 @@ def normalize_dataset(
         )
         if savedir is not None:
             fig.savefig(savedir + f"monitor_{nbz}_{nby}_{nbx}.png")
-        else:
-            print(
-                "normalize_dataset(): savedir not provided,"
-                " cannot save the normalization plot"
-            )
         plt.close(fig)
 
     return array, monitor
@@ -4232,7 +4194,7 @@ def reload_bcdi_data(
     **kwargs,
 ):
     """
-    Reload forward CDI data, apply optional threshold, normalization and binning.
+    Reload BCDI data, apply optional threshold, normalization and binning.
 
     :param data: the 3D data array
     :param mask: the 3D mask array
@@ -4293,8 +4255,7 @@ def reload_bcdi_data(
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
             array=data,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=True,
@@ -4430,8 +4391,7 @@ def reload_cdi_data(
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
             array=data,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=True,
