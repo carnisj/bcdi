@@ -3340,37 +3340,6 @@ def load_cristal_data(
     return data, mask3d, monitor, frames_logical
 
 
-def load_cristal_monitor(logfile, setup, nb_frames):
-    """
-    Load monitor values for a dataset measured at CRISTAL.
-
-    It will look for the correct entry 'monitor' in the dictionary Setup.actuators,
-    and use the default entry otherwise.
-
-    :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param nb_frames: int, number of detector frames in the stacked dataset
-    :return: the default monitor values
-    """
-    group_key = list(logfile.keys())[0]
-    monitor = cristal_load_motor(
-        datafile=logfile,
-        root="/" + group_key,
-        actuator_name="scan_data",
-        field_name=setup.actuators.get("monitor", "data_04"),
-    )
-    if len(monitor.shape) != 1:
-        print(
-            f"shape of the monitor dataset incompatible {monitor.shape},"
-            " skip normalization"
-        )
-        monitor = np.ones(nb_frames)
-    if len(monitor) != nb_frames:
-        print(f"length of the monitor incompatible {len(monitor)}, skip normalization")
-        monitor = np.ones(nb_frames)
-    return monitor
-
-
 def load_custom_data(
     custom_images,
     custom_monitor,
@@ -3717,7 +3686,7 @@ def load_flatfield(flatfield_file):
     """
     if flatfield_file:
         flatfield = np.load(flatfield_file)
-        if flatfield_file.endswith("npz"):
+        if flatfield_file.endswith(".npz"):
             npz_key = flatfield.files
             flatfield = flatfield[npz_key[0]]
         if flatfield.ndim != 2:
@@ -3908,71 +3877,7 @@ def load_id01_data(
     return data, mask3d, monitor, frames_logical
 
 
-def load_id01_monitor(logfile, scan_number):
-    """
-    Load the default monitor for a dataset measured at ID01.
 
-    :param logfile: Silx SpecFile object containing the information about the scan and
-     image numbers
-    :param scan_number: the scan number to load
-    :return: the default monitor values
-    """
-    labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-    try:
-        monitor = labels_data[labels.index("exp1"), :]  # mon2 monitor at ID01
-    except ValueError:
-        try:
-            monitor = labels_data[labels.index("mon2"), :]  # exp1 for old data at ID01
-        except ValueError:  # no monitor data
-            raise ValueError("No available monitor data")
-    return monitor
-
-
-def load_monitor(scan_number, logfile, setup, **kwargs):
-    """
-    Load the default monitor for intensity normalization of the considered beamline.
-
-    :param scan_number: the scan number to load
-    :param logfile: path of the . fio file containing the information about the scan
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - 'nb_frames': int, number of detector frames in the stacked dataset
-
-    :return: the default monitor values
-    """
-    # check and load kwargs
-    valid.valid_kwargs(
-        kwargs=kwargs,
-        allowed_kwargs={"nb_frames"},
-        name="preprocessing_utils.load_monitor",
-    )
-    nb_frames = kwargs.get("nb_frames")
-    valid.valid_item(
-        nb_frames,
-        allowed_types=int,
-        min_excluded=0,
-        allow_none=True,
-        name="preprocessing_utils.load_monitor",
-    )
-
-    if setup.custom_scan and not setup.filtered_data:
-        monitor = setup.custom_monitor
-    elif setup.beamline == "ID01":
-        monitor = load_id01_monitor(logfile=logfile, scan_number=scan_number)
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
-    elif setup.beamline == "CRISTAL":
-        monitor = load_cristal_monitor(
-            logfile=logfile, setup=setup, nb_frames=nb_frames
-        )
-    elif setup.beamline == "P10":
-        monitor = load_p10_monitor(logfile=logfile)
-    elif setup.beamline == "NANOMAX":
-        monitor = load_nanomax_monitor(logfile=logfile)
-    else:
-        raise ValueError('Wrong value for "beamline" parameter')
-    return monitor
 
 
 def load_nanomax_data(
@@ -4081,18 +3986,6 @@ def load_nanomax_data(
     frames_logical = np.ones(nb_img)
 
     return data, mask3d, monitor, frames_logical
-
-
-def load_nanomax_monitor(logfile):
-    """
-    Load the default monitor for a dataset measured at NANOMAX.
-
-    :param logfile: h5py File object of NANOMAX .h5 scan file
-    :return: the default monitor values
-    """
-    group_key = list(logfile.keys())[0]  # currently 'entry'
-    monitor = logfile["/" + group_key + "/measurement/alba2"][:]
-    return monitor
 
 
 def load_p10_data(
@@ -4290,34 +4183,6 @@ def load_p10_data(
     return data, mask3d, monitor, frames_logical
 
 
-def load_p10_monitor(logfile):
-    """
-    Load the default monitor for a dataset measured at P10.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :return: the default monitor values
-    """
-    monitor = []
-    index_monitor = None
-    fio = open(logfile, "r")
-    fio_lines = fio.readlines()
-
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-        if "Col" in words and ("ipetra" in words or "curpetra" in words):
-            # template = ' Col 6 ipetra DOUBLE\n' (2018)
-            # or ' Col 6 curpetra DOUBLE\n' (2019)
-            index_monitor = int(words[1]) - 1  # python index starts at 0
-        if index_monitor and util.is_numeric(
-            words[0]
-        ):  # we are reading data and index_monitor is defined
-            monitor.append(float(words[index_monitor]))
-    fio.close()
-    monitor = np.asarray(monitor, dtype=float)
-    return monitor
-
-
 def load_sixs_data(
     logfile,
     beamline,
@@ -4461,25 +4326,40 @@ def load_sixs_data(
     return data, mask3d, monitor, frames_logical
 
 
-def load_sixs_monitor(logfile, beamline):
+def load_monitor(scan_number, logfile, setup, **kwargs):
     """
-    Load the default monitor for a dataset measured at SIXS.
+    Load the default monitor for intensity normalization of the considered beamline.
 
-    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param beamline: SIXS_2019 or SIXS_2018
+    :param scan_number: the scan number to load
+    :param logfile: path of the . fio file containing the information about the scan
+    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param kwargs:
+     - 'nb_frames': int, number of detector frames in the stacked dataset
+
     :return: the default monitor values
     """
-    if beamline == "SIXS_2018":
-        monitor = logfile.imon1[:]
-    else:
-        try:
-            monitor = logfile.imon0[:]
-        except AttributeError:  # the alias dictionnary was probably not provided
-            try:
-                monitor = logfile.intensity[:]
-            except AttributeError:  # no monitor data
-                raise ValueError("No available monitor data")
-    return monitor
+    # check and load kwargs
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"nb_frames"},
+        name="preprocessing_utils.load_monitor",
+    )
+    nb_frames = kwargs.get("nb_frames")
+    valid.valid_item(
+        nb_frames,
+        allowed_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="preprocessing_utils.load_monitor",
+    )
+
+    return setup.diffractometer.read_monitor(
+        scan_number=scan_number,
+        logfile=logfile,
+        nb_frames=nb_frames,
+        beamline=setup.beamline,
+        actuators=setup.actuators,
+    )
 
 
 def mean_filter(

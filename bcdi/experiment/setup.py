@@ -155,7 +155,7 @@ class Setup:
         """
         Define motors names in the data file.
 
-        This optional dictionary  can be used to define the entries corresponding to
+        This optional dictionary can be used to define the entries corresponding to
         actuators in data files (useful at CRISTAL where the location of data keeps
         changing)
         """

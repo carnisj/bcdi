@@ -454,6 +454,24 @@ class Diffractometer(ABC):
         :return: the positions/values of the device as a numpy 1D array
         """
 
+    @staticmethod
+    @abstractmethod
+    def read_monitor(**kwargs):
+        """
+        Load the default monitor for intensity normalization of the considered beamline.
+
+        :param kwargs: beamline_specific parameters, which may include part of the
+         totality of the following keys:
+
+          - 'logfile': the logfile created in Setup.create_logfile()
+          - 'scan_number': int, number of the scan
+          - 'actuators': dictionary defining the entries corresponding to actuators
+            in the data file (at CRISTAL the location of data keeps changing)
+          - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
+
+        :return: the default monitor values
+        """
+
     def remove_circle(self, stage_name, index):
         """
         Remove the circle at index from the list of sample circles.
@@ -616,6 +634,11 @@ class Diffractometer34ID(Diffractometer):
     def read_device(**kwargs):
         """Extract the device positions/values during the scan at 34ID-C beamline."""
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
+
+    @staticmethod
+    def read_monitor(**kwargs):
+        """Load the default monitor for a dataset measured at 34ID-C."""
+        raise NotImplementedError("'read_monitor' not implemented for 34ID-C")
 
 
 class DiffractometerCRISTAL(Diffractometer):
@@ -884,8 +907,24 @@ class DiffractometerCRISTAL(Diffractometer):
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]
-        device_values = logfile["/" + group_key + "/scan_data/" + device_name][:]
+        try:
+            device_values = logfile["/" + group_key + "/scan_data/" + device_name][:]
+        except KeyError:
+            print(f"No device {device_name} in the logfile, defaulting values to []")
+            device_values = []
         return np.asarray(device_values)
+
+    def read_monitor(self, logfile, actuators, **kwargs):
+        """
+        Load the default monitor for a dataset measured at CRISTAL.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param actuators: dictionary defining the entries corresponding to actuators
+         in the data file (at CRISTAL the location of data keeps changing)
+        :return: the default monitor values
+        """
+        monitor_name = actuators.get("monitor", "data_04")
+        return self.read_device(logfile=logfile, device_name=monitor_name)
 
 
 class DiffractometerID01(Diffractometer):
@@ -1125,8 +1164,33 @@ class DiffractometerID01(Diffractometer):
         """
         labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
         labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-        device_values = list(labels_data[labels.index(device_name), :])
+        try:
+            device_values = list(labels_data[labels.index(device_name), :])
+        except ValueError:  # device not in the list
+            print(f"No device {device_name} in the logfile, defaulting values to []")
+            device_values = []
         return np.asarray(device_values)
+
+    def read_monitor(self, logfile, scan_number, **kwargs):
+        """
+        Load the default monitor for a dataset measured at ID01.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param scan_number: int, the scan number to load
+        :return: the default monitor values
+        """
+        monitor = self.read_device(
+            logfile=logfile,
+            scan_number=scan_number,
+            device_name="mon2"
+        )
+        if len(monitor) == 0:
+            monitor = self.read_device(
+                logfile=logfile,
+                scan_number=scan_number,
+                device_name="exp1"  # exp1 for old data at ID01
+            )
+        return monitor
 
 
 class DiffractometerNANOMAX(Diffractometer):
@@ -1258,8 +1322,21 @@ class DiffractometerNANOMAX(Diffractometer):
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]  # currently 'entry'
-        device_values = logfile["/" + group_key + "/measurement/" + device_name][:]
+        try:
+            device_values = logfile["/" + group_key + "/measurement/" + device_name][:]
+        except KeyError:
+            print(f"No device {device_name} in the logfile, defaulting values to []")
+            device_values = []
         return np.asarray(device_values)
+
+    def read_monitor(self, logfile, **kwargs):
+        """
+        Load the default monitor for a dataset measured at NANOMAX.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :return: the default monitor values
+        """
+        return self.read_device(logfile=logfile, device_name="alba2")
 
 
 class DiffractometerP10(Diffractometer):
@@ -1443,7 +1520,22 @@ class DiffractometerP10(Diffractometer):
                     # we are reading data and index_motor is defined
                     device_values.append(float(words[index_device]))
 
+        if index_device is None:
+            print(f"No device {device_name} in the logfile, defaulting values to []")
         return np.asarray(device_values)
+
+    def read_monitor(self, logfile, **kwargs):
+        """
+        Load the default monitor for a dataset measured at P10.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :return: the default monitor values
+        """
+        monitor = self.read_device(logfile=logfile, device_name="ipetra")
+        if len(monitor) == 0:
+            monitor = self.read_device(logfile=logfile, device_name="curpetra")
+        return monitor
+
 
 class DiffractometerSIXS(Diffractometer):
     """
@@ -1600,5 +1692,25 @@ class DiffractometerSIXS(Diffractometer):
         :param device_name: name of the device
         :return: the positions/values of the device as a numpy 1D array
         """
-        device_values = getattr(logfile, device_name)
+        try:
+            device_values = getattr(logfile, device_name)
+        except AttributeError:
+            print(f"No device {device_name} in the logfile, defaulting values to []")
+            device_values = []
         return np.asarray(device_values)
+
+    def read_monitor(self, logfile, beamline, **kwargs):
+        """
+        Load the default monitor for a dataset measured at SIXS.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param beamline: str, name of the beamline. E.g. "SIXS_2018"
+        :return: the default monitor values
+        """
+        if beamline == "SIXS_2018":
+            return self.read_device(logfile=logfile, device_name="imon1")
+        # SIXS_2019
+        monitor = self.read_device(logfile=logfile, device_name="imon0")
+        if len(monitor) == 0:  # the alias dictionnary was probably not provided
+            monitor = self.read_device(logfile=logfile, device_name="intensity")
+        return monitor
