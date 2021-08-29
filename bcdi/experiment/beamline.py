@@ -111,8 +111,9 @@ class Beamline(ABC):
         :return: "y+" or "y-"
         """
 
-    def exit_wavevector(self, diffractometer, wavelength, inplane_angle,
-                        outofplane_angle):
+    def exit_wavevector(
+        self, diffractometer, wavelength, inplane_angle, outofplane_angle
+    ):
         """
         Calculate the exit wavevector kout.
 
@@ -139,7 +140,9 @@ class Beamline(ABC):
                     np.cos(np.pi * inplane_angle / 180)
                     * np.cos(np.pi * outofplane_angle / 180),  # z
                     np.sin(np.pi * outofplane_angle / 180),  # y
-                    -1 * factor * np.sin(np.pi * inplane_angle / 180)
+                    -1
+                    * factor
+                    * np.sin(np.pi * inplane_angle / 180)
                     * np.cos(np.pi * outofplane_angle / 180),  # x
                 ]
             )
@@ -225,8 +228,9 @@ class Beamline(ABC):
 
         """
 
-    def init_qconversion(self, conversion_table, beam_direction, offset_inplane,
-                         diffractometer):
+    def init_qconversion(
+        self, conversion_table, beam_direction, offset_inplane, diffractometer
+    ):
         """
         Initialize the qconv object for xrayutilities depending on the setup parameters.
 
@@ -254,10 +258,12 @@ class Beamline(ABC):
         index = self.find_inplane(diffractometer=diffractometer)
 
         # convert axes from the laboratory frame to the frame of xrayutilies
-        sample_circles = [conversion_table[val] for val in
-                          diffractometer.sample_circles]
-        detector_circles = [conversion_table[val] for val in
-                            diffractometer.detector_circles]
+        sample_circles = [
+            conversion_table[val] for val in diffractometer.sample_circles
+        ]
+        detector_circles = [
+            conversion_table[val] for val in diffractometer.detector_circles
+        ]
         qconv = xu.experiment.QConversion(
             sample_circles, detector_circles, r_i=beam_direction
         )
@@ -267,9 +273,9 @@ class Beamline(ABC):
             print("no detector inplane circle detected, discarding 'offset_inplane'")
             offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
         else:
-            offsets = [0 for _ in range(len(sample_circles)+index)]
+            offsets = [0 for _ in range(len(sample_circles) + index)]
             offsets.append(offset_inplane)
-            [offsets.append(0) for _ in range(len(detector_circles)-index-1)]
+            [offsets.append(0) for _ in range(len(detector_circles) - index - 1)]
 
         return qconv, offsets
 

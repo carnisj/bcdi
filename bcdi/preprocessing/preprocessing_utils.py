@@ -1769,9 +1769,7 @@ def get_motor_pos(logfile, scan_number, setup, motor_name):
     :return: the position values of the motor
     """
     return setup.diffractometer.read_device(
-        logfile=logfile,
-        scan_number=scan_number,
-        motor_name=motor_name
+        logfile=logfile, scan_number=scan_number, motor_name=motor_name
     )
 
 
@@ -3239,8 +3237,7 @@ def load_custom_data(
 
     print("")
     # update the mask
-    mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                    loading_roi[2]: loading_roi[3]]
+    mask2d = mask2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
     return data, mask2d, monitor
 
 
@@ -3342,9 +3339,7 @@ def load_data(
 
         # check for empty frames (no beam)
         data, mask, monitor, frames_logical = check_empty_frames(
-            data=data,
-            mask=mask3d,
-            monitor=monitor
+            data=data, mask=mask3d, monitor=monitor
         )
 
         # intensity normalization
@@ -3638,9 +3633,7 @@ def motor_positions_p10_saxs(logfile, setup):
     return phi
 
 
-def normalize_dataset(
-    array, monitor, savedir=None, norm_to_min=True, debugging=False
-):
+def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
     """
     Normalize array using the monitor values.
 
@@ -4237,8 +4230,7 @@ def reload_bcdi_data(
         print("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = load_monitor(
-            logfile=logfile, scan_number=scan_number, setup=setup)
+        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
@@ -4374,7 +4366,8 @@ def reload_cdi_data(
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
             monitor = load_monitor(
-                logfile=logfile, scan_number=scan_number, setup=setup)
+                logfile=logfile, scan_number=scan_number, setup=setup
+            )
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(

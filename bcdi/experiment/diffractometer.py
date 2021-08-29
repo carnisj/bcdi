@@ -469,18 +469,18 @@ class Diffractometer(ABC):
 
     @staticmethod
     def load_frame(
-            frame,
-            mask2d,
-            monitor,
-            frames_per_point,
-            detector,
-            loading_roi,
-            flatfield=None,
-            background=None,
-            hotpixels=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
+        frame,
+        mask2d,
+        monitor,
+        frames_per_point,
+        detector,
+        loading_roi,
+        flatfield=None,
+        background=None,
+        hotpixels=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
     ):
         """
         Load a frame and apply correction to it.
@@ -516,8 +516,7 @@ class Diffractometer(ABC):
         if normalize == "sum_roi":
             monitor = util.sum_roi(array=frame, roi=detector.sum_roi)
 
-        frame = frame[loading_roi[0]: loading_roi[1],
-                      loading_roi[2]: loading_roi[3]]
+        frame = frame[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
 
         if bin_during_loading:
             frame = util.bin_data(
@@ -767,12 +766,12 @@ class DiffractometerCRISTAL(Diffractometer):
 
     @staticmethod
     def find_detector(
-            logfile,
-            actuators,
-            root,
-            detector_shape,
-            data_path="scan_data",
-            pattern="^data_[0-9][0-9]$",
+        logfile,
+        actuators,
+        root,
+        detector_shape,
+        data_path="scan_data",
+        pattern="^data_[0-9][0-9]$",
     ):
         """
         Look for the entry corresponding to the detector data in CRISTAL dataset.
@@ -877,17 +876,17 @@ class DiffractometerCRISTAL(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            actuators,
-            detector,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs
+        self,
+        logfile,
+        actuators,
+        detector,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load CRISTAL data including detector/background corrections.
@@ -925,17 +924,17 @@ class DiffractometerCRISTAL(Diffractometer):
             root=group_key,
             detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x),
         )
-        
+
         # find the number of images
         nb_img = tmp_data.shape[0]
 
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
         if (
-                detector.roi[0] < 0
-                or detector.roi[1] > detector.nb_pixel_y
-                or detector.roi[2] < 0
-                or detector.roi[3] > detector.nb_pixel_x
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
         ):
             print(
                 "Data shape is limited by detector size, "
@@ -966,8 +965,11 @@ class DiffractometerCRISTAL(Diffractometer):
             )
         else:
             data = np.empty(
-                (nb_img, loading_roi[1] - loading_roi[0],
-                 loading_roi[3] - loading_roi[2]),
+                (
+                    nb_img,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
                 dtype=float,
             )
 
@@ -1000,8 +1002,9 @@ class DiffractometerCRISTAL(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                        loading_roi[2]: loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
         return data, mask2d, monitor
 
     def motor_positions(self, logfile, setup, **kwargs):
@@ -1323,17 +1326,17 @@ class DiffractometerID01(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            scan_number,
-            detector,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs
+        self,
+        logfile,
+        scan_number,
+        detector,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
@@ -1383,10 +1386,10 @@ class DiffractometerID01(Diffractometer):
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
         if (
-                detector.roi[0] < 0
-                or detector.roi[1] > detector.nb_pixel_y
-                or detector.roi[2] < 0
-                or detector.roi[3] > detector.nb_pixel_x
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -1417,8 +1420,11 @@ class DiffractometerID01(Diffractometer):
             )
         else:
             data = np.empty(
-                (nb_img, loading_roi[1] - loading_roi[0],
-                 loading_roi[3] - loading_roi[2]),
+                (
+                    nb_img,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
                 dtype=float,
             )
 
@@ -1453,8 +1459,9 @@ class DiffractometerID01(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                        loading_roi[2]: loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
         return data, mask2d, monitor
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
@@ -1613,15 +1620,13 @@ class DiffractometerID01(Diffractometer):
         :return: the default monitor values
         """
         monitor = self.read_device(
-            logfile=logfile,
-            scan_number=scan_number,
-            device_name="mon2"
+            logfile=logfile, scan_number=scan_number, device_name="mon2"
         )
         if len(monitor) == 0:
             monitor = self.read_device(
                 logfile=logfile,
                 scan_number=scan_number,
-                device_name="exp1"  # exp1 for old data at ID01
+                device_name="exp1",  # exp1 for old data at ID01
             )
         return monitor
 
@@ -1694,16 +1699,16 @@ class DiffractometerNANOMAX(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            detector,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs,
+        self,
+        logfile,
+        detector,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load Nanomax data, apply filters and concatenate it for phasing.
@@ -1747,10 +1752,10 @@ class DiffractometerNANOMAX(Diffractometer):
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
         if (
-                detector.roi[0] < 0
-                or detector.roi[1] > detector.nb_pixel_y
-                or detector.roi[2] < 0
-                or detector.roi[3] > detector.nb_pixel_x
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -1781,8 +1786,11 @@ class DiffractometerNANOMAX(Diffractometer):
             )
         else:
             data = np.empty(
-                (nb_img, loading_roi[1] - loading_roi[0],
-                 loading_roi[3] - loading_roi[2]),
+                (
+                    nb_img,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
                 dtype=float,
             )
 
@@ -1815,10 +1823,11 @@ class DiffractometerNANOMAX(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                        loading_roi[2]: loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
         return data, mask2d, monitor
-    
+
     def motor_positions(self, logfile, setup):
         """
         Load the scan data and extract motor positions.
@@ -1965,16 +1974,16 @@ class DiffractometerP10(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            detector,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs
+        self,
+        logfile,
+        detector,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load P10 data, apply filters and concatenate it for phasing.
@@ -2003,7 +2012,7 @@ class DiffractometerP10(Diffractometer):
         # load the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         h5file = h5py.File(ccdfiletmp, "r")
-        
+
         # find the number of images (i.e. points, not including series at each point)
         is_series = detector.is_series
         if is_series:
@@ -2023,10 +2032,10 @@ class DiffractometerP10(Diffractometer):
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
         if (
-                detector.roi[0] < 0
-                or detector.roi[1] > detector.nb_pixel_y
-                or detector.roi[2] < 0
-                or detector.roi[3] > detector.nb_pixel_x
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -2057,8 +2066,11 @@ class DiffractometerP10(Diffractometer):
             )
         else:
             data = np.empty(
-                (nb_img, loading_roi[1] - loading_roi[0],
-                 loading_roi[3] - loading_roi[2]),
+                (
+                    nb_img,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
                 dtype=float,
             )
 
@@ -2120,11 +2132,11 @@ class DiffractometerP10(Diffractometer):
                 sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)
-                data[start_index: start_index + tempdata_length, :, :] = np.asarray(
+                data[start_index : start_index + tempdata_length, :, :] = np.asarray(
                     series_data
                 )
                 if normalize == "sum_roi":
-                    monitor[start_index: start_index + tempdata_length] = np.asarray(
+                    monitor[start_index : start_index + tempdata_length] = np.asarray(
                         series_monitor
                     )
                 start_index += tempdata_length
@@ -2133,8 +2145,9 @@ class DiffractometerP10(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                        loading_roi[2]: loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
         return data, mask2d, monitor
 
     def motor_positions(self, logfile, setup):
@@ -2353,17 +2366,17 @@ class DiffractometerSIXS(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            beamline,
-            detector,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs
+        self,
+        logfile,
+        beamline,
+        detector,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load SIXS data, apply filters and concatenate it for phasing.
@@ -2412,10 +2425,10 @@ class DiffractometerSIXS(Diffractometer):
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
         if (
-                detector.roi[0] < 0
-                or detector.roi[1] > detector.nb_pixel_y
-                or detector.roi[2] < 0
-                or detector.roi[3] > detector.nb_pixel_x
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -2446,8 +2459,11 @@ class DiffractometerSIXS(Diffractometer):
             )
         else:
             data = np.empty(
-                (nb_img, loading_roi[1] - loading_roi[0],
-                 loading_roi[3] - loading_roi[2]),
+                (
+                    nb_img,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
                 dtype=float,
             )
 
@@ -2480,10 +2496,11 @@ class DiffractometerSIXS(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]: loading_roi[1],
-                        loading_roi[2]: loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
         return data, mask2d, monitor
-    
+
     def motor_positions(self, logfile, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
