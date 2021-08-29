@@ -3338,7 +3338,7 @@ def load_data(
         data[np.isnan(data)] = 0
 
         # check for empty frames (no beam)
-        data, mask, monitor, frames_logical = check_empty_frames(
+        data, mask3d, monitor, frames_logical = check_empty_frames(
             data=data, mask=mask3d, monitor=monitor
         )
 
