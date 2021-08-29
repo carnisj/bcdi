@@ -2889,19 +2889,6 @@ def load_bcdi_data(
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
-    # normalize by the incident X-ray beam intensity
-    if normalize == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize)
-        rawdata, monitor = normalize_dataset(
-            array=rawdata,
-            monitor=monitor,
-            norm_to_min=True,
-            savedir=detector.savedir,
-            debugging=debugging,
-        )
-
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
@@ -3040,19 +3027,6 @@ def load_cdi_data(
     rawdata = beamstop_correction(
         data=rawdata, detector=detector, setup=setup, debugging=debugging
     )
-
-    # normalize by the incident X-ray beam intensity
-    if normalize == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize)
-        rawdata, monitor = normalize_dataset(
-            array=rawdata,
-            monitor=monitor,
-            norm_to_min=True,
-            savedir=detector.savedir,
-            debugging=True,
-        )
 
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
@@ -3372,6 +3346,20 @@ def load_data(
             mask=mask3d,
             monitor=monitor
         )
+
+        # intensity normalization
+        if normalize == "skip":
+            print("Skip intensity normalization")
+        else:
+            print("Intensity normalization using " + normalize)
+            data, monitor = normalize_dataset(
+                array=data,
+                monitor=monitor,
+                norm_to_min=True,
+                savedir=detector.savedir,
+                debugging=debugging,
+            )
+
     return data, mask3d, monitor, frames_logical.astype(int)
 
 

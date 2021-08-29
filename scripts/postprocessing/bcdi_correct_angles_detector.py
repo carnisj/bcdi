@@ -204,16 +204,6 @@ if not filtered_data:
         normalize=normalize_flux,
         debugging=debug,
     )
-    if normalize_flux == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize_flux)
-        data, monitor = pru.normalize_dataset(
-            array=data,
-            monitor=monitor,
-            norm_to_min=True,
-            debugging=debug,
-        )
 else:
     root = tk.Tk()
     root.withdraw()
