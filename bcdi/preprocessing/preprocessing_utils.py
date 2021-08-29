@@ -20,7 +20,6 @@ import multiprocessing as mp
 from numbers import Real
 import numpy as np
 import os
-import re
 import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
@@ -1433,6 +1432,52 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
+def check_empty_frames(data, mask=None, monitor=None):
+    """
+    Check if there is intensity for all frames.
+
+    In case of beam dump, some frames may be empty. The data and optional mask will be
+    cropped to remove those empty frames.
+
+    :param data: a numpy 3D array
+    :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
+     same shape as data
+    :param monitor: a numpy 1D array of shape equal to data.shape[0]
+    :return:
+
+     - cropped data as a numpy 3D array
+     - cropped mask as a numpy 3D array
+     - cropped monitor as a numpy 1D array
+     - frames_logical: 1D array of length equal to the number of measured frames.
+       In case of cropping the length of the stack of frames changes. A frame whose
+       index is set to 1 means that it is used, 0 means not used.
+
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError("data should be a numpy array")
+    if data.ndim != 3:
+        raise ValueError("data should be a 3D array")
+    if mask is not None:
+        if not isinstance(mask, np.ndarray):
+            raise TypeError("mask should be a numpy array")
+        if mask.shape != data.shape:
+            raise ValueError("mask should have the same shape as data")
+    if monitor is not None:
+        if not isinstance(monitor, np.ndarray):
+            raise TypeError("monitor should be a numpy array")
+        if monitor.ndim != 1 or len(monitor) != data.shape[0]:
+            raise ValueError("monitor be a 1D array of length data.shae[0]")
+
+    frames_logical = np.zeros(data.shape[0])
+    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if frames_logical.sum() != data.shape[0]:
+        print("\nEmpty frame detected, cropping the data\n")
+    data = data[np.nonzero(frames_logical)]
+    mask = mask[np.nonzero(frames_logical)]
+    monitor = monitor[np.nonzero(frames_logical)]
+    return data, mask, monitor, frames_logical
+
+
 def check_pixels(data, mask, debugging=False):
     """
     Check for hot pixels in the data using the mean value and the variance.
@@ -1560,130 +1605,6 @@ def check_pixels(data, mask, debugging=False):
             position=(131, 132, 133),
         )
     return data, mask
-
-
-def cristal_find_detector(
-    datafile,
-    setup,
-    root,
-    detector_shape,
-    data_path="scan_data",
-    pattern="^data_[0-9][0-9]$",
-):
-    """
-    Look for the entry corresponding to the detector data in CRISTAL dataset.
-
-    :param datafile: h5py File object of CRISTAL .nxs scan file
-    :param setup: the experimental setup: Class experiment_utils.Setup()
-    :param root: root folder name in the data file
-    :param detector_shape: tuple or list of two integer (nb_pixels_vertical,
-     nb_pixels_horizontal)
-    :param data_path: string, name of the subfolder when the scan data is located
-    :param pattern: string, pattern corresponding to the entries where the detector
-     data could be located
-    :return: numpy array of the shape of the detector dataset
-    """
-    # check input arguments
-    valid.valid_container(
-        root, container_types=str, min_length=1, name="cristal_find_data"
-    )
-    if not root.startswith("/"):
-        root = "/" + root
-    valid.valid_container(
-        detector_shape,
-        container_types=(tuple, list),
-        item_types=int,
-        length=2,
-        name="cristal_find_data",
-    )
-    valid.valid_container(
-        data_path, container_types=str, min_length=1, name="cristal_find_data"
-    )
-    if not data_path.startswith("/"):
-        data_path = "/" + data_path
-    valid.valid_container(
-        pattern, container_types=str, min_length=1, name="cristal_find_data"
-    )
-
-    if "detector" in setup.actuators:
-        return datafile[root + data_path + "/" + setup.actuators["detector"]][:]
-    # loop over the available keys at the defined path in the file
-    # and check the shape of the corresponding dataset
-
-    nb_pix_ver, nb_pix_hor = detector_shape
-    for key in list(datafile[root + data_path]):
-        if bool(re.match(pattern, key)):
-            obj_shape = datafile[root + data_path + "/" + key][:].shape
-            if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
-                # founc the key corresponding to the detector
-                print(
-                    f"subdirectory '{key}' contains the detector images,"
-                    f" shape={obj_shape}"
-                )
-                return datafile[root + data_path + "/" + key][:]
-    raise ValueError(
-        f"Could not find detector data using data_path={data_path} "
-        f"and pattern={pattern}"
-    )
-
-
-def cristal_load_motor(datafile, root, actuator_name, field_name):
-    """
-    Try to load the CRISTAL dataset at the defined entry and returns it.
-
-    Patterns keep changing at CRISTAL.
-
-    :param datafile: h5py File object of CRISTAL .nxs scan file
-    :param root: string, path of the data up to the last subfolder (not included).
-     This part is expected to not change over time
-    :param actuator_name: string, name of the actuator (e.g. 'I06-C-C07-EX-DIF-KPHI').
-     Lowercase and uppercase will
-     be tested when trying to load the data.
-    :param field_name: name of the field under the actuator name (e.g. 'position')
-    :return: the dataset if found or 0
-    """
-    # check input arguments
-    valid.valid_container(
-        root, container_types=str, min_length=1, name="cristal_load_motor"
-    )
-    if not root.startswith("/"):
-        root = "/" + root
-    valid.valid_container(
-        actuator_name, container_types=str, min_length=1, name="cristal_load_motor"
-    )
-
-    # check if there is an entry for the actuator
-    if actuator_name not in datafile[root].keys():
-        actuator_name = actuator_name.lower()
-        if actuator_name not in datafile[root].keys():
-            actuator_name = actuator_name.upper()
-            if actuator_name not in datafile[root].keys():
-                print(f"\nCould not find the entry for the actuator'{actuator_name}'")
-                print(f"list of available actuators: {list(datafile[root].keys())}\n")
-                return 0
-
-    # check if the field is a valid entry for the actuator
-    try:
-        dataset = datafile[root + "/" + actuator_name + "/" + field_name][:]
-    except KeyError:  # try lowercase
-        try:
-            dataset = datafile[root + "/" + actuator_name + "/" + field_name.lower()][:]
-        except KeyError:  # try uppercase
-            try:
-                dataset = datafile[
-                    root + "/" + actuator_name + "/" + field_name.upper()
-                ][:]
-            except KeyError:  # nothing else that we can do
-                print(
-                    f"\nCould not find the field '{field_name}' "
-                    f"in the actuator'{actuator_name}'"
-                )
-                print(
-                    "list of available fields: "
-                    f"{list(datafile[root + '/' + actuator_name].keys())}\n"
-                )
-                return 0
-    return dataset
 
 
 def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
@@ -1838,33 +1759,18 @@ def find_bragg(data, peak_method):
 
 
 def get_motor_pos(logfile, scan_number, setup, motor_name):
-    # TODO: this one should go to diffractometer child classes
     """
     Load the scan data and extract motor positions.
 
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
+    :param logfile: the logfile created in Setup.create_logfile()
     :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: an instance of the Class Setup
     :param motor_name: name of the motor
     :return: the position values of the motor
     """
-    if setup.beamline == "P10":
-        motor_pos = scan_motor_p10(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline == "ID01":
-        motor_pos = scan_motor_id01(
-            logfile=logfile, scan_number=scan_number, motor_name=motor_name
-        )
-    elif setup.beamline == "CRISTAL":
-        motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline == "NANOMAX":
-        motor_pos = scan_motor_nanomax(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        motor_pos = scan_motor_sixs(logfile=logfile, motor_name=motor_name)
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
-    return motor_pos
+    return setup.diffractometer.read_device(
+        logfile=logfile, scan_number=scan_number, motor_name=motor_name
+    )
 
 
 def grid_bcdi_labframe(
@@ -2845,104 +2751,6 @@ def grid_cylindrical(
     return interp_array
 
 
-def init_qconversion(setup):
-    """
-    Initialize the qconv object from xrayutilities depending on the setup parameters.
-
-    The convention in xrayutilities is x downstream, z vertical up, y outboard.
-    Note: the user-defined motor offsets are applied directly when reading motor
-    positions, therefore do not need to be taken into account in xrayutilities apart
-    from the detector inplane offset determined by the area detector calibration.
-
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: qconv object and the motor offsets used later for q calculation
-    """
-    beamline = setup.beamline
-    beam_direction = setup.beam_direction_xrutils
-
-    if beamline == "ID01":
-        offsets = (
-            0,
-            0,
-            0,
-            0,
-            setup.offset_inplane,
-            0,
-        )  # mu eta chi(virtual) phi nu del
-        qconv = xu.experiment.QConversion(
-            ["z-", "y-", "x+", "z-"], ["z-", "y-"], r_i=beam_direction
-        )  # for ID01
-        # 3S+2D goniometer
-        # (ID01 goniometer, sample: mu, eta, chi(virtual), phi  / detector: nu,del)
-        # the vector beam_direction is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline in {"SIXS_2018", "SIXS_2019"}:
-        offsets = (0, 0, 0, setup.offset_inplane, 0)  # beta, mu, beta, gamma del
-        qconv = xu.experiment.QConversion(
-            ["y-", "z+"], ["y-", "z+", "y-"], r_i=beam_direction
-        )  # for SIXS
-        # 2S+3D goniometer
-        # (SIXS goniometer, sample: beta, mu    / detector: beta, gamma, del)
-        # beta is below both sample and detector circles
-        # the vector is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == "CRISTAL":
-        offsets = (0, 0, setup.offset_inplane, 0)  # mgomega, phi, gamma, delta
-        qconv = xu.experiment.QConversion(
-            ["y-", "z+"], ["z+", "y-"], r_i=beam_direction
-        )  # for CRISTAL
-        # 2S+2D goniometer
-        # (CRISTAL goniometer, sample: mgomega, mgphi   / detector: gamma, delta)
-        # the vector is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == "P10":
-        offsets = (
-            0,
-            0,
-            0,
-            0,
-            setup.offset_inplane,
-            0,
-        )  # mu, omega, chi, phi, gamma del
-        qconv = xu.experiment.QConversion(
-            ["z+", "y-", "x+", "z-"], ["z+", "y-"], r_i=beam_direction
-        )  # for P10
-        # 4S+2D goniometer
-        # (P10 goniometer, sample: mu, omega, chi, phi  / detector: gamma, delta)
-        # the vector is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == "34ID":
-        offsets = (0, 0, setup.offset_inplane, 0)
-        # theta (inplane), phi (outofplane), delta (inplane), gamma (outofplane)
-        qconv = xu.experiment.QConversion(
-            ["z+", "y+"], ["z+", "y-"], r_i=beam_direction
-        )  # for 34ID-C
-        # 2S+2D goniometer
-        # (34ID goniometer, sample: theta (inplane), phi,
-        # detector: delta (inplane), gamma)
-        # the vector is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    elif beamline == "NANOMAX":
-        offsets = (0, 0, setup.offset_inplane, 0)  # theta phi gamma delta
-        qconv = xu.experiment.QConversion(
-            ["y-", "z-"], ["z-", "y-"], r_i=beam_direction
-        )  # for NANOMAX
-        # 2S+2D goniometer
-        # (Nanomax goniometer, sample: theta, phi    /  detector: gamma,delta)
-        # the vector beam_direction is giving the direction of the primary beam
-        # convention for coordinate system:
-        # x downstream; z upwards; y to the "outside" (right-handed)
-    else:
-        raise ValueError("Incorrect value for parameter 'beamline'")
-
-    return qconv, offsets
-
-
 def interp_2dslice(
     array, slice_index, rotation_angle, direct_beam, interp_angle, interp_radius
 ):
@@ -3078,20 +2886,6 @@ def load_bcdi_data(
     )  # can happen when subtracting a background
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
-
-    # normalize by the incident X-ray beam intensity
-    if normalize == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize)
-        rawdata, monitor = normalize_dataset(
-            array=rawdata,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
-            norm_to_min=True,
-            savedir=detector.savedir,
-            debugging=debugging,
-        )
 
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
@@ -3232,20 +3026,6 @@ def load_cdi_data(
         data=rawdata, detector=detector, setup=setup, debugging=debugging
     )
 
-    # normalize by the incident X-ray beam intensity
-    if normalize == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize)
-        rawdata, monitor = normalize_dataset(
-            array=rawdata,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
-            norm_to_min=True,
-            savedir=detector.savedir,
-            debugging=True,
-        )
-
     nbz, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
@@ -3308,185 +3088,11 @@ def load_cdi_data(
     return rawdata, rawmask, frames_logical, monitor
 
 
-def load_cristal_data(
-    logfile,
-    setup,
-    detector,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    bin_during_loading=False,
-    debugging=False,
-):
-    """
-    Load CRISTAL data, apply filters and concatenate it for phasing.
-
-    It will look for the correct entry 'detector' in the dictionary Setup.actuators,
-    and look for a dataset with compatible shape otherwise.
-
-    :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param setup: the experimental setup: Class experiment_utils.Setup()
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
-    :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the integrated intensity in the region of interest
-     defined by detector.sum_roi, 'skip' to do nothing
-    :param bin_during_loading: if True, the data will be binned in the detector frame
-     while loading. It saves a lot of memory space for large 2D detectors.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - a logical array of length = initial frames number. A frame used will be set to
-       True, a frame unused to False.
-     - the monitor values for normalization
-
-    """
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    group_key = list(logfile.keys())[0]
-
-    tmp_data = cristal_find_detector(
-        datafile=logfile,
-        setup=setup,
-        root=group_key,
-        detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x),
-    )
-
-    nb_img = tmp_data.shape[0]
-
-    # define the loading ROI, the detector ROI may be larger than the physical
-    # detector size
-    if (
-        detector.roi[0] < 0
-        or detector.roi[1] > detector.nb_pixel_y
-        or detector.roi[2] < 0
-        or detector.roi[3] > detector.nb_pixel_x
-    ):
-        print(
-            "Data shape is limited by detector size, "
-            "loaded data will be smaller than as defined by the ROI."
-        )
-    loading_roi = [
-        max(0, detector.roi[0]),
-        min(detector.nb_pixel_y, detector.roi[1]),
-        max(0, detector.roi[2]),
-        min(detector.nb_pixel_x, detector.roi[3]),
-    ]
-
-    if bin_during_loading:
-        print(
-            "Binning the data: detector vertical axis by",
-            detector.binning[1],
-            ", detector horizontal axis by",
-            detector.binning[2],
-        )
-        data = np.empty(
-            (
-                nb_img,
-                (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-            ),
-            dtype=float,
-        )
-    else:
-        data = np.empty(
-            (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-            dtype=float,
-        )
-
-    if normalize == "sum_roi":
-        monitor = np.zeros(nb_img)
-    elif normalize == "monitor":
-        monitor = load_cristal_monitor(logfile=logfile, setup=setup, nb_frames=nb_img)
-    else:  # 'skip'
-        monitor = np.ones(nb_img)
-
-    for idx in range(nb_img):
-        ccdraw = tmp_data[idx, :, :]
-
-        ccdraw, mask_2d = detector.mask_detector(
-            ccdraw,
-            mask_2d,
-            nb_img=1,
-            flatfield=flatfield,
-            background=background,
-            hotpixels=hotpixels,
-        )
-
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        if bin_during_loading:
-            ccdraw = util.bin_data(
-                ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-        data[idx, :, :] = ccdraw
-        sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-        sys.stdout.flush()
-
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    # check for empty frames (no beam)
-    frames_logical = np.zeros(nb_img)
-    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
-    if frames_logical.sum() != nb_img:
-        print("\nEmpty frame detected, cropping the data\n")
-    data = data[np.nonzero(frames_logical)]
-    mask3d = mask3d[np.nonzero(frames_logical)]
-
-    return data, mask3d, monitor, frames_logical
-
-
-def load_cristal_monitor(logfile, setup, nb_frames):
-    """
-    Load monitor values for a dataset measured at CRISTAL.
-
-    It will look for the correct entry 'monitor' in the dictionary Setup.actuators,
-    and use the default entry otherwise.
-
-    :param logfile: h5py File object of CRISTAL .nxs scan file
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :param nb_frames: int, number of detector frames in the stacked dataset
-    :return: the default monitor values
-    """
-    group_key = list(logfile.keys())[0]
-    monitor = cristal_load_motor(
-        datafile=logfile,
-        root="/" + group_key,
-        actuator_name="scan_data",
-        field_name=setup.actuators.get("monitor", "data_04"),
-    )
-    if len(monitor.shape) != 1:
-        print(
-            f"shape of the monitor dataset incompatible {monitor.shape},"
-            " skip normalization"
-        )
-        monitor = np.ones(nb_frames)
-    if len(monitor) != nb_frames:
-        print(f"length of the monitor incompatible {len(monitor)}, skip normalization")
-        monitor = np.ones(nb_frames)
-    return monitor
-
-
 def load_custom_data(
     custom_images,
     custom_monitor,
     normalize,
-    beamline,
+    setup,
     detector,
     flatfield=None,
     hotpixels=None,
@@ -3502,9 +3108,8 @@ def load_custom_data(
     :param normalize: 'monitor' to return the monitor values defined by custom_monitor,
      'sum_roi' to return a monitor based on the integrated intensity in the region of
      interest defined by detector.sum_roi, 'skip' to do nothing
-    :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL',
-     'P10', 'NANOMAX' '34ID'
-    :param detector: the detector instance: Class experiment_utils.Detector()
+    :param setup: an instance of the class Setup
+    :param detector: an instance of the class Detector
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
     :param background: the 2D background array to subtract to the data
@@ -3512,8 +3117,16 @@ def load_custom_data(
      while loading. It saves a lot of memory space for large 2D detectors.
     :param debugging: set to True to see plots
     :return:
+
+     - the 3D data array in the detector frame
+     - the 2D mask array
+     - the monitor values for normalization
+
     """
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+    # initialize the 2D mask
+    mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+
+    # create the template for the image files
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
     nb_frames = None
 
@@ -3528,7 +3141,7 @@ def load_custom_data(
         data_stack = npzfile[list(npzfile.files)[0]]
         nb_img = data_stack.shape[0]
 
-    # define the loading ROI, the detector ROI may be larger than the physical
+    # define the loading ROI, the user-defined ROI may be larger than the physical
     # detector size
     if (
         detector.roi[0] < 0
@@ -3547,6 +3160,7 @@ def load_custom_data(
         min(detector.nb_pixel_x, detector.roi[3]),
     ]
 
+    # initialize the data array
     if bin_during_loading:
         print(
             "Binning the data: detector vertical axis by",
@@ -3568,6 +3182,7 @@ def load_custom_data(
             dtype=float,
         )
 
+    # get the monitor values
     if normalize == "sum_roi":
         monitor = np.zeros(nb_img)
     elif normalize == "monitor":
@@ -3575,16 +3190,17 @@ def load_custom_data(
     else:  # skip
         monitor = np.ones(nb_img)
 
+    # loop over frames, mask the detector and normalize / bin
     for idx in range(nb_img):
         if data_stack is not None:
             ccdraw = data_stack[idx, :, :]
         else:
             i = int(custom_images[idx])
-            if beamline == "ID01":
+            if setup.beamline == "ID01":
                 e = fabio.open(ccdfiletmp % i)
                 ccdraw = e.data
                 nb_frames = 1  # no series measurement at ID01
-            elif beamline == "P10":  # consider a time series
+            elif setup.beamline == "P10":  # consider a time series
                 ccdfiletmp = (
                     detector.rootdir
                     + detector.sample_name
@@ -3602,42 +3218,27 @@ def load_custom_data(
                     "Custom scan implementation missing for this beamline"
                 )
 
-        ccdraw, mask_2d = detector.mask_detector(
-            data=ccdraw,
-            mask=mask_2d,
-            nb_img=nb_frames,
+        data[idx, :, :], mask2d, monitor[idx] = setup.diffractometer.load_frame(
+            frame=ccdraw,
+            mask2d=mask2d,
+            monitor=monitor[idx],
+            frames_per_point=nb_frames,
+            detector=detector,
+            loading_roi=loading_roi,
             flatfield=flatfield,
             background=background,
             hotpixels=hotpixels,
+            normalize=normalize,
+            bin_during_loading=bin_during_loading,
+            debugging=debugging,
         )
-
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        if bin_during_loading:
-            ccdraw = util.bin_data(
-                ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-        data[idx, :, :] = ccdraw
         sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
         sys.stdout.flush()
 
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    frames_logical = np.ones(nb_img)
-
-    return data, mask3d, monitor, frames_logical
+    print("")
+    # update the mask
+    mask2d = mask2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
+    return data, mask2d, monitor
 
 
 def load_data(
@@ -3655,31 +3256,28 @@ def load_data(
     """
     Load data, apply filters and concatenate it for phasing.
 
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
+    :param logfile: the logfile created in Setup.create_logfile()
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class experiment_utils.Setup()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
     :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
      return a monitor based on the integrated intensity in the region of interest
      defined by detector.sum_roi, 'skip' to do nothing
-    :param bin_during_loading: only for P10. If True, the data will be binned in the
-     detector frame while loading. It saves a lot of memory for large detectors.
+    :param bin_during_loading: if True, the data will be binned in the detector frame
+     while loading. It saves a lot of memory for large detectors.
     :param debugging: set to True to see plots
     :return:
+
      - the 3D data array in the detector frame and the 3D mask array
      - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
+     - frames_logical: 1D array of length equal to the number of measured frames.
+       In case of cropping the length of the stack of frames changes. A frame whose
+       index is set to 1 means that it is used, 0 means not used.
 
     """
-    if setup.beamline != "P10":
-        bin_during_loading = False
-
     print(
         "User-defined ROI size (VxH):",
         detector.roi[1] - detector.roi[0],
@@ -3696,94 +3294,68 @@ def load_data(
         detector.nb_pixel_x // detector.binning[2],
     )
 
-    if setup.custom_scan and not setup.filtered_data:
-        data, mask3d, monitor, frames_logical = load_custom_data(
-            custom_images=setup.custom_images,
-            custom_monitor=setup.custom_monitor,
-            beamline=setup.beamline,
-            normalize=normalize,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            debugging=debugging,
-        )
-    elif setup.filtered_data:
+    if setup.filtered_data:
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
-    elif setup.beamline == "ID01":
-        data, mask3d, monitor, frames_logical = load_id01_data(
-            logfile=logfile,
-            scan_number=scan_number,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            debugging=debugging,
-        )
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        data, mask3d, monitor, frames_logical = load_sixs_data(
-            logfile=logfile,
-            beamline=setup.beamline,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            debugging=debugging,
-        )
-    elif setup.beamline == "CRISTAL":
-        data, mask3d, monitor, frames_logical = load_cristal_data(
-            logfile=logfile,
-            setup=setup,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            debugging=debugging,
-        )
-    elif setup.beamline == "P10":
-        data, mask3d, monitor, frames_logical = load_p10_data(
-            logfile=logfile,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            debugging=debugging,
-            bin_during_loading=bin_during_loading,
-        )
-    elif setup.beamline == "NANOMAX":
-        data, mask3d, monitor, frames_logical = load_nanomax_data(
-            logfile=logfile,
-            detector=detector,
-            flatfield=flatfield,
-            hotpixels=hotpixels,
-            background=background,
-            normalize=normalize,
-            debugging=debugging,
-        )
     else:
-        raise ValueError('Wrong value for "beamline" parameter')
-
-    # remove indices where frames_logical=0
-    nbz, nby, nbx = data.shape
-    nb_frames = (frames_logical != 0).sum()
-    newdata = np.zeros((nb_frames, nby, nbx))
-    newmask = np.zeros((nb_frames, nby, nbx))
-    # do not process the monitor here, it is done in normalize_dataset()
-
-    nb_overlap = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx]:
-            newdata[idx - nb_overlap, :, :] = data[idx, :, :]
-            newmask[idx - nb_overlap, :, :] = mask3d[idx, :, :]
+        if setup.custom_scan:
+            data, mask2d, monitor = load_custom_data(
+                custom_images=setup.custom_images,
+                custom_monitor=setup.custom_monitor,
+                setup=setup,
+                normalize=normalize,
+                detector=detector,
+                flatfield=flatfield,
+                hotpixels=hotpixels,
+                background=background,
+                debugging=debugging,
+            )
         else:
-            nb_overlap = nb_overlap + 1
+            data, mask2d, monitor = setup.diffractometer.load_data(
+                logfile=logfile,
+                beamline=setup.beamline,
+                scan_number=scan_number,
+                detector=detector,
+                flatfield=flatfield,
+                hotpixels=hotpixels,
+                background=background,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
 
-    return newdata, newmask, monitor, frames_logical.astype(int)
+        # bin the 2D mask if necessary
+        if bin_during_loading:
+            mask2d = util.bin_data(
+                mask2d, (detector.binning[1], detector.binning[2]), debugging=False
+            )
+            mask2d[np.nonzero(mask2d)] = 1
+
+        # check for abnormally behaving pixels
+        data, mask2d = check_pixels(data=data, mask=mask2d, debugging=debugging)
+        mask3d = np.repeat(mask2d[np.newaxis, :, :], data.shape[0], axis=0)
+        mask3d[np.isnan(data)] = 1
+        data[np.isnan(data)] = 0
+
+        # check for empty frames (no beam)
+        data, mask3d, monitor, frames_logical = check_empty_frames(
+            data=data, mask=mask3d, monitor=monitor
+        )
+
+        # intensity normalization
+        if normalize == "skip":
+            print("Skip intensity normalization")
+        else:
+            print("Intensity normalization using " + normalize)
+            data, monitor = normalize_dataset(
+                array=data,
+                monitor=monitor,
+                norm_to_min=True,
+                savedir=detector.savedir,
+                debugging=debugging,
+            )
+
+    return data, mask3d, monitor, frames_logical.astype(int)
 
 
 def load_filtered_data(detector):
@@ -3828,7 +3400,7 @@ def load_flatfield(flatfield_file):
     """
     if flatfield_file:
         flatfield = np.load(flatfield_file)
-        if flatfield_file.endswith("npz"):
+        if flatfield_file.endswith(".npz"):
             npz_key = flatfield.files
             flatfield = flatfield[npz_key[0]]
         if flatfield.ndim != 2:
@@ -3864,733 +3436,21 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_id01_data(
-    logfile,
-    scan_number,
-    detector,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    bin_during_loading=False,
-    debugging=False,
-):
-    """
-    Load ID01 data, apply filters and concatenate it for phasing.
-
-    :param logfile: Silx SpecFile object containing the information about the scan and
-     image numbers
-    :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
-    :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the integrated intensity in the region of interest
-     defined by detector.sum_roi, 'skip' to do nothing
-    :param bin_during_loading: if True, the data will be binned in the detector frame
-     while loading. It saves a lot of memory space for large 2D detectors.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
-
-    """
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-
-    ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-
-    try:
-        ccdn = labels_data[labels.index(detector.counter), :]
-    except ValueError:
-        try:
-            print(detector.counter, "not in the list, trying 'ccd_n'")
-            detector.counter = "ccd_n"
-            ccdn = labels_data[labels.index(detector.counter), :]
-        except ValueError:
-            raise ValueError(
-                detector.counter, "not in the list, the detector name may be wrong"
-            )
-
-    nb_img = len(ccdn)
-
-    # define the loading ROI, the detector ROI may be larger than the physical
-    # detector size
-    if (
-        detector.roi[0] < 0
-        or detector.roi[1] > detector.nb_pixel_y
-        or detector.roi[2] < 0
-        or detector.roi[3] > detector.nb_pixel_x
-    ):
-        print(
-            "Data shape is limited by detector size,"
-            " loaded data will be smaller than as defined by the ROI."
-        )
-    loading_roi = [
-        max(0, detector.roi[0]),
-        min(detector.nb_pixel_y, detector.roi[1]),
-        max(0, detector.roi[2]),
-        min(detector.nb_pixel_x, detector.roi[3]),
-    ]
-
-    if bin_during_loading:
-        print(
-            "Binning the data: detector vertical axis by",
-            detector.binning[1],
-            ", detector horizontal axis by",
-            detector.binning[2],
-        )
-        data = np.empty(
-            (
-                nb_img,
-                (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-            ),
-            dtype=float,
-        )
-    else:
-        data = np.empty(
-            (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-            dtype=float,
-        )
-
-    if normalize == "sum_roi":
-        monitor = np.zeros(nb_img)
-    elif normalize == "monitor":
-        try:
-            monitor = labels_data[labels.index("exp1"), :]  # mon2 monitor at ID01
-        except ValueError:
-            try:
-                monitor = labels_data[
-                    labels.index("mon2"), :
-                ]  # exp1 for old data at ID01
-            except ValueError:  # no monitor data
-                print("No available monitor data")
-                monitor = np.ones(nb_img)
-    else:  # 'skip'
-        monitor = np.ones(nb_img)
-
-    for idx in range(nb_img):
-        i = int(ccdn[idx])
-        e = fabio.open(ccdfiletmp % i)
-        ccdraw = e.data
-
-        ccdraw, mask_2d = detector.mask_detector(
-            data=ccdraw,
-            mask=mask_2d,
-            nb_img=1,
-            flatfield=flatfield,
-            background=background,
-            hotpixels=hotpixels,
-        )
-
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        if bin_during_loading:
-            ccdraw = util.bin_data(
-                ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-        data[idx, :, :] = ccdraw
-        sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-        sys.stdout.flush()
-
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    frames_logical = np.ones(nb_img)
-
-    return data, mask3d, monitor, frames_logical
-
-
-def load_id01_monitor(logfile, scan_number):
-    """
-    Load the default monitor for a dataset measured at ID01.
-
-    :param logfile: Silx SpecFile object containing the information about the scan and
-     image numbers
-    :param scan_number: the scan number to load
-    :return: the default monitor values
-    """
-    labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-    try:
-        monitor = labels_data[labels.index("exp1"), :]  # mon2 monitor at ID01
-    except ValueError:
-        try:
-            monitor = labels_data[labels.index("mon2"), :]  # exp1 for old data at ID01
-        except ValueError:  # no monitor data
-            raise ValueError("No available monitor data")
-    return monitor
-
-
-def load_monitor(scan_number, logfile, setup, **kwargs):
+def load_monitor(scan_number, logfile, setup):
     """
     Load the default monitor for intensity normalization of the considered beamline.
 
     :param scan_number: the scan number to load
     :param logfile: path of the . fio file containing the information about the scan
     :param setup: the experimental setup: Class SetupPreprocessing()
-    :param kwargs:
-     - 'nb_frames': int, number of detector frames in the stacked dataset
-
     :return: the default monitor values
     """
-    # check and load kwargs
-    valid.valid_kwargs(
-        kwargs=kwargs,
-        allowed_kwargs={"nb_frames"},
-        name="preprocessing_utils.load_monitor",
+    return setup.diffractometer.read_monitor(
+        scan_number=scan_number,
+        logfile=logfile,
+        beamline=setup.beamline,
+        actuators=setup.actuators,
     )
-    nb_frames = kwargs.get("nb_frames")
-    valid.valid_item(
-        nb_frames,
-        allowed_types=int,
-        min_excluded=0,
-        allow_none=True,
-        name="preprocessing_utils.load_monitor",
-    )
-
-    if setup.custom_scan and not setup.filtered_data:
-        monitor = setup.custom_monitor
-    elif setup.beamline == "ID01":
-        monitor = load_id01_monitor(logfile=logfile, scan_number=scan_number)
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        monitor = load_sixs_monitor(logfile=logfile, beamline=setup.beamline)
-    elif setup.beamline == "CRISTAL":
-        monitor = load_cristal_monitor(
-            logfile=logfile, setup=setup, nb_frames=nb_frames
-        )
-    elif setup.beamline == "P10":
-        monitor = load_p10_monitor(logfile=logfile)
-    elif setup.beamline == "NANOMAX":
-        monitor = load_nanomax_monitor(logfile=logfile)
-    else:
-        raise ValueError('Wrong value for "beamline" parameter')
-    return monitor
-
-
-def load_nanomax_data(
-    logfile,
-    detector,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    debugging=False,
-):
-    """
-    Load Nanomax data, apply filters and concatenate it for phasing.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
-    :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the integrated intensity in the region of interest
-     defined by detector.sum_roi, 'skip' to do nothing
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
-
-    """
-    if debugging:
-        print(
-            str(logfile["entry"]["description"][()])[3:-2]
-        )  # Reading only useful symbols
-
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    group_key = list(logfile.keys())[0]  # currently 'entry'
-    try:
-        tmp_data = logfile["/" + group_key + "/measurement/merlin/frames"][:]
-    except KeyError:
-        tmp_data = logfile["/" + group_key + "measurement/Merlin/data"][()]
-
-    nb_img = tmp_data.shape[0]
-    print("Number of frames:", nb_img)
-
-    # define the loading ROI, the detector ROI may be larger than the physical
-    # detector size
-    if (
-        detector.roi[0] < 0
-        or detector.roi[1] > detector.nb_pixel_y
-        or detector.roi[2] < 0
-        or detector.roi[3] > detector.nb_pixel_x
-    ):
-        print(
-            "Data shape is limited by detector size,"
-            " loaded data will be smaller than as defined by the ROI."
-        )
-    loading_roi = [
-        max(0, detector.roi[0]),
-        min(detector.nb_pixel_y, detector.roi[1]),
-        max(0, detector.roi[2]),
-        min(detector.nb_pixel_x, detector.roi[3]),
-    ]
-
-    data = np.empty(
-        (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-        dtype=float,
-    )
-
-    if normalize == "sum_roi":
-        monitor = np.zeros(nb_img)
-    elif normalize == "monitor":
-        monitor = logfile["/" + group_key + "/measurement/alba2"][:]
-    else:  # 'skip'
-        monitor = np.ones(nb_img)
-
-    for idx in range(nb_img):
-        ccdraw = tmp_data[idx, :, :]
-
-        ccdraw, mask_2d = detector.mask_detector(
-            ccdraw,
-            mask_2d,
-            nb_img=1,
-            flatfield=flatfield,
-            background=background,
-            hotpixels=hotpixels,
-        )
-
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        data[idx, :, :] = ccdraw
-        sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-        sys.stdout.flush()
-    print("")
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    frames_logical = np.ones(nb_img)
-
-    return data, mask3d, monitor, frames_logical
-
-
-def load_nanomax_monitor(logfile):
-    """
-    Load the default monitor for a dataset measured at NANOMAX.
-
-    :param logfile: h5py File object of NANOMAX .h5 scan file
-    :return: the default monitor values
-    """
-    group_key = list(logfile.keys())[0]  # currently 'entry'
-    monitor = logfile["/" + group_key + "/measurement/alba2"][:]
-    return monitor
-
-
-def load_p10_data(
-    logfile,
-    detector,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    bin_during_loading=False,
-    debugging=False,
-):
-    """
-    Load P10 data, apply filters and concatenate it for phasing.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
-    :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the integrated intensity in the region of interest
-     defined by detector.sum_roi, 'skip to do nothing'
-    :param bin_during_loading: if True, the data will be binned in the detector frame
-     while loading. It saves a lot of memory space for large 2D detectors.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
-
-    """
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
-    ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-
-    h5file = h5py.File(ccdfiletmp, "r")
-    is_series = detector.is_series
-    if is_series:
-        nb_img = len(list(h5file["entry/data"]))
-    else:
-        idx = 0
-        nb_img = 0
-        while True:
-            data_path = "data_" + str("{:06d}".format(idx + 1))
-            try:
-                nb_img += len(h5file["entry"]["data"][data_path])
-                idx += 1
-            except KeyError:
-                break
-    print("Number of points :", nb_img)
-
-    # define the loading ROI, the detector ROI may be larger than the physical
-    # detector size
-    if (
-        detector.roi[0] < 0
-        or detector.roi[1] > detector.nb_pixel_y
-        or detector.roi[2] < 0
-        or detector.roi[3] > detector.nb_pixel_x
-    ):
-        print(
-            "Data shape is limited by detector size,"
-            " loaded data will be smaller than as defined by the ROI."
-        )
-    loading_roi = [
-        max(0, detector.roi[0]),
-        min(detector.nb_pixel_y, detector.roi[1]),
-        max(0, detector.roi[2]),
-        min(detector.nb_pixel_x, detector.roi[3]),
-    ]
-
-    if bin_during_loading:
-        print(
-            "Binning the data: detector vertical axis by",
-            detector.binning[1],
-            ", detector horizontal axis by",
-            detector.binning[2],
-        )
-        data = np.empty(
-            (
-                nb_img,
-                (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-            ),
-            dtype=float,
-        )
-    else:
-        data = np.empty(
-            (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-            dtype=float,
-        )
-
-    if normalize == "sum_roi":
-        monitor = np.zeros(nb_img)
-    elif normalize == "monitor":
-        monitor = []
-        index_monitor = None
-        fio = open(logfile, "r")
-        fio_lines = fio.readlines()
-        for line in fio_lines:
-            this_line = line.strip()
-            words = this_line.split()
-            if "Col" in words and ("ipetra" in words or "curpetra" in words):
-                # template = ' Col 6 ipetra DOUBLE\n' (2018)
-                # or ' Col 6 curpetra DOUBLE\n' (2019)
-                index_monitor = int(words[1]) - 1  # python index starts at 0
-            if index_monitor and util.is_numeric(
-                words[0]
-            ):  # we are reading data and index_monitor is defined
-                monitor.append(float(words[index_monitor]))
-        fio.close()
-        monitor = np.asarray(monitor, dtype=float)
-    else:  # 'skip'
-        monitor = np.ones(nb_img)
-
-    start_index = 0  # offset when not is_series
-    for file_idx in range(nb_img):
-        idx = 0
-        series_data = []
-        series_monitor = []
-        data_path = "data_" + str("{:06d}".format(file_idx + 1))
-        while True:
-            try:
-                try:
-                    tmp_data = h5file["entry"]["data"][data_path][idx]
-                except OSError:
-                    raise OSError("hdf5plugin is not installed")
-
-                # a single frame from the (eventual) series is loaded
-                ccdraw, mask_2d = detector.mask_detector(
-                    data=tmp_data,
-                    mask=mask_2d,
-                    nb_img=1,
-                    flatfield=flatfield,
-                    background=background,
-                    hotpixels=hotpixels,
-                )
-
-                if normalize == "sum_roi":
-                    temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-                    series_monitor.append(temp_mon)
-                ccdraw = ccdraw[
-                    loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-                ]
-                if bin_during_loading:
-                    ccdraw = util.bin_data(
-                        ccdraw,
-                        (detector.binning[1], detector.binning[2]),
-                        debugging=False,
-                    )
-                series_data.append(ccdraw)
-                if not is_series:
-                    sys.stdout.write(
-                        "\rLoading frame {:d}".format(start_index + idx + 1)
-                    )
-                    sys.stdout.flush()
-                idx = idx + 1
-            except IndexError:  # reached the end of the series
-                break
-            except ValueError:  # something went wrong
-                break
-        if is_series:
-            data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
-            if normalize == "sum_roi":
-                monitor[file_idx] = np.asarray(series_monitor).sum()
-            sys.stdout.write("\rSeries: loading frame {:d}".format(file_idx + 1))
-            sys.stdout.flush()
-        else:
-            tempdata_length = len(series_data)
-            data[start_index : start_index + tempdata_length, :, :] = np.asarray(
-                series_data
-            )
-            if normalize == "sum_roi":
-                monitor[start_index : start_index + tempdata_length] = np.asarray(
-                    series_monitor
-                )
-            start_index += tempdata_length
-            if start_index == nb_img:
-                break
-    print("")
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-
-    frames_logical = np.ones(nb_img)
-    return data, mask3d, monitor, frames_logical
-
-
-def load_p10_monitor(logfile):
-    """
-    Load the default monitor for a dataset measured at P10.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :return: the default monitor values
-    """
-    monitor = []
-    index_monitor = None
-    fio = open(logfile, "r")
-    fio_lines = fio.readlines()
-
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-        if "Col" in words and ("ipetra" in words or "curpetra" in words):
-            # template = ' Col 6 ipetra DOUBLE\n' (2018)
-            # or ' Col 6 curpetra DOUBLE\n' (2019)
-            index_monitor = int(words[1]) - 1  # python index starts at 0
-        if index_monitor and util.is_numeric(
-            words[0]
-        ):  # we are reading data and index_monitor is defined
-            monitor.append(float(words[index_monitor]))
-    fio.close()
-    monitor = np.asarray(monitor, dtype=float)
-    return monitor
-
-
-def load_sixs_data(
-    logfile,
-    beamline,
-    detector,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    bin_during_loading=False,
-    debugging=False,
-):
-    """
-    Load SIXS data, apply filters and concatenate it for phasing.
-
-    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param beamline: SIXS_2019 or SIXS_2018
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param flatfield: the 2D flatfield array
-    :param hotpixels: the 2D hotpixels array
-    :param background: the 2D background array to subtract to the data
-    :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
-     return a monitor based on the integrated intensity in the region of interest
-     defined by detector.sum_roi, 'skip' to do nothing
-    :param bin_during_loading: if True, the data will be binned in the detector frame
-     while loading. It saves a lot of memory space for large 2D detectors.
-    :param debugging: set to True to see plots
-    :return:
-     - the 3D data array in the detector frame and the 3D mask array
-     - the monitor values for normalization
-     - frames_logical: array of initial length the number of measured frames.
-       In case of padding the length changes. A frame whose index is set to 1 means
-       that it is used, 0 means not used, -1 means padded (added) frame.
-
-    """
-    if detector.name == "Merlin":
-        tmp_data = logfile.merlin[:]
-    else:  # Maxipix
-        if beamline == "SIXS_2018":
-            tmp_data = logfile.mfilm[:]
-        else:
-            try:
-                tmp_data = logfile.mpx_image[:]
-            except AttributeError:
-                try:
-                    tmp_data = logfile.maxpix[:]
-                except AttributeError:
-                    # the alias dictionnary was probably not provided
-                    tmp_data = logfile.image[:]
-
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-    frames_logical = np.ones(tmp_data.shape[0])
-    nb_img = tmp_data.shape[0]
-
-    # define the loading ROI, the detector ROI may be larger than the physical
-    # detector size
-    if (
-        detector.roi[0] < 0
-        or detector.roi[1] > detector.nb_pixel_y
-        or detector.roi[2] < 0
-        or detector.roi[3] > detector.nb_pixel_x
-    ):
-        print(
-            "Data shape is limited by detector size,"
-            " loaded data will be smaller than as defined by the ROI."
-        )
-    loading_roi = [
-        max(0, detector.roi[0]),
-        min(detector.nb_pixel_y, detector.roi[1]),
-        max(0, detector.roi[2]),
-        min(detector.nb_pixel_x, detector.roi[3]),
-    ]
-
-    if bin_during_loading:
-        print(
-            "Binning the data: detector vertical axis by",
-            detector.binning[1],
-            ", detector horizontal axis by",
-            detector.binning[2],
-        )
-        data = np.empty(
-            (
-                nb_img,
-                (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-            ),
-            dtype=float,
-        )
-    else:
-        data = np.empty(
-            (nb_img, loading_roi[1] - loading_roi[0], loading_roi[3] - loading_roi[2]),
-            dtype=float,
-        )
-
-    if normalize == "sum_roi":
-        monitor = np.zeros(nb_img)
-    elif normalize == "monitor":
-        if beamline == "SIXS_2018":
-            monitor = logfile.imon1[:]
-        else:
-            try:
-                monitor = logfile.imon0[:]
-            except AttributeError:  # the alias dictionnary was probably not provided
-                monitor = logfile.intensity[:]
-    else:  # 'skip'
-        monitor = np.ones(nb_img)
-
-    for idx in range(nb_img):
-        ccdraw = tmp_data[idx, :, :]
-
-        ccdraw, mask_2d = detector.mask_detector(
-            data=ccdraw,
-            mask=mask_2d,
-            nb_img=1,
-            flatfield=flatfield,
-            background=background,
-            hotpixels=hotpixels,
-        )
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        if bin_during_loading:
-            ccdraw = util.bin_data(
-                ccdraw, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-        data[idx, :, :] = ccdraw
-        sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-        sys.stdout.flush()
-
-    mask_2d = mask_2d[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
-    if bin_during_loading:
-        mask_2d = util.bin_data(
-            mask_2d, (detector.binning[1], detector.binning[2]), debugging=False
-        )
-        mask_2d[np.nonzero(mask_2d)] = 1
-    data, mask_2d = check_pixels(data=data, mask=mask_2d, debugging=debugging)
-    mask3d = np.repeat(mask_2d[np.newaxis, :, :], nb_img, axis=0)
-    mask3d[np.isnan(data)] = 1
-    data[np.isnan(data)] = 0
-    return data, mask3d, monitor, frames_logical
-
-
-def load_sixs_monitor(logfile, beamline):
-    """
-    Load the default monitor for a dataset measured at SIXS.
-
-    :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-    :param beamline: SIXS_2019 or SIXS_2018
-    :return: the default monitor values
-    """
-    if beamline == "SIXS_2018":
-        monitor = logfile.imon1[:]
-    else:
-        try:
-            monitor = logfile.imon0[:]
-        except AttributeError:  # the alias dictionnary was probably not provided
-            try:
-                monitor = logfile.intensity[:]
-            except AttributeError:  # no monitor data
-                raise ValueError("No available monitor data")
-    return monitor
 
 
 def mean_filter(
@@ -4773,24 +3633,18 @@ def motor_positions_p10_saxs(logfile, setup):
     return phi
 
 
-def normalize_dataset(
-    array, raw_monitor, frames_logical, savedir=None, norm_to_min=True, debugging=False
-):
+def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
     """
     Normalize array using the monitor values.
 
     :param array: the 3D array to be normalized
-    :param raw_monitor: the monitor values
-    :param frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
+    :param monitor: the monitor values
     :param savedir: path where to save the debugging figure
-    :param norm_to_min: normalize to min(monitor) instead of max(monitor),
+    :param norm_to_min: bool, True to normalize to min(monitor) instead of max(monitor),
      avoid multiplying the noise
-    :type norm_to_min: bool
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: bool, True to see plots
     :return:
+
      - normalized dataset
      - updated monitor
      - a title for plotting
@@ -4812,59 +3666,24 @@ def normalize_dataset(
             axis=1
         )  # the first axis is the normalization axis
 
-    # crop/pad monitor depending on frames_logical array
-    monitor = np.zeros((frames_logical != 0).sum())
-    nb_overlap = 0
-    nb_padded = 0
-    for idx in range(len(frames_logical)):
-        if frames_logical[idx] == -1:  # padded frame, no monitor value for this
-            if norm_to_min:
-                monitor[idx - nb_overlap] = raw_monitor.min()
-            else:  # norm to max
-                monitor[idx - nb_overlap] = raw_monitor.max()
-            nb_padded = nb_padded + 1
-        elif frames_logical[idx] == 1:
-            monitor[idx - nb_overlap] = raw_monitor[idx - nb_padded]
-        else:
-            nb_overlap = nb_overlap + 1
-
-    if nb_padded != 0:
-        if norm_to_min:
-            print(
-                "Monitor value set to raw_monitor.min() for ",
-                nb_padded,
-                " frames padded",
-            )
-        else:  # norm to max
-            print(
-                "Monitor value set to raw_monitor.max() for ",
-                nb_padded,
-                " frames padded",
-            )
-
     print(
         "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
             monitor.min(), monitor.max(), monitor.mean()
         )
     )
-    if norm_to_min:
-        print("Data normalization by monitor.min()/monitor\n")
-    else:
-        print("Data normalization by monitor.max()/monitor\n")
 
     if norm_to_min:
+        print("Data normalization by monitor.min()/monitor\n")
         monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
+        print("Data normalization by monitor.max()/monitor\n")
         monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
     if len(monitor) != nbz:
         raise ValueError(
-            "The frame number and the monitor data length are different:" " Got ",
-            nbz,
-            "frames but ",
-            len(monitor),
-            " monitor values",
+            "The frame number and the monitor data length are different:",
+            f"got {nbz} frames but {len(monitor)} monitor values",
         )
 
     for idx in range(nbz):
@@ -4896,11 +3715,6 @@ def normalize_dataset(
         )
         if savedir is not None:
             fig.savefig(savedir + f"monitor_{nbz}_{nby}_{nbx}.png")
-        else:
-            print(
-                "normalize_dataset(): savedir not provided,"
-                " cannot save the normalization plot"
-            )
         plt.close(fig)
 
     return array, monitor
@@ -5361,7 +4175,7 @@ def reload_bcdi_data(
     **kwargs,
 ):
     """
-    Reload forward CDI data, apply optional threshold, normalization and binning.
+    Reload BCDI data, apply optional threshold, normalization and binning.
 
     :param data: the 3D data array
     :param mask: the 3D mask array
@@ -5416,15 +4230,12 @@ def reload_bcdi_data(
         print("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = load_monitor(
-            logfile=logfile, scan_number=scan_number, setup=setup, nb_frames=nbz
-        )
+        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
             array=data,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=True,
@@ -5555,14 +4366,13 @@ def reload_cdi_data(
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
             monitor = load_monitor(
-                logfile=logfile, scan_number=scan_number, setup=setup, nb_frames=nbz
+                logfile=logfile, scan_number=scan_number, setup=setup
             )
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
             array=data,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
+            monitor=monitor,
             norm_to_min=True,
             savedir=detector.savedir,
             debugging=True,
@@ -5676,91 +4486,6 @@ def remove_hotpixels(data, mask, hotpixels=None):
     else:
         raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
     return data, mask
-
-
-def scan_motor_cristal(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at CRISTAL beamline.
-
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    group_key = list(logfile.keys())[0]
-    motor_pos = logfile["/" + group_key + "/scan_data/" + motor_name][:]
-    return np.asarray(motor_pos)
-
-
-def scan_motor_id01(logfile, scan_number, motor_name):
-    """
-    Extract the scanned motor positions during the scan at ID01 beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param scan_number: number of the scan
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-    motor_pos = list(labels_data[labels.index(motor_name), :])
-    return np.asarray(motor_pos)
-
-
-def scan_motor_nanomax(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at NANOMAX beamline.
-
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    group_key = list(logfile.keys())[0]  # currently 'entry'
-    motor_pos = logfile["/" + group_key + "/measurement/" + motor_name][:]
-    return np.asarray(motor_pos)
-
-
-def scan_motor_p10(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at P10 beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    motor_pos = []
-    index_motor = None
-    fio = open(logfile, "r")
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-
-        if (
-            "Col" in words and motor_name in words
-        ):  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
-            index_motor = int(words[1]) - 1  # python index starts at 0
-
-        if index_motor is not None and util.is_numeric(
-            words[0]
-        ):  # we are reading data and index_motor is defined
-            motor_pos.append(float(words[index_motor]))
-
-    fio.close()
-    return np.asarray(motor_pos)
-
-
-def scan_motor_sixs(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at SIXS beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    motor_pos = getattr(logfile, motor_name)
-    return np.asarray(motor_pos)
 
 
 def wrap(obj, start_angle, range_angle):

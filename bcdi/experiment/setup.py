@@ -155,7 +155,7 @@ class Setup:
         """
         Define motors names in the data file.
 
-        This optional dictionary  can be used to define the entries corresponding to
+        This optional dictionary can be used to define the entries corresponding to
         actuators in data files (useful at CRISTAL where the location of data keeps
         changing)
         """
@@ -418,6 +418,7 @@ class Setup:
         :return: kout vector
         """
         return self._beamline.exit_wavevector(
+            diffractometer=self.diffractometer,
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
             wavelength=self.wavelength,
@@ -648,12 +649,15 @@ class Setup:
 
     def create_logfile(self, scan_number, root_folder, filename):
         """
-        Create the logfile used in gridmap().
+        Create the logfile, which can be a log/spec file or the data itself.
+
+        The nature of this file is beamline dependent.
 
         :param scan_number: the scan number to load
         :param root_folder: the root directory of the experiment, where is the
          specfile/.fio file
-        :param filename: the file name to load, or the path of 'alias_dict.txt' for SIXS
+        :param filename: the file name to load, or the absolute path of
+         'alias_dict.txt' for SIXS
         :return: logfile
         """
         return self._beamline.create_logfile(
@@ -921,6 +925,28 @@ class Setup:
                     f"sample_name = '{self.detector.sample_name}'\n"
                     f"template_imagefile = '{self.detector.template_file}'\n"
                 )
+
+    def init_qconversion(self):
+        """
+        Initialize the qconv object for xrayutilities depending on the setup parameters.
+
+        The convention in xrayutilities is x downstream, z vertical up, y outboard.
+        Note: the user-defined motor offsets are applied directly when reading motor
+        positions, therefore do not need to be taken into account in xrayutilities apart
+        from the detector inplane offset determined by the area detector calibration.
+
+        :return: a tuple containing:
+
+         - the qconv object for xrayutilities
+         - a tuple of motor offsets used later for q calculation
+
+        """
+        return self._beamline.init_qconversion(
+            conversion_table=self.labframe_to_xrayutil,
+            beam_direction=self.beam_direction_xrutils,
+            offset_inplane=self.offset_inplane,
+            diffractometer=self.diffractometer,
+        )
 
     def ortho_directspace(
         self,

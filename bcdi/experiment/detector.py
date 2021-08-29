@@ -9,7 +9,7 @@
 
 """Class definition which handles the detector config used for data acquisition."""
 import numpy as np
-from numbers import Number, Real
+from numbers import Real
 import os
 
 from bcdi.utils import validation as valid
@@ -498,7 +498,7 @@ class Detector:
         :param data: the 2D data to mask
         :param mask: the 2D mask to be updated
         :param nb_img: number of images summed to yield the 2D data
-         (e.g. in a series measurement)
+         (e.g. in a series measurement), used when defining the threshold for hot pixels
         :param flatfield: the 2D flatfield array to be multiplied with the data
         :param background: a 2D array to be subtracted to the data
         :param hotpixels: a 2D array with hotpixels to be masked

@@ -344,20 +344,6 @@ data[np.nonzero(mask)] = 0
 #######################
 data[data <= threshold] = 0
 
-###########################
-# intensity normalization #
-###########################
-if normalize_flux:
-    print("Intensity normalization using the default monitor")
-    data, monitor = pru.normalize_dataset(
-        array=data,
-        raw_monitor=monitor,
-        frames_logical=frames_logical,
-        norm_to_min=True,
-        savedir=detector.savedir,
-        debugging=True,
-    )
-
 ########################
 # load motor positions #
 ########################

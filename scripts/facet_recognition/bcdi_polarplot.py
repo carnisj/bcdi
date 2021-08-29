@@ -298,11 +298,10 @@ setup = Setup(
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
-qconv, offsets = pru.init_qconversion(setup)
+qconv, offsets = setup.init_qconversion()
 detector.offsets = offsets
-hxrd = xu.experiment.HXRD(
-    sample_inplane, sample_outofplane, qconv=qconv
-)  # x downstream, y outboard, z vertical
+hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)
+# x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction
 # along the beam and surface normal of the sample
 cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped

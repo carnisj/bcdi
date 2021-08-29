@@ -33,7 +33,7 @@ Input: direct beam and Bragg peak position, sample to detector distance, energy.
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
 scan = 76
-root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
+root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
 sample_name = "B15_syn_S1_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -204,17 +204,6 @@ if not filtered_data:
         normalize=normalize_flux,
         debugging=debug,
     )
-    if normalize_flux == "skip":
-        print("Skip intensity normalization")
-    else:
-        print("Intensity normalization using " + normalize_flux)
-        data, monitor = pru.normalize_dataset(
-            array=data,
-            raw_monitor=monitor,
-            frames_logical=frames_logical,
-            norm_to_min=True,
-            debugging=debug,
-        )
 else:
     root = tk.Tk()
     root.withdraw()
