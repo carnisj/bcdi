@@ -945,7 +945,8 @@ class Setup:
             conversion_table=self.labframe_to_xrayutil,
             beam_direction=self.beam_direction_xrutils,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer)
+            diffractometer=self.diffractometer,
+        )
 
     def ortho_directspace(
         self,

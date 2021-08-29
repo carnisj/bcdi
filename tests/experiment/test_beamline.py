@@ -156,8 +156,9 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             offset_inplane=self.offset_inplane,
             diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) +\
-            len(self.diffractometer.detector_circles)
+        nb_circles = len(self.diffractometer.sample_circles) + len(
+            self.diffractometer.detector_circles
+        )
         print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
@@ -178,7 +179,7 @@ class TestBeamlineSIXS2019(unittest.TestCase):
         self.sample_name = "S"
         self.scan_number = 1
         self.specfile_name = self.root_dir + "alias_dict.txt"
-        self.template_imagefile = 'spare_ascan_mu_%05d.nxs'
+        self.template_imagefile = "spare_ascan_mu_%05d.nxs"
         self.beamline = create_beamline("SIXS_2019")
         self.diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
@@ -240,8 +241,9 @@ class TestBeamlineSIXS2019(unittest.TestCase):
             offset_inplane=self.offset_inplane,
             diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) +\
-            len(self.diffractometer.detector_circles)
+        nb_circles = len(self.diffractometer.sample_circles) + len(
+            self.diffractometer.detector_circles
+        )
         print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
