@@ -779,7 +779,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         # check if mgomega needs to be divided by 1e6
         # (data taken before the implementation of the correction)
-        if isinstance(mgomega, Real) and abs(mgomega) > 360:
+        if isinstance(mgomega, float) and abs(mgomega) > 360:
             mgomega = mgomega / 1e6
         elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(
             abs(val) > 360 for val in mgomega
