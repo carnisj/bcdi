@@ -419,7 +419,7 @@ class Diffractometer(ABC):
     @abstractmethod
     def goniometer_values(self, **kwargs):
         """
-        Define goniometer values.
+        Retrieve goniometer values.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
@@ -430,12 +430,28 @@ class Diffractometer(ABC):
     @abstractmethod
     def motor_positions(self, **kwargs):
         """
-        Define motor positions.
+        Retrieve motor positions.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def read_device(**kwargs):
+        """
+        Extract the device positions/values during a scan.
+
+        :param kwargs: beamline_specific parameters, which may include part of the
+         totality of the following keys:
+
+          - 'logfile': the logfile created in Setup.create_logfile()
+          - 'scan_number': int, number of the scan
+          - 'device_name': str, name of the device
+
+        :return: the positions/values of the device as a numpy 1D array
         """
 
     def remove_circle(self, stage_name, index):
@@ -529,7 +545,7 @@ class Diffractometer34ID(Diffractometer):
 
     def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
@@ -596,6 +612,11 @@ class Diffractometer34ID(Diffractometer):
 
         return theta, phi, delta, gamma
 
+    @staticmethod
+    def read_device(**kwargs):
+        """Extract the device positions/values during the scan at 34ID-C beamline."""
+        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+
 
 class DiffractometerCRISTAL(Diffractometer):
     """
@@ -618,7 +639,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
     def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param logfile: file containing the information about the scan and image
          numbers (specfile, .fio...)
@@ -853,6 +874,19 @@ class DiffractometerCRISTAL(Diffractometer):
                     return 0
         return dataset
 
+    @staticmethod
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at CRISTAL beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        group_key = list(logfile.keys())[0]
+        device_values = logfile["/" + group_key + "/scan_data/" + device_name][:]
+        return np.asarray(device_values)
+
 
 class DiffractometerID01(Diffractometer):
     """
@@ -877,7 +911,7 @@ class DiffractometerID01(Diffractometer):
         self, logfile, scan_number, setup, stage_name="bcdi", **kwargs
     ):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param logfile: file containing the information about the scan and image
          numbers (specfile, .fio...)
@@ -1079,6 +1113,21 @@ class DiffractometerID01(Diffractometer):
 
         return mu, eta, phi, nu, delta, energy, frames_logical
 
+    @staticmethod
+    def read_device(logfile, scan_number, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at ID01 beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param scan_number: number of the scan
+        :param device_name: name of the device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+        device_values = list(labels_data[labels.index(device_name), :])
+        return np.asarray(device_values)
+
 
 class DiffractometerNANOMAX(Diffractometer):
     """
@@ -1101,7 +1150,7 @@ class DiffractometerNANOMAX(Diffractometer):
 
     def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param logfile: file containing the information about the scan and image
          numbers (specfile, .fio...)
@@ -1199,6 +1248,19 @@ class DiffractometerNANOMAX(Diffractometer):
 
         return theta, phi, gamma, delta, energy, radius
 
+    @staticmethod
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at Nanomax beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        group_key = list(logfile.keys())[0]  # currently 'entry'
+        device_values = logfile["/" + group_key + "/measurement/" + device_name][:]
+        return np.asarray(device_values)
+
 
 class DiffractometerP10(Diffractometer):
     """
@@ -1221,7 +1283,7 @@ class DiffractometerP10(Diffractometer):
 
     def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param logfile: file containing the information about the scan and image
          numbers (specfile, .fio...)
@@ -1356,6 +1418,32 @@ class DiffractometerP10(Diffractometer):
             mu = setup.custom_motors["mu"]
         return mu, om, chi, phi, gamma, delta
 
+    @staticmethod
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at P10 beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        device_values = []
+        index_device = None  # index of the column corresponding to the device in .fio
+        with open(logfile, "r") as fio:
+            fio_lines = fio.readlines()
+            for line in fio_lines:
+                this_line = line.strip()
+                words = this_line.split()
+
+                if "Col" in words and device_name in words:
+                    # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+                    index_device = int(words[1]) - 1  # python index starts at 0
+
+                if index_device is not None and util.is_numeric(words[0]):
+                    # we are reading data and index_motor is defined
+                    device_values.append(float(words[index_device]))
+
+        return np.asarray(device_values)
 
 class DiffractometerSIXS(Diffractometer):
     """
@@ -1378,7 +1466,7 @@ class DiffractometerSIXS(Diffractometer):
 
     def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
         """
-        Extract goniometer motor positions for a BCDI rocking scan.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param logfile: file containing the information about the scan and image
          numbers (specfile, .fio...)
@@ -1502,3 +1590,15 @@ class DiffractometerSIXS(Diffractometer):
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
         return beta, mu, gamma, delta, frames_logical
+
+    @staticmethod
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at SIXS beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        device_values = getattr(logfile, device_name)
+        return np.asarray(device_values)

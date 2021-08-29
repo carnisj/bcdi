@@ -1838,33 +1838,20 @@ def find_bragg(data, peak_method):
 
 
 def get_motor_pos(logfile, scan_number, setup, motor_name):
-    # TODO: this one should go to diffractometer child classes
     """
     Load the scan data and extract motor positions.
 
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
+    :param logfile: the logfile created in Setup.create_logfile()
     :param scan_number: the scan number to load
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: an instance of the Class Setup
     :param motor_name: name of the motor
     :return: the position values of the motor
     """
-    if setup.beamline == "P10":
-        motor_pos = scan_motor_p10(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline == "ID01":
-        motor_pos = scan_motor_id01(
-            logfile=logfile, scan_number=scan_number, motor_name=motor_name
-        )
-    elif setup.beamline == "CRISTAL":
-        motor_pos = scan_motor_cristal(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline == "NANOMAX":
-        motor_pos = scan_motor_nanomax(logfile=logfile, motor_name=motor_name)
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        motor_pos = scan_motor_sixs(logfile=logfile, motor_name=motor_name)
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-
-    return motor_pos
+    return setup.diffractometer.read_device(
+        logfile=logfile,
+        scan_number=scan_number,
+        motor_name=motor_name
+    )
 
 
 def grid_bcdi_labframe(
@@ -5578,91 +5565,6 @@ def remove_hotpixels(data, mask, hotpixels=None):
     else:
         raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
     return data, mask
-
-
-def scan_motor_cristal(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at CRISTAL beamline.
-
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    group_key = list(logfile.keys())[0]
-    motor_pos = logfile["/" + group_key + "/scan_data/" + motor_name][:]
-    return np.asarray(motor_pos)
-
-
-def scan_motor_id01(logfile, scan_number, motor_name):
-    """
-    Extract the scanned motor positions during the scan at ID01 beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param scan_number: number of the scan
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-    labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
-    motor_pos = list(labels_data[labels.index(motor_name), :])
-    return np.asarray(motor_pos)
-
-
-def scan_motor_nanomax(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at NANOMAX beamline.
-
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    group_key = list(logfile.keys())[0]  # currently 'entry'
-    motor_pos = logfile["/" + group_key + "/measurement/" + motor_name][:]
-    return np.asarray(motor_pos)
-
-
-def scan_motor_p10(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at P10 beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    motor_pos = []
-    index_motor = None
-    fio = open(logfile, "r")
-    fio_lines = fio.readlines()
-    for line in fio_lines:
-        this_line = line.strip()
-        words = this_line.split()
-
-        if (
-            "Col" in words and motor_name in words
-        ):  # motor_name scanned, template = ' Col 0 motor_name DOUBLE\n'
-            index_motor = int(words[1]) - 1  # python index starts at 0
-
-        if index_motor is not None and util.is_numeric(
-            words[0]
-        ):  # we are reading data and index_motor is defined
-            motor_pos.append(float(words[index_motor]))
-
-    fio.close()
-    return np.asarray(motor_pos)
-
-
-def scan_motor_sixs(logfile, motor_name):
-    """
-    Extract the scanned motor positions during the scan at SIXS beamline.
-
-    :param logfile: the logfile created in create_logfile()
-    :param motor_name: name of the motor
-    :return: the positions of the motor as a numpy array
-    """
-    motor_pos = getattr(logfile, motor_name)
-    return np.asarray(motor_pos)
 
 
 def wrap(obj, start_angle, range_angle):
