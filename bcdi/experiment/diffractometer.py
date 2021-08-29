@@ -467,6 +467,67 @@ class Diffractometer(ABC):
 
         """
 
+    @staticmethod
+    def load_frame(
+            frame,
+            mask2d,
+            monitor,
+            frames_per_point,
+            detector,
+            loading_roi,
+            flatfield=None,
+            background=None,
+            hotpixels=None,
+            normalize="skip",
+            bin_during_loading=False,
+            debugging=False,
+    ):
+        """
+        Load a frame and apply correction to it.
+
+        :param frame: the frame to be loaded
+        :param mask2d: a numpy array of the same shape as frame
+        :param monitor: the volue of the intensity monitor for this frame
+        :param frames_per_point: number of images summed to yield the 2D data
+         (e.g. in a series measurement), used when defining the threshold for hot pixels
+        :param detector: an instance of the class Detector
+        :param loading_roi: user-defined region of interest, it may be larger than the
+         physical size of the detector
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
+        :return:
+        """
+        frame, mask2d = detector.mask_detector(
+            frame,
+            mask2d,
+            nb_img=frames_per_point,
+            flatfield=flatfield,
+            background=background,
+            hotpixels=hotpixels,
+        )
+
+        if normalize == "sum_roi":
+            monitor = util.sum_roi(array=frame, roi=detector.sum_roi)
+
+        frame = frame[loading_roi[0]: loading_roi[1],
+                      loading_roi[2]: loading_roi[3]]
+
+        if bin_during_loading:
+            frame = util.bin_data(
+                frame,
+                (detector.binning[1], detector.binning[2]),
+                debugging=debugging,
+            )
+
+        return frame, mask2d, monitor
+
     @abstractmethod
     def motor_positions(self, **kwargs):
         """
@@ -854,7 +915,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         """
         # initialize the 2D mask
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
         # look for the detector entry (keep changing at CRISTAL)
         group_key = list(logfile.keys())[0]
@@ -920,37 +981,28 @@ class DiffractometerCRISTAL(Diffractometer):
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
-            ccdraw = tmp_data[idx, :, :]
-
-            ccdraw, mask_2d = detector.mask_detector(
-                ccdraw,
-                mask_2d,
-                nb_img=1,
+            data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
+                frame=tmp_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=detector,
+                loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
                 hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
             )
-
-            if normalize == "sum_roi":
-                monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-            ccdraw = ccdraw[
-                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
-                     ]
-            if bin_during_loading:
-                ccdraw = util.bin_data(
-                    ccdraw,
-                    (detector.binning[1], detector.binning[2]),
-                    debugging=debugging,
-                )
-            data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
 
         print("")
         # update the mask
-        mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                          loading_roi[2]: loading_roi[3]]
-        return data, mask_2d, monitor
+        mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                        loading_roi[2]: loading_roi[3]]
+        return data, mask2d, monitor
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1306,7 +1358,7 @@ class DiffractometerID01(Diffractometer):
 
         """
         # initialize the 2D mask
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
         # create the template for the image files
         labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
@@ -1382,37 +1434,28 @@ class DiffractometerID01(Diffractometer):
         for idx in range(nb_img):
             i = int(ccdn[idx])
             e = fabio.open(ccdfiletmp % i)
-            ccdraw = e.data
-
-            ccdraw, mask_2d = detector.mask_detector(
-                data=ccdraw,
-                mask=mask_2d,
-                nb_img=1,
+            data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
+                frame=e.data,
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=detector,
+                loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
                 hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
             )
-
-            if normalize == "sum_roi":
-                monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-            ccdraw = ccdraw[
-                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
-                     ]
-            if bin_during_loading:
-                ccdraw = util.bin_data(
-                    ccdraw,
-                    (detector.binning[1], detector.binning[2]),
-                    debugging=debugging,
-                )
-            data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
 
         print("")
         # update the mask
-        mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                          loading_roi[2]: loading_roi[3]]
-        return data, mask_2d, monitor
+        mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                        loading_roi[2]: loading_roi[3]]
+        return data, mask2d, monitor
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1689,7 +1732,7 @@ class DiffractometerNANOMAX(Diffractometer):
             )  # Reading only useful symbols
 
         # initialize the 2D mask
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
         group_key = list(logfile.keys())[0]  # currently 'entry'
         try:
@@ -1753,37 +1796,28 @@ class DiffractometerNANOMAX(Diffractometer):
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
-            ccdraw = tmp_data[idx, :, :]
-
-            ccdraw, mask_2d = detector.mask_detector(
-                ccdraw,
-                mask_2d,
-                nb_img=1,
+            data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
+                frame=tmp_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=detector,
+                loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
                 hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
             )
-
-            if normalize == "sum_roi":
-                monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-            ccdraw = ccdraw[
-                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
-                     ]
-            if bin_during_loading:
-                ccdraw = util.bin_data(
-                    ccdraw,
-                    (detector.binning[1], detector.binning[2]),
-                    debugging=debugging,
-                )
-            data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
 
         print("")
         # update the mask
-        mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                          loading_roi[2]: loading_roi[3]]
-        return data, mask_2d, monitor
+        mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                        loading_roi[2]: loading_roi[3]]
+        return data, mask2d, monitor
     
     def motor_positions(self, logfile, setup):
         """
@@ -1964,7 +1998,7 @@ class DiffractometerP10(Diffractometer):
 
         """
         # initialize the 2D mask
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
         # load the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
@@ -2051,29 +2085,23 @@ class DiffractometerP10(Diffractometer):
                         raise OSError("hdf5plugin is not installed")
 
                     # a single frame from the (eventual) series is loaded
-                    ccdraw, mask_2d = detector.mask_detector(
-                        data=tmp_data,
-                        mask=mask_2d,
-                        nb_img=1,
+                    ccdraw, mask2d, temp_mon = self.load_frame(
+                        frame=tmp_data[idx, :, :],
+                        mask2d=mask2d,
+                        monitor=monitor[idx],
+                        frames_per_point=1,
+                        detector=detector,
+                        loading_roi=loading_roi,
                         flatfield=flatfield,
                         background=background,
                         hotpixels=hotpixels,
+                        normalize=normalize,
+                        bin_during_loading=bin_during_loading,
+                        debugging=debugging,
                     )
-
-                    if normalize == "sum_roi":
-                        temp_mon = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-                        series_monitor.append(temp_mon)
-                    ccdraw = ccdraw[
-                             loading_roi[0]: loading_roi[1],
-                             loading_roi[2]: loading_roi[3]
-                             ]
-                    if bin_during_loading:
-                        ccdraw = util.bin_data(
-                            ccdraw,
-                            (detector.binning[1], detector.binning[2]),
-                            debugging=debugging,
-                        )
                     series_data.append(ccdraw)
+                    series_monitor.append(temp_mon)
+
                     if not is_series:
                         sys.stdout.write(
                             "\rLoading frame {:d}".format(start_index + idx + 1)
@@ -2105,9 +2133,9 @@ class DiffractometerP10(Diffractometer):
 
         print("")
         # update the mask
-        mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                          loading_roi[2]: loading_roi[3]]
-        return data, mask_2d, monitor
+        mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                        loading_roi[2]: loading_roi[3]]
+        return data, mask2d, monitor
 
     def motor_positions(self, logfile, setup):
         """
@@ -2360,7 +2388,7 @@ class DiffractometerSIXS(Diffractometer):
 
         """
         # initialize the 2D mask
-        mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
         # load the data
         if detector.name == "Merlin":
@@ -2433,36 +2461,28 @@ class DiffractometerSIXS(Diffractometer):
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
-            ccdraw = tmp_data[idx, :, :]
-
-            ccdraw, mask_2d = detector.mask_detector(
-                data=ccdraw,
-                mask=mask_2d,
-                nb_img=1,
+            data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
+                frame=tmp_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=detector,
+                loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
                 hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
             )
-            if normalize == "sum_roi":
-                monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-            ccdraw = ccdraw[
-                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
-                     ]
-            if bin_during_loading:
-                ccdraw = util.bin_data(
-                    ccdraw,
-                    (detector.binning[1], detector.binning[2]),
-                    debugging=debugging,
-                )
-            data[idx, :, :] = ccdraw
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
 
         print("")
         # update the mask
-        mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                          loading_roi[2]: loading_roi[3]]
-        return data, mask_2d, monitor
+        mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                        loading_roi[2]: loading_roi[3]]
+        return data, mask2d, monitor
     
     def motor_positions(self, logfile, setup, **kwargs):
         """

@@ -3112,7 +3112,7 @@ def load_custom_data(
     custom_images,
     custom_monitor,
     normalize,
-    beamline,
+    setup,
     detector,
     flatfield=None,
     hotpixels=None,
@@ -3128,8 +3128,7 @@ def load_custom_data(
     :param normalize: 'monitor' to return the monitor values defined by custom_monitor,
      'sum_roi' to return a monitor based on the integrated intensity in the region of
      interest defined by detector.sum_roi, 'skip' to do nothing
-    :param beamline: supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL',
-     'P10', 'NANOMAX' '34ID'
+    :param setup: an instance of the class Setup
     :param detector: an instance of the class Detector
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array
@@ -3145,7 +3144,7 @@ def load_custom_data(
 
     """
     # initialize the 2D mask
-    mask_2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
+    mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
     # create the template for the image files
     ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
@@ -3217,11 +3216,11 @@ def load_custom_data(
             ccdraw = data_stack[idx, :, :]
         else:
             i = int(custom_images[idx])
-            if beamline == "ID01":
+            if setup.beamline == "ID01":
                 e = fabio.open(ccdfiletmp % i)
                 ccdraw = e.data
                 nb_frames = 1  # no series measurement at ID01
-            elif beamline == "P10":  # consider a time series
+            elif setup.beamline == "P10":  # consider a time series
                 ccdfiletmp = (
                     detector.rootdir
                     + detector.sample_name
@@ -3239,35 +3238,28 @@ def load_custom_data(
                     "Custom scan implementation missing for this beamline"
                 )
 
-        ccdraw, mask_2d = detector.mask_detector(
-            data=ccdraw,
-            mask=mask_2d,
-            nb_img=nb_frames,
+        data[idx, :, :], mask2d, monitor[idx] = setup.diffractometer.load_frame(
+            frame=ccdraw,
+            mask2d=mask2d,
+            monitor=monitor[idx],
+            frames_per_point=nb_frames,
+            detector=detector,
+            loading_roi=loading_roi,
             flatfield=flatfield,
             background=background,
             hotpixels=hotpixels,
+            normalize=normalize,
+            bin_during_loading=bin_during_loading,
+            debugging=debugging,
         )
-
-        if normalize == "sum_roi":
-            monitor[idx] = util.sum_roi(array=ccdraw, roi=detector.sum_roi)
-        ccdraw = ccdraw[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-        if bin_during_loading:
-            ccdraw = util.bin_data(
-                ccdraw,
-                (detector.binning[1], detector.binning[2]),
-                debugging=debugging,
-            )
-        data[idx, :, :] = ccdraw
         sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
         sys.stdout.flush()
 
     print("")
     # update the mask
-    mask_2d = mask_2d[loading_roi[0]: loading_roi[1],
-                      loading_roi[2]: loading_roi[3]]
-    return data, mask_2d, monitor
+    mask2d = mask2d[loading_roi[0]: loading_roi[1],
+                    loading_roi[2]: loading_roi[3]]
+    return data, mask2d, monitor
 
 
 def load_data(
@@ -3331,7 +3323,7 @@ def load_data(
             data, mask2d, monitor = load_custom_data(
                 custom_images=setup.custom_images,
                 custom_monitor=setup.custom_monitor,
-                beamline=setup.beamline,
+                setup=setup,
                 normalize=normalize,
                 detector=detector,
                 flatfield=flatfield,
