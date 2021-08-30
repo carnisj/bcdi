@@ -436,19 +436,37 @@ class Diffractometer(ABC):
         :return: a list of motor positions
         """
 
-    @staticmethod
-    def init_data_mask(detector, nb_frames, bin_during_loading):
+    def init_data_mask(
+        self,
+        detector,
+        setup,
+        logfile,
+        normalize,
+        nb_frames,
+        bin_during_loading,
+        **kwargs,
+    ):
         """
         Initialize data, mask and region of interest for loading a dataset.
 
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
         :param nb_frames: number of data points (not including series at each point)
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param kwargs:
+
+         - 'scan_number': int, the scan number to load
+
         :return:
 
          - the empty 3D data array
          - the 2D mask array initialized with 0 values
+         - the initialized monitor as a 1D array
          - the region of interest use for loading the data, as a list of 4 integers
 
         """
@@ -496,7 +514,54 @@ class Diffractometer(ABC):
                 ),
                 dtype=float,
             )
-        return data, np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)), loading_roi
+
+        # initialize the monitor
+        monitor = self.init_monitor(
+            normalize=normalize,
+            nb_frames=nb_frames,
+            logfile=logfile,
+            setup=setup,
+            **kwargs,
+        )
+
+        return (
+            data,
+            np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)),
+            monitor,
+            loading_roi,
+        )
+
+    def init_monitor(self, normalize, nb_frames, logfile, setup, **kwargs):
+        """
+        Initialize the monitor for normalization.
+
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param nb_frames: number of data points (not including series at each point)
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
+        :param kwargs:
+
+         - 'scan_number': int, the scan number to load
+
+        :return: the initialized monitor as a 1D array
+        """
+        if normalize == "sum_roi":
+            monitor = np.zeros(nb_frames)
+        elif normalize == "monitor":
+            if setup.custom_scan:
+                monitor = setup.custom_monitor
+            else:
+                monitor = self.read_monitor(
+                    logfile=logfile,
+                    beamline=setup.beamline,
+                    actuators=setup.actuators,
+                    **kwargs,
+                )
+        else:  # 'skip'
+            monitor = np.ones(nb_frames)
+        return monitor
 
     @abstractmethod
     def load_data(self, **kwargs):
@@ -943,6 +1008,7 @@ class DiffractometerCRISTAL(Diffractometer):
         logfile,
         actuators,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -960,6 +1026,7 @@ class DiffractometerCRISTAL(Diffractometer):
         :param logfile: the logfile created in Setup.create_logfile()
         :param actuators: dictionary defining the entries corresponding to actuators
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
@@ -977,6 +1044,8 @@ class DiffractometerCRISTAL(Diffractometer):
 
         """
         # look for the detector entry (keep changing at CRISTAL)
+        if setup.custom_scan:
+            raise NotImplementedError("custom scan not implemented for CRISTAL")
         group_key = list(logfile.keys())[0]
         tmp_data = self.find_detector(
             logfile=logfile,
@@ -988,20 +1057,14 @@ class DiffractometerCRISTAL(Diffractometer):
         # find the number of images
         nb_img = tmp_data.shape[0]
 
-        # initialize arrays and loading ROI
-        data, mask2d, loading_roi = self.init_data_mask(
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
         )
-
-        # get the monitor values
-        if normalize == "sum_roi":
-            monitor = np.zeros(nb_img)
-        elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile, actuators=actuators)
-        else:  # 'skip'
-            monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
@@ -1417,23 +1480,15 @@ class DiffractometerID01(Diffractometer):
                 data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
-        # initialize arrays and loading ROI
-        data, mask2d, loading_roi = self.init_data_mask(
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
         )
-
-        # get the monitor values
-        if normalize == "sum_roi":
-            monitor = np.zeros(nb_img)
-        elif normalize == "monitor":
-            if setup.custom_scan:
-                monitor = setup.custom_monitor
-            else:
-                monitor = self.read_monitor(logfile=logfile, scan_number=scan_number)
-        else:  # 'skip'
-            monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
@@ -1711,6 +1766,7 @@ class DiffractometerNANOMAX(Diffractometer):
         self,
         logfile,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -1720,10 +1776,11 @@ class DiffractometerNANOMAX(Diffractometer):
         **kwargs,
     ):
         """
-        Load Nanomax data, apply filters and concatenate it for phasing.
+        Load NANOMAX data, apply filters and concatenate it for phasing.
 
         :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
+        :param setup: an instance of the calss Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
@@ -1745,6 +1802,8 @@ class DiffractometerNANOMAX(Diffractometer):
                 str(logfile["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
+        if setup.custom_scan:
+            raise NotImplementedError("custom scan not implemented for NANOMAX")
         group_key = list(logfile.keys())[0]  # currently 'entry'
         try:
             tmp_data = logfile["/" + group_key + "/measurement/merlin/frames"][:]
@@ -1754,20 +1813,14 @@ class DiffractometerNANOMAX(Diffractometer):
         # find the number of images
         nb_img = tmp_data.shape[0]
 
-        # initialize arrays and loading ROI
-        data, mask2d, loading_roi = self.init_data_mask(
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
         )
-
-        # get the monitor values
-        if normalize == "sum_roi":
-            monitor = np.zeros(nb_img)
-        elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile)
-        else:  # 'skip'
-            monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
@@ -2004,22 +2057,14 @@ class DiffractometerP10(Diffractometer):
                 raise ValueError("No image number provided in 'custom_images'")
 
         # initialize arrays and loading ROI
-        data, mask2d, loading_roi = self.init_data_mask(
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
         )
-
-        # get the monitor values
-        if normalize == "sum_roi":
-            monitor = np.zeros(nb_img)
-        elif normalize == "monitor":
-            if setup.custom_scan:
-                monitor = setup.custom_monitor
-            else:
-                monitor = self.read_monitor(logfile=logfile)
-        else:  # 'skip'
-            monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         start_index = 0  # offset when not is_series
@@ -2358,6 +2403,8 @@ class DiffractometerSIXS(Diffractometer):
 
         """
         # load the data
+        if setup.custom_scan:
+            raise NotImplementedError("custom scan not implemented for NANOMAX")
         if detector.name == "Merlin":
             tmp_data = logfile.merlin[:]
         else:  # Maxipix
@@ -2377,19 +2424,14 @@ class DiffractometerSIXS(Diffractometer):
         nb_img = tmp_data.shape[0]
 
         # initialize arrays and loading ROI
-        data, mask2d, loading_roi = self.init_data_mask(
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
         )
-
-        # get the monitor values
-        if normalize == "sum_roi":
-            monitor = np.zeros(nb_img)
-        elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile, beamline=setup.beamline)
-        else:  # 'skip'
-            monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
