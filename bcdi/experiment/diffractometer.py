@@ -448,6 +448,7 @@ class Diffractometer(ABC):
             (specfile, .fio...)
           - 'scan_number': the scan number to load
           - 'detector': the detector object: Class experiment_utils.Detector()
+          - 'setup': an instance of the class Setup
           - 'actuators': dictionary defining the entries corresponding to actuators
           - 'flatfield': the 2D flatfield array
           - 'hotpixels': the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
@@ -1330,6 +1331,7 @@ class DiffractometerID01(Diffractometer):
         logfile,
         scan_number,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -1344,6 +1346,7 @@ class DiffractometerID01(Diffractometer):
         :param logfile: the logfile created in Setup.create_logfile()
         :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
@@ -1363,25 +1366,38 @@ class DiffractometerID01(Diffractometer):
         # initialize the 2D mask
         mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-        # create the template for the image files
-        labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+        data_stack = None
+        if not setup.custom_scan:
+            # create the template for the image files
+            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
 
-        # find the number of images
-        try:
-            ccdn = labels_data[labels.index(detector.counter), :]
-        except ValueError:
+            # find the number of images
             try:
-                print(detector.counter, "not in the list, trying 'ccd_n'")
-                detector.counter = "ccd_n"
                 ccdn = labels_data[labels.index(detector.counter), :]
             except ValueError:
-                raise ValueError(
-                    detector.counter, "not in the list, the detector name may be wrong"
-                )
+                try:
+                    print(detector.counter, "not in the list, trying 'ccd_n'")
+                    detector.counter = "ccd_n"
+                    ccdn = labels_data[labels.index(detector.counter), :]
+                except ValueError:
+                    raise ValueError(
+                        detector.counter,
+                        "not in the list, the detector name may be wrong",
+                    )
+            nb_img = len(ccdn)
+        else:
+            # create the template for the image files
+            if len(setup.custom_images) == 0:
+                raise ValueError("No image number provided in 'custom_images'")
 
-        nb_img = len(ccdn)
+            if len(setup.custom_images) > 1:
+                nb_img = len(setup.custom_images)
+            else:  # the data is stacked into a single file
+                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
+                data_stack = npzfile[list(npzfile.files)[0]]
+                nb_img = data_stack.shape[0]
 
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
@@ -1432,16 +1448,29 @@ class DiffractometerID01(Diffractometer):
         if normalize == "sum_roi":
             monitor = np.zeros(nb_img)
         elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile, scan_number=scan_number)
+            if setup.custom_scan:
+                monitor = setup.custom_monitor
+            else:
+                monitor = self.read_monitor(logfile=logfile, scan_number=scan_number)
         else:  # 'skip'
             monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         for idx in range(nb_img):
-            i = int(ccdn[idx])
-            e = fabio.open(ccdfiletmp % i)
+            if data_stack is not None:
+                # custom scan with a stacked data loaded
+                ccdraw = data_stack[idx, :, :]
+            else:
+                if setup.custom_scan:
+                    # custom scan with one file per frame
+                    i = int(setup.custom_images[idx])
+                else:
+                    i = int(ccdn[idx])
+                e = fabio.open(ccdfiletmp % i)
+                ccdraw = e.data
+
             data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
-                frame=e.data,
+                frame=ccdraw,
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
@@ -1977,6 +2006,7 @@ class DiffractometerP10(Diffractometer):
         self,
         logfile,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -1990,6 +2020,7 @@ class DiffractometerP10(Diffractometer):
 
         :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
@@ -2009,25 +2040,34 @@ class DiffractometerP10(Diffractometer):
         # initialize the 2D mask
         mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
 
-        # load the master file
+        # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-        h5file = h5py.File(ccdfiletmp, "r")
-
-        # find the number of images (i.e. points, not including series at each point)
+        nb_frames = None
         is_series = detector.is_series
-        if is_series:
-            nb_img = len(list(h5file["entry/data"]))
+        if not setup.custom_scan:
+            h5file = h5py.File(ccdfiletmp, "r")
+
+            # find the number of images
+            # (i.e. points, not including series at each point)
+            if is_series:
+                nb_img = len(list(h5file["entry/data"]))
+            else:
+                idx = 0
+                nb_img = 0
+                while True:
+                    data_path = "data_" + str("{:06d}".format(idx + 1))
+                    try:
+                        nb_img += len(h5file["entry"]["data"][data_path])
+                        idx += 1
+                    except KeyError:
+                        break
+            print("Number of points :", nb_img)
         else:
-            idx = 0
-            nb_img = 0
-            while True:
-                data_path = "data_" + str("{:06d}".format(idx + 1))
-                try:
-                    nb_img += len(h5file["entry"]["data"][data_path])
-                    idx += 1
-                except KeyError:
-                    break
-        print("Number of points :", nb_img)
+            # create the template for the image files
+            if len(setup.custom_images) > 0:
+                nb_img = len(setup.custom_images)
+            else:
+                raise ValueError("No image number provided in 'custom_images'")
 
         # define the loading ROI, the user-defined ROI may be larger than the physical
         # detector size
@@ -2078,17 +2118,38 @@ class DiffractometerP10(Diffractometer):
         if normalize == "sum_roi":
             monitor = np.zeros(nb_img)
         elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile)
+            if setup.custom_scan:
+                monitor = setup.custom_monitor
+            else:
+                monitor = self.read_monitor(logfile=logfile)
         else:  # 'skip'
             monitor = np.ones(nb_img)
 
         # loop over frames, mask the detector and normalize / bin
         start_index = 0  # offset when not is_series
-        for file_idx in range(nb_img):
+        for idx in range(nb_img):
             idx = 0
             series_data = []
             series_monitor = []
-            data_path = "data_" + str("{:06d}".format(file_idx + 1))
+            if setup.custom_scan:
+                # custom scan with one file per frame/series of frame, no master file in
+                # this case, load directly data files.
+                i = int(setup.custom_images[idx])
+                ccdfiletmp = (
+                    detector.rootdir
+                    + detector.sample_name
+                    + "_{:05d}".format(i)
+                    + "/e4m/"
+                    + detector.sample_name
+                    + "_{:05d}".format(i)
+                    + detector.template_file
+                )
+                h5file = h5py.File(ccdfiletmp, "r")  # load the data file
+                data_path = "data_000001"
+            else:
+                # normal scan, h5file is in this case the master .h5 file
+                data_path = "data_" + str("{:06d}".format(idx + 1))
+
             while True:
                 try:
                     try:
@@ -2125,10 +2186,10 @@ class DiffractometerP10(Diffractometer):
                 except ValueError:  # something went wrong
                     break
             if is_series:
-                data[file_idx, :, :] = np.asarray(series_data).sum(axis=0)
+                data[idx, :, :] = np.asarray(series_data).sum(axis=0)
                 if normalize == "sum_roi":
-                    monitor[file_idx] = np.asarray(series_monitor).sum()
-                sys.stdout.write("\rSeries: loading frame {:d}".format(file_idx + 1))
+                    monitor[idx] = np.asarray(series_monitor).sum()
+                sys.stdout.write("\rSeries: loading frame {:d}".format(idx + 1))
                 sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)
@@ -2368,7 +2429,7 @@ class DiffractometerSIXS(Diffractometer):
     def load_data(
         self,
         logfile,
-        beamline,
+        setup,
         detector,
         flatfield=None,
         hotpixels=None,
@@ -2382,7 +2443,7 @@ class DiffractometerSIXS(Diffractometer):
         Load SIXS data, apply filters and concatenate it for phasing.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param beamline: 'SIXS_2019' or 'SIXS_2018'
+        :param setup: an instance of the class Setup
         :param detector: an instance of the class Detector
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -2407,7 +2468,7 @@ class DiffractometerSIXS(Diffractometer):
         if detector.name == "Merlin":
             tmp_data = logfile.merlin[:]
         else:  # Maxipix
-            if beamline == "SIXS_2018":
+            if setup.beamline == "SIXS_2018":
                 tmp_data = logfile.mfilm[:]
             else:
                 try:
@@ -2471,7 +2532,7 @@ class DiffractometerSIXS(Diffractometer):
         if normalize == "sum_roi":
             monitor = np.zeros(nb_img)
         elif normalize == "monitor":
-            monitor = self.read_monitor(logfile=logfile, beamline=beamline)
+            monitor = self.read_monitor(logfile=logfile, beamline=setup.beamline)
         else:  # 'skip'
             monitor = np.ones(nb_img)
 
