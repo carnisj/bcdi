@@ -949,6 +949,25 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     return np.asarray(distances), cut
 
 
+def load_background(background_file):
+    """
+    Load a background file.
+
+    :param background_file: the path of the background file
+    :return: a 2D background
+    """
+    if background_file:
+        background = np.load(background_file)
+        if background_file.endswith("npz"):
+            npz_key = background.files
+            background = background[npz_key[0]]
+        if background.ndim != 2:
+            raise ValueError("background should be a 2D array")
+    else:
+        background = None
+    return background
+
+
 def load_file(file_path, fieldname=None):
     """
     Load a file.
