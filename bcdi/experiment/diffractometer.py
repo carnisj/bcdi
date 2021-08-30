@@ -436,6 +436,68 @@ class Diffractometer(ABC):
         :return: a list of motor positions
         """
 
+    @staticmethod
+    def init_data_mask(detector, nb_frames, bin_during_loading):
+        """
+        Initialize data, mask and region of interest for loading a dataset.
+
+        :param detector: an instance of the class Detector
+        :param nb_frames: number of data points (not including series at each point)
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :return:
+
+         - the empty 3D data array
+         - the 2D mask array initialized with 0 values
+         - the region of interest use for loading the data, as a list of 4 integers
+
+        """
+        # define the loading ROI, the user-defined ROI may be larger than the physical
+        # detector size
+        if (
+            detector.roi[0] < 0
+            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[2] < 0
+            or detector.roi[3] > detector.nb_pixel_x
+        ):
+            print(
+                "Data shape is limited by detector size,"
+                " loaded data will be smaller than as defined by the ROI."
+            )
+        loading_roi = [
+            max(0, detector.roi[0]),
+            min(detector.nb_pixel_y, detector.roi[1]),
+            max(0, detector.roi[2]),
+            min(detector.nb_pixel_x, detector.roi[3]),
+        ]
+
+        # initialize the data array
+        if bin_during_loading:
+            print(
+                "Binning the data: detector vertical axis by",
+                detector.binning[1],
+                ", detector horizontal axis by",
+                detector.binning[2],
+            )
+            data = np.empty(
+                (
+                    nb_frames,
+                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
+                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
+                ),
+                dtype=float,
+            )
+        else:
+            data = np.empty(
+                (
+                    nb_frames,
+                    loading_roi[1] - loading_roi[0],
+                    loading_roi[3] - loading_roi[2],
+                ),
+                dtype=float,
+            )
+        return data, np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)), loading_roi
+
     @abstractmethod
     def load_data(self, **kwargs):
         """
@@ -914,9 +976,6 @@ class DiffractometerCRISTAL(Diffractometer):
          - the monitor values for normalization
 
         """
-        # initialize the 2D mask
-        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
         # look for the detector entry (keep changing at CRISTAL)
         group_key = list(logfile.keys())[0]
         tmp_data = self.find_detector(
@@ -929,50 +988,12 @@ class DiffractometerCRISTAL(Diffractometer):
         # find the number of images
         nb_img = tmp_data.shape[0]
 
-        # define the loading ROI, the user-defined ROI may be larger than the physical
-        # detector size
-        if (
-            detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
-            or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
-        ):
-            print(
-                "Data shape is limited by detector size, "
-                "loaded data will be smaller than as defined by the ROI."
-            )
-        loading_roi = [
-            max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
-            max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
-        ]
-
-        # initialize the data array
-        if bin_during_loading:
-            print(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
-            )
-            data = np.empty(
-                (
-                    nb_img,
-                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-                ),
-                dtype=float,
-            )
-        else:
-            data = np.empty(
-                (
-                    nb_img,
-                    loading_roi[1] - loading_roi[0],
-                    loading_roi[3] - loading_roi[2],
-                ),
-                dtype=float,
-            )
+        # initialize arrays and loading ROI
+        data, mask2d, loading_roi = self.init_data_mask(
+            detector=detector,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+        )
 
         # get the monitor values
         if normalize == "sum_roi":
@@ -1363,9 +1384,6 @@ class DiffractometerID01(Diffractometer):
          - the monitor values for normalization
 
         """
-        # initialize the 2D mask
-        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
@@ -1399,50 +1417,12 @@ class DiffractometerID01(Diffractometer):
                 data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
-        # define the loading ROI, the user-defined ROI may be larger than the physical
-        # detector size
-        if (
-            detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
-            or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
-        ):
-            print(
-                "Data shape is limited by detector size,"
-                " loaded data will be smaller than as defined by the ROI."
-            )
-        loading_roi = [
-            max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
-            max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
-        ]
-
-        # initialize the data array
-        if bin_during_loading:
-            print(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
-            )
-            data = np.empty(
-                (
-                    nb_img,
-                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-                ),
-                dtype=float,
-            )
-        else:
-            data = np.empty(
-                (
-                    nb_img,
-                    loading_roi[1] - loading_roi[0],
-                    loading_roi[3] - loading_roi[2],
-                ),
-                dtype=float,
-            )
+        # initialize arrays and loading ROI
+        data, mask2d, loading_roi = self.init_data_mask(
+            detector=detector,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+        )
 
         # get the monitor values
         if normalize == "sum_roi":
@@ -1765,9 +1745,6 @@ class DiffractometerNANOMAX(Diffractometer):
                 str(logfile["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
-        # initialize the 2D mask
-        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
         group_key = list(logfile.keys())[0]  # currently 'entry'
         try:
             tmp_data = logfile["/" + group_key + "/measurement/merlin/frames"][:]
@@ -1776,52 +1753,13 @@ class DiffractometerNANOMAX(Diffractometer):
 
         # find the number of images
         nb_img = tmp_data.shape[0]
-        print("Number of frames:", nb_img)
 
-        # define the loading ROI, the user-defined ROI may be larger than the physical
-        # detector size
-        if (
-            detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
-            or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
-        ):
-            print(
-                "Data shape is limited by detector size,"
-                " loaded data will be smaller than as defined by the ROI."
-            )
-        loading_roi = [
-            max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
-            max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
-        ]
-
-        # initialize the data array
-        if bin_during_loading:
-            print(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
-            )
-            data = np.empty(
-                (
-                    nb_img,
-                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-                ),
-                dtype=float,
-            )
-        else:
-            data = np.empty(
-                (
-                    nb_img,
-                    loading_roi[1] - loading_roi[0],
-                    loading_roi[3] - loading_roi[2],
-                ),
-                dtype=float,
-            )
+        # initialize arrays and loading ROI
+        data, mask2d, loading_roi = self.init_data_mask(
+            detector=detector,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+        )
 
         # get the monitor values
         if normalize == "sum_roi":
@@ -2037,12 +1975,8 @@ class DiffractometerP10(Diffractometer):
          - the monitor values for normalization
 
         """
-        # initialize the 2D mask
-        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
         # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-        nb_frames = None
         is_series = detector.is_series
         if not setup.custom_scan:
             h5file = h5py.File(ccdfiletmp, "r")
@@ -2069,50 +2003,12 @@ class DiffractometerP10(Diffractometer):
             else:
                 raise ValueError("No image number provided in 'custom_images'")
 
-        # define the loading ROI, the user-defined ROI may be larger than the physical
-        # detector size
-        if (
-            detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
-            or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
-        ):
-            print(
-                "Data shape is limited by detector size,"
-                " loaded data will be smaller than as defined by the ROI."
-            )
-        loading_roi = [
-            max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
-            max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
-        ]
-
-        # initialize the data array
-        if bin_during_loading:
-            print(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
-            )
-            data = np.empty(
-                (
-                    nb_img,
-                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-                ),
-                dtype=float,
-            )
-        else:
-            data = np.empty(
-                (
-                    nb_img,
-                    loading_roi[1] - loading_roi[0],
-                    loading_roi[3] - loading_roi[2],
-                ),
-                dtype=float,
-            )
+        # initialize arrays and loading ROI
+        data, mask2d, loading_roi = self.init_data_mask(
+            detector=detector,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+        )
 
         # get the monitor values
         if normalize == "sum_roi":
@@ -2461,9 +2357,6 @@ class DiffractometerSIXS(Diffractometer):
          - the monitor values for normalization
 
         """
-        # initialize the 2D mask
-        mask2d = np.zeros((detector.nb_pixel_y, detector.nb_pixel_x))
-
         # load the data
         if detector.name == "Merlin":
             tmp_data = logfile.merlin[:]
@@ -2483,50 +2376,12 @@ class DiffractometerSIXS(Diffractometer):
         # find the number of images
         nb_img = tmp_data.shape[0]
 
-        # define the loading ROI, the user-defined ROI may be larger than the physical
-        # detector size
-        if (
-            detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
-            or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
-        ):
-            print(
-                "Data shape is limited by detector size,"
-                " loaded data will be smaller than as defined by the ROI."
-            )
-        loading_roi = [
-            max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
-            max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
-        ]
-
-        # initialize the data array
-        if bin_during_loading:
-            print(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
-            )
-            data = np.empty(
-                (
-                    nb_img,
-                    (loading_roi[1] - loading_roi[0]) // detector.binning[1],
-                    (loading_roi[3] - loading_roi[2]) // detector.binning[2],
-                ),
-                dtype=float,
-            )
-        else:
-            data = np.empty(
-                (
-                    nb_img,
-                    loading_roi[1] - loading_roi[0],
-                    loading_roi[3] - loading_roi[2],
-                ),
-                dtype=float,
-            )
+        # initialize arrays and loading ROI
+        data, mask2d, loading_roi = self.init_data_mask(
+            detector=detector,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+        )
 
         # get the monitor values
         if normalize == "sum_roi":
