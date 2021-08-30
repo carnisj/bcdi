@@ -21,6 +21,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 from bcdi.experiment.detector import Detector
 from bcdi.experiment.setup import Setup
+import bcdi.utils.utilities as util
 
 helptext = """
 Calculate exact inplane and out-of-plane detector angles from the direct beam and
@@ -190,8 +191,8 @@ logfile = setup.create_logfile(
 #################
 # load the data #
 #################
-flatfield = pru.load_flatfield(flatfield_file)
-hotpix_array = pru.load_hotpixels(hotpixels_file)
+flatfield = util.load_flatfield(flatfield_file)
+hotpix_array = util.load_hotpixels(hotpixels_file)
 
 if not filtered_data:
     data, _, monitor, frames_logical = pru.load_data(

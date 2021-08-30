@@ -19,6 +19,7 @@ from bcdi.experiment.detector import Detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 helptext = """
@@ -218,8 +219,8 @@ print(detector)
 ###############################################
 # load recursively the scans and update lists #
 ###############################################
-flatfield = pru.load_flatfield(flatfield_file)
-hotpix_array = pru.load_hotpixels(hotpixels_file)
+flatfield = util.load_flatfield(flatfield_file)
+hotpix_array = util.load_hotpixels(hotpixels_file)
 
 for scan_idx, scan_nb in enumerate(scans, start=1):
 

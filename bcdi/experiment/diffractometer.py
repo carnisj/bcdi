@@ -2068,7 +2068,7 @@ class DiffractometerP10(Diffractometer):
 
         # loop over frames, mask the detector and normalize / bin
         start_index = 0  # offset when not is_series
-        for idx in range(nb_img):
+        for point_idx in range(nb_img):
             idx = 0
             series_data = []
             series_monitor = []
@@ -2089,7 +2089,7 @@ class DiffractometerP10(Diffractometer):
                 data_path = "data_000001"
             else:
                 # normal scan, h5file is in this case the master .h5 file
-                data_path = "data_" + str("{:06d}".format(idx + 1))
+                data_path = "data_" + str("{:06d}".format(point_idx + 1))
 
             while True:
                 try:
@@ -2127,10 +2127,10 @@ class DiffractometerP10(Diffractometer):
                 except ValueError:  # something went wrong
                     break
             if is_series:
-                data[idx, :, :] = np.asarray(series_data).sum(axis=0)
+                data[point_idx, :, :] = np.asarray(series_data).sum(axis=0)
                 if normalize == "sum_roi":
-                    monitor[idx] = np.asarray(series_monitor).sum()
-                sys.stdout.write("\rSeries: loading frame {:d}".format(idx + 1))
+                    monitor[point_idx] = np.asarray(series_monitor).sum()
+                sys.stdout.write("\rSeries: loading frame {:d}".format(point_idx + 1))
                 sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)

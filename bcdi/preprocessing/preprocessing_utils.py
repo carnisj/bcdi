@@ -13,13 +13,10 @@ try:
 except ModuleNotFoundError:
     pass
 import datetime
-import fabio
-import h5py
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from numbers import Real
 import numpy as np
-import os
 import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
@@ -2798,25 +2795,6 @@ def interp_2dslice(
     return tmp_array, slice_index
 
 
-def load_background(background_file):
-    """
-    Load a background file.
-
-    :param background_file: the path of the background file
-    :return: a 2D background
-    """
-    if background_file:
-        background = np.load(background_file)
-        if background_file.endswith("npz"):
-            npz_key = background.files
-            background = background[npz_key[0]]
-        if background.ndim != 2:
-            raise ValueError("background should be a 2D array")
-    else:
-        background = None
-    return background
-
-
 def load_bcdi_data(
     logfile,
     scan_number,
@@ -3223,68 +3201,6 @@ def load_filtered_data(detector):
     frames_logical = np.ones(data.shape[0])
 
     return data, mask, monitor, frames_logical
-
-
-def load_flatfield(flatfield_file):
-    """
-    Load a flatfield file.
-
-    :param flatfield_file: the path of the flatfield file
-    :return: a 2D flatfield
-    """
-    if flatfield_file:
-        flatfield = np.load(flatfield_file)
-        if flatfield_file.endswith(".npz"):
-            npz_key = flatfield.files
-            flatfield = flatfield[npz_key[0]]
-        if flatfield.ndim != 2:
-            raise ValueError("flatfield should be a 2D array")
-    else:
-        flatfield = None
-    return flatfield
-
-
-def load_hotpixels(hotpixels_file):
-    """
-    Load a hotpixels file.
-
-    :param hotpixels_file: the path of the hotpixels file
-    :return: a 2D array of hotpixels (1 for hotpixel, 0 for normal pixel)
-    """
-    if hotpixels_file:
-        hotpixels, _ = util.load_file(hotpixels_file)
-        if hotpixels.ndim == 3:
-            hotpixels = hotpixels.sum(axis=0)
-        if hotpixels.ndim != 2:
-            raise ValueError("hotpixels should be a 2D array")
-        if (hotpixels == 0).sum() < hotpixels.size / 4:
-            # masked pixels are more than 3/4 of the pixel number
-            print("hotpixels values are probably 0 instead of 1, switching values")
-            hotpixels[np.nonzero(hotpixels)] = -1
-            hotpixels[hotpixels == 0] = 1
-            hotpixels[hotpixels == -1] = 0
-
-        hotpixels[np.nonzero(hotpixels)] = 1
-    else:
-        hotpixels = None
-    return hotpixels
-
-
-def load_monitor(scan_number, logfile, setup):
-    """
-    Load the default monitor for intensity normalization of the considered beamline.
-
-    :param scan_number: the scan number to load
-    :param logfile: path of the . fio file containing the information about the scan
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: the default monitor values
-    """
-    return setup.diffractometer.read_monitor(
-        scan_number=scan_number,
-        logfile=logfile,
-        beamline=setup.beamline,
-        actuators=setup.actuators,
-    )
 
 
 def mean_filter(
@@ -4064,7 +3980,12 @@ def reload_bcdi_data(
         print("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
+        monitor = setup.diffractometer.read_monitor(
+            scan_number=scan_number,
+            logfile=logfile,
+            beamline=setup.beamline,
+            actuators=setup.actuators,
+        )
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
@@ -4199,8 +4120,11 @@ def reload_cdi_data(
                 detector.sum_roi[2] : detector.sum_roi[3],
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
-            monitor = load_monitor(
-                logfile=logfile, scan_number=scan_number, setup=setup
+            monitor = setup.diffractometer.read_monitor(
+                scan_number=scan_number,
+                logfile=logfile,
+                beamline=setup.beamline,
+                actuators=setup.actuators,
             )
 
         print("Intensity normalization using " + normalize_method)
@@ -4263,63 +4187,6 @@ def reload_cdi_data(
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor
-
-
-def remove_hotpixels(data, mask, hotpixels=None):
-    """
-    Remove hot pixels from CCD frames and update the mask.
-
-    :param data: 2D or 3D array
-    :param hotpixels: 2D array of hotpixels. 1 for a hotpixel, 0 for normal pixels.
-    :param mask: array of the same shape as data
-    :return: the data without hotpixels and the updated mask
-    """
-    if hotpixels is None:
-        return data, mask
-
-    if hotpixels.ndim == 3:  # 3D array
-        print("Hotpixels is a 3D array, summing along the first axis")
-        hotpixels = hotpixels.sum(axis=0)
-        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
-
-    if data.shape != mask.shape:
-        raise ValueError(
-            "Data and mask must have the same shape\n data is ",
-            data.shape,
-            " while mask is ",
-            mask.shape,
-        )
-
-    if data.ndim == 3:  # 3D array
-        if data[0, :, :].shape != hotpixels.shape:
-            raise ValueError(
-                "Data and hotpixels must have the same shape\n data is ",
-                data.shape,
-                " while hotpixels is ",
-                hotpixels.shape,
-            )
-        for idx in range(data.shape[0]):
-            temp_data = data[idx, :, :]
-            temp_mask = mask[idx, :, :]
-            temp_data[
-                hotpixels == 1
-            ] = 0  # numpy array is mutable hence data will be modified
-            temp_mask[
-                hotpixels == 1
-            ] = 1  # numpy array is mutable hence mask will be modified
-    elif data.ndim == 2:  # 2D array
-        if data.shape != hotpixels.shape:
-            raise ValueError(
-                "Data and hotpixels must have the same shape\n data is ",
-                data.shape,
-                " while hotpixels is ",
-                hotpixels.shape,
-            )
-        data[hotpixels == 1] = 0
-        mask[hotpixels == 1] = 1
-    else:
-        raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
-    return data, mask
 
 
 def wrap(obj, start_angle, range_angle):
