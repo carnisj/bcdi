@@ -949,32 +949,6 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     return np.asarray(distances), cut
 
 
-def load_hotpixels(hotpixels_file):
-    """
-    Load a hotpixels file.
-
-    :param hotpixels_file: the path of the hotpixels file
-    :return: a 2D array of hotpixels (1 for hotpixel, 0 for normal pixel)
-    """
-    if hotpixels_file:
-        hotpixels, _ = load_file(hotpixels_file)
-        if hotpixels.ndim == 3:
-            hotpixels = hotpixels.sum(axis=0)
-        if hotpixels.ndim != 2:
-            raise ValueError("hotpixels should be a 2D array")
-        if (hotpixels == 0).sum() < hotpixels.size / 4:
-            # masked pixels are more than 3/4 of the pixel number
-            print("hotpixels values are probably 0 instead of 1, switching values")
-            hotpixels[np.nonzero(hotpixels)] = -1
-            hotpixels[hotpixels == 0] = 1
-            hotpixels[hotpixels == -1] = 0
-
-        hotpixels[np.nonzero(hotpixels)] = 1
-    else:
-        hotpixels = None
-    return hotpixels
-
-
 def load_file(file_path, fieldname=None):
     """
     Load a file.
@@ -1032,6 +1006,51 @@ def load_file(file_path, fieldname=None):
     else:
         raise ValueError('"field" parameter settings is not valid')
     return dataset, extension
+
+
+def load_flatfield(flatfield_file):
+    """
+    Load a flatfield file.
+
+    :param flatfield_file: the path of the flatfield file
+    :return: a 2D flatfield
+    """
+    if flatfield_file:
+        flatfield = np.load(flatfield_file)
+        if flatfield_file.endswith(".npz"):
+            npz_key = flatfield.files
+            flatfield = flatfield[npz_key[0]]
+        if flatfield.ndim != 2:
+            raise ValueError("flatfield should be a 2D array")
+    else:
+        flatfield = None
+    return flatfield
+
+
+def load_hotpixels(hotpixels_file):
+    """
+    Load a hotpixels file.
+
+    :param hotpixels_file: the path of the hotpixels file
+    :return: a 2D array of hotpixels (1 for hotpixel, 0 for normal pixel)
+    """
+    if hotpixels_file:
+        hotpixels, _ = load_file(hotpixels_file)
+        if hotpixels.ndim == 3:
+            hotpixels = hotpixels.sum(axis=0)
+        if hotpixels.ndim != 2:
+            raise ValueError("hotpixels should be a 2D array")
+        if (hotpixels == 0).sum() < hotpixels.size / 4:
+            # masked pixels are more than 3/4 of the pixel number
+            print("hotpixels values are probably 0 instead of 1, switching values")
+            hotpixels[np.nonzero(hotpixels)] = -1
+            hotpixels[hotpixels == 0] = 1
+            hotpixels[hotpixels == -1] = 0
+
+        hotpixels[np.nonzero(hotpixels)] = 1
+    else:
+        hotpixels = None
+    return hotpixels
 
 
 def lorentzian(x_axis, amp, cen, sig):

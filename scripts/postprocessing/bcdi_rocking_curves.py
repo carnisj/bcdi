@@ -219,7 +219,7 @@ print(detector)
 ###############################################
 # load recursively the scans and update lists #
 ###############################################
-flatfield = pru.load_flatfield(flatfield_file)
+flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 
 for scan_idx, scan_nb in enumerate(scans, start=1):

@@ -191,7 +191,7 @@ logfile = setup.create_logfile(
 #################
 # load the data #
 #################
-flatfield = pru.load_flatfield(flatfield_file)
+flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 
 if not filtered_data:

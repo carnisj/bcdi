@@ -763,7 +763,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
     else:  # new masking process
         reload_orthogonal = False  # the data is in the detector plane
-        flatfield = pru.load_flatfield(flatfield_file)
+        flatfield = util.load_flatfield(flatfield_file)
         hotpix_array = util.load_hotpixels(hotpixels_file)
         background = pru.load_background(background_file)
 

@@ -3225,25 +3225,6 @@ def load_filtered_data(detector):
     return data, mask, monitor, frames_logical
 
 
-def load_flatfield(flatfield_file):
-    """
-    Load a flatfield file.
-
-    :param flatfield_file: the path of the flatfield file
-    :return: a 2D flatfield
-    """
-    if flatfield_file:
-        flatfield = np.load(flatfield_file)
-        if flatfield_file.endswith(".npz"):
-            npz_key = flatfield.files
-            flatfield = flatfield[npz_key[0]]
-        if flatfield.ndim != 2:
-            raise ValueError("flatfield should be a 2D array")
-    else:
-        flatfield = None
-    return flatfield
-
-
 def mean_filter(
     data,
     nb_neighbours,

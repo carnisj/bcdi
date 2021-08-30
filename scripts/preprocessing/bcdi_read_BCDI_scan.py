@@ -136,7 +136,7 @@ plt.ion()
 # initialize and check some parameters #
 ########################################
 save_dirname = "pynxraw"
-flatfield = pru.load_flatfield(flatfield_file)
+flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 if normalize not in {"skip", "monitor"}:
     raise ValueError(

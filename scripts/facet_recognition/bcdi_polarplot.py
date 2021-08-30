@@ -342,7 +342,7 @@ else:
 detector.savedir = homedir
 
 if not reconstructed_data:  # load reciprocal space data
-    flatfield = pru.load_flatfield(flatfield_file)
+    flatfield = util.load_flatfield(flatfield_file)
     hotpix_array = util.load_hotpixels(hotpixels_file)
     logfile = setup.create_logfile(
         scan_number=scan, root_folder=root_folder, filename=specfile_name
