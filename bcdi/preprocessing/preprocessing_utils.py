@@ -4265,63 +4265,6 @@ def reload_cdi_data(
     return data, mask, frames_logical, monitor
 
 
-def remove_hotpixels(data, mask, hotpixels=None):
-    """
-    Remove hot pixels from CCD frames and update the mask.
-
-    :param data: 2D or 3D array
-    :param hotpixels: 2D array of hotpixels. 1 for a hotpixel, 0 for normal pixels.
-    :param mask: array of the same shape as data
-    :return: the data without hotpixels and the updated mask
-    """
-    if hotpixels is None:
-        return data, mask
-
-    if hotpixels.ndim == 3:  # 3D array
-        print("Hotpixels is a 3D array, summing along the first axis")
-        hotpixels = hotpixels.sum(axis=0)
-        hotpixels[np.nonzero(hotpixels)] = 1  # hotpixels should be a binary array
-
-    if data.shape != mask.shape:
-        raise ValueError(
-            "Data and mask must have the same shape\n data is ",
-            data.shape,
-            " while mask is ",
-            mask.shape,
-        )
-
-    if data.ndim == 3:  # 3D array
-        if data[0, :, :].shape != hotpixels.shape:
-            raise ValueError(
-                "Data and hotpixels must have the same shape\n data is ",
-                data.shape,
-                " while hotpixels is ",
-                hotpixels.shape,
-            )
-        for idx in range(data.shape[0]):
-            temp_data = data[idx, :, :]
-            temp_mask = mask[idx, :, :]
-            temp_data[
-                hotpixels == 1
-            ] = 0  # numpy array is mutable hence data will be modified
-            temp_mask[
-                hotpixels == 1
-            ] = 1  # numpy array is mutable hence mask will be modified
-    elif data.ndim == 2:  # 2D array
-        if data.shape != hotpixels.shape:
-            raise ValueError(
-                "Data and hotpixels must have the same shape\n data is ",
-                data.shape,
-                " while hotpixels is ",
-                hotpixels.shape,
-            )
-        data[hotpixels == 1] = 0
-        mask[hotpixels == 1] = 1
-    else:
-        raise ValueError("2D or 3D data array expected, got ", data.ndim, "D")
-    return data, mask
-
-
 def wrap(obj, start_angle, range_angle):
     """
     Wrap obj between start_angle and (start_angle + range_angle).
