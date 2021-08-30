@@ -13,13 +13,10 @@ try:
 except ModuleNotFoundError:
     pass
 import datetime
-import fabio
-import h5py
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from numbers import Real
 import numpy as np
-import os
 import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
