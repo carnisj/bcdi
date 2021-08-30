@@ -3270,23 +3270,6 @@ def load_hotpixels(hotpixels_file):
     return hotpixels
 
 
-def load_monitor(scan_number, logfile, setup):
-    """
-    Load the default monitor for intensity normalization of the considered beamline.
-
-    :param scan_number: the scan number to load
-    :param logfile: path of the . fio file containing the information about the scan
-    :param setup: the experimental setup: Class SetupPreprocessing()
-    :return: the default monitor values
-    """
-    return setup.diffractometer.read_monitor(
-        scan_number=scan_number,
-        logfile=logfile,
-        beamline=setup.beamline,
-        actuators=setup.actuators,
-    )
-
-
 def mean_filter(
     data,
     nb_neighbours,
@@ -4064,7 +4047,12 @@ def reload_bcdi_data(
         print("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = load_monitor(logfile=logfile, scan_number=scan_number, setup=setup)
+        monitor = setup.diffractometer.read_monitor(
+            scan_number=scan_number,
+            logfile=logfile,
+            beamline=setup.beamline,
+            actuators=setup.actuators,
+        )
 
         print("Intensity normalization using " + normalize_method)
         data, monitor = normalize_dataset(
@@ -4199,8 +4187,11 @@ def reload_cdi_data(
                 detector.sum_roi[2] : detector.sum_roi[3],
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
-            monitor = load_monitor(
-                logfile=logfile, scan_number=scan_number, setup=setup
+            monitor = setup.diffractometer.read_monitor(
+                scan_number=scan_number,
+                logfile=logfile,
+                beamline=setup.beamline,
+                actuators=setup.actuators,
             )
 
         print("Intensity normalization using " + normalize_method)
