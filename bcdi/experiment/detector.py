@@ -22,6 +22,7 @@ detectors are:
 
 """
 
+from abc import ABC, abstractmethod
 import numpy as np
 from numbers import Real
 import os
@@ -53,7 +54,7 @@ def create_detector(name, **kwargs):
     )
 
 
-class Detector:
+class Detector(ABC):
     """
     Class to handle the configuration of the detector used for data acquisition.
 
@@ -108,7 +109,7 @@ class Detector:
     ):
         # the detector name should be initialized first,
         # other properties are depending on it
-        self.name = name
+        self._name = name
 
         valid.valid_kwargs(
             kwargs=kwargs,
@@ -174,17 +175,9 @@ class Detector:
         self._binning = value
 
     @property
+    @abstractmethod
     def counter(self):
-        """Name of the counter for the image number."""
-        counter_dict = {
-            "Maxipix": "mpx4inr",
-            "Eiger2M": "ei2minr",
-            "Eiger4M": None,
-            "Timepix": None,
-            "Merlin": "alba2",
-            "Dummy": None,
-        }
-        return counter_dict.get(self.name)
+        """Name of the counter in the log file for the image number."""
 
     @property
     def datadir(self):
@@ -207,13 +200,6 @@ class Detector:
         """Name of the detector."""
         return self._name
 
-    @name.setter
-    def name(self, value):
-        valid_names = {"Maxipix", "Timepix", "Merlin", "Eiger2M", "Eiger4M", "Dummy"}
-        if value not in valid_names:
-            raise ValueError(f"Name should be in {valid_names}")
-        self._name = value
-
     @property
     def nb_pixel_x(self):
         """
@@ -226,7 +212,7 @@ class Detector:
     @nb_pixel_x.setter
     def nb_pixel_x(self, value):
         if value is None:
-            value = self.pix_number[1]
+            value = self.unbinned_pixel_number[1]
         if not isinstance(value, int):
             raise TypeError("nb_pixel_x should be a positive integer")
         if value <= 0:
@@ -245,7 +231,7 @@ class Detector:
     @nb_pixel_y.setter
     def nb_pixel_y(self, value):
         if value is None:
-            value = self.pix_number[0]
+            value = self.unbinned_pixel_number[0]
         if not isinstance(value, int):
             raise TypeError("nb_pixel_y should be a positive integer")
         if value <= 0:
@@ -258,7 +244,7 @@ class Detector:
         return {
             "Class": self.__class__.__name__,
             "name": self.name,
-            "unbinned_pixel_m": self.unbinned_pixel,
+            "unbinned_pixel_size_m": self.unbinned_pixel_size,
             "nb_pixel_x": self.nb_pixel_x,
             "nb_pixel_y": self.nb_pixel_y,
             "binning": self.binning,
@@ -278,33 +264,14 @@ class Detector:
     @property
     def pixelsize_x(self):
         """Horizontal pixel size of the detector after taking into account binning."""
-        return self.unbinned_pixel[1] * self.preprocessing_binning[2] * self.binning[2]
+        return (self.unbinned_pixel_size[1] * self.preprocessing_binning[2] *
+                self.binning[2])
 
     @property
     def pixelsize_y(self):
         """Vertical pixel size of the detector after taking into account binning."""
-        return self.unbinned_pixel[0] * self.preprocessing_binning[1] * self.binning[1]
-
-    @property
-    def pix_number(self):
-        """
-        Define the number of pixels of the unbinned detector.
-
-        Convention: (vertical, horizontal)
-        """
-        if self.name in {"Maxipix", "Dummy"}:
-            number = (516, 516)
-        elif self.name == "Timepix":
-            number = (256, 256)
-        elif self.name == "Merlin":
-            number = (515, 515)
-        elif self.name == "Eiger2M":
-            number = (2164, 1030)
-        elif self.name == "Eiger4M":
-            number = (2167, 2070)
-        else:
-            number = None
-        return number
+        return (self.unbinned_pixel_size[0] * self.preprocessing_binning[1] *
+                self.binning[1])
 
     @property
     def preprocessing_binning(self):
@@ -464,33 +431,24 @@ class Detector:
         self._template_imagefile = value
 
     @property
-    def unbinned_pixel(self):
+    @abstractmethod
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+
+    @property
+    @abstractmethod
+    def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
-        if self.name in {"Maxipix", "Timepix", "Merlin"}:
-            pix = (55e-06, 55e-06)
-        elif self.name in {"Eiger2M", "Eiger4M"}:
-            pix = (75e-06, 75e-06)
-        elif self.name == "Dummy":
-            if self.custom_pixelsize is not None:
-                valid.valid_item(
-                    self.custom_pixelsize,
-                    allowed_types=Real,
-                    min_excluded=0,
-                    name="custom_pixelsize",
-                )
-                pix = (self.custom_pixelsize, self.custom_pixelsize)
-            else:
-                pix = (55e-06, 55e-06)
-                print(f"Defaulting the pixel size to {pix}")
-        else:
-            pix = None
-        return pix
 
     def __repr__(self):
         """Representation string of the Detector instance."""
         return (
             f"{self.__class__.__name__}(name='{self.name}', "
-            f"unbinned_pixel={self.unbinned_pixel}, "
+            f"unbinned_pixel_size={self.unbinned_pixel_size}, "
             f"nb_pixel_x={self.nb_pixel_x}, "
             f"nb_pixel_y={self.nb_pixel_y}, "
             f"binning={self.binning},\n"
@@ -663,3 +621,191 @@ class Detector:
             pass  # no gaps
 
         return data, mask
+
+
+class Maxipix(Detector):
+    """Implementation of the Maxipix detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return "mpx4inr"
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 516, 516
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 55e-06, 55e-06
+
+
+class Eiger2M(Detector):
+    """Implementation of the Eiger2M detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return "ei2minr"
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 2164, 1030
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 75e-06, 75e-06
+
+
+class Eiger4M(Detector):
+    """Implementation of the Eiger4M detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return None
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 2167, 2070
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 75e-06, 75e-06
+
+
+class Timepix(Detector):
+    """Implementation of the Timepix detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return None
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 256, 256
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 55e-06, 55e-06
+
+
+class Merlin(Detector):
+    """Implementation of the Merlin detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return "alba2"
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 515, 515
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 55e-06, 55e-06
+
+
+class Dummy(Detector):
+    """
+    Implementation of the Dummy detector.
+
+    :param kwargs:
+     - 'custom_pixelsize': pixel size of the dummy detector in m
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.custom_pixelsize = kwargs.get("custom_pixelsize")
+        valid.valid_item(
+            self.custom_pixelsize,
+            allowed_types=Real,
+            min_excluded=0,
+            allow_none=True,
+            name="custom_pixelsize",
+        )
+
+        self.custom_pixelnumber = kwargs.get("custom_pixelnumber")
+        valid.valid_container(
+            self.custom_pixelnumber,
+            container_types=(list, tuple, np.ndarray),
+            length=2,
+            item_types=int,
+            min_excluded=0,
+            allow_none=True,
+            name="custom_pixelnumber",
+        )
+
+    @property
+    def counter(self):
+        """Name of the counter in the log file for the image number."""
+        return None
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        if self.custom_pixelnumber is not None:
+            return self.custom_pixelnumber
+        else:
+            print(f"Defaulting the pixel size to {516, 516}")
+            return 516, 516
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        if self.custom_pixelsize is not None:
+            return self.custom_pixelsize, self.custom_pixelsize
+        else:
+            print(f"Defaulting the pixel size to {55e-06, 55e-06}")
+            return 55e-06, 55e-06
