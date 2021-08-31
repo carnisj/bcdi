@@ -206,7 +206,7 @@ class Setup:
 
     @property
     def beamline(self):
-        """Instance of the beamline."""
+        """The setter creates a beamline instance, the getter returns the name only."""
         return self._beamline.name
 
     @beamline.setter
@@ -569,6 +569,7 @@ class Setup:
             "sample_outofplane": self.sample_outofplane,
             "offset_inplane_deg": self.offset_inplane,
             "wavelength_m": self.wavelength,
+            "is_series": self._beamline.is_series,
         }
 
     @property

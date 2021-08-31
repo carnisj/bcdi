@@ -10,9 +10,8 @@
 """
 Beamline-related diffractometer classes.
 
-These classes are not meant to be instantiated directly but via a Setup instance. The
-methods in child classes have the same signature as in the base class. The available
-diffractometers are:
+These classes are not meant to be instantiated directly but via a Setup instance.
+The available diffractometers are:
 
 - DiffractometerID01
 - DiffractometerSIXS
@@ -2030,7 +2029,7 @@ class DiffractometerP10(Diffractometer):
         """
         # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-        is_series = detector.is_series
+        is_series = setup._beamline.is_series
         if not setup.custom_scan:
             h5file = h5py.File(ccdfiletmp, "r")
 

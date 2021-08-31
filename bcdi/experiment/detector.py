@@ -7,7 +7,21 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-"""Class definition which handles the detector config used for data acquisition."""
+"""
+Detector classes.
+
+These classes handles the detector config used for data acquisition. The available
+detectors are:
+
+- Maxipix
+- Eiger2M
+- Eiger4M
+- Timepix
+- Merlin
+- Dummy
+
+"""
+
 import numpy as np
 from numbers import Real
 import os
@@ -15,12 +29,36 @@ import os
 from bcdi.utils import validation as valid
 
 
+def create_detector(name, **kwargs):
+    """
+    Create a Detector instance depending on the detector.
+
+    :param name: str, name of the detector
+    :return:  the corresponding diffractometer instance
+    """
+    if name == "Maxipix":
+        return Maxipix(name=name, **kwargs)
+    if name == "Eiger2M":
+        return Eiger2M(name=name, **kwargs)
+    if name == "Eiger4M":
+        return Eiger4M(name=name, **kwargs)
+    if name == "Timepix":
+        return Timepix(name=name, **kwargs)
+    if name == "Merlin":
+        return Merlin(name=name, **kwargs)
+    if name == "Dummy":
+        return Dummy(name=name, **kwargs)
+    raise NotImplementedError(
+        f"No implementation for the {name} detector"
+    )
+
+
 class Detector:
     """
     Class to handle the configuration of the detector used for data acquisition.
 
     :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M',
-     'Eiger4M'}
+     'Eiger4M', 'Dummy'}
     :param datadir: directory where the data files are located
     :param savedir: directory where to save the results
     :param template_imagefile: beamline-dependent template for the data files
@@ -42,8 +80,6 @@ class Detector:
      (stacking dimension, detector vertical axis, detector horizontal axis)
     :param kwargs:
 
-     - 'is_series': boolean, True is the measurement is a series at PETRAIII P10
-       beamline
      - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken
        (less pixels than expected)
      - 'preprocessing_binning': tuple of the three binning factors used in a previous
@@ -77,7 +113,6 @@ class Detector:
         valid.valid_kwargs(
             kwargs=kwargs,
             allowed_kwargs={
-                "is_series",
                 "nb_pixel_x",
                 "nb_pixel_y",
                 "pixel_size",
@@ -89,7 +124,6 @@ class Detector:
         )
 
         # load the kwargs
-        self.is_series = kwargs.get("is_series", False)
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
         self.nb_pixel_x = kwargs.get("nb_pixel_x")
         self.nb_pixel_y = kwargs.get("nb_pixel_y")
@@ -169,17 +203,6 @@ class Detector:
         self._datadir = value
 
     @property
-    def is_series(self):
-        """Boolean, True for a series measurement at PETRAIII P10."""
-        return self._is_series
-
-    @is_series.setter
-    def is_series(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("is_series should be a boolean")
-        self._is_series = value
-
-    @property
     def name(self):
         """Name of the detector."""
         return self._name
@@ -242,7 +265,6 @@ class Detector:
             "roi": self.roi,
             "sum_roi": self.sum_roi,
             "preprocessing_binning": self.preprocessing_binning,
-            "is_series": self.is_series,
             "rootdir": self.rootdir,
             "datadir": self.datadir,
             "scandir": self.scandir,
@@ -475,7 +497,6 @@ class Detector:
             f"roi={self.roi}, "
             f"sum_roi={self.sum_roi}, "
             f"preprocessing_binning={self.preprocessing_binning}, "
-            f"is_series={self.is_series},\n"
             f"rootdir = {self.rootdir},\n"
             f"datadir = {self.datadir},\n"
             f"scandir = {self.scandir},\n"
