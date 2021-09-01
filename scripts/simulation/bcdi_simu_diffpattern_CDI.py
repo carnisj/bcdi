@@ -10,7 +10,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import create_detector
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 
@@ -67,7 +67,7 @@ debug = True  # True to see more plots
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, binning=binning, roi=roi_detector)
+detector = create_detector(name=detector, binning=binning, roi=roi_detector)
 
 nbz, nby, nbx = (
     int(np.floor((detector.roi[3] - detector.roi[2]) / detector.binning[2])),

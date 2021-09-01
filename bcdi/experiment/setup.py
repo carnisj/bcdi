@@ -20,7 +20,7 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 from .diffractometer import create_diffractometer
 from .beamline import create_beamline
-from .detector import Detector
+from .detector import create_detector, Detector
 
 
 class Setup:
@@ -88,7 +88,7 @@ class Setup:
     def __init__(
         self,
         beamline,
-        detector=Detector("Dummy"),
+        detector=create_detector("Dummy"),
         beam_direction=(1, 0, 0),
         energy=None,
         distance=None,

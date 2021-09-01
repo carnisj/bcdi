@@ -25,7 +25,7 @@ import pprint
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -180,10 +180,6 @@ custom_motors = {
 # detector related parameters #
 ###############################
 detector = "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
 pixel_size = None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
 template_imagefile = "_master.h5"
@@ -416,14 +412,10 @@ my_cmap = colormap.cmap
 #######################
 kwargs = {
     "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
     "pixel_size": pixel_size,  # to declare the pixel size of the "Dummy" detector
 }
 
-detector = Detector(
+detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=phasing_binning,

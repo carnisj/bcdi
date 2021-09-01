@@ -22,7 +22,7 @@ from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.facet_recognition.facet_utils as fu
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -269,7 +269,7 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-detector = Detector(
+detector = create_detector(
     name=detector, datadir="", template_imagefile=template_imagefile, roi=roi_detector
 )
 

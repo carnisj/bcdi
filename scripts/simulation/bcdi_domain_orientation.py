@@ -17,7 +17,7 @@ import time
 import datetime
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import create_detector
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
@@ -99,7 +99,7 @@ bckg_method = "normalize"  # 'subtract' or 'normalize'
 #######################
 # Initialize detector #
 #######################
-detector = exp.Detector(name=detector, binning=binning, roi=roi_detector)
+detector = create_detector(name=detector, binning=binning, roi=roi_detector)
 
 ###################
 # define colormap #

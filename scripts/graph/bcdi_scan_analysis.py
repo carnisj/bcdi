@@ -28,7 +28,7 @@ import os
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.preprocessing_utils as pru
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 
 
@@ -255,7 +255,7 @@ plt.ion()
 # initialize detector, setup, paths and logfile #
 #################################################
 kwargs = {"is_series": is_series}  # create dictionnary
-detector = Detector(
+detector = create_detector(
     name=detector,
     datadir="",
     template_imagefile=template_imagefile,

@@ -81,8 +81,6 @@ class Detector(ABC):
      (stacking dimension, detector vertical axis, detector horizontal axis)
     :param kwargs:
 
-     - 'nb_pixel_x' and 'nb_pixel_y': useful when part of the detector is broken
-       (less pixels than expected)
      - 'preprocessing_binning': tuple of the three binning factors used in a previous
        preprocessing step
      - 'offsets': tuple or list, sample and detector offsets corresponding to the
@@ -111,23 +109,8 @@ class Detector(ABC):
         # other properties are depending on it
         self._name = name
 
-        valid.valid_kwargs(
-            kwargs=kwargs,
-            allowed_kwargs={
-                "nb_pixel_x",
-                "nb_pixel_y",
-                "pixel_size",
-                "preprocessing_binning",
-                "offsets",
-                "linearity_func",
-            },
-            name="Detector.__init__",
-        )
-
         # load the kwargs
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
-        self.nb_pixel_x = kwargs.get("nb_pixel_x")
-        self.nb_pixel_y = kwargs.get("nb_pixel_y")
         self.custom_pixelsize = kwargs.get("pixel_size")
         self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
         linearity_func = kwargs.get("linearity_func")
@@ -205,38 +188,20 @@ class Detector(ABC):
         """
         Horizontal number of pixels of the detector.
 
-        It takes into account an eventual preprocessing binning.
+        It takes into account an eventual preprocessing binning (useful when
+        reloading a already preprocessed file).
         """
-        return self._nb_pixel_x
-
-    @nb_pixel_x.setter
-    def nb_pixel_x(self, value):
-        if value is None:
-            value = self.unbinned_pixel_number[1]
-        if not isinstance(value, int):
-            raise TypeError("nb_pixel_x should be a positive integer")
-        if value <= 0:
-            raise ValueError("nb_pixel_x should be a positive integer")
-        self._nb_pixel_x = value // self.preprocessing_binning[2]
+        return self.unbinned_pixel_number[1] // self.preprocessing_binning[2]
 
     @property
     def nb_pixel_y(self):
         """
         Vertical number of pixels of the detector.
 
-        It takes into account an eventual preprocessing binning.
+        It takes into account an eventual preprocessing binning (useful when
+        reloading a already preprocessed file).
         """
-        return self._nb_pixel_y
-
-    @nb_pixel_y.setter
-    def nb_pixel_y(self, value):
-        if value is None:
-            value = self.unbinned_pixel_number[0]
-        if not isinstance(value, int):
-            raise TypeError("nb_pixel_y should be a positive integer")
-        if value <= 0:
-            raise ValueError("nb_pixel_y should be a positive integer")
-        self._nb_pixel_y = value // self.preprocessing_binning[1]
+        return self.unbinned_pixel_number[0] // self.preprocessing_binning[1]
 
     @property
     def params(self):
@@ -758,7 +723,10 @@ class Dummy(Detector):
     Implementation of the Dummy detector.
 
     :param kwargs:
-     - 'custom_pixelsize': pixel size of the dummy detector in m
+     - 'custom_pixelnumber': (V, H) number of pixels of the unbinned dummy detector, as
+       a tuple of two positive integers.
+     - 'custom_pixelsize': float, pixel size of the dummy detector in m.
+
     """
 
     def __init__(self, name, **kwargs):

@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.graph.graph_utils as gu
@@ -113,10 +113,6 @@ template_imagefile = "_master.h5"
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
 ####################################
 # q calculation related parameters #
 ####################################
@@ -180,15 +176,9 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-}
+kwargs = {"is_series": is_series}
 
-detector = Detector(
+detector = create_detector(
     name=detector, template_imagefile=template_imagefile, roi=roi_detector, **kwargs
 )
 

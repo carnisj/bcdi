@@ -27,7 +27,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -178,7 +178,8 @@ linearity_func = (
 )
 # 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
-# (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 + 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
+# (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
+# 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # linearity correction for the detector, leave None otherwise.
 # You can use def instead of a lambda expression but the input array should be 1d
 # (flattened 2D detector array).
@@ -340,7 +341,9 @@ def press_key(event):
 
     :param event: button press event
     """
-    global original_data, original_mask, updated_mask, data, mask, frame_index, width, flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap
+    global original_data, original_mask, updated_mask, data, mask, frame_index, width
+    global flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1
+    global ax2, ax3, previous_axis, info_text, my_cmap
 
     try:
         if event.inaxes == ax0:
@@ -548,14 +551,10 @@ plt.rcParams["keymap.fullscreen"] = [""]
 kwargs = {
     "is_series": is_series,
     "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
     "linearity_func": linearity_func,
 }
 
-detector = Detector(
+detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,

@@ -19,7 +19,7 @@ from tkinter import filedialog
 import sys
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 
@@ -144,7 +144,7 @@ plt.ion()
 #######################
 # Initialize detector #
 #######################
-detector = Detector(
+detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,

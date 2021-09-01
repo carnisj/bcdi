@@ -18,7 +18,8 @@ import gc
 import os
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import create_detector
+from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
@@ -124,8 +125,8 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-detector = exp.Detector(name=detector)
-setup = exp.Setup(
+detector = create_detector(name=detector)
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,

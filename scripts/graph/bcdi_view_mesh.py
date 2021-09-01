@@ -22,7 +22,7 @@ from matplotlib.widgets import RectangleSelector
 import numpy as np
 import os
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 
@@ -262,7 +262,7 @@ plt.ion()
 #################################################
 kwargs = {"is_series": is_series}  # create dictionnary
 
-detector = Detector(
+detector = create_detector(
     name=detector,
     datadir="",
     template_imagefile=template_imagefile,

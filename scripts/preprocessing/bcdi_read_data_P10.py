@@ -25,7 +25,7 @@ from scipy.io import savemat
 import sys
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 
 
 helptext = """
@@ -176,7 +176,7 @@ def main(parameters):
     #######################
     # Initialize detector #
     #######################
-    detector = Detector(name=parameters["detector"])
+    detector = create_detector(name=parameters["detector"])
     nb_pixel_y, nb_pixel_x = detector.nb_pixel_y, detector.nb_pixel_x
     sumdata = np.zeros((nb_pixel_y, nb_pixel_x))
     mask = np.zeros((nb_pixel_y, nb_pixel_x))

@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
@@ -240,7 +240,7 @@ kwargs = {"is_series": is_series}
 
 # phasing_binning will be taken into account after the optional data cropping
 # (crop_roi parameter)
-detector = Detector(
+detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=(1, 1, 1),
