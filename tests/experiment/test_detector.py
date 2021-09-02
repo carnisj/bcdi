@@ -9,7 +9,14 @@
 
 import unittest
 from bcdi.experiment.detector import (
-    create_detector, Detector, Dummy, Merlin, Timepix, Eiger2M, Eiger4M, Maxipix
+    create_detector,
+    Detector,
+    Dummy,
+    Merlin,
+    Timepix,
+    Eiger2M,
+    Eiger4M,
+    Maxipix,
 )
 
 
@@ -138,8 +145,9 @@ class TestDummy(unittest.TestCase):
 
     def test_unbinned_pixel_number_no_error(self):
         det = Dummy("dummy", custom_pixelnumber=(128, 256))
-        self.assertTrue(det.unbinned_pixel_number[0] == 128 and
-                        det.unbinned_pixel_number[1] == 256)
+        self.assertTrue(
+            det.unbinned_pixel_number[0] == 128 and det.unbinned_pixel_number[1] == 256
+        )
 
     def test_unbinned_pixel_size_wrong_type(self):
         with self.assertRaises(TypeError):

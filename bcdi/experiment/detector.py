@@ -749,8 +749,9 @@ class Dummy(Detector):
 
         Convention: (vertical, horizontal)
         """
-        if (self.custom_pixelnumber is not None and
-                all(val is not None for val in self.custom_pixelnumber)):
+        if self.custom_pixelnumber is not None and all(
+            val is not None for val in self.custom_pixelnumber
+        ):
             return self.custom_pixelnumber
         print(f"Defaulting the pixel size to {516, 516}")
         return 516, 516
