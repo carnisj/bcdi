@@ -18,7 +18,8 @@ import gc
 import os
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.experiment.experiment_utils as exp
+from bcdi.experiment.detector import create_detector
+from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
@@ -47,9 +48,8 @@ sdd_change_mode = "real_space"  # 'real_space' or 'reciprocal_space',
 # in real_space, it will interpolate the support
 # if 'reciprocal_space', it will interpolate the diffraction calculated on pad_size
 energy = 9000.0 - 6  # x-ray energy in eV, 6eV offset at ID01
-voxel_size = (
-    3  # in nm, voxel size of the reconstruction, should be eaqual in each direction
-)
+voxel_size = 3
+# in nm, voxel size of the reconstruction, should be eaqual in each direction
 photon_threshold = 0  # 0.75
 photon_number = (
     5e7  # * 1011681 / 469091 # total number of photons in the array, usually around 5e7
@@ -124,8 +124,8 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-detector = exp.Detector(name=detector)
-setup = exp.Setup(
+detector = create_detector(name=detector)
+setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
@@ -472,11 +472,13 @@ print("Multiplication factor for the real-space voxel size:  pad_size/original_s
 
 # compensate change in detector distance
 comment = comment + "_sdd_" + str("{:.2f}".format(simulated_sdd))
-print("\nCurrent detector pixel size", detector.unbinned_pixel[0] * 1e6, "um")
+print("\nCurrent detector pixel size", detector.unbinned_pixel_size[0] * 1e6, "um")
 print(
     "Detector pixel size to compensate the change in detector distance",
     str(
-        "{:.2f}".format(detector.unbinned_pixel[0] * 1e6 * original_sdd / simulated_sdd)
+        "{:.2f}".format(
+            detector.unbinned_pixel_size[0] * 1e6 * original_sdd / simulated_sdd
+        )
     ),
     "um",
 )
@@ -687,7 +689,7 @@ if not orthogonal_frame:
     if debug:
         original_obj = setup.detector_frame(
             obj=original_obj,
-            voxelsize=voxel_size,
+            voxel_size=voxel_size,
             debugging=debug,
             title="Original object",
         )
@@ -707,7 +709,7 @@ if not orthogonal_frame:
         gc.collect()
 
     obj = setup.detector_frame(
-        obj=obj, voxelsize=voxel_size, debugging=debug, title="Rescaled object"
+        obj=obj, voxel_size=voxel_size, debugging=debug, title="Rescaled object"
     )
 
     #################################################################

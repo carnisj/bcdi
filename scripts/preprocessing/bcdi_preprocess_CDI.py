@@ -26,7 +26,7 @@ import tkinter as tk
 from tkinter import filedialog
 import gc
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.preprocessing_utils as pru
@@ -171,10 +171,6 @@ template_imagefile = "_master.h5"  # ''_data_%06d.h5'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
 ######################################################################
 # parameters used for interpolating the data in an orthonormal frame #
 ######################################################################
@@ -423,17 +419,12 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "preprocessing_binning": preprocessing_binning,
-    "nb_pixel_x": nb_pixel_x,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-    "nb_pixel_y": nb_pixel_y,  # fix to declare a known detector but with less pixels
-    # (e.g. one tile HS)
-}
-
-detector = Detector(
-    name=detector, roi=roi_detector, sum_roi=normalize_roi, binning=binning, **kwargs
+detector = create_detector(
+    name=detector,
+    roi=roi_detector,
+    sum_roi=normalize_roi,
+    binning=binning,
+    preprocessing_binning=preprocessing_binning,
 )
 
 ####################
@@ -450,6 +441,7 @@ setup = Setup(
     custom_images=custom_images,
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
+    is_series=is_series,
 )
 
 ########################################

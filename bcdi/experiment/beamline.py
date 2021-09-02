@@ -10,9 +10,8 @@
 """
 Beamline-related classes.
 
-These classes are not meant to be instantiated directly but via a Setup instance. The
-methods in child classes have the same signature as in the base class. The available
-beamlines are:
+These classes are not meant to be instantiated directly but via a Setup instance.
+The available beamlines are:
 
 - BeamlineID01
 - BeamlineSIXS
@@ -31,30 +30,36 @@ from silx.io.specfile import SpecFile
 import xrayutilities as xu
 
 
-def create_beamline(name):
+def create_beamline(name, **kwargs):
     """
     Create the instance of the beamline.
 
     :param name: str, name of the beamline
+    :param kwargs: optional beamline-dependent parameters
     :return: the corresponding beamline instance
     """
     if name == "ID01":
-        return BeamlineID01(name=name)
+        return BeamlineID01(name=name, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
-        return BeamlineSIXS(name=name)
+        return BeamlineSIXS(name=name, **kwargs)
     if name == "34ID":
-        return Beamline34ID(name=name)
+        return Beamline34ID(name=name, **kwargs)
     if name == "P10":
-        return BeamlineP10(name=name)
+        return BeamlineP10(name=name, **kwargs)
     if name == "CRISTAL":
-        return BeamlineCRISTAL(name=name)
+        return BeamlineCRISTAL(name=name, **kwargs)
     if name == "NANOMAX":
-        return BeamlineNANOMAX(name=name)
+        return BeamlineNANOMAX(name=name, **kwargs)
     raise ValueError(f"Beamline {name} not supported")
 
 
 class Beamline(ABC):
-    """Base class for defining a beamline."""
+    """
+    Base class for defining a beamline.
+
+    :param name: name of the beamline
+    :param kwargs: optional beamline-dependent parameters
+    """
 
     orientation_lookup = {"x-": 1, "x+": -1, "y-": 1, "y+": -1}  # lookup table for the
     # detector orientation and rotation direction, where axes are expressed in the
@@ -63,7 +68,7 @@ class Beamline(ABC):
     # "x-" detector horizontal axis inboard, as it should be in the CXI convention
     # "y-" detector vertical axis down, as it should be in the CXI convention
 
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         self._name = name
 
     @staticmethod
@@ -366,10 +371,14 @@ class Beamline(ABC):
 
 
 class BeamlineCRISTAL(Beamline):
-    """Definition of SOLEIL CRISTAL beamline."""
+    """
+    Definition of SOLEIL CRISTAL beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
@@ -599,10 +608,14 @@ class BeamlineCRISTAL(Beamline):
 
 
 class BeamlineID01(Beamline):
-    """Definition of ESRF ID01 beamline."""
+    """
+    Definition of ESRF ID01 beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(root_folder, filename, **kwargs):
@@ -835,10 +848,14 @@ class BeamlineID01(Beamline):
 
 
 class BeamlineNANOMAX(Beamline):
-    """Definition of MAX IV NANOMAX beamline."""
+    """
+    Definition of MAX IV NANOMAX beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
@@ -1068,10 +1085,14 @@ class BeamlineNANOMAX(Beamline):
 
 
 class BeamlineP10(Beamline):
-    """Definition of PETRA III P10 beamline."""
+    """
+    Definition of PETRA III P10 beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(root_folder, filename, **kwargs):
@@ -1325,10 +1346,14 @@ class BeamlineP10(Beamline):
 
 
 class BeamlineSIXS(Beamline):
-    """Definition of SOLEIL SIXS beamline."""
+    """
+    Definition of SOLEIL SIXS beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     def create_logfile(
         self, datadir, template_imagefile, scan_number, filename, **kwargs
@@ -1582,10 +1607,14 @@ class BeamlineSIXS(Beamline):
 
 
 class Beamline34ID(Beamline):
-    """Definition of APS 34ID-C beamline."""
+    """
+    Definition of APS 34ID-C beamline.
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(**kwargs):

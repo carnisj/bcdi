@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector, Detector, Dummy
 
 
 def run_tests(test_class):
@@ -17,13 +17,25 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
-class Test(unittest.TestCase):
+class TestDetector(unittest.TestCase):
     """Tests related to detector instantiation."""
+
+    def test_create_detector_from_abc(self):
+        with self.assertRaises(TypeError):
+            Detector(name="Maxipix")
 
     def test_instantiation_missing_parameter(self):
         with self.assertRaises(TypeError):
-            Detector()
+            create_detector()
+
+
+class TestDummy(unittest.TestCase):
+    """Tests related to the Dummy detector."""
+
+    def test_create_instance(self):
+        self.assertIsInstance(Dummy("dummy"), Detector)
 
 
 if __name__ == "__main__":
-    run_tests(Test)
+    run_tests(TestDetector)
+    run_tests(TestDummy)

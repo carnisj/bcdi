@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d
 import gc
 import sys
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import Detector
+from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.utilities as util
@@ -150,9 +150,7 @@ debug = False  # True to show more plots
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
-
-detector = Detector(
+detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=(1, 1, 1),
@@ -173,6 +171,7 @@ setup = Setup(
     sample_outofplane=sample_outofplane,
     sample_offsets=sample_offsets,
     actuators=actuators,
+    is_series=is_series,
 )
 
 ########################################
