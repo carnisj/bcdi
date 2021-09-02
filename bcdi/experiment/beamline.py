@@ -35,7 +35,7 @@ def create_beamline(name, **kwargs):
     Create the instance of the beamline.
 
     :param name: str, name of the beamline
-    :param kwargs: optional beamline-dependent parameters (e.g. is_series for P10)
+    :param kwargs: optional beamline-dependent parameters
     :return: the corresponding beamline instance
     """
     if name == "ID01":
@@ -1090,17 +1090,10 @@ class BeamlineP10(Beamline):
     Definition of PETRA III P10 beamline.
 
     :param name: name of the beamline
-    :kwargs:
-
-     - is_series: bool, True for a series measurement at PETRAIII P10.
-
     """
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.is_series = kwargs.get("is_series", False)
-        if not isinstance(self.is_series, bool):
-            raise TypeError("is_series should be a boolean")
 
     @staticmethod
     def create_logfile(root_folder, filename, **kwargs):

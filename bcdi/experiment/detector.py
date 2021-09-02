@@ -133,6 +133,10 @@ class Detector(ABC):
         self.template_imagefile = template_imagefile
         self.specfile = specfile
 
+        # dictionary of keys: beamline_name and values: counter name for the image
+        # number in the log file.
+        self._counter_table = {}
+
     @property
     def binning(self):
         """
@@ -157,10 +161,15 @@ class Detector(ABC):
         )
         self._binning = value
 
-    @property
-    @abstractmethod
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
+    def counter(self, beamline):
+        """
+        Name of the counter in the log file for the image number.
+
+        :param beamline: str, name of the beamline
+        """
+        if not isinstance(beamline, str):
+            raise TypeError("beamline should be a string")
+        return self._counter_table.get(beamline)
 
     @property
     def datadir(self):
@@ -593,11 +602,8 @@ class Maxipix(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-
-    @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return "mpx4inr"
+        self._counter_table = {"ID01": "mpx4inr"}  # useful if the same type of detector
+        # is used at several beamlines
 
     @property
     def unbinned_pixel_number(self):
@@ -619,11 +625,8 @@ class Eiger2M(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-
-    @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return "ei2minr"
+        self._counter_table = {"ID01": "ei2minr"}  # useful if the same type of detector
+        # is used at several beamlines
 
     @property
     def unbinned_pixel_number(self):
@@ -647,11 +650,6 @@ class Eiger4M(Detector):
         super().__init__(name=name, **kwargs)
 
     @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return None
-
-    @property
     def unbinned_pixel_number(self):
         """
         Define the number of pixels of the unbinned detector.
@@ -673,11 +671,6 @@ class Timepix(Detector):
         super().__init__(name=name, **kwargs)
 
     @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return None
-
-    @property
     def unbinned_pixel_number(self):
         """
         Define the number of pixels of the unbinned detector.
@@ -697,11 +690,6 @@ class Merlin(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-
-    @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return "alba2"
 
     @property
     def unbinned_pixel_number(self):
@@ -730,7 +718,7 @@ class Dummy(Detector):
     """
 
     def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
+
         self.custom_pixelsize = kwargs.get("custom_pixelsize")
         valid.valid_item(
             self.custom_pixelsize,
@@ -739,7 +727,6 @@ class Dummy(Detector):
             allow_none=True,
             name="custom_pixelsize",
         )
-
         self.custom_pixelnumber = kwargs.get("custom_pixelnumber")
         valid.valid_container(
             self.custom_pixelnumber,
@@ -750,11 +737,7 @@ class Dummy(Detector):
             allow_none=True,
             name="custom_pixelnumber",
         )
-
-    @property
-    def counter(self):
-        """Name of the counter in the log file for the image number."""
-        return None
+        super().__init__(name=name, **kwargs)
 
     @property
     def unbinned_pixel_number(self):

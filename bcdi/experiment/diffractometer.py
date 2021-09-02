@@ -1455,16 +1455,14 @@ class DiffractometerID01(Diffractometer):
 
             # find the number of images
             try:
-                ccdn = labels_data[labels.index(detector.counter), :]
+                ccdn = labels_data[labels.index(detector.counter("ID01")), :]
             except ValueError:
                 try:
-                    print(detector.counter, "not in the list, trying 'ccd_n'")
-                    detector.counter = "ccd_n"
-                    ccdn = labels_data[labels.index(detector.counter), :]
+                    print(detector.counter("ID01"), "not in the list, trying 'ccd_n'")
+                    ccdn = labels_data[labels.index("ccd_n"), :]
                 except ValueError:
                     raise ValueError(
-                        detector.counter,
-                        "not in the list, the detector name may be wrong",
+                        "ccd_n not in the list, the detector name may be wrong",
                     )
             nb_img = len(ccdn)
         else:
@@ -2029,7 +2027,7 @@ class DiffractometerP10(Diffractometer):
         """
         # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
-        is_series = setup._beamline.is_series
+        is_series = setup.is_series
         if not setup.custom_scan:
             h5file = h5py.File(ccdfiletmp, "r")
 

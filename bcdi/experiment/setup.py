@@ -114,6 +114,7 @@ class Setup:
                 "sample_offsets",
                 "offset_inplane",
                 "actuators",
+                "is_series"
             },
             name="Setup.__init__",
         )
@@ -132,7 +133,8 @@ class Setup:
         self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
         self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
         self.offset_inplane = kwargs.get("offset_inplane", 0)
-
+        # kwargs for series (several frames per point) at P10
+        self.is_series = kwargs.get("is_series", False)  # boolean
         # load positional arguments corresponding to instance properties
         self.beamline = beamline
         self.detector = detector
@@ -147,7 +149,8 @@ class Setup:
 
         # create the Diffractometer instance
         self._diffractometer = create_diffractometer(
-            beamline=self.beamline, sample_offsets=sample_offsets
+            beamline=self.beamline,
+            sample_offsets=sample_offsets,
         )
 
     @property
@@ -519,6 +522,17 @@ class Setup:
         return self._beamline.inplane_coeff(self.diffractometer)
 
     @property
+    def is_series(self):
+        """True for series measurement at P10 (several frames per point)."""
+        return self._is_series
+
+    @is_series.setter
+    def is_series(self, val):
+        if not isinstance(val, bool):
+            raise TypeError(f"is_series should be a boolean, got {type(val)}")
+        self._is_series = val
+
+    @property
     def outofplane_angle(self):
         """Vertical detector angle, in degrees."""
         return self._outofplane_angle
@@ -548,7 +562,7 @@ class Setup:
             "Class": self.__class__.__name__,
             "beamline": self.beamline,
             "detector": self.detector.name,
-            "pixel_size_m": self.detector.unbinned_pixel,
+            "pixel_size_m": self.detector.unbinned_pixel_size,
             "beam_direction": self.beam_direction,
             "energy_eV": self.energy,
             "distance_m": self.distance,
@@ -569,7 +583,7 @@ class Setup:
             "sample_outofplane": self.sample_outofplane,
             "offset_inplane_deg": self.offset_inplane,
             "wavelength_m": self.wavelength,
-            "is_series": self._beamline.is_series,
+            "is_series": self.is_series,
         }
 
     @property
@@ -635,7 +649,7 @@ class Setup:
             f"tilt_angle={self.tilt_angle}, "
             f"rocking_angle='{self.rocking_angle}', "
             f"grazing_angle={self.grazing_angle},\n"
-            f"pixel_size={self.detector.unbinned_pixel}, "
+            f"pixel_size={self.detector.unbinned_pixel_size}, "
             f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
             f"filtered_data={self.filtered_data}, "
@@ -645,7 +659,8 @@ class Setup:
             f"custom_motors={self.custom_motors},\n"
             f"sample_inplane={self.sample_inplane}, "
             f"sample_outofplane={self.sample_outofplane}, "
-            f"offset_inplane={self.offset_inplane})"
+            f"offset_inplane={self.offset_inplane}, "
+            f"is_series={self.is_series})"
         )
 
     def create_logfile(self, scan_number, root_folder, filename):
@@ -729,8 +744,8 @@ class Setup:
         ortho_matrix = self.transformation_matrix(
             array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
-            pixel_x=self.detector.unbinned_pixel[1],
-            pixel_y=self.detector.unbinned_pixel[0],
+            pixel_x=self.detector.unbinned_pixel_size[1],
+            pixel_y=self.detector.unbinned_pixel_size[0],
         )
 
         ################################################
@@ -1142,8 +1157,8 @@ class Setup:
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
             initial_shape,
             tilt_angle=abs(self.tilt_angle),
-            pixel_x=self.detector.unbinned_pixel[1],
-            pixel_y=self.detector.unbinned_pixel[0],
+            pixel_x=self.detector.unbinned_pixel_size[1],
+            pixel_y=self.detector.unbinned_pixel_size[0],
         )
         if verbose:
             print(
@@ -1157,10 +1172,10 @@ class Setup:
             # recalculate the tilt and pixel sizes to accomodate a shape change
             tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
             pixel_y = (
-                self.detector.unbinned_pixel[0] * initial_shape[1] / input_shape[1]
+                self.detector.unbinned_pixel_size[0] * initial_shape[1] / input_shape[1]
             )
             pixel_x = (
-                self.detector.unbinned_pixel[1] * initial_shape[2] / input_shape[2]
+                self.detector.unbinned_pixel_size[1] * initial_shape[2] / input_shape[2]
             )
             if verbose:
                 print(
@@ -1184,8 +1199,8 @@ class Setup:
                 )
         else:
             tilt = self.tilt_angle
-            pixel_y = self.detector.unbinned_pixel[0]
-            pixel_x = self.detector.unbinned_pixel[1]
+            pixel_y = self.detector.unbinned_pixel_size[0]
+            pixel_x = self.detector.unbinned_pixel_size[1]
 
         if not voxel_size:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
@@ -1536,8 +1551,8 @@ class Setup:
             tilt_angle=self.tilt_angle,
             direct_space=False,
             verbose=verbose,
-            pixel_x=self.detector.unbinned_pixel[1],
-            pixel_y=self.detector.unbinned_pixel[0],
+            pixel_x=self.detector.unbinned_pixel_size[1],
+            pixel_y=self.detector.unbinned_pixel_size[0],
         )
 
         # the voxel size in q in the laboratory frame
