@@ -477,8 +477,9 @@ print("\nCurrent detector pixel size", detector.unbinned_pixel_size[0] * 1e6, "u
 print(
     "Detector pixel size to compensate the change in detector distance",
     str(
-        "{:.2f}".format(detector.unbinned_pixel_size[0] * 1e6 * original_sdd /
-                        simulated_sdd)
+        "{:.2f}".format(
+            detector.unbinned_pixel_size[0] * 1e6 * original_sdd / simulated_sdd
+        )
     ),
     "um",
 )

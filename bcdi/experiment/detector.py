@@ -49,9 +49,7 @@ def create_detector(name, **kwargs):
         return Merlin(name=name, **kwargs)
     if name == "Dummy":
         return Dummy(name=name, **kwargs)
-    raise NotImplementedError(
-        f"No implementation for the {name} detector"
-    )
+    raise NotImplementedError(f"No implementation for the {name} detector")
 
 
 class Detector(ABC):
@@ -238,14 +236,20 @@ class Detector(ABC):
     @property
     def pixelsize_x(self):
         """Horizontal pixel size of the detector after taking into account binning."""
-        return (self.unbinned_pixel_size[1] * self.preprocessing_binning[2] *
-                self.binning[2])
+        return (
+            self.unbinned_pixel_size[1]
+            * self.preprocessing_binning[2]
+            * self.binning[2]
+        )
 
     @property
     def pixelsize_y(self):
         """Vertical pixel size of the detector after taking into account binning."""
-        return (self.unbinned_pixel_size[0] * self.preprocessing_binning[1] *
-                self.binning[1])
+        return (
+            self.unbinned_pixel_size[0]
+            * self.preprocessing_binning[1]
+            * self.binning[1]
+        )
 
     @property
     def preprocessing_binning(self):

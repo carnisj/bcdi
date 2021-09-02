@@ -114,7 +114,7 @@ class Setup:
                 "sample_offsets",
                 "offset_inplane",
                 "actuators",
-                "is_series"
+                "is_series",
             },
             name="Setup.__init__",
         )
@@ -209,7 +209,7 @@ class Setup:
 
     @property
     def beamline(self):
-        """The setter creates a beamline instance, the getter returns the name only."""
+        """Create a beamline instance, but return the name only."""
         return self._beamline.name
 
     @beamline.setter
@@ -523,7 +523,7 @@ class Setup:
 
     @property
     def is_series(self):
-        """True for series measurement at P10 (several frames per point)."""
+        """Set to true for series measurement at P10 (several frames per point)."""
         return self._is_series
 
     @is_series.setter

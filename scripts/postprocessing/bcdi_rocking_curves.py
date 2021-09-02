@@ -177,7 +177,9 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 # Initialize detector #
 #######################
 detector = create_detector(
-    name=detector, template_imagefile=template_imagefile, roi=roi_detector,
+    name=detector,
+    template_imagefile=template_imagefile,
+    roi=roi_detector,
 )
 
 ####################

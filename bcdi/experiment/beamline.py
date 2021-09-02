@@ -57,7 +57,6 @@ class Beamline(ABC):
     """
     Base class for defining a beamline.
 
-
     :param name: name of the beamline
     :param kwargs: optional beamline-dependent parameters
     """
