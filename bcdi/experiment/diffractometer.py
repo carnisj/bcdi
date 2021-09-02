@@ -1292,10 +1292,12 @@ class DiffractometerCRISTAL(Diffractometer):
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]
+        print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = logfile["/" + group_key + "/scan_data/" + device_name][:]
+            print("found!")
         except KeyError:
-            print(f"No device {device_name} in the logfile, defaulting values to []")
+            print(f"no device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
@@ -1665,10 +1667,12 @@ class DiffractometerID01(Diffractometer):
         """
         labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
         labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+        print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
+            print("found!")
         except ValueError:  # device not in the list
-            print(f"No device {device_name} in the logfile, defaulting values to []")
+            print(f"no device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
@@ -1907,10 +1911,12 @@ class DiffractometerNANOMAX(Diffractometer):
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]  # currently 'entry'
+        print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = logfile["/" + group_key + "/measurement/" + device_name][:]
+            print("found!")
         except KeyError:
-            print(f"No device {device_name} in the logfile, defaulting values to []")
+            print(f"No device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
@@ -2250,6 +2256,7 @@ class DiffractometerP10(Diffractometer):
         """
         device_values = []
         index_device = None  # index of the column corresponding to the device in .fio
+        print(f"Trying to load values for {device_name}...", end="")
         with open(logfile, "r") as fio:
             fio_lines = fio.readlines()
             for line in fio_lines:
@@ -2265,7 +2272,7 @@ class DiffractometerP10(Diffractometer):
                     device_values.append(float(words[index_device]))
 
         if index_device is None:
-            print(f"No device {device_name} in the logfile, defaulting values to []")
+            print(f"No device {device_name} in the logfile")
         return np.asarray(device_values)
 
     def read_monitor(self, logfile, **kwargs):
@@ -2528,10 +2535,12 @@ class DiffractometerSIXS(Diffractometer):
         :param device_name: name of the device
         :return: the positions/values of the device as a numpy 1D array
         """
+        print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = getattr(logfile, device_name)
+            print("found!")
         except AttributeError:
-            print(f"No device {device_name} in the logfile, defaulting values to []")
+            print(f"No device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
