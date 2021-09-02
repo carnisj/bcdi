@@ -254,17 +254,15 @@ plt.ion()
 #################################################
 # initialize detector, setup, paths and logfile #
 #################################################
-kwargs = {"is_series": is_series}  # create dictionnary
 detector = create_detector(
     name=detector,
     datadir="",
     template_imagefile=template_imagefile,
     sum_roi=sum_roi,
     binning=[1, binning[0], binning[1]],
-    **kwargs,
 )
 
-setup = Setup(beamline=beamline, detector=detector)
+setup = Setup(beamline=beamline, detector=detector, is_series=is_series)
 
 if setup.beamline == "P10":
     specfile_name = sample_name + "_{:05d}".format(scan)

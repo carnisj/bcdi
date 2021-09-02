@@ -410,16 +410,12 @@ my_cmap = colormap.cmap
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "preprocessing_binning": preprocessing_binning,
-    "pixel_size": pixel_size,  # to declare the pixel size of the "Dummy" detector
-}
-
 detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     binning=phasing_binning,
-    **kwargs,
+    preprocessing_binning=preprocessing_binning,
+    pixel_size=pixel_size,
 )
 
 ####################################

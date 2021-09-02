@@ -148,7 +148,6 @@ detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
-    is_series=is_series,
 )
 
 ####################
@@ -167,6 +166,7 @@ setup = Setup(
     custom_motors=custom_motors,
     sample_offsets=sample_offsets,
     actuators=actuators,
+    is_series=is_series,
 )
 
 ########################################

@@ -236,8 +236,6 @@ def press_key(event):
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
-
 # phasing_binning will be taken into account after the optional data cropping
 # (crop_roi parameter)
 detector = create_detector(
@@ -261,6 +259,7 @@ setup = Setup(
     sample_outofplane=sample_outofplane,
     sample_offsets=sample_offsets,
     actuators=actuators,
+    is_series=is_series,
 )
 
 ########################

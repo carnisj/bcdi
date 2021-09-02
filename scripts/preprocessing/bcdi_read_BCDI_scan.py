@@ -143,14 +143,11 @@ if normalize not in {"skip", "monitor"}:
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
-
 detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
     roi=roi_detector,
     binning=binning,
-    **kwargs,
 )
 
 ####################
@@ -165,6 +162,7 @@ setup = Setup(
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
     actuators=actuators,
+    is_series=is_series,
 )
 
 ########################################

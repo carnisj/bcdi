@@ -419,13 +419,12 @@ plt.rcParams["keymap.fullscreen"] = [""]
 #######################
 # Initialize detector #
 #######################
-kwargs = {
-    "is_series": is_series,
-    "preprocessing_binning": preprocessing_binning,
-}
-
 detector = create_detector(
-    name=detector, roi=roi_detector, sum_roi=normalize_roi, binning=binning, **kwargs
+    name=detector,
+    roi=roi_detector,
+    sum_roi=normalize_roi,
+    binning=binning,
+    preprocessing_binning=preprocessing_binning,
 )
 
 ####################
@@ -442,6 +441,7 @@ setup = Setup(
     custom_images=custom_images,
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
+    is_series=is_series,
 )
 
 ########################################

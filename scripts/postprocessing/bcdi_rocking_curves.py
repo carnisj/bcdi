@@ -176,10 +176,8 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
-
 detector = create_detector(
-    name=detector, template_imagefile=template_imagefile, roi=roi_detector, **kwargs
+    name=detector, template_imagefile=template_imagefile, roi=roi_detector,
 )
 
 ####################
@@ -196,6 +194,7 @@ setup = Setup(
     custom_images=custom_images,
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
+    is_series=is_series,
 )
 
 ########################################

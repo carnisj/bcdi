@@ -150,8 +150,6 @@ debug = False  # True to show more plots
 #######################
 # Initialize detector #
 #######################
-kwargs = {"is_series": is_series}
-
 detector = create_detector(
     name=detector,
     template_imagefile=template_imagefile,
@@ -173,6 +171,7 @@ setup = Setup(
     sample_outofplane=sample_outofplane,
     sample_offsets=sample_offsets,
     actuators=actuators,
+    is_series=is_series,
 )
 
 ########################################
