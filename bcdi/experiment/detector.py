@@ -752,15 +752,13 @@ class Dummy(Detector):
         """
         if self.custom_pixelnumber is not None:
             return self.custom_pixelnumber
-        else:
-            print(f"Defaulting the pixel size to {516, 516}")
-            return 516, 516
+        print(f"Defaulting the pixel size to {516, 516}")
+        return 516, 516
 
     @property
     def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         if self.custom_pixelsize is not None:
             return self.custom_pixelsize, self.custom_pixelsize
-        else:
-            print(f"Defaulting the pixel size to {55e-06, 55e-06}")
-            return 55e-06, 55e-06
+        print(f"Defaulting the pixel size to {55e-06, 55e-06}")
+        return 55e-06, 55e-06
