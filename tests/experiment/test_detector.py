@@ -35,6 +35,48 @@ class TestDummy(unittest.TestCase):
     def test_create_instance(self):
         self.assertIsInstance(Dummy("dummy"), Detector)
 
+    def test_unbinned_pixel_number_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Dummy("dummy", custom_pixelnumber=2)
+
+    def test_unbinned_pixel_number_wrong_value(self):
+        with self.assertRaises(ValueError):
+            Dummy("dummy", custom_pixelnumber=(0, 2))
+
+    def test_unbinned_pixel_number_partial_none(self):
+        det = Dummy("dummy", custom_pixelnumber=(None, 2))
+        self.assertTupleEqual(det.unbinned_pixel_number, (516, 516))
+
+    def test_unbinned_pixel_number_default(self):
+        det = Dummy("dummy")
+        self.assertTupleEqual(det.unbinned_pixel_number, (516, 516))
+
+    def test_unbinned_pixel_number_no_error(self):
+        det = Dummy("dummy", custom_pixelnumber=(128, 256))
+        self.assertTrue(det.unbinned_pixel_number[0] == 128 and
+                        det.unbinned_pixel_number[1] == 256)
+
+    def test_unbinned_pixel_size_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Dummy("dummy", custom_pixelsize=(55e-6, 55e-6))
+
+    def test_unbinned_pixel_size_wrong_value(self):
+        with self.assertRaises(ValueError):
+            Dummy("dummy", custom_pixelsize=0)
+
+    def test_unbinned_pixel_size_none(self):
+        det = Dummy("dummy", custom_pixelsize=None)
+        self.assertTupleEqual(det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_unbinned_pixel_size_default(self):
+        det = Dummy("dummy")
+        self.assertTupleEqual(det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_unbinned_pixel_size_no_error(self):
+        det = Dummy("dummy", custom_pixelsize=100e-6)
+        self.assertAlmostEqual(det.unbinned_pixel_size[0], 100e-6)
+        self.assertTrue(det.unbinned_pixel_size[0] == det.unbinned_pixel_size[1])
+
 
 if __name__ == "__main__":
     run_tests(TestDetector)

@@ -109,7 +109,6 @@ class Detector(ABC):
 
         # load the kwargs
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
-        self.custom_pixelsize = kwargs.get("pixel_size")
         self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
         linearity_func = kwargs.get("linearity_func")
         if linearity_func is not None and not callable(linearity_func):
@@ -750,7 +749,8 @@ class Dummy(Detector):
 
         Convention: (vertical, horizontal)
         """
-        if self.custom_pixelnumber is not None:
+        if (self.custom_pixelnumber is not None and
+                all(val is not None for val in self.custom_pixelnumber)):
             return self.custom_pixelnumber
         print(f"Defaulting the pixel size to {516, 516}")
         return 516, 516
