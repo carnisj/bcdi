@@ -50,9 +50,8 @@ class TestMaxipix(unittest.TestCase):
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
 
-
-def test_unbinned_pixel_size_default(self):
-    self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
+    def test_unbinned_pixel_size_default(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
 
 
 class TestEiger2M(unittest.TestCase):
