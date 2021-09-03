@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 import unittest
 from bcdi.experiment.detector import (
     create_detector,
@@ -43,6 +44,8 @@ class TestMaxipix(unittest.TestCase):
 
     def setUp(self) -> None:
         self.det = Maxipix("Maxipix")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
 
     def test_create_instance(self):
         self.assertIsInstance(self.det, Detector)
@@ -53,12 +56,21 @@ class TestMaxipix(unittest.TestCase):
     def test_unbinned_pixel_size_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
 
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 255:261]) == 0)
+        self.assertTrue(np.all(data[255:261, :]) == 0)
+        self.assertTrue(np.all(data[:, 255:261]) == 1)
+        self.assertTrue(np.all(data[255:261, :]) == 1)
+
 
 class TestEiger2M(unittest.TestCase):
     """Tests related to the Eiger2M detector."""
 
     def setUp(self) -> None:
         self.det = Eiger2M("Eiger2M")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
 
     def test_create_instance(self):
         self.assertIsInstance(self.det, Detector)
@@ -69,12 +81,46 @@ class TestEiger2M(unittest.TestCase):
     def test_unbinned_pixel_size_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_size, (75e-06, 75e-06))
 
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 255:259]) == 0)
+        self.assertTrue(np.all(data[:, 513:517]) == 0)
+        self.assertTrue(np.all(data[:, 771:775]) == 0)
+        self.assertTrue(np.all(data[0:257, 72:80]) == 0)
+        self.assertTrue(np.all(data[255:259, :]) == 0)
+        self.assertTrue(np.all(data[511:552, :0]) == 0)
+        self.assertTrue(np.all(data[804:809, :]) == 0)
+        self.assertTrue(np.all(data[1061:1102, :]) == 0)
+        self.assertTrue(np.all(data[1355:1359, :]) == 0)
+        self.assertTrue(np.all(data[1611:1652, :]) == 0)
+        self.assertTrue(np.all(data[1905:1909, :]) == 0)
+        self.assertTrue(np.all(data[1248:1290, 478]) == 0)
+        self.assertTrue(np.all(data[1214:1298, 481]) == 0)
+        self.assertTrue(np.all(data[1649:1910, 620:628]) == 0)
+
+        self.assertTrue(np.all(mask[:, 255:259]) == 1)
+        self.assertTrue(np.all(mask[:, 513:517]) == 1)
+        self.assertTrue(np.all(mask[:, 771:775]) == 1)
+        self.assertTrue(np.all(mask[0:257, 72:80]) == 1)
+        self.assertTrue(np.all(mask[255:259, :]) == 1)
+        self.assertTrue(np.all(mask[511:552, :]) == 1)
+        self.assertTrue(np.all(mask[804:809, :]) == 1)
+        self.assertTrue(np.all(mask[1061:1102, :]) == 1)
+        self.assertTrue(np.all(mask[1355:1359, :]) == 1)
+        self.assertTrue(np.all(mask[1611:1652, :]) == 1)
+        self.assertTrue(np.all(mask[1905:1909, :]) == 1)
+        self.assertTrue(np.all(mask[1248:1290, 478]) == 1)
+        self.assertTrue(np.all(mask[1214:1298, 481]) == 1)
+        self.assertTrue(np.all(mask[1649:1910, 620:628]) == 1)
+
 
 class TestEiger4M(unittest.TestCase):
     """Tests related to the Eiger4M detector."""
 
     def setUp(self) -> None:
         self.det = Eiger4M("Eiger4M")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
 
     def test_create_instance(self):
         self.assertIsInstance(self.det, Detector)
@@ -84,6 +130,27 @@ class TestEiger4M(unittest.TestCase):
 
     def test_unbinned_pixel_size_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_size, (75e-06, 75e-06))
+
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 0:1]) == 0)
+        self.assertTrue(np.all(data[:, 0:1]) == 0)
+        self.assertTrue(np.all(data[:, -1:]) == 0)
+        self.assertTrue(np.all(data[0:1, :]) == 0)
+        self.assertTrue(np.all(data[-1:, :])== 0)
+        self.assertTrue(np.all(data[:, 1029:1041]) == 0)
+        self.assertTrue(np.all(data[513:552, :]) == 0)
+        self.assertTrue(np.all(data[1064:1103, :]) == 0)
+        self.assertTrue(np.all(data[1615:1654, :]) == 0)
+
+        self.assertTrue(np.all(mask[:, 0:1]) == 1)
+        self.assertTrue(np.all(mask[:, -1:]) == 1)
+        self.assertTrue(np.all(mask[0:1, :]) == 1)
+        self.assertTrue(np.all(mask[-1:, :]) == 1)
+        self.assertTrue(np.all(mask[:, 1029:1041]) == 1)
+        self.assertTrue(np.all(mask[513:552, :]) == 1)
+        self.assertTrue(np.all(mask[1064:1103, :]) == 1)
+        self.assertTrue(np.all(mask[1615:1654, :]) == 1)
 
 
 class TestTimepix(unittest.TestCase):
@@ -107,6 +174,8 @@ class TestMerlin(unittest.TestCase):
 
     def setUp(self) -> None:
         self.det = Merlin("Merlin")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
 
     def test_create_instance(self):
         self.assertIsInstance(self.det, Detector)
@@ -116,6 +185,13 @@ class TestMerlin(unittest.TestCase):
 
     def test_unbinned_pixel_size_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 255:260]) == 0)
+        self.assertTrue(np.all(data[255:260, :]) == 0)
+        self.assertTrue(np.all(data[:, 255:260]) == 1)
+        self.assertTrue(np.all(data[255:260, :]) == 1)
 
 
 class TestDummy(unittest.TestCase):
