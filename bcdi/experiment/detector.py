@@ -134,6 +134,9 @@ class Detector(ABC):
         # number in the log file.
         self._counter_table = {}
 
+        # initialize the threshold for saturation, can be overriden in child classes
+        self.saturation_threshold = None
+
     @property
     def binning(self):
         """
@@ -624,8 +627,7 @@ class Detector(ABC):
             )
         return data, mask
 
-    @staticmethod
-    def _saturation_correction(data, mask, nb_frames):
+    def _saturation_correction(self, data, mask, nb_frames):
         """
         Mask pixels above a certain threshold.
 
@@ -640,18 +642,23 @@ class Detector(ABC):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
+        if self.saturation_threshold is not None:
+            if not isinstance(data, np.ndarray):
+                raise TypeError("data should be a numpy array")
+            if not isinstance(mask, np.ndarray):
+                raise TypeError("mask should be a numpy array")
+            if data.ndim != 2:
+                raise ValueError("data should be a 2D array")
+            if mask.ndim != data.ndim:
+                raise ValueError(
+                    "mask and data must have the same shape"
+                    f"mask is {mask.shape} while data is {data.shape}"
+                )
+            valid.valid_item(
+                nb_frames, allowed_types=int, min_excluded=0, name="nb_frames"
             )
-        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
+            mask[data > self.saturation_threshold * nb_frames] = 1
+            data[data > self.saturation_threshold * nb_frames] = 0
         return data, mask
 
 
@@ -662,6 +669,7 @@ class Maxipix(Detector):
         super().__init__(name=name, **kwargs)
         self._counter_table = {"ID01": "mpx4inr"}  # useful if the same type of detector
         # is used at several beamlines
+        self.saturation_threshold = 1e6
 
     @staticmethod
     def _mask_gaps(data, mask):
@@ -694,38 +702,6 @@ class Maxipix(Detector):
         mask[255:261, :] = 1
         return data, mask
 
-    @staticmethod
-    def _saturation_correction(data, mask, nb_frames):
-        """
-        Mask pixels above a certain threshold.
-
-        This is detector dependent.
-
-        :param data: a 2D numpy array
-        :param mask: a 2D numpy array of the same shape as data
-        :param nb_frames: int, number of frames concatenated to obtain the 2D data array
-        :return:
-
-         - the masked data
-         - the updated mask
-
-        """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
-        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
-        mask[data > 1e6 * nb_frames] = 1
-        data[data > 1e6 * nb_frames] = 0
-        return data, mask
-
     @property
     def unbinned_pixel_number(self):
         """
@@ -748,6 +724,7 @@ class Eiger2M(Detector):
         super().__init__(name=name, **kwargs)
         self._counter_table = {"ID01": "ei2minr"}  # useful if the same type of detector
         # is used at several beamlines
+        self.saturation_threshold = 1e6
 
     @staticmethod
     def _mask_gaps(data, mask):
@@ -804,38 +781,6 @@ class Eiger2M(Detector):
         mask[1649:1910, 620:628] = 1
         return data, mask
 
-    @staticmethod
-    def _saturation_correction(data, mask, nb_frames):
-        """
-        Mask pixels above a certain threshold.
-
-        This is detector dependent.
-
-        :param data: a 2D numpy array
-        :param mask: a 2D numpy array of the same shape as data
-        :param nb_frames: int, number of frames concatenated to obtain the 2D data array
-        :return:
-
-         - the masked data
-         - the updated mask
-
-        """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
-        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
-        mask[data > 1e6 * nb_frames] = 1
-        data[data > 1e6 * nb_frames] = 0
-        return data, mask
-
     @property
     def unbinned_pixel_number(self):
         """
@@ -856,6 +801,7 @@ class Eiger4M(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
+        self.saturation_threshold = 4000000000
 
     @staticmethod
     def _mask_gaps(data, mask):
@@ -900,38 +846,6 @@ class Eiger4M(Detector):
         mask[1615:1654, :] = 1
         return data, mask
 
-    @staticmethod
-    def _saturation_correction(data, mask, nb_frames):
-        """
-        Mask pixels above a certain threshold.
-
-        This is detector dependent.
-
-        :param data: a 2D numpy array
-        :param mask: a 2D numpy array of the same shape as data
-        :param nb_frames: int, number of frames concatenated to obtain the 2D data array
-        :return:
-
-         - the masked data
-         - the updated mask
-
-        """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
-        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
-        mask[data > 4000000000 * nb_frames] = 1
-        data[data > 4000000000 * nb_frames] = 0
-        return data, mask
-
     @property
     def unbinned_pixel_number(self):
         """
@@ -973,6 +887,7 @@ class Merlin(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
+        self.saturation_threshold = 1e6
 
     @staticmethod
     def _mask_gaps(data, mask):
@@ -1003,38 +918,6 @@ class Merlin(Detector):
 
         mask[:, 255:260] = 1
         mask[255:260, :] = 1
-        return data, mask
-
-    @staticmethod
-    def _saturation_correction(data, mask, nb_frames):
-        """
-        Mask pixels above a certain threshold.
-
-        This is detector dependent.
-
-        :param data: a 2D numpy array
-        :param mask: a 2D numpy array of the same shape as data
-        :param nb_frames: int, number of frames concatenated to obtain the 2D data array
-        :return:
-
-         - the masked data
-         - the updated mask
-
-        """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
-        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
-        mask[data > 1e6 * nb_frames] = 1
-        data[data > 1e6 * nb_frames] = 0
         return data, mask
 
     @property
