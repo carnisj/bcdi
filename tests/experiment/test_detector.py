@@ -60,8 +60,8 @@ class TestMaxipix(unittest.TestCase):
         data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
         self.assertTrue(np.all(data[:, 255:261]) == 0)
         self.assertTrue(np.all(data[255:261, :]) == 0)
-        self.assertTrue(np.all(data[:, 255:261]) == 1)
-        self.assertTrue(np.all(data[255:261, :]) == 1)
+        self.assertTrue(np.all(mask[:, 255:261]) == 1)
+        self.assertTrue(np.all(mask[255:261, :]) == 1)
 
 
 class TestEiger2M(unittest.TestCase):
@@ -88,7 +88,7 @@ class TestEiger2M(unittest.TestCase):
         self.assertTrue(np.all(data[:, 771:775]) == 0)
         self.assertTrue(np.all(data[0:257, 72:80]) == 0)
         self.assertTrue(np.all(data[255:259, :]) == 0)
-        self.assertTrue(np.all(data[511:552, :0]) == 0)
+        self.assertTrue(np.all(data[511:552, :]) == 0)
         self.assertTrue(np.all(data[804:809, :]) == 0)
         self.assertTrue(np.all(data[1061:1102, :]) == 0)
         self.assertTrue(np.all(data[1355:1359, :]) == 0)
@@ -137,7 +137,7 @@ class TestEiger4M(unittest.TestCase):
         self.assertTrue(np.all(data[:, 0:1]) == 0)
         self.assertTrue(np.all(data[:, -1:]) == 0)
         self.assertTrue(np.all(data[0:1, :]) == 0)
-        self.assertTrue(np.all(data[-1:, :])== 0)
+        self.assertTrue(np.all(data[-1:, :]) == 0)
         self.assertTrue(np.all(data[:, 1029:1041]) == 0)
         self.assertTrue(np.all(data[513:552, :]) == 0)
         self.assertTrue(np.all(data[1064:1103, :]) == 0)
@@ -190,8 +190,8 @@ class TestMerlin(unittest.TestCase):
         data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
         self.assertTrue(np.all(data[:, 255:260]) == 0)
         self.assertTrue(np.all(data[255:260, :]) == 0)
-        self.assertTrue(np.all(data[:, 255:260]) == 1)
-        self.assertTrue(np.all(data[255:260, :]) == 1)
+        self.assertTrue(np.all(mask[:, 255:260]) == 1)
+        self.assertTrue(np.all(mask[255:260, :]) == 1)
 
 
 class TestDummy(unittest.TestCase):
