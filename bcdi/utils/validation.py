@@ -350,7 +350,7 @@ def valid_ndarray(arrays, ndim=None, shape=None):
         ndim = arrays[0].ndim
     if not all(array.ndim == ndim for array in arrays):
         raise ValueError(f"all arrays should have the same dimension {ndim}")
-    if shape is None:
+    if shape is None or any(val is None for val in shape):
         shape = arrays[0].shape
     if not all(array.shape == shape for array in arrays):
         raise ValueError(f"all arrays should have the same shape {shape}")
