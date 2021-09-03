@@ -558,7 +558,87 @@ class TestValidItem(unittest.TestCase):
         )
 
 
+class TestValidNdArray(unittest.TestCase):
+    """
+    Tests on valid_ndarray.
+
+    valid_ndarray(arrays, ndim=None, shape=None)
+    """
+
+    def setUp(self) -> None:
+        self.data = np.ones((7, 7))
+        self.mask = np.zeros(self.data.shape)
+        self.mask[3, 3] = 1
+
+    def test_ndim_wrong_type_float(self):
+        self.assertRaises(
+            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=2.5
+        )
+
+    def test_ndim_wrong_type_list(self):
+        self.assertRaises(
+            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=[2, 2]
+        )
+
+    def test_ndim_negative(self):
+        self.assertRaises(
+            ValueError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=-1
+        )
+
+    def test_ndim_null(self):
+        self.assertRaises(
+            ValueError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=0
+        )
+
+    def test_ndim_none(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), ndim=None))
+
+    def test_shape_wrong_type_number(self):
+        self.assertRaises(
+            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), shape=1
+        )
+
+    def test_ndim_shape_none(self):
+        self.assertTrue(
+            valid.valid_ndarray(arrays=(self.data, self.mask), ndim=None, shape=None)
+        )
+
+    def test_shape_none(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), shape=None))
+
+    def test_shape_item_none(self):
+        self.assertTrue(
+            valid.valid_ndarray(arrays=(self.data, self.mask), shape=(1, None))
+        )
+
+    def test_arrays_is_ndarray(self):
+        self.assertTrue(valid.valid_ndarray(arrays=self.data))
+
+    def test_arrays_mixed_types_int(self):
+        self.assertRaises(TypeError, valid.valid_ndarray, arrays=(self.data, 1))
+
+    def test_arrays_mixed_types_none(self):
+        self.assertRaises(ValueError, valid.valid_ndarray, arrays=(self.data, None))
+
+    def test_incompatible_dim(self):
+        self.assertRaises(
+            ValueError,
+            valid.valid_ndarray,
+            arrays=(self.data, np.zeros((1, 1, 1))),
+            ndim=2,
+        )
+
+    def test_incompatible_shape(self):
+        self.assertRaises(
+            ValueError,
+            valid.valid_ndarray,
+            arrays=(self.data, np.zeros((1, 1))),
+            ndim=2,
+        )
+
+
 if __name__ == "__main__":
     run_tests(TestValidContainer)
     run_tests(TestValidKwargs)
     run_tests(TestValidItem)
+    run_tests(TestValidNdArray)
