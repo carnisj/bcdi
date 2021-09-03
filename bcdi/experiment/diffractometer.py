@@ -634,7 +634,7 @@ class Diffractometer(ABC):
         frame, mask2d = detector.mask_detector(
             frame,
             mask2d,
-            nb_img=frames_per_point,
+            nb_frames=frames_per_point,
             flatfield=flatfield,
             background=background,
             hotpixels=hotpixels,

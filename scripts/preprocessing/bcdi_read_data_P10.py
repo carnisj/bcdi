@@ -113,9 +113,9 @@ def load_p10_file(my_detector, my_file, file_index, roi, threshold):
         roi_sum.append(dataset[frame, roi[0] : roi[1], roi[2] : roi[3]].sum())
         for frame in range(dataset.shape[0])
     ]
-    nb_img = dataset.shape[0]  # collect the number of frames in the eventual series
+    nb_frames = dataset.shape[0]  # collect the number of frames in the eventual series
     dataset, mask_2d = my_detector.mask_detector(
-        data=dataset.sum(axis=0), mask=mask_2d, nb_img=nb_img
+        data=dataset.sum(axis=0), mask=mask_2d, nb_frames=nb_frames
     )
     return dataset, mask_2d, [roi_sum, file_index]
 
@@ -297,7 +297,7 @@ def main(parameters):
                 0
             ]  # collect the number of frames in the eventual series
             data, mask = detector.mask_detector(
-                data=data.sum(axis=0), mask=mask, nb_img=nb_frames
+                data=data.sum(axis=0), mask=mask, nb_frames=nb_frames
             )
             sumdata = sumdata + data
             roi_counter = [[counter, idx]]
