@@ -336,7 +336,7 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
-    valid_item(ndim, allowed_types=int, min_included=0, allow_none=True, name="ndim")
+    valid_item(ndim, allowed_types=int, min_excluded=0, allow_none=True, name="ndim")
     valid_container(
         shape, container_types=(tuple, list), item_types=int, min_excluded=0,
         allow_none=True, name="shape")
@@ -346,6 +346,8 @@ def valid_ndarray(arrays, ndim=None, shape=None):
                     name="arrays")
 
     # check arrays
+    if ndim is None:
+        ndim = arrays[0].ndim
     if not all(array.ndim == ndim for array in arrays):
         raise ValueError(f"all arrays should have the same dimension {ndim}")
     if shape is None:
