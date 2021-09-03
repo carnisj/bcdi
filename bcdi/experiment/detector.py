@@ -577,7 +577,8 @@ class Detector(ABC):
             )
 
         # linearity correctiondata
-        data = self._linearity_func(data)
+        if self._linearity_func is not None:
+            data = self._linearity_func(data)
 
         # flatfield correction
         data = self._flatfield_correction(data=data, flatfield=flatfield)
