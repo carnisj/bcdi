@@ -42,6 +42,7 @@ def valid_container(
     :param max_excluded: maximum allowed value (exclusive)
     :param allow_none: True if the container items are allowed to be None
     :param name: name of the calling object appearing in exception messages
+    :return: True if checks pass, raise some error otherwise
     """
     supported_containers = {list, tuple, set, str, np.ndarray, dict}
 
@@ -176,6 +177,7 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
     :param kwargs: dictionnary of kwargs to check
     :param allowed_kwargs: set of allowed keys
     :param name: name of the calling object appearing in exception messages
+    :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the parameters
     if not isinstance(kwargs, dict):
@@ -229,6 +231,7 @@ def valid_item(
     :param max_excluded: maximum allowed value (exclusive)
     :param allow_none: True if the container items are allowed to be None
     :param name: name of the calling object appearing in exception messages
+    :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
     if allowed_types is None:
@@ -330,7 +333,7 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     :param arrays: a sequence of numpy ndarrays
     :param ndim: int, the number of dimensions to be compared with
     :param shape: sequence of int, shape to be comared with
-    :return: True if checks pass, False otherwise
+    :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
     valid_item(ndim, allowed_types=int, min_included=0, allow_none=True, name="ndim")
@@ -349,3 +352,6 @@ def valid_ndarray(arrays, ndim=None, shape=None):
         shape = arrays[0].shape
     if not all(array.shape == shape for array in arrays):
         raise ValueError(f"all arrays should have the same shape {shape}")
+
+    # every tests passed, return True
+    return True
