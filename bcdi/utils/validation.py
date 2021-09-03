@@ -8,6 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to the validation of input parameters."""
 
+from collections import Sequence
 from numbers import Real
 import numpy as np
 
@@ -320,3 +321,31 @@ def valid_item(
 
     # every tests passed, return True
     return True
+
+
+def valid_ndarray(arrays, ndim=None, shape=None):
+    """
+    Check that arrays have the same shape and the correct number of dimensions.
+
+    :param arrays: a sequence of numpy ndarrays
+    :param ndim: int, the number of dimensions to be compared with
+    :param shape: sequence of int, shape to be comared with
+    :return: True if checks pass, False otherwise
+    """
+    # check the validity of the requirements
+    valid_item(ndim, allowed_types=int, min_included=0, allow_none=True, name="ndim")
+    valid_container(
+        shape, container_types=(tuple, list), item_types=int, min_excluded=0,
+        allow_none=True, name="shape")
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray,
+                    name="arrays")
+
+    # check arrays
+    if not all(array.ndim == ndim for array in arrays):
+        raise ValueError(f"all arrays should have the same dimension {ndim}")
+    if shape is None:
+        shape = arrays[0].shape
+    if not all(array.shape == shape for array in arrays):
+        raise ValueError(f"all arrays should have the same shape {shape}")

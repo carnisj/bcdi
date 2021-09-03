@@ -454,18 +454,10 @@ class Detector(ABC):
         :param background: None or a 2D numpy array
         :return: the corrected data array
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
         if data.ndim != 2:
             raise ValueError("data should be a 2D array")
         if background is not None:
-            if not isinstance(background, np.ndarray):
-                raise TypeError("background should be a numpy array")
-            if background.shape != data.shape:
-                raise ValueError(
-                    "background and data must have the same shape"
-                    f"background is {background.shape} while data is {data.shape}"
-                )
+            valid.valid_ndarray((data, background), ndim=2)
             return data - background
         return data
 
@@ -478,18 +470,8 @@ class Detector(ABC):
         :param flatfield: None or a 2D numpy array
         :return: the corrected data array
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
         if flatfield is not None:
-            if not isinstance(flatfield, np.ndarray):
-                raise TypeError("flatfield should be a numpy array")
-            if flatfield.shape != data.shape:
-                raise ValueError(
-                    "flatfield and data must have the same shape"
-                    f"flatfield is {flatfield.shape} while data is {data.shape}"
-                )
+            valid.valid_ndarray((data, flatfield), ndim=2)
             return np.multiply(flatfield, data)
         return data
 
@@ -503,25 +485,8 @@ class Detector(ABC):
          0 otherwise
         :return: the corrected data array
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
         if hotpixels is not None:
-            if not isinstance(hotpixels, np.ndarray):
-                raise TypeError("hotpixels should be a numpy array")
-            if hotpixels.shape != data.shape:
-                raise ValueError(
-                    "hotpixels and data must have the same shape"
-                    f"hotpixels is {hotpixels.shape} while data is {data.shape}"
-                )
+            valid.valid_ndarray((data, mask, hotpixels), ndim=2)
             if ((hotpixels == 0).sum() + (hotpixels == 1).sum()) != hotpixels.size:
                 raise ValueError("hotpixels should be an array of 0 and 1")
 
@@ -537,12 +502,11 @@ class Detector(ABC):
         :param data: a 2D numpy array
         :return: the corrected data array
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        data = data.astype(float)
         if self._linearity_func is not None:
+            if not callable(self._linearity_func):
+                raise TypeError("linearity_function is not callable")
+            valid.valid_ndarray(data, ndim=2)
+            data = data.astype(float)
             nby, nbx = data.shape
             return self._linearity_func(data.flatten()).reshape((nby, nbx))
         return data
@@ -566,18 +530,7 @@ class Detector(ABC):
          (1=hotpixel, 0=normal pixel)
         :return: the masked data and the updated mask
         """
-        if not isinstance(data, np.ndarray) or not isinstance(mask, np.ndarray):
-            raise TypeError("data and mask should be numpy arrays")
-        if data.ndim != 2 or mask.ndim != 2:
-            raise ValueError("data and mask should be 2D arrays")
-
-        if data.shape != mask.shape:
-            raise ValueError(
-                "data and mask must have the same shape\n data is ",
-                data.shape,
-                " while mask is ",
-                mask.shape,
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
 
         # linearity correctiondata
         if self._linearity_func is not None:
@@ -614,17 +567,7 @@ class Detector(ABC):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
         return data, mask
 
     def _saturation_correction(self, data, mask, nb_frames):
@@ -643,17 +586,8 @@ class Detector(ABC):
 
         """
         if self.saturation_threshold is not None:
-            if not isinstance(data, np.ndarray):
-                raise TypeError("data should be a numpy array")
-            if not isinstance(mask, np.ndarray):
-                raise TypeError("mask should be a numpy array")
-            if data.ndim != 2:
-                raise ValueError("data should be a 2D array")
-            if mask.ndim != data.ndim:
-                raise ValueError(
-                    "mask and data must have the same shape"
-                    f"mask is {mask.shape} while data is {data.shape}"
-                )
+            valid.valid_ndarray((data, mask), ndim=2)
+
             valid.valid_item(
                 nb_frames, allowed_types=int, min_excluded=0, name="nb_frames"
             )
@@ -684,17 +618,8 @@ class Maxipix(Detector):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
+
         data[:, 255:261] = 0
         data[255:261, :] = 0
 
@@ -739,17 +664,8 @@ class Eiger2M(Detector):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
+
         data[:, 255:259] = 0
         data[:, 513:517] = 0
         data[:, 771:775] = 0
@@ -816,17 +732,8 @@ class Eiger4M(Detector):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
+
         data[:, 0:1] = 0
         data[:, -1:] = 0
         data[0:1, :] = 0
@@ -902,17 +809,8 @@ class Merlin(Detector):
          - the updated mask
 
         """
-        if not isinstance(data, np.ndarray):
-            raise TypeError("data should be a numpy array")
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
-        if mask.ndim != data.ndim:
-            raise ValueError(
-                "mask and data must have the same shape"
-                f"mask is {mask.shape} while data is {data.shape}"
-            )
+        valid.valid_ndarray((data, mask), ndim=2)
+
         data[:, 255:260] = 0
         data[255:260, :] = 0
 
