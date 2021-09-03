@@ -586,8 +586,9 @@ class Detector(ABC):
         data = self._background_subtraction(data=data, background=background)
 
         # mask hotpixels
-        data, mask = self._hotpixels_correction(data=data, mask=mask,
-                                                hotpixels=hotpixels)
+        data, mask = self._hotpixels_correction(
+            data=data, mask=mask, hotpixels=hotpixels
+        )
         # mask detector gaps
         data, mask = self._mask_gaps(data, mask)
 
