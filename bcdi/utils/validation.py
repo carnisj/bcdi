@@ -338,12 +338,18 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     # check the validity of the requirements
     valid_item(ndim, allowed_types=int, min_excluded=0, allow_none=True, name="ndim")
     valid_container(
-        shape, container_types=(tuple, list), item_types=int, min_excluded=0,
-        allow_none=True, name="shape")
+        shape,
+        container_types=(tuple, list),
+        item_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="shape",
+    )
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
-    valid_container(arrays, container_types=(tuple, list), item_types=np.ndarray,
-                    name="arrays")
+    valid_container(
+        arrays, container_types=(tuple, list), item_types=np.ndarray, name="arrays"
+    )
 
     # check arrays
     if ndim is None:
