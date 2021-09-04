@@ -165,12 +165,21 @@ The following detectors are implemented:
  * Merlin
  * Eiger2M
  * Eiger4M
+ * Dummy (user-defined pixel size and pixel number)
 
 The following classes are implemented:
 
- * Detector
- * Diffractometer and corresponding child classes (one per beamline)
+ * Beamline and corresponding child classes (one per supported beamline)
+ * Detector and corresponding child classes (one per supported detector)
+ * Diffractometer and corresponding child classes (one per supported beamline)
+ * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
  * Setup
+
+In scripts, the initial step is to declare a detector instance and a setup instance with
+the related parameters (see the class documentation). The beamline and the
+diffractometer are not meant to be instantiated directly, this is done internally in
+Setup.
+
 
 .. bcdi.experiment end
 
@@ -186,7 +195,9 @@ This module provides tools for plotting the stereographic projection of a diffra
 peak or an object. There is also a script for facet detection on a reconstructed
 object, and for calculating statistics on facet strain. After meshing the object,
 facets are found using a density estimation of mesh triangles normals, followed by
-watershed segmentation.
+,watershed segmentation.
+See Carnis et al. Small 17, 2007702 (2021)
+https://doi.org/10.1002/smll.202007702
 
 .. bcdi.facet_recognition end
 
@@ -212,7 +223,7 @@ Description
 -----------
 
 This module provides methods used for pre-processing phased data. For example (but
-not limited to): hotpixels removal, filtering, masking...
+not limited to): centering, hotpixels removal, filtering, masking...
 
 .. bcdi.preprocessing end
 
@@ -256,6 +267,8 @@ kinematical sum. It can include a displacement field, noise, detector gaps etc..
 In forward CDI geometry, calculation of the Bragg peak positions in 3D for a
 mesocrystal, knowing the unit cell and unit cell parameter. It can be used to fit
 experimental data.
+See Carnis et al. Scientific Reports 9, 17357 (2019)
+https://doi.org/10.1038/s41598-019-53774-2
 
 .. bcdi.simulation end
 
