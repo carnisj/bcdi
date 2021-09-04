@@ -375,11 +375,12 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
         ndim = (arrays[0].ndim,)
     if not all(array.ndim in ndim for array in arrays):
         raise ValueError(f"all arrays should have a number of dimensions in {ndim}")
-    if fix_ndim and not all(array.ndim == arrays[0].ndim for array in arrays):
-        raise ValueError(
-            "all arrays should have the same number of dimensions"
-            f" {arrays[0].ndim}"
-        )
+    if fix_ndim:
+        if not all(array.ndim == arrays[0].ndim for array in arrays):
+            raise ValueError(
+                "all arrays should have the same number of dimensions"
+                f" {arrays[0].ndim}"
+            )
     else:
         fix_shape = False
 
