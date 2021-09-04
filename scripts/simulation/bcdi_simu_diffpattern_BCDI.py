@@ -892,7 +892,7 @@ else:
 #####################
 if set_gap:
     comment = comment + "_gap" + str(gap_pixel_start)
-    simu_data, mask = pu.gap_detector(
+    simu_data, mask = simu.gap_detector(
         data=simu_data, mask=mask, start_pixel=gap_pixel_start, width_gap=gap_width
     )
 else:

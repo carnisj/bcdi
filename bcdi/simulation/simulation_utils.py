@@ -11,6 +11,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def angle_vectors(
@@ -505,6 +506,26 @@ def fcc_lattice(
         euler_angles=euler_angles,
     )
     return (leftpad_z, leftpad_y, leftpad_x), lattice_pos, peaks
+
+
+def gap_detector(data, mask, start_pixel, width_gap):
+    """
+    Reproduce a detector gap in reciprocal space data and mask.
+
+    :param data: the 3D reciprocal space data
+    :param mask: the corresponding 3D mask
+    :param start_pixel: pixel number where the gap starts
+    :param width_gap: width of the gap in pixels
+    :return: data and mask array with a gap
+    """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
+
+    data[:, :, start_pixel : start_pixel + width_gap] = 0
+    data[:, start_pixel : start_pixel + width_gap, :] = 0
+
+    mask[:, :, start_pixel : start_pixel + width_gap] = 1
+    mask[:, start_pixel : start_pixel + width_gap, :] = 1
+    return data, mask
 
 
 def lattice(
