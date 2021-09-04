@@ -1016,6 +1016,8 @@ class Setup:
          - a tuple of 3 voxels size for the interpolated arrays
 
         """
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
         valid.valid_ndarray(arrays, ndim=3)
         nb_arrays = len(arrays)
         input_shape = arrays[0].shape
