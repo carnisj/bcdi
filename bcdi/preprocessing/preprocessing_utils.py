@@ -3307,7 +3307,6 @@ def motor_positions_p10_saxs(logfile, setup):
     :param setup: an instance of the class Setup
     :return: sprz or hprz motor positions
     """
-    # TODO: create a Diffractometer child Class and move this method there
     if setup.rocking_angle != "inplane":
         raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -3462,7 +3461,6 @@ def regrid(
      - updated frames_logical
 
     """
-    # TODO: refactor this function
     binning = detector.binning
 
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical)
