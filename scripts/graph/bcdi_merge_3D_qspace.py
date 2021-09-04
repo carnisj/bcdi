@@ -127,14 +127,11 @@ elif setup == "SIXS":
     # convention for coordinate system: x downstream; z upwards;
     # y to the "outside" (right-handed)
 elif setup == "CRISTAL":
-    # TODO: adapt to Cristal
     pass
 elif setup == "P10":
-    # TODO: adapt to P10
     pass
 else:
-    print("Setup of " + setup + " not supported!")
-    sys.exit()
+    raise NotImplementedError
 
 cch1 = 1272.57 - roi[0]  # 207.88 - roi[0]  #
 cch2 = -16.47 - roi[2]  # 50.49 - roi[2]  #
@@ -237,7 +234,7 @@ def check_pixels(mydata, mymask, var_threshold=5, debugging=0):
         plt.title("1/variance of data along axis=0\nbefore masking")
         plt.axis("scaled")
         plt.pause(0.1)
-    # TODO: check with RMS of amplitude
+
     var_mean = vardata[vardata != np.inf].mean()
     vardata[meandata == 0] = var_mean  # pixels were data=0 (hence 1/variance=inf)
     # are set to the mean of 1/var
@@ -391,7 +388,6 @@ def gridmap(
             myenergy = labels_data[labels.index("energy"), :]  # in kev
             if follow_bragg == 1:
                 delta = labels_data[labels.index("del"), :]
-                # TODO: understand why Qx is positive
             phi = motor_positions[motor_names.index("phi")]
             eta = motor_positions[motor_names.index("eta")]
         else:
@@ -415,7 +411,6 @@ def gridmap(
         nu = specfile["a/CRISTAL/I06-C-C07__EX__DIF-GAMMA__#1/raw_value"][:]
         maxpix_img = specfile["a"]["scan_data"]["data_04"][:]
     elif mysetup == "P10":
-        # TODO: find motors in specfile
         mu = []
         for index in range(25):  # header
             specfile.readline()
@@ -559,11 +554,9 @@ def gridmap(
         )
 
     if mysetup == "CRISTAL":
-        # TODO: implement this for CRISTAL
         print("Gridder not yet implemented for CRISTAL setup")
         return 0, 0, 0, rawdata, 0, rawmask3d, 0
     if mysetup == "P10":
-        # TODO: implement this for P10
         print("Gridder not yet implemented for P10 setup")
         return 0, 0, 0, rawdata, 0, rawmask3d, 0
     print("Wrong setup")
