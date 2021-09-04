@@ -37,12 +37,16 @@ sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 save_dir = "D:/data/P10_OER/analysis/candidate_12/"
 # images will be saved here, leave it to None otherwise (default to root_folder)
-x_axis = []
-[x_axis.append(0.740) for _ in range(16)]
-[x_axis.append(0.80) for _ in range(10)]
-[x_axis.append(-0.05) for _ in range(15)]
-[x_axis.append(0.3) for _ in range(15)]
-[x_axis.append(0.8) for _ in range(15)]
+x_axis = [0.740 for _ in range(16)]
+for _ in range(10):
+    x_axis.append(0.80)
+for _ in range(15):
+    x_axis.append(-0.05)
+for _ in range(15):
+    x_axis.append(0.3)
+for _ in range(15):
+    x_axis.append(0.8)
+
 # values against which the Bragg peak center of mass evolution will be plotted,
 # leave [] otherwise
 x_label = "voltage (V)"  # label for the X axis in plots, leave '' otherwise
