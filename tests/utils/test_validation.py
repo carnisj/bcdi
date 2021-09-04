@@ -614,6 +614,9 @@ class TestValidNdArray(unittest.TestCase):
     def test_arrays_is_ndarray(self):
         self.assertTrue(valid.valid_ndarray(arrays=self.data))
 
+    def test_arrays_empty(self):
+        self.assertRaises(ValueError, valid.valid_ndarray, arrays=())
+
     def test_arrays_mixed_types_int(self):
         self.assertRaises(TypeError, valid.valid_ndarray, arrays=(self.data, 1))
 

@@ -348,7 +348,11 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
     valid_container(
-        arrays, container_types=(tuple, list), item_types=np.ndarray, name="arrays"
+        arrays,
+        container_types=(tuple, list),
+        item_types=np.ndarray,
+        min_length=1,
+        name="arrays"
     )
 
     # check arrays
