@@ -8,18 +8,22 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to data postprocessing after phase retrieval."""
 
-from numbers import Number, Real
+import gc
 from math import pi
+from numbers import Number, Real
 import numpy as np
+import numpy.ma as ma
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
 import matplotlib.pyplot as plt
-from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
+from scipy.ndimage.measurements import center_of_mass
+from scipy.signal import convolve
 from scipy.stats import multivariate_normal
-from scipy.stats import pearsonr
-import gc
+from scipy.stats import norm, pearsonr
+from skimage.restoration import unwrap_phase
 from ..graph import graph_utils as gu
+from ..preprocessing.preprocessing_utils import wrap
 from ..utils import image_registration as reg
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -49,16 +53,13 @@ def align_obj(
     :type debugging: bool
     :return: the aligned array
     """
-    if obj.ndim != 3 or reference_obj.ndim != 3:
-        raise ValueError("reference_obj and obj should be 3D arrays")
+    valid.valid_ndarray(arrays=(obj, reference_obj), ndim=3, fix_shape=False)
     if obj.shape != reference_obj.shape:
         print(
-            "reference_obj and obj do not have the same shape\n" " - reference_obj is ",
-            reference_obj.shape,
-            " - obj is ",
-            obj.shape,
+            "reference_obj and obj do not have the same shape\n",
+            reference_obj.shape, obj.shape,
+            "crop/pad obj",
         )
-        print("crop/pad obj")
         obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
 
     # calculate the shift between the two arrays
@@ -141,6 +142,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
 
     :return: filtered amplitude, phase of the same shape as myamp
     """
+    valid.valid_ndarray(arrays=(amp, phase), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -151,16 +153,6 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     mu = kwargs.get("mu")
     alpha = kwargs.get("alpha")
     is_orthogonal = kwargs.get("is_orthogonal", False)
-
-    if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError("amp and phase should be 3D arrays")
-    if amp.shape != phase.shape:
-        raise ValueError(
-            "amp and phase must have the same shape\n" "amp is ",
-            amp.shape,
-            " while phase is ",
-            phase.shape,
-        )
 
     # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
@@ -308,6 +300,7 @@ def average_obj(
 
     :return: the average complex density
     """
+    valid.valid_ndarray(arrays=(obj, avg_obj, ref_obj), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -316,18 +309,6 @@ def average_obj(
     )
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
-
-    if obj.ndim != 3 or avg_obj.ndim != 3 or ref_obj.ndim != 3:
-        raise ValueError("avg_obj, ref_obj and obj should be 3D arrays")
-    if obj.shape != avg_obj.shape or obj.shape != ref_obj.shape:
-        raise ValueError(
-            "avg_obj, ref_obj and obj must have the same shape\n" "avg_obj is ",
-            avg_obj.shape,
-            " - ref_obj is ",
-            ref_obj.shape,
-            " - obj is ",
-            obj.shape,
-        )
 
     nbz, nby, nbx = obj.shape
     avg_flag = 0
@@ -620,8 +601,7 @@ def calc_coordination(
     """
     from scipy.signal import convolve
 
-    if support.ndim != 3:
-        raise ValueError("Support should be a 3D array")
+    valid.valid_ndarray(arrays=support, ndim=3)
 
     mycoord = np.rint(convolve(support, kernel, mode="same"))
     mycoord = mycoord.astype(int)
@@ -667,6 +647,7 @@ def center_com(array, debugging=False, **kwargs):
 
     :return: array centered by pixel shift
     """
+    valid.valid_ndarray(arrays=array, ndim=3)
     #########################
     # check and load kwargs #
     #########################
@@ -697,12 +678,6 @@ def center_com(array, debugging=False, **kwargs):
         allow_none=True,
         name="width_x",
     )
-
-    #########################
-    # check some parameters #
-    #########################
-    if array.ndim != 3:
-        raise ValueError("array should be a 3D array")
 
     #########################################
     # find the offset of the center of mass #
@@ -773,6 +748,7 @@ def center_max(array, debugging=False, **kwargs):
 
     :return: array centered by pixel shift
     """
+    valid.valid_ndarray(arrays=array, ndim=3)
     #########################
     # check and load kwargs #
     #########################
@@ -803,12 +779,6 @@ def center_max(array, debugging=False, **kwargs):
         allow_none=True,
         name="width_x",
     )
-
-    #########################
-    # check some parameters #
-    #########################
-    if array.ndim != 3:
-        raise ValueError("array should be a 3D array")
 
     ##################################################################
     # find the offset of the max relative to the center of the array #
@@ -861,28 +831,25 @@ def filter_3d(
      - 'sigma': sigma of the gaussian kernel
 
     """
-    from scipy.signal import convolve
-
+    valid.valid_ndarray(arrays=array, ndim=(2, 3))
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs, allowed_kwargs={"sigma"}, name="postprocessing_utils.filter_3d"
     )
     sigma = kwargs.get("sigma")
 
-    ndim = array.ndim
-    if ndim not in {2, 3}:
-        raise ValueError("data should be a 2D or a 3D array")
-
     if filter_name == "gaussian_highpass":
         sigma = sigma or 3
         kernel = gaussian_kernel(
-            ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging
+            ndim=array.ndim, kernel_length=kernel_length, sigma=sigma,
+            debugging=debugging
         )
         return array - convolve(array, kernel, mode="same")
     if filter_name == "gaussian":
         sigma = sigma or 0.5
         kernel = gaussian_kernel(
-            ndim=ndim, kernel_length=kernel_length, sigma=sigma, debugging=debugging
+            ndim=array.ndim, kernel_length=kernel_length, sigma=sigma,
+            debugging=debugging
         )
         return convolve(array, kernel, mode="same")
     raise ValueError("Only the gaussian_kernel is implemented up to now.")
@@ -914,8 +881,7 @@ def find_bulk(
     :type debugging: bool
     :return: the support corresponding to the bulk
     """
-    if amp.ndim != 3:
-        raise ValueError("amp should be a 3D array")
+    valid.valid_ndarray(arrays=amp, ndim=3)
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
@@ -1093,14 +1059,10 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
      - xrange: half size of the data range to use in the third axis (X)
 
     """
-    nbz, nby, nbx = array.shape
     #########################
     # check some parameters #
     #########################
-    if not isinstance(array, np.ndarray):
-        raise TypeError("array should be a numpy ndarray")
-    if array.ndim != 3:
-        raise ValueError("array should be 3D")
+    valid.valid_ndarray(arrays=array, ndim=3)
     if isinstance(plot_margin, Number):
         plot_margin = (plot_margin,) * 3
     valid.valid_container(
@@ -1120,6 +1082,7 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     #########################################################
     # find the relevant range where the support is non-zero #
     #########################################################
+    nbz, nby, nbx = array.shape
     if keep_size:
         return nbz // 2, nby // 2, nbx // 2
     support = np.zeros((nbz, nby, nbx))
@@ -1158,8 +1121,7 @@ def flip_reconstruction(obj, debugging=False):
     :type debugging: bool
     :return: the flipped complex object
     """
-    if obj.ndim != 3:
-        raise ValueError("obj should be a 3D array")
+    valid.valid_ndarray(arrays=obj, ndim=3)
 
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
@@ -1180,29 +1142,6 @@ def flip_reconstruction(obj, debugging=False):
     return flipped_obj
 
 
-def gap_detector(data, mask, start_pixel, width_gap):
-    """
-    Reproduce a detector gap in reciprocal space data and mask.
-
-    :param data: the 3D reciprocal space data
-    :param mask: the corresponding 3D mask
-    :param start_pixel: pixel number where the gap starts
-    :param width_gap: width of the gap in pixels
-    :return: data and mask array with a gap
-    """
-    if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError("data and mask should be 3d arrays")
-    if data.shape != mask.shape:
-        raise ValueError("data and mask should have the same shape")
-
-    data[:, :, start_pixel : start_pixel + width_gap] = 0
-    data[:, start_pixel : start_pixel + width_gap, :] = 0
-
-    mask[:, :, start_pixel : start_pixel + width_gap] = 1
-    mask[:, start_pixel : start_pixel + width_gap, :] = 1
-    return data, mask
-
-
 def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     """
     Generate 2D or 3D Gaussian kernels.
@@ -1213,8 +1152,6 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     :param debugging: True to see plots
     :return: a 2D or 3D Gaussian kernel
     """
-    from scipy.stats import norm
-
     if kernel_length % 2 == 0:
         raise ValueError("kernel_length should be an even number")
     half_range = kernel_length // 2
@@ -1310,8 +1247,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     #########################
     # check some parameters #
     #########################
-    if support.ndim != 3:
-        raise ValueError("support should be a 3D array")
+    valid.valid_ndarray(arrays=support, ndim=3)
 
     voxel_size = voxel_size or (1, 1, 1)
     if isinstance(voxel_size, Number):
@@ -1335,7 +1271,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # find the extent of the object, to optimize the calculation time #
     ###################################################################
     nbz, nby, nbx = support.shape
-    path = np.zeros((nbz, nby, nbx))
+    path = np.zeros((nbz, nby, nbx), dtyp=float)
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
     max_z = indices_support[0].max() + 1  # last point not included in range()
@@ -1459,10 +1395,8 @@ def get_strain(
     :param debugging: True to see plots
     :return: the strain 3D array
     """
-    from bcdi.preprocessing.preprocessing_utils import wrap
-
-    if phase.ndim != 3:
-        raise ValueError("phase should be a 3D array")
+    # check some parameters
+    valid.valid_ndarray(arrays=phase, ndim=3)
     if reference_axis not in {"x", "y", "z"}:
         raise ValueError("The reference axis should be 'x', 'y' or 'z'")
     if isinstance(voxel_size, Number):
@@ -1575,14 +1509,7 @@ def mean_filter(
     #########################
     # check some parameters #
     #########################
-    if not isinstance(array, np.ndarray):
-        raise TypeError("array should be a numpy array")
-    if array.ndim != 3:
-        raise ValueError("array should be 3D")
-    if not isinstance(support, np.ndarray):
-        raise TypeError("support should be a numpy array")
-    if support.shape != array.shape:
-        raise ValueError("the support should have the same shape as the array")
+    valid.valid_ndarray(arrays=(array, support), ndim=3)
     valid.valid_item(half_width, allowed_types=int, min_included=0, name="half_width")
     valid.valid_container(title, container_types=str, name="title")
     valid.valid_item(vmin, allowed_types=Real, name="vmin")
@@ -1700,8 +1627,7 @@ def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
       sorted by decreasing norm. If nb_mode is not None, only modes up
       to nb_mode will be returned.
     """
-    if array_stack[0].ndim != 3:
-        raise ValueError("A stack of 3D arrays is expected")
+    valid.valid_ndarray(arrays=array_stack, ndim=4)
 
     # array stack has the shape: (nb_arrays, L, M, N)
     nb_arrays = array_stack.shape[0]
@@ -1793,8 +1719,7 @@ def regrid(array, old_voxelsize, new_voxelsize):
      z, y, and x (CXI convention)
     :return: obj interpolated using the new voxel sizes
     """
-    if array.ndim != 3:
-        raise ValueError("array should be a 3D array")
+    valid.valid_ndarray(arrays=array, ndim=3)
 
     if isinstance(old_voxelsize, Number):
         old_voxelsize = (old_voxelsize,) * 3
@@ -1878,12 +1803,7 @@ def remove_offset(
 
     :return: the processed array
     """
-    if not isinstance(array, np.ndarray) or not isinstance(support, np.ndarray):
-        raise TypeError("array and support should be numpy arrays")
-    if array.ndim != 3 or support.ndim != 3:
-        raise ValueError("array and support should be 3D arrays")
-    if array.shape != support.shape:
-        raise ValueError("array and support should have the same shape")
+    valid.valid_ndarray(arrays=(array, support), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -1995,15 +1915,7 @@ def remove_ramp(
     :return: normalized amplitude, detrended phase, ramp along z, ramp along y,
      ramp along x
     """
-    if amp.ndim != 3 or phase.ndim != 3:
-        raise ValueError("amp and phase should be 3D arrays")
-    if amp.shape != phase.shape:
-        raise ValueError(
-            "amp and phase must have the same shape\n" "amp is ",
-            amp.shape,
-            " while phase is ",
-            phase.shape,
-        )
+    valid.valid_ndarray(arrays=(amp, phase), ndim=3)
 
     if method == "upsampling":
         nbz, nby, nbx = [mysize * ups_factor for mysize in initial_shape]
@@ -2247,15 +2159,7 @@ def remove_ramp_2d(
     :type debugging: bool
     :return: normalized amplitude, detrended phase, ramp along y, ramp along x
     """
-    if amp.ndim != 2 or phase.ndim != 2:
-        raise ValueError("amp and phase should be 2D arrays")
-    if amp.shape != phase.shape:
-        raise ValueError(
-            "amp and phase must have the same shape\n" "amp is ",
-            amp.shape,
-            " while phase is ",
-            phase.shape,
-        )
+    valid.valid_ndarray(arrays=(amp, phase), ndim=2)
 
     if method == "upsampling":
         nby, nbx = [mysize * ups_factor for mysize in initial_shape]
@@ -2545,9 +2449,7 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
 
     :return: unwrapped phase, unwrapped phase range
     """
-    from skimage.restoration import unwrap_phase
-    import numpy.ma as ma
-
+    valid.valid_ndarray(arrays=obj)
     if support_threshold < 0 or support_threshold > 1:
         raise ValueError(
             "support_threshold is a relative threshold, expected value "
@@ -2592,5 +2494,4 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
             )
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
-
     return phase_unwrapped, extent_phase
