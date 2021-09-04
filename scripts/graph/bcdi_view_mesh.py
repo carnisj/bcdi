@@ -20,6 +20,7 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
+
 matplotlib.use("Qt5Agg")
 
 helptext = """

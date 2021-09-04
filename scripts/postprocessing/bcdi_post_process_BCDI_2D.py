@@ -15,6 +15,7 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
+
 matplotlib.use("Qt5Agg")
 
 helptext = """

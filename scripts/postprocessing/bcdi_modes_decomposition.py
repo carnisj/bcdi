@@ -20,6 +20,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.validation as valid
+
 plt.switch_backend("Qt5Agg")
 # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 

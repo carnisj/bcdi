@@ -24,6 +24,7 @@ import sys
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.detector import create_detector
+
 matplotlib.use("Qt5Agg")
 
 helptext = """

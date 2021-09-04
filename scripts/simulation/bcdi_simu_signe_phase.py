@@ -13,6 +13,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.ticker as ticker
 import numpy as np
 from numpy.fft import fftn, fftshift
+
 matplotlib.use("Qt5Agg")
 
 helptext = """

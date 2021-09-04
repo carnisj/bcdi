@@ -37,8 +37,10 @@ rotated in one of the measurements), the traces are overlaid in order to determi
 which threshold is correct.
 """
 
-datadir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/" \
-          "dataset_2_pearson97.5_newpsf/result/linecuts/"
+datadir = (
+    "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+    "dataset_2_pearson97.5_newpsf/result/linecuts/"
+)
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"\
 # "AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/"\

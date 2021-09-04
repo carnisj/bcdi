@@ -17,6 +17,7 @@ import xrayutilities as xu
 import os
 from silx.io.specfile import SpecFile
 import sys
+
 matplotlib.use("Qt5Agg")
 
 helptext = """

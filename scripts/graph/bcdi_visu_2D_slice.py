@@ -14,6 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+
 matplotlib.use("Qt5Agg")
 
 helptext = """
