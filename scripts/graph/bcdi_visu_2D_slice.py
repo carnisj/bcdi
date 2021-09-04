@@ -48,7 +48,7 @@ def press_key(event):
     try:
         max_colorbar, idx, exit_flag = gu.loop_thru_scan(
             key=event.key,
-            data=data,
+            array=data,
             figure=fig_loop,
             scale=scale,
             dim=dim,

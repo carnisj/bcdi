@@ -1016,27 +1016,10 @@ class Setup:
          - a tuple of 3 voxels size for the interpolated arrays
 
         """
-        #############################################
-        # check that arrays is a tuple of 3D arrays #
-        #############################################
-        if isinstance(arrays, np.ndarray):
-            arrays = (arrays,)
-        valid.valid_container(
-            arrays,
-            container_types=(tuple, list),
-            item_types=np.ndarray,
-            min_length=1,
-            name="arrays",
-        )
-        if any(array.ndim != 3 for array in arrays):
-            raise ValueError("all arrays should be 3D ndarrays of the same shape")
-        ref_shape = arrays[0].shape
-        if any(array.shape != ref_shape for array in arrays):
-            raise ValueError("all arrays should be 3D ndarrays of the same shape")
+        valid.valid_ndarray(arrays, ndim=3)
         nb_arrays = len(arrays)
-        input_shape = arrays[
-            0
-        ].shape  # could be smaller than the shape used in phase retrieval,
+        input_shape = arrays[0].shape
+        # could be smaller than the shape used in phase retrieval,
         # if the object was cropped around the support
 
         #########################
@@ -1440,25 +1423,9 @@ class Setup:
          - a tuple of three 1D vectors of q values (qx, qz, qy)
 
         """
-        #############################################
-        # check that arrays is a tuple of 3D arrays #
-        #############################################
-        if isinstance(arrays, np.ndarray):
-            arrays = (arrays,)
-        valid.valid_container(
-            arrays,
-            container_types=(tuple, list),
-            item_types=np.ndarray,
-            min_length=1,
-            name="arrays",
-        )
-        if any(array.ndim != 3 for array in arrays):
-            raise ValueError("all arrays should be 3D ndarrays of the same shape")
-        ref_shape = arrays[0].shape
-        if any(array.shape != ref_shape for array in arrays):
-            raise ValueError("all arrays should be 3D ndarrays of the same shape")
+        valid.valid_ndarray(arrays, ndim=3)
         nb_arrays = len(arrays)
-        nbz, nby, nbx = ref_shape
+        nbz, nby, nbx = arrays[0].shape
 
         #########################
         # check and load kwargs #
@@ -1547,7 +1514,7 @@ class Setup:
         # calculate the transformation matrix (the unit is 1/nm) #
         ##########################################################
         transfer_matrix, q_offset = self.transformation_matrix(
-            array_shape=ref_shape,
+            array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
             direct_space=False,
             verbose=verbose,
@@ -1836,7 +1803,7 @@ class Setup:
             length=3,
             item_types=int,
             min_excluded=0,
-            name="Setup.orthogonalize_vector",
+            name="array_shape",
         )
 
         ortho_matrix = self.transformation_matrix(
@@ -1961,7 +1928,7 @@ class Setup:
             length=3,
             item_types=int,
             min_excluded=0,
-            name="Setup.voxel_sizes",
+            name="array_shape",
         )
 
         transfer_matrix = self.transformation_matrix(

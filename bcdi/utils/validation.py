@@ -9,7 +9,7 @@
 """Functions related to the validation of input parameters."""
 
 from collections import Sequence
-from numbers import Real
+from numbers import Real, Number
 import numpy as np
 
 
@@ -326,17 +326,28 @@ def valid_item(
     return True
 
 
-def valid_ndarray(arrays, ndim=None, shape=None):
+def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
     """
     Check that arrays have the same shape and the correct number of dimensions.
 
     :param arrays: a sequence of numpy ndarrays
     :param ndim: int, the number of dimensions to be compared with
     :param shape: sequence of int, shape to be comared with
+    :param fix_ndim: bool, if True the shape of all arrays should be equal
+    :param fix_shape: bool, if True the shape of all arrays should be equal
     :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
-    valid_item(ndim, allowed_types=int, min_excluded=0, allow_none=True, name="ndim")
+    if isinstance(ndim, Number):
+        ndim = (ndim,)
+    valid_container(
+        ndim,
+        container_types=(tuple, list),
+        item_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="ndim",
+    )
     valid_container(
         shape,
         container_types=(tuple, list),
@@ -348,17 +359,35 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
     valid_container(
-        arrays, container_types=(tuple, list), item_types=np.ndarray, name="arrays"
+        arrays,
+        container_types=(tuple, list),
+        item_types=np.ndarray,
+        min_length=1,
+        name="arrays",
     )
+    if not isinstance(fix_ndim, bool):
+        raise TypeError(f"fix_ndim should be a boolean, got {type(fix_shape)}")
+    if not isinstance(fix_shape, bool):
+        raise TypeError(f"fix_shape should be a boolean, got {type(fix_shape)}")
 
-    # check arrays
+    # check the number of dimensions
     if ndim is None:
-        ndim = arrays[0].ndim
-    if not all(array.ndim == ndim for array in arrays):
-        raise ValueError(f"all arrays should have the same dimension {ndim}")
+        ndim = (arrays[0].ndim,)
+    if not all(array.ndim in ndim for array in arrays):
+        raise ValueError(f"all arrays should have a number of dimensions in {ndim}")
+    if fix_ndim:
+        if not all(array.ndim == arrays[0].ndim for array in arrays):
+            raise ValueError(
+                "all arrays should have the same number of dimensions"
+                f" {arrays[0].ndim}"
+            )
+    else:
+        fix_shape = False
+
+    # check the shapes
     if shape is None or any(val is None for val in shape):
         shape = arrays[0].shape
-    if not all(array.shape == shape for array in arrays):
+    if fix_shape and not all(array.shape == shape for array in arrays):
         raise ValueError(f"all arrays should have the same shape {shape}")
 
     # every tests passed, return True

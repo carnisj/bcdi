@@ -575,9 +575,15 @@ class TestValidNdArray(unittest.TestCase):
             TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=2.5
         )
 
-    def test_ndim_wrong_type_list(self):
+    def test_ndim_type_list(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), ndim=[2, 3]))
+
+    def test_ndim_type_tuple(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), ndim=(2, 3)))
+
+    def test_ndim_type_set(self):
         self.assertRaises(
-            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=[2, 2]
+            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim={2, 3}
         )
 
     def test_ndim_negative(self):
@@ -614,11 +620,30 @@ class TestValidNdArray(unittest.TestCase):
     def test_arrays_is_ndarray(self):
         self.assertTrue(valid.valid_ndarray(arrays=self.data))
 
+    def test_arrays_empty(self):
+        self.assertRaises(ValueError, valid.valid_ndarray, arrays=())
+
     def test_arrays_mixed_types_int(self):
         self.assertRaises(TypeError, valid.valid_ndarray, arrays=(self.data, 1))
 
     def test_arrays_mixed_types_none(self):
         self.assertRaises(ValueError, valid.valid_ndarray, arrays=(self.data, None))
+
+    def test_fix_ndim_wrong_type(self):
+        self.assertRaises(TypeError, valid.valid_ndarray, arrays=self.data, fix_ndim=0)
+
+    def test_fix_ndim_wrong_none(self):
+        self.assertRaises(
+            TypeError, valid.valid_ndarray, arrays=self.data, fix_ndim=None
+        )
+
+    def test_fix_shape_wrong_type(self):
+        self.assertRaises(TypeError, valid.valid_ndarray, arrays=self.data, fix_shape=0)
+
+    def test_fix_shape_wrong_none(self):
+        self.assertRaises(
+            TypeError, valid.valid_ndarray, arrays=self.data, fix_shape=None
+        )
 
     def test_incompatible_dim(self):
         self.assertRaises(
@@ -628,12 +653,40 @@ class TestValidNdArray(unittest.TestCase):
             ndim=2,
         )
 
+    def test_wrong_dim(self):
+        self.assertRaises(
+            ValueError,
+            valid.valid_ndarray,
+            arrays=self.data,
+            ndim=(3, 4),
+        )
+
+    def test_incompatible_mixed_ndim(self):
+        self.assertRaises(
+            ValueError,
+            valid.valid_ndarray,
+            arrays=(self.data, np.ones(1)),
+            ndim=(2, 1),
+        )
+
+    def test_compatible_mixed_ndim(self):
+        self.assertTrue(
+            valid.valid_ndarray(
+                arrays=(self.data, np.ones(1)), ndim=(2, 1), fix_ndim=False
+            )
+        )
+
     def test_incompatible_shape(self):
         self.assertRaises(
             ValueError,
             valid.valid_ndarray,
             arrays=(self.data, np.zeros((1, 1))),
             ndim=2,
+        )
+
+    def test_fix_shape_false(self):
+        self.assertTrue(
+            valid.valid_ndarray(arrays=(self.data, np.zeros((1, 1))), fix_shape=False)
         )
 
 

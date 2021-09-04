@@ -90,27 +90,11 @@ def blind_deconvolution_rl(
     )
 
     # check parameters
-    if not isinstance(blurred_object, np.ndarray):
-        raise TypeError(
-            f"blurred_object should be a ndarray, got {type(blurred_object)}"
-        )
-    if not isinstance(perfect_object, np.ndarray):
-        raise TypeError(
-            f"perfect_object should be a ndarray, got {type(perfect_object)}"
-        )
-    if not isinstance(psf, np.ndarray):
-        raise TypeError(f"psf should be a ndarray, got {type(psf)}")
+    valid.valid_ndarray((blurred_object, perfect_object, psf))
     if not isinstance(debugging, bool):
         raise TypeError('"debugging" should be a boolean')
     if not isinstance(update_psf_first, bool):
         raise TypeError('"update_psf_first" should be a boolean')
-    if (
-        perfect_object.shape != blurred_object.shape
-        or psf.shape != blurred_object.shape
-    ):
-        raise ValueError(
-            "blurred_object, perfect_object and psf should have the same shape"
-        )
 
     ########################
     # plot initial guesses #
@@ -329,14 +313,10 @@ def partial_coherence_rl(
     valid.valid_item(vmin, allowed_types=Real, name=validation_name)
     vmax = kwargs.get("vmax", np.nan)
     valid.valid_item(vmax, allowed_types=Real, name=validation_name)
+    valid.valid_ndarray((measured_intensity, coherent_intensity))
     guess = kwargs.get("guess")
     if guess is not None:
-        if not isinstance(guess, np.ndarray):
-            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
-        if guess.shape != measured_intensity.shape:
-            raise ValueError(
-                "the guess array should have the same shape as measured_intensity"
-            )
+        valid.valid_ndarray(guess, shape=measured_intensity.shape)
 
     # calculate the psf
     psf, error = richardson_lucy(
@@ -402,14 +382,12 @@ def richardson_lucy(image, psf, iterations=50, clip=True, guess=None):
     else:
         convolve_method = convolve
 
+    valid.valid_ndarray((image, psf))
     image = image.astype(np.float)
     psf = psf.astype(np.float)
 
     if guess is not None:
-        if not isinstance(guess, np.ndarray):
-            raise TypeError(f"guess should be a ndarray, got {type(guess)}")
-        if guess.shape != image.shape:
-            raise ValueError("the guess array should have the same shape as the image")
+        valid.valid_ndarray(guess, shape=image.shape)
         im_deconv = guess
     else:
         im_deconv = np.full(image.shape, 0.5)

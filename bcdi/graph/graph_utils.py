@@ -176,8 +176,9 @@ def combined_plots(
     tuple_sum_axis = tuple_sum_axis or 0
     invert_yaxis = False
 
-    if not isinstance(tuple_array, (tuple, list)):
-        raise TypeError("tuple_array should be a tuple or a list of data arrays")
+    if isinstance(tuple_array, np.ndarray):
+        tuple_array = (tuple_array,)
+    valid.valid_ndarray(tuple_array, ndim=(1, 2, 3), fix_ndim=False)
     nb_subplots = len(tuple_array)
 
     if isinstance(tuple_sum_frames, bool):
@@ -600,11 +601,7 @@ def contour_slices(
     #########################
     # check some parameters #
     #########################
-    nb_dim = array.ndim
-    if not isinstance(array, np.ndarray):
-        raise TypeError("a numpy array is expected")
-    if nb_dim != 3:
-        raise ValueError("a 3D array is expected")
+    valid.valid_ndarray(array, ndim=3)
     if scale not in {"linear", "log"}:
         raise ValueError('scale should be either "linear" or "log"')
     if any(len(qval) != shape for qval, shape in zip(q_coordinates, array.shape)):
@@ -1100,6 +1097,7 @@ def imshow_plot(
     #########################
     # check some parameters #
     #########################
+    valid.valid_ndarray(array, ndim=(2, 3))
     if sum_axis not in {0, 1, 2}:
         raise ValueError("sum_axis should be either 0, 1 or 2")
     if not isinstance(sum_frames, bool):
@@ -1198,7 +1196,7 @@ def imshow_plot(
         ver_label = ver_labels[sum_axis]
         hor_label = hor_labels[sum_axis]
 
-    elif nb_dim == 2:
+    else:  # array is 2D
         invert_yaxis = False
         nby, nbx = array.shape
         width_v = width_v or max(nby, nbx)
@@ -1207,9 +1205,6 @@ def imshow_plot(
         dim_v = nby
         dim_h = nbx
         slice_name, ver_label, hor_label = "", labels[0], labels[1]
-
-    else:  # wrong array dimension
-        raise ValueError("imshow_plot() needs a 2D or 3D array")
 
     ############################
     # now array is 2D, plot it #
@@ -1296,6 +1291,7 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
     :param debugging: True to see plots
     :return: a 1D array interpolated between the start and stop indices
     """
+    valid.valid_ndarray(array, ndim=(2, 3))
     if array.ndim == 2:
         if len(start_indices) != 2 or len(stop_indices) != 2:
             raise ValueError(
@@ -1317,7 +1313,7 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
                 )
             ),
         )
-    elif array.ndim == 3:
+    else:  # array is 3D
         if len(start_indices) != 3 or len(stop_indices) != 3:
             raise ValueError(
                 "ndim=3, start_indices and stop_indices should be of length 3"
@@ -1341,8 +1337,6 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
             ),
             order=interp_order,
         )
-    else:
-        raise ValueError("array should be 2D or 3D")
 
     if debugging:
         plt.ion()
@@ -1382,13 +1376,13 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
 
 
 def loop_thru_scan(
-    key, data, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None
+    key, array, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None
 ):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset.
 
     :param key: the keyboard key which was pressed
-    :param data: the 3D data array
+    :param array: the 3D data array
     :param figure: the figure instance
     :param scale: 'linear' or 'log'
     :param dim: the axis over which the loop is performed (axis 0, 1 or 2)
@@ -1399,16 +1393,15 @@ def loop_thru_scan(
     :param vmax: the higher boundary for the colorbar
     :return: updated controls
     """
-    if data.ndim != 3:
-        raise ValueError("data should be a 3D array")
+    valid.valid_ndarray(array, ndim=3)
 
-    nbz, nby, nbx = data.shape
+    nbz, nby, nbx = array.shape
     exit_flag = False
     if dim > 2:
         raise ValueError("dim should be 0, 1 or 2")
 
-    vmin = vmin or data.min()
-    vmax = vmax or data.max()
+    vmin = vmin or array.min()
+    vmax = vmax or array.max()
 
     axis = figure.gca()
     xmin, xmax = axis.get_xlim()
@@ -1477,10 +1470,10 @@ def loop_thru_scan(
     axis.cla()
     if dim == 0:
         if scale == "linear":
-            plot = axis.imshow(data[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
+            plot = axis.imshow(array[idx, :, :], vmin=vmin, vmax=vmax, cmap=cmap)
         else:  # 'log'
             plot = axis.imshow(
-                np.log10(data[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap
+                np.log10(array[idx, :, :]), vmin=vmin, vmax=vmax, cmap=cmap
             )
         axis.set_title(
             "Frame "
@@ -1493,10 +1486,10 @@ def loop_thru_scan(
         colorbar(plot, numticks=5)
     elif dim == 1:
         if scale == "linear":
-            plot = axis.imshow(data[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
+            plot = axis.imshow(array[:, idx, :], vmin=vmin, vmax=vmax, cmap=cmap)
         else:  # 'log'
             plot = axis.imshow(
-                np.log10(data[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap
+                np.log10(array[:, idx, :]), vmin=vmin, vmax=vmax, cmap=cmap
             )
         axis.set_title(
             "Frame "
@@ -1509,10 +1502,10 @@ def loop_thru_scan(
         colorbar(plot, numticks=5)
     elif dim == 2:
         if scale == "linear":
-            plot = axis.imshow(data[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
+            plot = axis.imshow(array[:, :, idx], vmin=vmin, vmax=vmax, cmap=cmap)
         else:  # 'log'
             plot = axis.imshow(
-                np.log10(data[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap
+                np.log10(array[:, :, idx]), vmin=vmin, vmax=vmax, cmap=cmap
             )
         axis.set_title(
             "Frame "
@@ -1603,9 +1596,8 @@ def multislices_plot(
         raise TypeError("sum_frames should be a boolean")
     if scale not in {"linear", "log"}:
         raise ValueError('scale should be either "linear" or "log"')
+    valid.valid_ndarray(array, ndim=3)
     nb_dim = array.ndim
-    if nb_dim != 3:
-        raise ValueError("multislices_plot() expects a 3D array")
 
     nbz, nby, nbx = array.shape
 
@@ -2256,17 +2248,8 @@ def save_to_vti(
 
     if isinstance(tuple_array, np.ndarray):
         tuple_array = (tuple_array,)
-    valid.valid_container(
-        obj=tuple_array,
-        container_types=(tuple, list),
-        item_types=np.ndarray,
-        name="tuple_array",
-    )
+    valid.valid_ndarray(tuple_array, ndim=3)
     nb_arrays = len(tuple_array)
-    if not all(arr.ndim == 3 for arr in tuple_array):
-        raise ValueError("expecting only 3D arrays")
-    if not all(arr.shape == tuple_array[0].shape for arr in tuple_array):
-        raise ValueError("all arrays should have the same shape")
     nbz, nby, nbx = tuple_array[0].shape
 
     if isinstance(tuple_fieldnames, str):
@@ -2347,8 +2330,7 @@ def scatter_plot(array, labels, markersize=4, markercolor="b", title=""):
     :param title: string, title for the scatter plot
     :return: figure, axes instances
     """
-    if array.ndim != 2:
-        raise ValueError("array should be 2D")
+    valid.valid_ndarray(array, ndim=2, fix_shape=False)
     ndim = array.shape[1]
     if isinstance(labels, tuple):
         if len(labels) != ndim:
@@ -2404,7 +2386,7 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=""):
     :param title: string, title for the scatter plot
     :return: figure, axes instances
     """
-    if not isinstance(arrays, tuple):
+    if isinstance(arrays, np.ndarray):
         fig, ax = scatter_plot(
             array=arrays,
             markersize=markersizes,
@@ -2414,8 +2396,7 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=""):
         )
         return fig, ax
 
-    if arrays[0].ndim != 2:
-        raise ValueError("arrays should be 2D")
+    valid.valid_ndarray(arrays, ndim=2, fix_shape=False)
 
     ndim = arrays[0].shape[1]
     nb_arrays = len(arrays)
@@ -2570,21 +2551,17 @@ def update_aliens(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if (
-        original_data.ndim != 3
-        or updated_data.ndim != 3
-        or original_mask.ndim != 3
-        or updated_mask.ndim != 3
-    ):
-        raise ValueError(
-            "original_data, original_mask, updated_data"
-            " and updated_mask should be 3D arrays"
-        )
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask, updated_mask),
+        ndim=3,
+    )
+    if dim not in {0, 1, 2}:
+        raise ValueError("dim should be 0, 1 or 2")
 
+    # process arrays
     nbz, nby, nbx = original_data.shape
     stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError("dim should be 0, 1 or 2")
     if dim == 0:
         current_nby = nby
         current_nbx = nbx
@@ -2828,20 +2805,17 @@ def update_aliens_combined(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask (-1 filled, 0 non masked, 1 masked voxel) and controls
     """
-    if (
-        original_data.ndim != 3
-        or updated_data.ndim != 3
-        or original_mask.ndim != 3
-        or updated_mask.ndim != 3
-    ):
-        raise ValueError(
-            "original_data, updated_data and updated_mask should be 3D arrays"
-        )
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask, updated_mask),
+        ndim=3,
+    )
+    if dim not in {0, 1, 2}:
+        raise ValueError("dim should be 0, 1 or 2")
 
+    # process arrays
     nbz, nby, nbx = original_data.shape
     stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError("dim should be 0, 1 or 2")
     if dim == 0:
         current_nby = nby
         current_nbx = nbx
@@ -3117,7 +3091,7 @@ def update_aliens_2d(
     :param pix: the x value of the mouse pointer
     :param piy: the y value of the mouse pointer
     :param original_data: the 2D data array before masking aliens
-    :param original_mask: the 3D mask array before masking aliens
+    :param original_mask: the 2D mask array before masking aliens
     :param updated_data: the current 2D data array
     :param updated_mask: the current 2D mask array
     :param figure: the figure instance
@@ -3127,16 +3101,13 @@ def update_aliens_2d(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if (
-        original_data.ndim != 2
-        or updated_data.ndim != 2
-        or original_mask.ndim != 2
-        or updated_mask.ndim != 2
-    ):
-        raise ValueError(
-            "original_data, updated_data and updated_mask should be 2D arrays"
-        )
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask, updated_mask),
+        ndim=2,
+    )
 
+    # process arrays
     nby, nbx = original_data.shape
     stop_masking = False
 
@@ -3284,8 +3255,7 @@ def update_background(
     :param ylim: y axis plot limits
     :return: updated background and controls
     """
-    if data.ndim != 1:
-        raise ValueError("data is expected to be a 1D array")
+    valid.valid_ndarray(data, ndim=1)
     axs = figure.gca()
     if xlim is None:
         xmin, xmax = axs.get_xlim()
@@ -3401,17 +3371,18 @@ def update_mask(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if original_data.ndim != 3 or updated_data.ndim != 3 or original_mask.ndim != 3:
-        raise ValueError(
-            "original_data, updated_data and original_mask should be 3D arrays"
-        )
-    if updated_mask.ndim != 2:
-        raise ValueError("updated_mask should be 2D arrays")
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask),
+        ndim=3,
+    )
+    valid.valid_ndarray(updated_mask, ndim=2)
+    if dim not in {0, 1, 2}:
+        raise ValueError("dim should be 0, 1 or 2")
 
+    # process arrays
     nbz, nby, nbx = original_data.shape
     stop_masking = False
-    if dim not in [0, 1, 2]:
-        raise ValueError("dim should be 0, 1 or 2")
     if dim == 0:
         current_nby = nby
         current_nbx = nbx
@@ -3666,21 +3637,18 @@ def update_mask_combined(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask (-1 filled, 0 non masked, 1 masked voxel) and controls
     """
-    if (
-        original_data.ndim != 3
-        or updated_data.ndim != 3
-        or original_mask.ndim != 3
-        or updated_mask.ndim != 3
-    ):
-        raise ValueError(
-            "original_data, updated_data and original_mask should be 3D arrays"
-        )
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask, updated_mask),
+        ndim=3,
+    )
+    if dim not in {0, 1, 2}:
+        raise ValueError("dim should be 0, 1 or 2")
 
+    # process arrays
     nbz, nby, nbx = original_data.shape
     stop_masking = False
     update_fig = False
-    if dim not in [0, 1, 2]:
-        raise ValueError("dim should be 0, 1 or 2")
     if dim == 0:
         current_nby = nby
         current_nbx = nbx
@@ -4028,17 +3996,12 @@ def update_mask_2d(
     :param invert_yaxis: True to invert the y axis of imshow plots
     :return: updated data, mask and controls
     """
-    if (
-        original_data.ndim != 2
-        or updated_data.ndim != 2
-        or original_mask.ndim != 2
-        or updated_mask.ndim != 2
-    ):
-        raise ValueError(
-            "original_data, updated_data, original_mask and "
-            "updated_mask should be 2D arrays"
-        )
-
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(original_data, updated_data, original_mask, updated_mask),
+        ndim=2,
+    )
+    # process arrays
     nby, nbx = original_data.shape
     stop_masking = False
 

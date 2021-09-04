@@ -68,6 +68,7 @@ def bin_data(array, binning, debugging=False):
     :param debugging: boolean, True to see plots
     :return: the binned array
     """
+    valid.valid_ndarray(arrays=array, ndim=(1, 2, 3))
     ndim = array.ndim
     if isinstance(binning, int):
         binning = [binning] * ndim
@@ -151,9 +152,14 @@ def crop_pad(
     :type debugging: bool
     :return: myobj cropped or padded with zeros
     """
-    if array.ndim != 3:
-        raise ValueError("array should be a 3D array")
-
+    valid.valid_ndarray(arrays=array, ndim=3)
+    valid.valid_container(
+        output_shape,
+        container_types=(list, tuple, np.ndarray),
+        item_types=int,
+        length=3,
+        min_excluded=0,
+    )
     nbz, nby, nbx = array.shape
     newz, newy, newx = output_shape
 
@@ -238,8 +244,14 @@ def crop_pad_2d(
     :type debugging: bool
     :return: myobj cropped or padded with zeros
     """
-    if array.ndim != 2:
-        raise ValueError("array should be a 2D array")
+    valid.valid_ndarray(arrays=array, ndim=2)
+    valid.valid_container(
+        output_shape,
+        container_types=(list, tuple, np.ndarray),
+        item_types=int,
+        length=2,
+        min_excluded=0,
+    )
 
     nby, nbx = array.shape
     newy, newx = output_shape
@@ -312,33 +324,35 @@ def crop_pad_1d(
      (supposed constant)
     :return: myobj cropped or padded
     """
-    if array.ndim != 1:
-        raise ValueError("array should be 1D")
+    valid.valid_ndarray(arrays=array, ndim=1)
+    valid.valid_item(output_length, allowed_types=int, min_excluded=0)
 
     nbx = array.shape[0]
-    newx = output_length
-
     if pad_start is None:
-        pad_start = (newx - nbx) // 2
+        pad_start = (output_length - nbx) // 2
 
     if crop_center is None:
         crop_center = nbx // 2
 
-    if newx >= nbx:  # pad
+    if output_length >= nbx:  # pad
         if not extrapolate:
             newobj = np.ones(output_length, dtype=array.dtype) * pad_value
             newobj[pad_start : pad_start + nbx] = array
         else:
             spacing = array[1] - array[0]
-            pad_start = array[0] - ((newx - nbx) // 2) * spacing
-            newobj = pad_start + np.arange(newx) * spacing
+            pad_start = array[0] - ((output_length - nbx) // 2) * spacing
+            newobj = pad_start + np.arange(output_length) * spacing
     else:  # crop
         if (crop_center - output_length // 2 < 0) or (
             crop_center + output_length // 2 > nbx
         ):
             raise ValueError("crop_center incompatible with output_length")
-        newobj = array[crop_center - newx // 2 : crop_center + newx // 2 + newx % 2]
-
+        newobj = array[
+            crop_center
+            - output_length // 2 : crop_center
+            + output_length // 2
+            + output_length % 2
+        ]
     return newobj
 
 
@@ -385,9 +399,10 @@ def find_nearest(reference_array, test_values, width=None):
      range defined by width.
     """
     original_array, test_values = np.asarray(reference_array), np.asarray(test_values)
+    valid.valid_ndarray(
+        arrays=(reference_array, original_array), ndim=1, fix_shape=False
+    )
 
-    if original_array.ndim != 1:
-        raise ValueError("original_array should be 1D")
     if test_values.ndim > 1:
         raise ValueError("array_values should be a number or a 1D array")
     if test_values.ndim == 0:
@@ -822,9 +837,8 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
      voxel_size) and cut (1D array, linecut through array in direction passing by point)
     """
     # check parameters
+    valid.valid_ndarray(array, ndim=(2, 3))
     ndim = array.ndim
-    if ndim not in {2, 3}:
-        raise ValueError(f"Number of dimensions = {ndim}, expected 2 or 3")
     if ndim == 2:
         nby, nbx = array.shape
         nbz = 0
@@ -961,8 +975,7 @@ def load_background(background_file):
         if background_file.endswith("npz"):
             npz_key = background.files
             background = background[npz_key[0]]
-        if background.ndim != 2:
-            raise ValueError("background should be a 2D array")
+            valid.valid_ndarray(background, ndim=2)
     else:
         background = None
     return background
@@ -1039,8 +1052,7 @@ def load_flatfield(flatfield_file):
         if flatfield_file.endswith(".npz"):
             npz_key = flatfield.files
             flatfield = flatfield[npz_key[0]]
-        if flatfield.ndim != 2:
-            raise ValueError("flatfield should be a 2D array")
+            valid.valid_ndarray(flatfield, ndim=2)
     else:
         flatfield = None
     return flatfield
@@ -1055,10 +1067,9 @@ def load_hotpixels(hotpixels_file):
     """
     if hotpixels_file:
         hotpixels, _ = load_file(hotpixels_file)
+        valid.valid_ndarray(hotpixels, ndim=(2, 3))
         if hotpixels.ndim == 3:
             hotpixels = hotpixels.sum(axis=0)
-        if hotpixels.ndim != 2:
-            raise ValueError("hotpixels should be a 2D array")
         if (hotpixels == 0).sum() < hotpixels.size / 4:
             # masked pixels are more than 3/4 of the pixel number
             print("hotpixels values are probably 0 instead of 1, switching values")
@@ -1333,7 +1344,9 @@ def ref_count(address):
     return ctypes.c_long.from_address(address).value
 
 
-def remove_background(array, q_values, avg_background, avg_qvalues, method="normalize"):
+def remove_avg_background(
+    array, q_values, avg_background, avg_qvalues, method="normalize"
+):
     """
     Subtract the average 1D background to the 3D array using q values.
 
@@ -1344,10 +1357,8 @@ def remove_background(array, q_values, avg_background, avg_qvalues, method="norm
     :param method: 'subtract' or 'normalize'
     :return: the 3D background array
     """
-    if array.ndim != 3:
-        raise ValueError("data should be a 3D array")
-    if (avg_background.ndim != 1) or (avg_qvalues.ndim != 1):
-        raise ValueError("avg_background and distances should be 1D arrays")
+    valid.valid_ndarray(array, ndim=3)
+    valid.valid_ndarray(arrays=(avg_background, avg_qvalues), ndim=1)
 
     qx, qz, qy = q_values
 
@@ -1411,9 +1422,9 @@ def remove_nan(data, mask=None):
     :param mask: if provided, numpy ndarray of the same shape as the data
     :return: the filtered data and (optionally) mask
     """
+    valid.valid_ndarray(data)
     if mask is not None:
-        if mask.shape != data.shape:
-            raise ValueError("data and mask should have the same shape")
+        valid.valid_ndarray(mask, shape=data.shape)
 
         # check for Nan
         mask[np.isnan(data)] = 1
@@ -1535,23 +1546,11 @@ def rotate_crystal(
     :return: a rotated array (if a single array was provided) or a tuple of rotated
      arrays (same length as the number of input arrays)
     """
-    # check that arrays is a tuple of 3D arrays
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
-    valid.valid_container(
-        arrays,
-        container_types=(tuple, list),
-        item_types=np.ndarray,
-        min_length=1,
-        name="arrays",
-    )
-    if any(array.ndim != 3 for array in arrays):
-        raise ValueError("all arrays should be 3D ndarrays of the same shape")
-    ref_shape = arrays[0].shape
-    if any(array.shape != ref_shape for array in arrays):
-        raise ValueError("all arrays should be 3D ndarrays of the same shape")
+    valid.valid_ndarray(arrays, ndim=3)
     nb_arrays = len(arrays)
-    nbz, nby, nbx = ref_shape
+    nbz, nby, nbx = arrays[0].shape
 
     # check some parameters
     voxel_size = voxel_size or (1, 1, 1)
@@ -1775,7 +1774,7 @@ def rotate_vector(
     """
     # check parameters
     if isinstance(vectors, np.ndarray):
-        if vectors.ndim == 1:  # a single vecotr was provided
+        if vectors.ndim == 1:  # a single vector was provided
             vectors = tuple(vectors)
         else:
             raise ValueError("vectors should be a tuple of three values/arrays")
@@ -1926,13 +1925,12 @@ def sum_roi(array, roi, debugging=False):
     :return: a number (if array.ndim=2) or a 1D array of length array.shape[0]
      (if array.ndim=3) of summed intensities
     """
+    valid.valid_ndarray(array, ndim=(2, 3))
     ndim = array.ndim
     if ndim == 2:
         nby, nbx = array.shape
-    elif ndim == 3:
+    else:  # 3D
         _, nby, nbx = array.shape
-    else:
-        raise ValueError("array should be 2D or 3D")
 
     if not 0 <= roi[0] < roi[1] <= nby:
         raise ValueError("0 <= roi[0] < roi[1] <= nby   expected")
