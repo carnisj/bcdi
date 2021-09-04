@@ -600,8 +600,6 @@ def calc_coordination(
     :type debugging: bool
     :return: the coordination matrix
     """
-    from scipy.signal import convolve
-
     valid.valid_ndarray(arrays=support, ndim=3)
 
     mycoord = np.rint(convolve(support, kernel, mode="same"))
