@@ -1535,6 +1535,8 @@ def rotate_crystal(
     :return: a rotated array (if a single array was provided) or a tuple of rotated
      arrays (same length as the number of input arrays)
     """
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
     valid.valid_ndarray(arrays, ndim=3)
     nb_arrays = len(arrays)
     nbz, nby, nbx = arrays[0].shape
