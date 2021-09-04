@@ -7,14 +7,13 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from numpy.fft import fftn, fftshift
 import matplotlib
-
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.ticker as ticker
+import numpy as np
+from numpy.fft import fftn, fftshift
+matplotlib.use("Qt5Agg")
 
 helptext = """
 calculation of the diffraction pattern using FFTs with both conventions and kinematic

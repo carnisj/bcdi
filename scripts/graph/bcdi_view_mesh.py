@@ -7,11 +7,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-helptext = """
-Open mesh scans and plot interactively the integrated intensity vs. motor positions for
-a user-defined region of interest.
-"""
-
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -25,8 +20,12 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.preprocessing_utils as pru
-
 matplotlib.use("Qt5Agg")
+
+helptext = """
+Open mesh scans and plot interactively the integrated intensity vs. motor positions for
+a user-defined region of interest.
+"""
 
 scan = 26  # scan number as it appears in the folder name
 sample_name = "B10_syn_S5"  # without _ at the end

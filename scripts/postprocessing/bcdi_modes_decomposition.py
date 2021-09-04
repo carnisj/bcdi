@@ -7,16 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import gc
+import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
-from scipy.ndimage.measurements import center_of_mass
-import matplotlib.pyplot as plt
-
-plt.switch_backend(
-    "Qt5Agg"
-)  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 import os
-import gc
+from scipy.ndimage.measurements import center_of_mass
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -24,6 +20,8 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.validation as valid
+plt.switch_backend("Qt5Agg")
+# "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
 
 helptext = """
 Eigendecomposition of a set of 3D reconstructed objects from phase retrieval,

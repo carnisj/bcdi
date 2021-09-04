@@ -6,17 +6,16 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-import numpy as np
 import h5py
+import matplotlib
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
+import numpy as np
 import sys
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
-import matplotlib
-
 matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 
 helptext = """
 starting from a 2D complex object (output of phasing program), center the object,
