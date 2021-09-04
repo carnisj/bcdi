@@ -629,15 +629,15 @@ class TestValidNdArray(unittest.TestCase):
     def test_arrays_mixed_types_none(self):
         self.assertRaises(ValueError, valid.valid_ndarray, arrays=(self.data, None))
 
-    def test_fix_dim_wrong_type(self):
-        self.assertRaises(TypeError, valid.valid_ndarray, arrays=self.data, fix_dim=0)
+    def test_fix_ndim_wrong_type(self):
+        self.assertRaises(TypeError, valid.valid_ndarray, arrays=self.data, fix_ndim=0)
 
-    def test_fix_dim_wrong_none(self):
+    def test_fix_ndim_wrong_none(self):
         self.assertRaises(
             TypeError,
             valid.valid_ndarray,
             arrays=self.data,
-            fix_dim=None
+            fix_ndim=None
         )
 
     def test_fix_shape_wrong_type(self):
@@ -676,7 +676,7 @@ class TestValidNdArray(unittest.TestCase):
         self.assertTrue(valid.valid_ndarray(
             arrays=(self.data, np.ones(1)),
             ndim=(2, 1),
-            fix_dim=False
+            fix_ndim=False
         ))
 
     def test_incompatible_shape(self):
