@@ -23,11 +23,11 @@ class PrefParameters:
 
     def __init__(self):
         self.namedisplays = [
-                "my suggestion",
-                "short name",
-                "short and family name",
-                "full name",
-                "nxs name",
+            "my suggestion",
+            "short name",
+            "short and family name",
+            "full name",
+            "nxs name",
         ]
         self.inamedisplay = 0
 
