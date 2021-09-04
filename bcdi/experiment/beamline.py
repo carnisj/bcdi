@@ -280,7 +280,8 @@ class Beamline(ABC):
         else:
             offsets = [0 for _ in range(len(sample_circles) + index)]
             offsets.append(offset_inplane)
-            [offsets.append(0) for _ in range(len(detector_circles) - index - 1)]
+            for _ in range(len(detector_circles) - index - 1):
+                offsets.append(0)
 
         return qconv, offsets
 

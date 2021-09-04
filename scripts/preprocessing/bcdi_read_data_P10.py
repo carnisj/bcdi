@@ -31,24 +31,25 @@ helptext = """
 Open images or series data at P10 beamline.
 """
 
-scan_nb = 370  # scan number as it appears in the folder name
-sample_name = "gold2_2"  # without _ at the end
-root_directory = "D:/data/P10_August2019_CDI/data/"  # parent directory of the scan
-file_list = np.arange(1, 25 + 1)
+scan_nb = 76  # scan number as it appears in the folder name
+sample_name = "B15_syn_S1_2"  # without _ at the end
+root_directory = "C:/Users/Jerome/Documents/data/dataset_P10/"
+# parent directory of the scan
+file_list = np.arange(1, 150 + 1)
 # list of file numbers, e.g. [1] for gold_2_2_2_00022_data_000001.h5
 detector_name = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
 counter_roi = []  # plot the integrated intensity in this region of interest.
 # Leave it to [] to use the full detector [Vstart, Vstop, Hstart, Hstop]
 # if data is a series, the condition becomes
 # log10(data.sum(axis=0)) > high_threshold * nb_frames
-save_directory = None
+save_directory = root_directory + "test/"
 # images will be saved here, leave it to None otherwise (default to the scan directory)
-is_scan = False  # set to True is the measurement is a scan or a time series,
+is_scan = True  # set to True is the measurement is a scan or a time series,
 # False for a single image
 compare_ends = False  # set to True to plot the difference between the last frame
 # and the first frame
 save_mask = False  # True to save the mask as 'hotpixels.npz'
-save_to_mat = True  # True to save the 2D summed data to a .mat file
+save_to_mat = False  # True to save the 2D summed data to a .mat file
 multiprocessing = True  # True to use multiprocessing
 #######################################
 # parameters related to visualization #
@@ -108,10 +109,8 @@ def load_p10_file(my_detector, my_file, file_index, roi, threshold):
     dataset = file["entry"]["data"]["data"][:]
     mask_2d = np.zeros((dataset.shape[1], dataset.shape[2]))
     dataset[dataset <= threshold] = 0
-    [
+    for frame in range(dataset.shape[0]):
         roi_sum.append(dataset[frame, roi[0] : roi[1], roi[2] : roi[3]].sum())
-        for frame in range(dataset.shape[0])
-    ]
     nb_frames = dataset.shape[0]  # collect the number of frames in the eventual series
     dataset, mask_2d = my_detector.mask_detector(
         data=dataset.sum(axis=0), mask=mask_2d, nb_frames=nb_frames
@@ -269,7 +268,7 @@ def main(parameters):
             data = h5file["entry"]["data"]["data"][:]
             data[data <= threshold] = 0
             nbz, nby, nbx = data.shape
-            [
+            for index in range(nbz):
                 counter.append(
                     data[
                         index,
@@ -277,8 +276,7 @@ def main(parameters):
                         counterroi[2] : counterroi[3],
                     ].sum()
                 )
-                for index in range(nbz)
-            ]
+
             if compare_end and nb_files == 1:
                 data_start, _ = detector.mask_detector(data=data[0, :, :], mask=mask)
                 data_start = data_start.astype(float)
@@ -341,14 +339,10 @@ def main(parameters):
             {"data": sumdata},
         )
 
-    if (
-        len(roi_counter[0][0]) > 1
-    ):  # roi_counter[0][0] is the list of counter intensities in a series
-        int_roi = []
-        [
-            int_roi.append(val[0][idx])
-            for val in roi_counter
-            for idx in range(frame_per_series)
+    if len(roi_counter[0][0]) > 1:
+        # roi_counter[0][0] is the list of counter intensities in a series
+        int_roi = [
+            val[0][idx] for val in roi_counter for idx in range(frame_per_series)
         ]
         plt.figure()
         plt.plot(np.asarray(int_roi))
