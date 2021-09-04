@@ -575,9 +575,15 @@ class TestValidNdArray(unittest.TestCase):
             TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=2.5
         )
 
-    def test_ndim_wrong_type_list(self):
+    def test_ndim_type_list(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), ndim=[2, 3]))
+
+    def test_ndim_type_tuple(self):
+        self.assertTrue(valid.valid_ndarray(arrays=(self.data, self.mask), ndim=(2, 3)))
+
+    def test_ndim_type_set(self):
         self.assertRaises(
-            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim=[2, 2]
+            TypeError, valid.valid_ndarray, arrays=(self.data, self.mask), ndim={2, 3}
         )
 
     def test_ndim_negative(self):
@@ -629,6 +635,19 @@ class TestValidNdArray(unittest.TestCase):
             valid.valid_ndarray,
             arrays=(self.data, np.zeros((1, 1, 1))),
             ndim=2,
+        )
+
+    def test_wrong_dim(self):
+        self.assertRaises(
+            ValueError, valid.valid_ndarray, arrays=self.data, ndim=(3, 4),
+        )
+
+    def test_mixed_dim(self):
+        self.assertRaises(
+            ValueError,
+            valid.valid_ndarray,
+            arrays=(self.data, np.ones(1)),
+            ndim=(2, 1),
         )
 
     def test_incompatible_shape(self):

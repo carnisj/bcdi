@@ -9,7 +9,7 @@
 """Functions related to the validation of input parameters."""
 
 from collections import Sequence
-from numbers import Real
+from numbers import Real, Number
 import numpy as np
 
 
@@ -336,7 +336,10 @@ def valid_ndarray(arrays, ndim=None, shape=None):
     :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
-    valid_item(ndim, allowed_types=int, min_excluded=0, allow_none=True, name="ndim")
+    if isinstance(ndim, Number):
+        ndim = (ndim,)
+    valid_container(ndim, container_types=(tuple, list), item_types=int, min_excluded=0,
+                    allow_none=True, name="ndim")
     valid_container(
         shape,
         container_types=(tuple, list),
@@ -357,9 +360,12 @@ def valid_ndarray(arrays, ndim=None, shape=None):
 
     # check arrays
     if ndim is None:
-        ndim = arrays[0].ndim
-    if not all(array.ndim == ndim for array in arrays):
-        raise ValueError(f"all arrays should have the same dimension {ndim}")
+        ndim = (arrays[0].ndim,)
+    if not all(array.ndim in ndim for array in arrays):
+        raise ValueError(f"all arrays should have a number of dimensions in {ndim}")
+    if not all(array.ndim == arrays[0].ndim for array in arrays):
+        raise ValueError(
+            f"all arrays should have the same number of dimensions {arrays[0].ndim}")
     if shape is None or any(val is None for val in shape):
         shape = arrays[0].shape
     if not all(array.shape == shape for array in arrays):
