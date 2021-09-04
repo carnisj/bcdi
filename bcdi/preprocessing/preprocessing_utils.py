@@ -62,11 +62,7 @@ def align_diffpattern(
     #########################
     # check some parameters #
     #########################
-    ndim = reference_data.ndim
-    if ndim not in {2, 3}:
-        raise ValueError("reference_data should be 2d or 3D")
-    if reference_data.shape != data.shape:
-        raise ValueError("reference_data and data do not have the same shape")
+    valid.valid_ndarray(arrays=(reference_data, data), ndim=(2, 3))
     if method not in {"center_of_mass", "registration"}:
         raise ValueError(f'Incorrect setting {method} for the parameter "method"')
     if combining_method not in {"rgi", "subpixel"}:
@@ -81,7 +77,7 @@ def align_diffpattern(
     ###########
     # 3D case #
     ###########
-    if ndim == 3:
+    if data.ndim == 3:
         nbz, nby, nbx = reference_data.shape
         if method == "registration":
             shiftz, shifty, shiftx = reg.getimageregistration(
@@ -247,10 +243,11 @@ def beamstop_correction(data, detector, setup, debugging=False):
     :param data: the 3D stack of 2D CDI images, shape = (nbz, nby, nbx) or 2D image of
      shape (nby, nbx)
     :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: an instance of the class Setup
     :param debugging: set to True to see plots
     :return: the corrected data
     """
+    valid.valid_ndarray(arrays=data, ndim=(2, 3))
     energy = setup.energy
     if not isinstance(energy, Real):
         raise TypeError(f"Energy should be a number in eV, not a {type(energy)}")
@@ -789,7 +786,7 @@ def center_fft(
 
     :param data: the 3D data array
     :param mask: the 3D mask array
-    :param detector: the detector object: Class experiment_utils.Detector()
+    :param detector: an instance of the class Detector
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
      that it is used, 0 means not used, -1 means padded (added) frame.
@@ -831,6 +828,7 @@ def center_fft(
      - updated frames_logical
 
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -850,17 +848,6 @@ def center_fft(
         qx = []
         qy = []
         qz = []
-
-    if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError("data and mask should be 3D arrays")
-
-    if data.shape != mask.shape:
-        raise ValueError(
-            "Data and mask must have the same shape\n data is ",
-            data.shape,
-            " while mask is ",
-            mask.shape,
-        )
 
     if centering == "max":
         z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
@@ -1380,6 +1367,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     :param debugging: True to have more printed comments
     :return: updated data, mask, detector cdi_angle, frames_logical
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     detector_angle = np.zeros(len(cdi_angle))
     # flip the rotation axis in order to compensate the rotation of the Ewald sphere
     # due to sample rotation
@@ -1450,15 +1438,9 @@ def check_empty_frames(data, mask=None, monitor=None):
        index is set to 1 means that it is used, 0 means not used.
 
     """
-    if not isinstance(data, np.ndarray):
-        raise TypeError("data should be a numpy array")
-    if data.ndim != 3:
-        raise ValueError("data should be a 3D array")
+    valid.valid_ndarray(arrays=data, ndim=3)
     if mask is not None:
-        if not isinstance(mask, np.ndarray):
-            raise TypeError("mask should be a numpy array")
-        if mask.shape != data.shape:
-            raise ValueError("mask should have the same shape as data")
+        valid.valid_ndarray(arrays=mask, shape=data.shape)
     if monitor is not None:
         if not isinstance(monitor, np.ndarray):
             raise TypeError("monitor should be a numpy array")
@@ -1485,28 +1467,20 @@ def check_pixels(data, mask, debugging=False):
     :type debugging: bool
     :return: the filtered 3D data and the updated 2D mask.
     """
-    if data.ndim != 3:
-        raise ValueError("Data should be a 3D array")
-
+    valid.valid_ndarray(arrays=data, ndim=3)
+    valid.valid_ndarray(arrays=mask, ndim=(2, 3))
     nbz, nby, nbx = data.shape
 
     if mask.ndim == 3:  # 3D array
         print("Mask is a 3D array, summing it along axis 0")
         mask = mask.sum(axis=0)
         mask[np.nonzero(mask)] = 1
-
+    valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
+    
     print(
         "\ncheck_pixels(): number of masked pixels due to detector gaps ="
         f" {int(mask.sum())} on a total of {nbx*nby}"
     )
-    if data[0, :, :].shape != mask.shape:
-        raise ValueError(
-            "Data and mask must have the same shape\n data slice is ",
-            data[0, :, :].shape,
-            " while mask is ",
-            mask.shape,
-        )
-
     meandata = data.mean(axis=0)  # 2D
     vardata = 1 / data.var(axis=0)  # 2D
     var_mean = vardata[vardata != np.inf].mean()
@@ -1614,8 +1588,8 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     angle=0)
 
     :param cdi_angle: 1D array of measurement angles in degrees
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param anticlockwise: True if the rotation is anticlockwise
     :return: qx, qz, qy values in the laboratory frame
      (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
@@ -1716,6 +1690,7 @@ def find_bragg(data, peak_method):
      for the first axis and 'com' for the other axes.
     :return: the centered data
     """
+    valid.valid_ndarray(arrays=data, ndim=(2, 3))
     if all((peak_method != val for val in {"max", "com", "maxcom"})):
         raise ValueError('Incorrect value for "centering_method" parameter')
 
@@ -1730,7 +1705,7 @@ def find_bragg(data, peak_method):
                 f"Center of mass at (y, x): ({y0:.1f}, {x0:.1f})  "
                 f"COM = {int(data[int(y0), int(x0)])}"
             )
-    elif data.ndim == 3:
+    else:  # 3D
         if peak_method == "max":
             z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
             print(
@@ -1749,8 +1724,6 @@ def find_bragg(data, peak_method):
                 f"MaxCom at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  "
                 f"COM = {int(data[int(z0), int(y0), int(x0)])}"
             )
-    else:
-        raise ValueError("Data should be 2D or 3D")
 
     return z0, y0, x0
 
@@ -1788,7 +1761,7 @@ def grid_bcdi_labframe(
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
-    :param detector: instance of the Class experiment_utils.Detector()
+    :param detector: an instance of the class Detector
     :param setup: instance of the Class experiment_utils.Setup()
     :param align_q: boolean, if True the data will be rotated such that q is along
      reference_axis, and q values will be calculated in the pseudo crystal frame.
@@ -1805,6 +1778,7 @@ def grid_bcdi_labframe(
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -1827,10 +1801,6 @@ def grid_bcdi_labframe(
         raise NotImplementedError(
             "Geometric transformation not yet implemented for energy scans"
         )
-    if data.ndim != 3:
-        raise ValueError("data is expected to be a 3D array")
-    if mask.ndim != 3:
-        raise ValueError("mask is expected to be a 3D array")
     valid.valid_item(align_q, allowed_types=bool, name="align_q")
     valid.valid_container(
         reference_axis,
@@ -1985,7 +1955,7 @@ def grid_bcdi_xrayutil(
     :param scan_number: the scan number to load
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
-    :param detector: instance of the Class experiment_utils.Detector()
+    :param detector: an instance of the class Detector
     :param setup: instance of the Class experiment_utils.Setup()
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
@@ -2000,6 +1970,7 @@ def grid_bcdi_xrayutil(
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -2010,11 +1981,6 @@ def grid_bcdi_xrayutil(
     valid.valid_item(
         follow_bragg, allowed_types=bool, name="preprocessing_utils.grid_bcdi_xrayutil"
     )
-
-    if data.ndim != 3:
-        raise ValueError("data is expected to be a 3D array")
-    if mask.ndim != 3:
-        raise ValueError("mask is expected to be a 3D array")
 
     numz, numy, numx = data.shape
     print(
@@ -2214,10 +2180,10 @@ def grid_cdi(
     :param mask: the corresponding 3D mask
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
-    :param detector: the detector object: Class experiment_utils.Detector().
+    :param detector: an instance of the class Detector.
      The detector orientation is supposed to follow the CXI convention: (z
      downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: an instance of the class Setup
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
      that it is used, 0 means not used, -1 means padded (added) frame.
@@ -2227,10 +2193,7 @@ def grid_cdi(
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard)
     """
-    if data.ndim != 3:
-        raise ValueError("data is expected to be a 3D array")
-    if mask.ndim != 3:
-        raise ValueError("mask is expected to be a 3D array")
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     if setup.beamline == "P10":
         if setup.rocking_angle == "inplane":
             if setup.custom_scan:
@@ -2644,10 +2607,7 @@ def grid_cylindrical(
     :param multiprocessing: True to use multiprocessing
     :return: the 3D array interpolated onto the 3D cartesian grid
     """
-    if not isinstance(array, np.ndarray):
-        raise TypeError("a numpy array is expected")
-    if array.ndim != 3:
-        raise ValueError("a 3D array is expected")
+    valid.valid_ndarray(arrays=array, ndim=3)
 
     def collect_result(result):
         """
@@ -2768,6 +2728,7 @@ def interp_2dslice(
      perpendicular to the rotation axis
     :return: the interpolated slice, the slice index
     """
+    valid.valid_ndarray(arrays=array, ndim=3)
     # position of the experimental data points
     number_x = array.shape[1]
     rgi = RegularGridInterpolator(
@@ -2813,8 +2774,8 @@ def load_bcdi_data(
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
@@ -2948,8 +2909,8 @@ def load_cdi_data(
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
@@ -3174,7 +3135,7 @@ def load_filtered_data(detector):
     """
     Load a filtered dataset and the corresponding mask.
 
-    :param detector: the detector object: Class experiment_utils.Detector()
+    :param detector: an instance of the class Detector
     :return: the data and the mask array
     """
     root = tk.Tk()
@@ -3234,17 +3195,11 @@ def mean_filter(
     :type debugging: bool
     :return: updated data and mask, number of pixels treated
     """
+    valid.valid_ndarray(arrays=data, ndim=(2, 3))
     # check some mparameters
     if mask is None:
         mask = np.zeros(data.shape)
-    if not isinstance(data, np.ndarray):
-        raise TypeError("data should be a numpy ndarray")
-    if data.ndim not in {2, 3}:
-        raise ValueError("data should be either a 2D or a 3D array")
-    if not isinstance(mask, np.ndarray):
-        raise TypeError("mask should be a numpy ndarray")
-    if data.shape != mask.shape:
-        raise ValueError("data and mask should have the same shape")
+    valid.valid_ndarray(arrays=mask, shape=data.shape)
 
     if not np.isnan(target_val) and not isinstance(target_val, int):
         raise ValueError(
@@ -3349,7 +3304,7 @@ def motor_positions_p10_saxs(logfile, setup):
     Load the .fio file from the scan and extract motor positions for P10 SAXS setup.
 
     :param logfile: path of the . fio file containing the information about the scan
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param setup: an instance of the class Setup
     :return: sprz or hprz motor positions
     """
     # TODO: create a Diffractometer child Class and move this method there
@@ -3400,6 +3355,7 @@ def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=
      - a title for plotting
 
     """
+    valid.valid_ndarray(arrays=array, ndim=3)
     ndim = array.ndim
     nbz, nby, nbx = array.shape
     original_max = None
@@ -3488,8 +3444,8 @@ def regrid(
     :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped
      or padded, it may be different from the length of frames_logical.
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param hxrd: an initialized xrayutilities HXRD object used for the
      orthogonalization of the dataset
     :param frames_logical: array of initial length the number of measured frames.
@@ -3932,8 +3888,8 @@ def reload_bcdi_data(
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param normalize: set to True to normalize by the default monitor of the beamline
     :param debugging:  set to True to see plots
     :parama kwargs:
@@ -3944,6 +3900,7 @@ def reload_bcdi_data(
      - the monitor values used for the intensity normalization
 
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -3962,9 +3919,6 @@ def reload_bcdi_data(
         normalize_method = "monitor"
     else:
         normalize_method = "skip"
-
-    if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError("data and mask should be 3D arrays")
 
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
@@ -4068,8 +4022,8 @@ def reload_cdi_data(
     :param logfile: file containing the information about the scan and image numbers
      (specfile, .fio...)
     :param scan_number: the scan number to load
-    :param detector: the detector object: Class experiment_utils.Detector()
-    :param setup: the experimental setup: Class SetupPreprocessing()
+    :param detector: an instance of the class Detector
+    :param setup: an instance of the class Setup
     :param normalize_method: 'skip' to skip, 'monitor'  to normalize by the default
      monitor, 'sum_roi' to normalize by the integrated intensity in a defined region
      of interest
@@ -4082,6 +4036,7 @@ def reload_cdi_data(
      - the monitor values used for the intensity normalization
 
     """
+    valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -4095,9 +4050,6 @@ def reload_cdi_data(
         min_included=0,
         name="preprocessing_utils.reload_cdi_data",
     )
-
-    if data.ndim != 3 or mask.ndim != 3:
-        raise ValueError("data and mask should be 3D arrays")
 
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
@@ -4213,9 +4165,7 @@ def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False)
     :type debugging: bool
     :return: obj padded with zeros
     """
-    if array.ndim != 3:
-        raise ValueError("3D Array expected, got ", array.ndim, "D")
-
+    valid.valid_ndarray(arrays=array, ndim=3)
     nbz, nby, nbx = array.shape
 
     if debugging:
