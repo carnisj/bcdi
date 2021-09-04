@@ -2840,7 +2840,7 @@ def load_bcdi_data(
             startx = abs(detector.roi[2])  # loaded data will start at this index
         else:  # padding on the right
             startx = 0
-        start = tuple([0, starty, startx])
+        start = (0, starty, startx)
         print("Paddind the data to the shape defined by the ROI")
         rawdata = util.crop_pad(
             array=rawdata,
@@ -2979,7 +2979,7 @@ def load_cdi_data(
             startx = abs(detector.roi[2])  # loaded data will start at this index
         else:  # padding on the right
             startx = 0
-        start = tuple([0, starty, startx])
+        start = (0, starty, startx)
         print("Paddind the data to the shape defined by the ROI")
         rawdata = util.crop_pad(
             array=rawdata,
@@ -3953,7 +3953,7 @@ def reload_bcdi_data(
         detector.roi[1] - detector.roi[0] > nby
         or detector.roi[3] - detector.roi[2] > nbx
     ):
-        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        start = (np.nan, min(0, detector.roi[0]), min(0, detector.roi[2]))
         print("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,

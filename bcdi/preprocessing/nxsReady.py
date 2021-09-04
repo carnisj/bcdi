@@ -22,15 +22,13 @@ class PrefParameters:
     """Class for preference parameters."""
 
     def __init__(self):
-        self.namedisplays = list(
-            (
+        self.namedisplays = [
                 "my suggestion",
                 "short name",
                 "short and family name",
                 "full name",
                 "nxs name",
-            )
-        )
+        ]
         self.inamedisplay = 0
 
 

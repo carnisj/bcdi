@@ -1189,7 +1189,7 @@ duplicates = [key for key, value in counter_dict.items() if value > 1]
 ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
 ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
 ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])
-duplicates = tuple([ind_0, ind_1, ind_2])
+duplicates = (ind_0, ind_1, ind_2)
 
 ################################
 # update the log and VTK files #
