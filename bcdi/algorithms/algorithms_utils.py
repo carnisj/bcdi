@@ -127,7 +127,7 @@ def blind_deconvolution_rl(
     ###########################################
     # loop over the blind deconvolution steps #
     ###########################################
-    for cycle in range(nb_cycles):
+    for _ in range(nb_cycles):
         if update_psf_first:
             # update the estimate of the psf
             psf, _ = richardson_lucy(

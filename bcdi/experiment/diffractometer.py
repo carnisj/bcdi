@@ -966,7 +966,7 @@ class DiffractometerCRISTAL(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mgomega, mgphi, gamma, delta, energy = self.motor_positions(logfile, setup)
+        mgomega, mgphi, gamma, delta, _ = self.motor_positions(logfile, setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
@@ -1369,7 +1369,7 @@ class DiffractometerID01(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
-        mu, eta, phi, nu, delta, energy, frames_logical = self.motor_positions(
+        mu, eta, phi, nu, delta, _, frames_logical = self.motor_positions(
             logfile=logfile,
             scan_number=scan_number,
             setup=setup,
@@ -1454,6 +1454,7 @@ class DiffractometerID01(Diffractometer):
                     )
             nb_img = len(ccdn)
         else:
+            ccdn = None  # not used for custom scans
             # create the template for the image files
             if len(setup.custom_images) == 0:
                 raise ValueError("No image number provided in 'custom_images'")
@@ -1725,7 +1726,7 @@ class DiffractometerNANOMAX(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, gamma, delta, energy, radius = self.motor_positions(
+        theta, phi, gamma, delta, _, _ = self.motor_positions(
             logfile=logfile, setup=setup
         )
 
@@ -2039,6 +2040,7 @@ class DiffractometerP10(Diffractometer):
                         break
             print("Number of points :", nb_img)
         else:
+            h5file = None  # this will be define directly in the while loop
             # create the template for the image files
             if len(setup.custom_images) > 0:
                 nb_img = len(setup.custom_images)

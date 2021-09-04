@@ -901,7 +901,6 @@ class DataSet:
             mask = mask_extra
             if np.shape(mask) == (240, 560):
                 self.make_mask_frame_xpad()
-                mask = mask  # & self.mask0_xpad
         for el in self.attlist:
             bla = self.__getattribute__(el)
             # get the attributes from list one by one

@@ -35,6 +35,7 @@ stable_sample = 1  # 0 if a lot of change expected, 1 if very stable
 
 
 def load_file(start_img, current_img, mydetector, region=None):
+    """Load images at ID01 and stack them."""
     # global index   # for testing, to simulate ongoing measurement
     if region is None:
         if mydetector == 0:
@@ -53,6 +54,7 @@ def load_file(start_img, current_img, mydetector, region=None):
 
 
 def calc_corr(array, previous_array, is_stable=0):
+    """Calculate the cross correlation among a stack of images."""
     if previous_array is None:
         previous_array = np.array([])
     starting_index = previous_array.shape[0]
@@ -75,6 +77,7 @@ def calc_corr(array, previous_array, is_stable=0):
 
 
 def press_key(event):
+    """Process press_key events to exit a GUI."""
     global stop_flag
     try:
         key = event.key

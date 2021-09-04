@@ -24,6 +24,7 @@ logfilename = basepath + "SPOCK/spock_output_e1.log"
 
 
 def open_log(fn="SPOCK/spock_output_e1.log"):
+    """Open P10 experimental log file."""
     data = open(fn)
     rows = data.readlines()
     list1 = []
@@ -60,6 +61,7 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
 
 
 def parsefio(fio_filename):
+    """Parse the P10 experimental fio file."""
     data = open(fio_filename)
     rows = data.readlines()
     index = rows.index("%c\n")

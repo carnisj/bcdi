@@ -40,7 +40,6 @@ setup(
         "scripts/facet_recognition/bcdi_polarplot.py",
         "scripts/graph/bcdi_3D_object_movie.py",
         "scripts/graph/bcdi_linecut_diffpattern.py",
-        "scripts/graph/bcdi_merge_3D_qspace.py",
         "scripts/graph/bcdi_scan_analysis.py",
         "scripts/graph/bcdi_scan_movie.py",
         "scripts/graph/bcdi_view_ccf.py",

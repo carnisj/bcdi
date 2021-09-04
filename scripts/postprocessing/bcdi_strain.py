@@ -125,9 +125,6 @@ offset_method = "mean"  # 'COM' or 'mean', method for removing the offset in the
 centering_method = (
     "max_com"  # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 )
-# TODO: where is q for energy scans?
-#  Should we just rotate the reconstruction to have q along one axis,
-#  instead of using sample offsets?
 ######################################
 # define beamline related parameters #
 ######################################
@@ -1004,8 +1001,6 @@ if correct_refraction:  # or correct_absorption:
         )
     correct_absorption = False
     if correct_absorption:
-        # TODO: it is correct to compensate also
-        #  the X-ray absorption in the reconstructed modulus?
         amp_correction = np.exp(
             2 * np.pi / (1e9 * setup.wavelength) * absorption * optical_path
         )

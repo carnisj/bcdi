@@ -13,6 +13,7 @@ def get_path():
 
 
 def get_version():
+    """Get the version of the distribution."""
     with open("bcdi/__init__.py", "r") as version_file:
         version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
     return version
@@ -34,6 +35,7 @@ def task_clean_dist():
     """Remove the build directory and its content."""
 
     def delete_dir(dirname):
+        """Delete the directory if it exists."""
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -84,6 +86,7 @@ def task_coverage_xml():
     """
 
     def create_coverage_xml(coverage_file, output_file):
+        """Create an XML report for the coverage."""
         print("\n\tXML coverage report generated in 'test_output/'\n")
         cov = coverage.Coverage(data_file=coverage_file)
         cov.load()

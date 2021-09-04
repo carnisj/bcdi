@@ -166,7 +166,7 @@ def detect_edges(faces):
 
     # list of edges without redundancy
     edges = np.concatenate((edge1, edge2, edge3), axis=0)
-    edge_list, edges_indices, edges_counts = np.unique(
+    edge_list, _, edges_counts = np.unique(
         edges, return_index=True, return_counts=True, axis=0
     )
 
@@ -1002,6 +1002,7 @@ def stereographic_proj(
     """
 
     def mouse_move(event):
+        """Write the density value at the position of the mouse pointer."""
         nonlocal density_south, density_north, u_grid, v_grid, ax0, ax1
         if event.inaxes == ax0:
             index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)

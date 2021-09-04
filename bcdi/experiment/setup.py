@@ -1579,7 +1579,6 @@ class Setup:
             #######################################################################
             # the center of mass of the diffraction
             # should be in the center of the array!
-            # TODO: implement any offset of the center of mass
             q_along_z_com = (
                 q_along_z[nbz // 2, nby // 2, nbx // 2] + q_offset[2]
             )  # q_offset in the order xyz
@@ -1676,7 +1675,6 @@ class Setup:
         # qx downstream, qz vertical up, qy outboard
         # this assumes that the center of mass of the diffraction pattern
         # was at the center of the array
-        # TODO : correct this if the diffraction pattern is not centered
         qx = (
             np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z
         )  # along z downstream

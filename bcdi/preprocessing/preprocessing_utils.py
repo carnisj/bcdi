@@ -2637,7 +2637,7 @@ def grid_cylindrical(
         rotation_angle = np.flip(rotation_angle)
         array = np.flip(array, axis=0)
 
-    _, number_y, nbx = array.shape
+    _, number_y, _ = array.shape
     _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
     interp_array = np.zeros((numx, number_y, numx), dtype=array.dtype)
     slices_done = 0
@@ -2826,7 +2826,7 @@ def load_bcdi_data(
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
-    nbz, nby, nbx = rawdata.shape
+    _, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
         detector.roi[1] - detector.roi[0] > nby
@@ -2840,7 +2840,7 @@ def load_bcdi_data(
             startx = abs(detector.roi[2])  # loaded data will start at this index
         else:  # padding on the right
             startx = 0
-        start = tuple([0, starty, startx])
+        start = (0, starty, startx)
         print("Paddind the data to the shape defined by the ROI")
         rawdata = util.crop_pad(
             array=rawdata,
@@ -2965,7 +2965,7 @@ def load_cdi_data(
         data=rawdata, detector=detector, setup=setup, debugging=debugging
     )
 
-    nbz, nby, nbx = rawdata.shape
+    _, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
         detector.roi[1] - detector.roi[0] > nby
@@ -2979,7 +2979,7 @@ def load_cdi_data(
             startx = abs(detector.roi[2])  # loaded data will start at this index
         else:  # padding on the right
             startx = 0
-        start = tuple([0, starty, startx])
+        start = (0, starty, startx)
         print("Paddind the data to the shape defined by the ROI")
         rawdata = util.crop_pad(
             array=rawdata,
@@ -3307,7 +3307,6 @@ def motor_positions_p10_saxs(logfile, setup):
     :param setup: an instance of the class Setup
     :return: sprz or hprz motor positions
     """
-    # TODO: create a Diffractometer child Class and move this method there
     if setup.rocking_angle != "inplane":
         raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -3462,7 +3461,6 @@ def regrid(
      - updated frames_logical
 
     """
-    # TODO: refactor this function
     binning = detector.binning
 
     if frames_logical is None:  # retrieve the raw data length, then len(frames_logical)
@@ -3734,7 +3732,7 @@ def regrid(
         )
 
     elif setup.beamline == "NANOMAX":
-        theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(
+        theta, phi, gamma, delta, energy, _ = setup.diffractometer.motor_positions(
             logfile=logfile, setup=setup
         )
 
@@ -3955,7 +3953,7 @@ def reload_bcdi_data(
         detector.roi[1] - detector.roi[0] > nby
         or detector.roi[3] - detector.roi[2] > nbx
     ):
-        start = tuple([np.nan, min(0, detector.roi[0]), min(0, detector.roi[2])])
+        start = (np.nan, min(0, detector.roi[0]), min(0, detector.roi[2]))
         print("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
