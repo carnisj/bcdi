@@ -70,11 +70,13 @@ else:
 
 
 def remove_hotpixels(mydata, hotpixels):
+    """Remove the hotpixels."""
     mydata[hotpixels == -1] = 0
     return mydata
 
 
 def mask_eiger(mydata):
+    """Mask the Eiger2M gaps."""
     mydata[:, 255:259] = 0
     mydata[:, 513:517] = 0
     mydata[:, 771:775] = 0
@@ -92,6 +94,7 @@ def mask_eiger(mydata):
 
 
 def mask_maxipix(mydata):
+    """Mask the Maxipix gaps."""
     mydata[:, 255:261] = 0
     mydata[255:261, :] = 0
     return mydata
