@@ -204,10 +204,8 @@ def main(calc_self, user_comment):
     dq = min(qx[1] - qx[0], qz[1] - qz[0], qy[1] - qy[0])
 
     theta_phi_int = {}  # create dictionnary
-    dict_fields = []
-    [
-        dict_fields.append("q" + str(idx + 1)) for idx in range(len(q_range))
-    ]  # ['q1', 'q2', 'q3', ...]
+    dict_fields = ["q" + str(idx + 1) for idx, _ in enumerate(q_range)]
+    # ['q1', 'q2', 'q3', ...]
     nb_points = []
 
     for counter, q_value in enumerate(q_range):
