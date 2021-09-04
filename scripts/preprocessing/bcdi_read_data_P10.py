@@ -17,8 +17,6 @@ import datetime
 import numpy as np
 import multiprocessing as mp
 import matplotlib
-
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import os
 from scipy.io import savemat
@@ -27,6 +25,7 @@ import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.detector import create_detector
 
+matplotlib.use("Qt5Agg")
 
 helptext = """
 Open images or series data at P10 beamline.

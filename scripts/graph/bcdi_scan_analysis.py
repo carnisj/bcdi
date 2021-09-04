@@ -7,11 +7,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-helptext = """
-Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a
-user-defined region of interest.
-"""
-
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -19,8 +14,6 @@ except ModuleNotFoundError:
 import h5py
 import numpy as np
 import matplotlib
-
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
 import matplotlib.ticker as ticker
@@ -31,6 +24,12 @@ import bcdi.preprocessing.preprocessing_utils as pru
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 
+matplotlib.use("Qt5Agg")
+
+helptext = """
+Open 1Dscans and plot interactively the integrated intensity vs. motor positions in a
+user-defined region of interest.
+"""
 
 scan = 7  # scan number as it appears in the folder name
 sample_name = "p15_2"  # without _ at the end

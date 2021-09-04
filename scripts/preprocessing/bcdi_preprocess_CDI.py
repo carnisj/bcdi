@@ -11,12 +11,9 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
+import gc
 import matplotlib.pyplot as plt
-
-plt.switch_backend(
-    "Qt5Agg"
-)  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
+import numpy as np
 import os
 import scipy.signal  # for medfilt2d
 from scipy.ndimage.measurements import center_of_mass
@@ -24,13 +21,15 @@ import sys
 from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
-import gc
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.utils.validation as valid
+
+plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt
+# installer, bug with Tk
 
 helptext = """
 Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize,

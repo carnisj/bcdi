@@ -11,14 +11,14 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
+from matplotlib import pyplot as plt
 import numpy as np
 from numpy.fft import fftn, fftshift
-from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
-from scipy.interpolate import interp1d
 import gc
 import sys
 import bcdi.graph.graph_utils as gu

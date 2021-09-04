@@ -636,6 +636,8 @@ class Setup:
         """Wavelength in meters."""
         if self.energy:
             return 12.398 * 1e-7 / self.energy  # in m
+        else:
+            return None
 
     def __repr__(self):
         """Representation string of the Setup instance."""

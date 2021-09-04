@@ -34,12 +34,15 @@ datadir = (
     "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_no_psf/result/"
 )
 # "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/result/"
-# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/"
-# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/PtNP1_00128/result/"  # data folder  #
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/" \
+# "AFM-SEM/P10 beamtime P2 particle size SEM/"
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_1_newpsf/" \
+# "PtNP1_00128/result/"  # data folder  #
 savedir = (
     datadir + "linecuts/refined0.25-0.55/test/"
 )  # 'linecuts_P2_001a/valid_range/'  #
-# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
+# "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/AFM-SEM/" \
+# "P10 beamtime P2 particle size SEM/linecuts_P2_001a/"
 # results will be saved here, if None it will default to datadir
 upsampling_factor = (
     5  # integer, 1=no upsampling_factor, 2=voxel size divided by 2 etc...

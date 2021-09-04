@@ -7,16 +7,16 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as manimation
-import xrayutilities as xu
 import fabio
-from matplotlib.colors import LinearSegmentedColormap
-from silx.io.specfile import SpecFile
-import os
-import sys
 import matplotlib
+import matplotlib.animation as manimation
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
+import numpy as np
+import xrayutilities as xu
+import os
+from silx.io.specfile import SpecFile
+import sys
 
 matplotlib.use("Qt5Agg")
 

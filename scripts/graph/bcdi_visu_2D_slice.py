@@ -9,13 +9,13 @@
 
 import numpy as np
 import matplotlib
-
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+
+matplotlib.use("Qt5Agg")
 
 helptext = """
 Graphical interface to visualize 2D slices through a 3D stacked dataset.
