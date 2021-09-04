@@ -1454,6 +1454,7 @@ class DiffractometerID01(Diffractometer):
                     )
             nb_img = len(ccdn)
         else:
+            ccdn = None  # not used for custom scans
             # create the template for the image files
             if len(setup.custom_images) == 0:
                 raise ValueError("No image number provided in 'custom_images'")
@@ -2039,6 +2040,7 @@ class DiffractometerP10(Diffractometer):
                         break
             print("Number of points :", nb_img)
         else:
+            h5file = None  # this will be define directly in the while loop
             # create the template for the image files
             if len(setup.custom_images) > 0:
                 nb_img = len(setup.custom_images)
