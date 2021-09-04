@@ -1,3 +1,8 @@
+Version 0.1.5
+-------------
+
+* Bug: convert arrays to a tuple before checking the length in Setup.ortho_directspace
+
 Version 0.1.4
 -------------
 
