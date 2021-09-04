@@ -96,14 +96,6 @@ bcdi_linecut_diffpattern.py
    :end-before: """
    :language: rst
 
-bcdi_merge_3D_qspace.py
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/graph/bcdi_merge_3D_qspace.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 bcdi_scan_analysis.py
 ^^^^^^^^^^^^^^^^^^^^^
 
