@@ -966,7 +966,7 @@ class DiffractometerCRISTAL(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mgomega, mgphi, gamma, delta, energy = self.motor_positions(logfile, setup)
+        mgomega, mgphi, gamma, delta, _ = self.motor_positions(logfile, setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
