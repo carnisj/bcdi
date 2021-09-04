@@ -15,6 +15,7 @@ XCCA stands for X-ray cross-correlation analysis.
 import numpy as np
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def angular_avg(
@@ -36,13 +37,10 @@ def angular_avg(
     """
     if len(q_values) != 3:
         raise ValueError("q_values should be a tuple of three 1D arrays")
-    if data.ndim != 3:
-        raise ValueError("data should be a 3D array")
+    valid.valid_ndarray(data, ndim=3)
     if mask is None:
         mask = np.zeros(data.shape)
-    else:
-        if mask.shape != data.shape:
-            raise ValueError("mask and data should have the same shape")
+    valid.valid_ndarray(mask, shape=data.shape)
     qx, qz, qy = q_values
     nz, ny, nx = data.shape
 
