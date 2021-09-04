@@ -123,7 +123,7 @@ for index in range(len(scans)):
     numz, numy, numx = amp.shape
 
     # pad the dataset to the desired the field #
-    pixel_spacing = tick_spacing / voxel_size  # TODO: allow for different voxel sizes
+    pixel_spacing = tick_spacing / voxel_size
     pixel_FOV = int(
         np.rint((field_of_view / voxel_size) / 2)
     )  # half-number of pixels corresponding to the FOV
@@ -212,8 +212,6 @@ for index in range(len(scans)):
         )  # rewrap after modifying phase
         ref_amp = np.copy(amp)
     else:  # align it with the reference object
-        # TODO: interpolate object if the shape is different from ref_amp
-        #  (different voxel sizes between datasets)
         shiftz, shifty, shiftx = reg.getimageregistration(ref_amp, amp, precision=1000)
         print(
             "Shift of array", index, "with the reference array:", shiftz, shifty, shiftx
