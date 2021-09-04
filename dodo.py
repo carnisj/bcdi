@@ -131,7 +131,7 @@ def task_tests():
     return {
         "actions": ["coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage"],
-        "verbosity": 2,
+        "verbosity": 1,
     }
 
 
