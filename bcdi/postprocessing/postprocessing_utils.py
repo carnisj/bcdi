@@ -1276,7 +1276,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # find the extent of the object, to optimize the calculation time #
     ###################################################################
     nbz, nby, nbx = support.shape
-    path = np.zeros((nbz, nby, nbx), dtypefloat)
+    path = np.zeros((nbz, nby, nbx), dtype=float)
     indices_support = np.nonzero(support)
     min_z = indices_support[0].min()
     max_z = indices_support[0].max() + 1  # last point not included in range()
