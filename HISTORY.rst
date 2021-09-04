@@ -1,6 +1,15 @@
+Version 0.1.4
+-------------
+
+* Feature: implement a new validation function valid_ndarray, implement tests and remove
+  the redundant code in modules.
+
+* Refactor: split the Detector class using inheritance, refactor scripts accordingly and
+  implement tests.
 
 * Feature: create a Beamline class with one child class for each beamline, move
-  all beamline-dependent methods from Setup to the respective class
+  all beamline-dependent methods from Setup to the respective class and implement some
+  tests.
 
 Version 0.1.3
 -------------
