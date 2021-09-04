@@ -1535,23 +1535,9 @@ def rotate_crystal(
     :return: a rotated array (if a single array was provided) or a tuple of rotated
      arrays (same length as the number of input arrays)
     """
-    # check that arrays is a tuple of 3D arrays
-    if isinstance(arrays, np.ndarray):
-        arrays = (arrays,)
-    valid.valid_container(
-        arrays,
-        container_types=(tuple, list),
-        item_types=np.ndarray,
-        min_length=1,
-        name="arrays",
-    )
-    if any(array.ndim != 3 for array in arrays):
-        raise ValueError("all arrays should be 3D ndarrays of the same shape")
-    ref_shape = arrays[0].shape
-    if any(array.shape != ref_shape for array in arrays):
-        raise ValueError("all arrays should be 3D ndarrays of the same shape")
+    valid.valid_ndarray(arrays, ndim=3)
     nb_arrays = len(arrays)
-    nbz, nby, nbx = ref_shape
+    nbz, nby, nbx = arrays[0].shape
 
     # check some parameters
     voxel_size = voxel_size or (1, 1, 1)

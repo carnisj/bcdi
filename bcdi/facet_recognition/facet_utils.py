@@ -918,8 +918,7 @@ def surface_indices(surface, plane_indices, margin=3):
     :param margin: margin to include aroung plane indices, in pixels
     :return: 3*1D arrays of surface indices
     """
-    if surface.ndim != 3:
-        raise ValueError("Surface should be a 3D array")
+    valid.valid_ndarray(surface, ndim=3)
     if not isinstance(plane_indices, tuple):
         plane_indices = tuple(plane_indices)
 
@@ -1651,9 +1650,8 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
     :param debugging: True to see plots
     :return: the upsampled array
     """
+    valid.valid_ndarray(array, ndim={2, 3})
     ndim = array.ndim
-    if ndim not in {2, 3}:
-        raise ValueError("Expecting a 2D or 3D array as input")
 
     valid.valid_item(
         value=upsampling_factor,
