@@ -112,7 +112,7 @@ setup(
     keywords="BCDI Bragg coherent X-rays diffraction imaging",
     long_description_content_type="text/x-rst",
     long_description="""
-        BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray 
+        BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray
         diffraction imaging data.
 
         BCDI stands for *Bragg coherent X-ray diffraction imaging*.

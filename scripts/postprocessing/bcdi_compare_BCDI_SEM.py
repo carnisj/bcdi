@@ -26,7 +26,7 @@ This script can be used to compare the lateral sizes of an object measured by CD
 scanning electron micrscopy. Two dictionary should be provided as input
 (one for each technique). The dictionary should contain the following items:
 {'threshold': 1D array-like values of thresholds,
- 'angles':D array-like values of angles 
+ 'angles':D array-like values of angles
  'ang_width_threshold': 2D array-like values (one row for each threshold,
  the row is the width vs angle of the linecut)}
 
