@@ -51,6 +51,7 @@ def task_clean_doc():
     """Remove the compiled documentation."""
 
     def delete_dir(dirname):
+        """Delete the directory if it exists."""
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -102,6 +103,7 @@ def task_clean_coverage():
     """Delete the coverage report."""
 
     def delete_coverage(filename):
+        """Delete the file if it exists."""
         path = os.path.join(get_path(), filename).replace("\\", "/")
         if os.path.isfile(path):
             os.unlink(path)
@@ -157,6 +159,7 @@ def task_clean_build():
     """Remove the build directory"""
 
     def delete_dir(dirname):
+        """Delete the directory if it exists."""
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
