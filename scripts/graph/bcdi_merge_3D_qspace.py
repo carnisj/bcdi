@@ -360,14 +360,7 @@ def gridmap(
     """
     global sixs_beta, nb_pixel_x, nb_pixel_y
     if region is None:
-        if mydetector == "Eiger2M":
-            region = [0, nb_pixel_y, 0, nb_pixel_x]
-        elif mydetector == "Maxipix":
-            region = [0, nb_pixel_y, 0, nb_pixel_x]
-        elif mydetector == "Eiger4M":
-            region = [0, nb_pixel_y, 0, nb_pixel_x]
-        else:
-            region = [0, nb_pixel_y, 0, nb_pixel_x]
+        region = [0, nb_pixel_y, 0, nb_pixel_x]
     if mysetup == "ID01":
         motor_names = specfile[str(scan_nb) + ".1"].motor_names  # positioners
         motor_positions = specfile[str(scan_nb) + ".1"].motor_positions  # positioners
