@@ -263,7 +263,7 @@ if correct_background:
     distances = np.load(file_path)["distances"]
 
     if qvalues_flag:
-        data = util.remove_background(
+        data = util.remove_avg_background(
             array=data,
             avg_background=avg_background,
             avg_qvalues=distances,
@@ -272,7 +272,7 @@ if correct_background:
         )
     else:
         print("Using calculated q values for background subtraction")
-        data = util.remove_background(
+        data = util.remove_avg_background(
             array=data,
             q_values=q_values,
             avg_background=avg_background,
