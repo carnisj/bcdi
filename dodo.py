@@ -51,6 +51,7 @@ def task_clean_doc():
     """Remove the compiled documentation."""
 
     def delete_dir(dirname):
+        """Delete the directory if it exists."""
         path = os.path.join(get_path(), dirname).replace("\\", "/")
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -102,6 +103,7 @@ def task_clean_coverage():
     """Delete the coverage report."""
 
     def delete_coverage(filename):
+        """Delete the file if it exists."""
         path = os.path.join(get_path(), filename).replace("\\", "/")
         if os.path.isfile(path):
             os.unlink(path)
@@ -129,7 +131,7 @@ def task_tests():
     return {
         "actions": ["coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage"],
-        "verbosity": 2,
+        "verbosity": 1,
     }
 
 
@@ -153,7 +155,25 @@ def task_build_distribution():
     }
 
 
-def task_check_description():
+def task_clean_build():
+    """Remove the build directory"""
+
+    def delete_dir(dirname):
+        """Delete the directory if it exists."""
+        path = os.path.join(get_path(), dirname).replace("\\", "/")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            print(f"\n\tDeleted {path}\n")
+        else:
+            print("\n\tNo build directory to delete.\n")
+
+    return {
+        "actions": [(delete_dir, ["build/"])],
+        "verbosity": 2,
+    }
+
+
+def task_check_long_description_pypi():
     """Check whether the long description will render correctly on PyPI."""
     return {
         "actions": ["twine check dist/*"],

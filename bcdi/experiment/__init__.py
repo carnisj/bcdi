@@ -13,9 +13,9 @@ This package contains classes related to the experimental setup.
 Classes
 -------
 
-- ``Detector``         -- detector declaration
+- ``Detector``         -- one child class for each supported detector
 - ``Beamline``         -- one child class for each supported beamline
-- ``Diffractometer``   -- diffractometer, one child class for each supported beamline
+- ``Diffractometer``   -- one child class for each supported beamline
 - ``Setup``            -- class gathering various parameters about the setup
 - ``RotationMatrix``   -- rotation matrix given the rotation axis and the angle
 
