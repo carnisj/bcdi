@@ -11,17 +11,18 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
-import xrayutilities as xu
-import h5py
-import os
+
 import fabio
-from scipy.interpolate import RegularGridInterpolator
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
-import sys
-from silx.io.specfile import SpecFile
+import h5py
 import matplotlib
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+from scipy.interpolate import RegularGridInterpolator
+from silx.io.specfile import SpecFile
+import sys
+import xrayutilities as xu
 
 matplotlib.use("Qt5Agg")
 

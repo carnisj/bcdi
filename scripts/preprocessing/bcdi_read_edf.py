@@ -7,14 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import fabio
 from matplotlib import pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+import numpy as np
+import os
 from scipy.ndimage.measurements import center_of_mass
 import sys
 import tkinter as tk
-from matplotlib.colors import LinearSegmentedColormap
-import os
 
 helptext = """
 Read .edf image (ESRF data format).
