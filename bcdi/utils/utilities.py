@@ -347,8 +347,12 @@ def crop_pad_1d(
             crop_center + output_length // 2 > nbx
         ):
             raise ValueError("crop_center incompatible with output_length")
-        newobj = array[crop_center - output_length // 2:
-                       crop_center + output_length // 2 + output_length % 2]
+        newobj = array[
+            crop_center
+            - output_length // 2 : crop_center
+            + output_length // 2
+            + output_length % 2
+        ]
     return newobj
 
 
@@ -395,8 +399,9 @@ def find_nearest(reference_array, test_values, width=None):
      range defined by width.
     """
     original_array, test_values = np.asarray(reference_array), np.asarray(test_values)
-    valid.valid_ndarray(arrays=(reference_array, original_array), ndim=1,
-                        fix_shape=False)
+    valid.valid_ndarray(
+        arrays=(reference_array, original_array), ndim=1, fix_shape=False
+    )
 
     if test_values.ndim > 1:
         raise ValueError("array_values should be a number or a 1D array")
@@ -1339,8 +1344,9 @@ def ref_count(address):
     return ctypes.c_long.from_address(address).value
 
 
-def remove_avg_background(array, q_values, avg_background, avg_qvalues,
-                          method="normalize"):
+def remove_avg_background(
+    array, q_values, avg_background, avg_qvalues, method="normalize"
+):
     """
     Subtract the average 1D background to the 3D array using q values.
 

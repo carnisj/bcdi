@@ -57,7 +57,8 @@ def align_obj(
     if obj.shape != reference_obj.shape:
         print(
             "reference_obj and obj do not have the same shape\n",
-            reference_obj.shape, obj.shape,
+            reference_obj.shape,
+            obj.shape,
             "crop/pad obj",
         )
         obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
@@ -841,15 +842,19 @@ def filter_3d(
     if filter_name == "gaussian_highpass":
         sigma = sigma or 3
         kernel = gaussian_kernel(
-            ndim=array.ndim, kernel_length=kernel_length, sigma=sigma,
-            debugging=debugging
+            ndim=array.ndim,
+            kernel_length=kernel_length,
+            sigma=sigma,
+            debugging=debugging,
         )
         return array - convolve(array, kernel, mode="same")
     if filter_name == "gaussian":
         sigma = sigma or 0.5
         kernel = gaussian_kernel(
-            ndim=array.ndim, kernel_length=kernel_length, sigma=sigma,
-            debugging=debugging
+            ndim=array.ndim,
+            kernel_length=kernel_length,
+            sigma=sigma,
+            debugging=debugging,
         )
         return convolve(array, kernel, mode="same")
     raise ValueError("Only the gaussian_kernel is implemented up to now.")

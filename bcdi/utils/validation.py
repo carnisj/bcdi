@@ -340,8 +340,14 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
     # check the validity of the requirements
     if isinstance(ndim, Number):
         ndim = (ndim,)
-    valid_container(ndim, container_types=(tuple, list), item_types=int, min_excluded=0,
-                    allow_none=True, name="ndim")
+    valid_container(
+        ndim,
+        container_types=(tuple, list),
+        item_types=int,
+        min_excluded=0,
+        allow_none=True,
+        name="ndim",
+    )
     valid_container(
         shape,
         container_types=(tuple, list),
@@ -357,7 +363,7 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
         container_types=(tuple, list),
         item_types=np.ndarray,
         min_length=1,
-        name="arrays"
+        name="arrays",
     )
     if not isinstance(fix_ndim, bool):
         raise TypeError(f"fix_ndim should be a boolean, got {type(fix_shape)}")

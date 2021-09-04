@@ -1476,7 +1476,7 @@ def check_pixels(data, mask, debugging=False):
         mask = mask.sum(axis=0)
         mask[np.nonzero(mask)] = 1
     valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
-    
+
     print(
         "\ncheck_pixels(): number of masked pixels due to detector gaps ="
         f" {int(mask.sum())} on a total of {nbx*nby}"
