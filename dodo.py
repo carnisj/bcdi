@@ -153,7 +153,7 @@ def task_build_distribution():
     }
 
 
-def task_check_description():
+def task_check_long_description_pypi():
     """Check whether the long description will render correctly on PyPI."""
     return {
         "actions": ["twine check dist/*"],
