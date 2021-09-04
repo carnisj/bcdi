@@ -1369,7 +1369,7 @@ class DiffractometerID01(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
-        mu, eta, phi, nu, delta, energy, frames_logical = self.motor_positions(
+        mu, eta, phi, nu, delta, _, frames_logical = self.motor_positions(
             logfile=logfile,
             scan_number=scan_number,
             setup=setup,
@@ -1725,7 +1725,7 @@ class DiffractometerNANOMAX(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, gamma, delta, energy, radius = self.motor_positions(
+        theta, phi, gamma, delta, _, _ = self.motor_positions(
             logfile=logfile, setup=setup
         )
 

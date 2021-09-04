@@ -1026,7 +1026,7 @@ def find_crop_center(array_shape, crop_shape, pivot):
         name="pivot",
     )
     crop_center = np.empty(ndim)
-    for idx, dim in enumerate(range(ndim)):
+    for idx, _ in enumerate(range(ndim)):
         if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
             # not enough range on this side of the com
             crop_center[idx] = crop_shape[idx] // 2
@@ -1649,7 +1649,7 @@ def ortho_modes(array_stack, nb_mode=None, method="eig", verbose=False):
         )  # the number of eigenvalues is nb_arrays
     elif method == "svd":  # Singular value decomposition
         my_matrix = np.reshape(array_stack, (nb_arrays, array_size))
-        eigenvectors, eigenvalues, vh = scipy.linalg.svd(
+        eigenvectors, eigenvalues, _ = scipy.linalg.svd(
             my_matrix, full_matrices=False, compute_uv=True
         )
         # my_matrix = eigenvectors x S x Vh,

@@ -1113,7 +1113,7 @@ def objective_lmfit(params, x_axis, data, distribution):
         x_axis = x_axis[np.newaxis, :]
     if data.ndim != 2:
         raise ValueError("Data should be a 2D stack of 1D datasets (1 per row)")
-    ndata, nx = data.shape
+    ndata, _ = data.shape
     resid = 0.0 * data[:]
     # make residual per data set
     for idx in range(ndata):

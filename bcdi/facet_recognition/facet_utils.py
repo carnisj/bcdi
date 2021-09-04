@@ -166,7 +166,7 @@ def detect_edges(faces):
 
     # list of edges without redundancy
     edges = np.concatenate((edge1, edge2, edge3), axis=0)
-    edge_list, edges_indices, edges_counts = np.unique(
+    edge_list, _, edges_counts = np.unique(
         edges, return_index=True, return_counts=True, axis=0
     )
 

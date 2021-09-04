@@ -1341,7 +1341,7 @@ def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False)
     if debugging:
         plt.ion()
         if array.ndim == 2:
-            fig, (ax0, ax1) = plt.subplots(ncols=2)
+            _, (ax0, ax1) = plt.subplots(ncols=2)
             ax0.imshow(array)
             ax0.plot(
                 [start_indices[0], stop_indices[0]],

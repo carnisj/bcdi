@@ -2637,7 +2637,7 @@ def grid_cylindrical(
         rotation_angle = np.flip(rotation_angle)
         array = np.flip(array, axis=0)
 
-    _, number_y, nbx = array.shape
+    _, number_y, _ = array.shape
     _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
     interp_array = np.zeros((numx, number_y, numx), dtype=array.dtype)
     slices_done = 0
@@ -2826,7 +2826,7 @@ def load_bcdi_data(
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
-    nbz, nby, nbx = rawdata.shape
+    _, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
         detector.roi[1] - detector.roi[0] > nby
@@ -2965,7 +2965,7 @@ def load_cdi_data(
         data=rawdata, detector=detector, setup=setup, debugging=debugging
     )
 
-    nbz, nby, nbx = rawdata.shape
+    _, nby, nbx = rawdata.shape
     # pad the data to the shape defined by the ROI
     if (
         detector.roi[1] - detector.roi[0] > nby
@@ -3732,7 +3732,7 @@ def regrid(
         )
 
     elif setup.beamline == "NANOMAX":
-        theta, phi, gamma, delta, energy, radius = setup.diffractometer.motor_positions(
+        theta, phi, gamma, delta, energy, _ = setup.diffractometer.motor_positions(
             logfile=logfile, setup=setup
         )
 
