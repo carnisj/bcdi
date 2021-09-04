@@ -775,7 +775,7 @@ for label in unique_labels:
 
     # find the direction in which the plane should be shifted to cross the surface
     dist = np.zeros(len(surf0))
-    for point in range(len(surf0)):
+    for point, _ in enumerate(surf0):
         dist[point] = (
             coeffs[0] * surf0[point]
             + coeffs[1] * surf1[point]
@@ -794,7 +794,7 @@ for label in unique_labels:
     dist = np.zeros(len(surf0))
     offset = mean_dist / 2
 
-    for point in range(len(surf0)):
+    for point, _ in enumerate(surf0):
         dist[point] = (
             coeffs[0] * surf0[point]
             + coeffs[1] * surf1[point]
