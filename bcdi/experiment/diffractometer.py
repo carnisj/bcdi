@@ -835,7 +835,7 @@ class Diffractometer34ID(Diffractometer):
         """
         Load the scan data and extract motor positions.
 
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :return: (theta, phi, delta, gamma) motor positions
         """
         if not setup.custom_scan:
@@ -1085,7 +1085,7 @@ class DiffractometerCRISTAL(Diffractometer):
         Setup.actuators, and use the default entry otherwise.
 
         :param logfile: h5py File object of CRISTAL .nxs scan file
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :param kwargs:
 
          - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
@@ -1521,7 +1521,7 @@ class DiffractometerID01(Diffractometer):
         :param logfile: Silx SpecFile object containing the information about the scan
          and image numbers
         :param scan_number: the scan number to load
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :param kwargs:
 
          - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
@@ -1842,7 +1842,7 @@ class DiffractometerNANOMAX(Diffractometer):
 
         :param logfile: Silx SpecFile object containing the information about the scan
          and image numbers
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :return: (theta, phi, gamma, delta, energy, radius) motor positions
         """
         if not setup.custom_scan:
@@ -2148,7 +2148,7 @@ class DiffractometerP10(Diffractometer):
         Load the .fio file from the scan and extract motor positions.
 
         :param logfile: path of the . fio file containing the information about the scan
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :return: (om, phi, chi, mu, gamma, delta) motor positions
         """
         if not setup.custom_scan:
@@ -2456,7 +2456,7 @@ class DiffractometerSIXS(Diffractometer):
         Load the scan data and extract motor positions.
 
         :param logfile: nxsReady Dataset object of SIXS .nxs scan file
-        :param setup: the experimental setup: Class SetupPreprocessing()
+        :param setup: an instance of the class Setup
         :param kwargs:
 
          - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
@@ -2493,9 +2493,8 @@ class DiffractometerSIXS(Diffractometer):
             temp_mu = logfile.mu[:]
             if frames_logical is None:
                 frames_logical = np.ones(len(temp_mu))
-            mu = np.zeros(
-                (frames_logical != 0).sum()
-            )  # first frame is duplicated for SIXS_2018
+            mu = np.zeros((frames_logical != 0).sum())
+            # first frame is duplicated for SIXS_2018
             nb_overlap = 0
             for idx in range(len(frames_logical)):
                 if frames_logical[idx]:
