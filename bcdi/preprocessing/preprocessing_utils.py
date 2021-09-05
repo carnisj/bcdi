@@ -1373,7 +1373,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
-def check_empty_frames(data, mask=None, monitor=None):
+def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
     """
     Check if there is intensity for all frames.
 
@@ -1384,14 +1384,14 @@ def check_empty_frames(data, mask=None, monitor=None):
     :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
      same shape as data
     :param monitor: a numpy 1D array of shape equal to data.shape[0]
+    :param frames_logical: 1D array of length equal to the number of measured frames.
+     In case of cropping the length of the stack of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used.
     :return:
-
      - cropped data as a numpy 3D array
      - cropped mask as a numpy 3D array
      - cropped monitor as a numpy 1D array
-     - frames_logical: 1D array of length equal to the number of measured frames.
-       In case of cropping the length of the stack of frames changes. A frame whose
-       index is set to 1 means that it is used, 0 means not used.
+     - updated frames_logical
 
     """
     valid.valid_ndarray(arrays=data, ndim=3)
@@ -1403,10 +1403,20 @@ def check_empty_frames(data, mask=None, monitor=None):
         if monitor.ndim != 1 or len(monitor) != data.shape[0]:
             raise ValueError("monitor be a 1D array of length data.shae[0]")
 
-    frames_logical = np.zeros(data.shape[0])
-    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
-    if frames_logical.sum() != data.shape[0]:
+    if frames_logical is None:
+        frames_logical = np.ones(data.shape[0])
+    valid.valid_1d_array(frames_logical, allow_none=False, allowed_values=(0, 1))
+
+    # check if there are empty frames
+    is_intensity = np.zeros(data.shape[0])
+    is_intensity[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if is_intensity.sum() != data.shape[0]:
         print("\nEmpty frame detected, cropping the data\n")
+
+    # update frames_logical
+    frames_logical = np.multiply(frames_logical, is_intensity)
+
+    # remove empty frames from the data and update the mask and the monitor
     data = data[np.nonzero(frames_logical)]
     mask = mask[np.nonzero(frames_logical)]
     monitor = monitor[np.nonzero(frames_logical)]
@@ -3038,7 +3048,7 @@ def load_data(
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
     else:
-        data, mask2d, monitor = setup.diffractometer.load_data(
+        data, mask2d, monitor, frames_logical= setup.diffractometer.load_data(
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
@@ -3066,7 +3076,7 @@ def load_data(
 
         # check for empty frames (no beam)
         data, mask3d, monitor, frames_logical = check_empty_frames(
-            data=data, mask=mask3d, monitor=monitor
+            data=data, mask=mask3d, monitor=monitor, frames_logical=frames_logical
         )
 
         # intensity normalization
