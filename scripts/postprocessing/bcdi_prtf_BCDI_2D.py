@@ -365,13 +365,11 @@ if simulation:
         eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0)
     )
 else:
-    qx, qz, qy, _ = pru.regrid(
+    qx, qz, qy, frames_logical = setup.calc_qvalues_xrutils(
         logfile=logfile,
+        hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan,
-        detector=detector,
-        setup=setup,
-        hxrd=hxrd,
         follow_bragg=follow_bragg,
     )
 
