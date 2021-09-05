@@ -844,8 +844,9 @@ class Diffractometer34ID(Diffractometer):
         phi = setup.custom_motors["phi"]
         gamma = setup.custom_motors["gamma"]
         delta = setup.custom_motors["delta"]
+        energy = setup.energy
 
-        return theta, phi, delta, gamma
+        return theta, phi, delta, gamma, energy
 
     @staticmethod
     def read_device(**kwargs):
@@ -2231,7 +2232,7 @@ class DiffractometerP10(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return mu, om, chi, phi, gamma, delta
+        return mu, om, chi, phi, gamma, delta, setup.energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2511,7 +2512,7 @@ class DiffractometerSIXS(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return beta, mu, gamma, delta, frames_logical
+        return beta, mu, gamma, delta, setup.energy, frames_logical
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
