@@ -54,6 +54,45 @@ class CustomEncoder(json.JSONEncoder):
         return output
 
 
+def apply_logical_array(arrays, frames_logical):
+    """
+    Apply a logical array to a sequence of arrays.
+
+    Assuming a 1D array, it will be cropped where frames_logical is 0.
+
+    :param arrays: a list or tuple of numbers or 1D arrays
+    :param frames_logical: array of length the number of measured frames.
+     In case of cropping/padding the number of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used, -1 means padded
+     (added) frame
+    :return: the sequence of cropped arrays
+    """
+    if frames_logical is None:
+        return arrays
+
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_1d_array(
+        frames_logical, allow_none=False, allowed_values=(-1, 0, 1)
+    )
+
+    # number of measured frames during the experiment
+    # frames_logical[idx]=-1 means that a frame was added (padding) at index idx
+    original_frames = frames_logical[frames_logical != -1]
+    nb_original = original_frames.sum()
+
+    output = []
+    for idx, array in enumerate(arrays):
+        if isinstance(array, Real):
+            output[idx] = array
+        else:
+            valid.valid_ndarray(array, ndim=1, shape=(nb_original,))
+            # padding occurs only at the edges of the dataset, so the original data is
+            # contiguous, we can use array indexing directly
+            output[idx] = array[original_frames != 0]
+    return output
+
+
 def bin_data(array, binning, debugging=False):
     """
     Rebin a 1D, 2D or 3D array.
