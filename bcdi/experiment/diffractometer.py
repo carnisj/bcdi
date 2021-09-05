@@ -1105,7 +1105,7 @@ class DiffractometerCRISTAL(Diffractometer):
             arrays=monitor, frames_logical=frames_logical
         )
 
-        return data, mask2d, monitor, frames_logical
+        return data, mask2d, monitor[0], frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1513,7 +1513,7 @@ class DiffractometerID01(Diffractometer):
         monitor = util.apply_logical_array(
             arrays=monitor, frames_logical=frames_logical
         )
-        return data, mask2d, monitor, frames_logical
+        return data, mask2d, monitor[0], frames_logical
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1537,7 +1537,7 @@ class DiffractometerID01(Diffractometer):
         old_names = False
         if not setup.custom_scan:
             motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_positions = logfile[
+            motor_values = logfile[
                 str(scan_number) + ".1"
             ].motor_positions
             # positioners
@@ -1545,17 +1545,17 @@ class DiffractometerID01(Diffractometer):
             labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
 
             try:
-                nu = motor_positions[motor_names.index("nu")]  # positioner
+                nu = motor_values[motor_names.index("nu")]  # positioner
             except ValueError:
                 print("'nu' not in the list, trying 'Nu'")
-                nu = motor_positions[motor_names.index("Nu")]  # positioner
+                nu = motor_values[motor_names.index("Nu")]  # positioner
                 print("Defaulting to old ID01 motor names")
                 old_names = True
 
             if not old_names:
-                mu = motor_positions[motor_names.index("mu")]  # positioner
+                mu = motor_values[motor_names.index("mu")]  # positioner
             else:
-                mu = motor_positions[motor_names.index("Mu")]  # positioner
+                mu = motor_values[motor_names.index("Mu")]  # positioner
 
             if follow_bragg:
                 if not old_names:
@@ -1564,32 +1564,32 @@ class DiffractometerID01(Diffractometer):
                     delta = labels_data[labels.index("Delta"), :]  # scanned
             else:
                 if not old_names:
-                    delta = motor_positions[motor_names.index("del")]  # positioner
+                    delta = motor_values[motor_names.index("del")]  # positioner
                 else:
-                    delta = motor_positions[motor_names.index("Delta")]  # positioner
+                    delta = motor_values[motor_names.index("Delta")]  # positioner
 
             if setup.rocking_angle == "outofplane":
                 if not old_names:
                     eta = labels_data[labels.index("eta"), :]
-                    phi = motor_positions[motor_names.index("phi")]
+                    phi = motor_values[motor_names.index("phi")]
                 else:
                     eta = labels_data[labels.index("Eta"), :]
-                    phi = motor_positions[motor_names.index("Phi")]
+                    phi = motor_values[motor_names.index("Phi")]
             elif setup.rocking_angle == "inplane":
                 if not old_names:
                     phi = labels_data[labels.index("phi"), :]
-                    eta = motor_positions[motor_names.index("eta")]
+                    eta = motor_values[motor_names.index("eta")]
                 else:
                     phi = labels_data[labels.index("Phi"), :]
-                    eta = motor_positions[motor_names.index("Eta")]
+                    eta = motor_values[motor_names.index("Eta")]
             elif setup.rocking_angle == "energy":
                 raw_energy = labels_data[labels.index("energy"), :]  # in kev, scanned
                 if not old_names:
-                    phi = motor_positions[motor_names.index("phi")]  # positioner
-                    eta = motor_positions[motor_names.index("eta")]  # positioner
+                    phi = motor_values[motor_names.index("phi")]  # positioner
+                    eta = motor_values[motor_names.index("eta")]  # positioner
                 else:
-                    phi = motor_positions[motor_names.index("Phi")]  # positioner
-                    eta = motor_positions[motor_names.index("Eta")]  # positioner
+                    phi = motor_values[motor_names.index("Phi")]  # positioner
+                    eta = motor_values[motor_names.index("Eta")]  # positioner
                 energy = raw_energy * 1000.0  # switch to eV
 
             else:
@@ -1811,7 +1811,7 @@ class DiffractometerNANOMAX(Diffractometer):
         monitor = util.apply_logical_array(
             arrays=monitor, frames_logical=frames_logical
         )
-        return data, mask2d, monitor, frames_logical
+        return data, mask2d, monitor[0], frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -2124,7 +2124,7 @@ class DiffractometerP10(Diffractometer):
         monitor = util.apply_logical_array(
             arrays=monitor, frames_logical=frames_logical
         )
-        return data, mask2d, monitor, frames_logical
+        return data, mask2d, monitor[0], frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -2422,7 +2422,7 @@ class DiffractometerSIXS(Diffractometer):
         monitor = util.apply_logical_array(
             arrays=monitor, frames_logical=frames_logical
         )
-        return data, mask2d, monitor, frames_logical
+        return data, mask2d, monitor[0], frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
