@@ -443,7 +443,7 @@ if simulation:
         eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0)
     )
 else:
-    qx, qz, qy, frames_logical = setup.calc_qvalues_xrutils(
+    qx, qz, qy, _ = setup.calc_qvalues_xrutils(
         logfile=logfile,
         hxrd=hxrd,
         nb_frames=numz,
