@@ -15,7 +15,7 @@ import gc
 import json
 import h5py
 from matplotlib import pyplot as plt
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import os
 from scipy.interpolate import interp1d, RegularGridInterpolator
@@ -74,7 +74,7 @@ def apply_logical_array(arrays, frames_logical):
         arrays = (arrays,)
     valid.valid_1d_array(
         frames_logical,
-        allowed_types=int,
+        allowed_types=Integral,
         allow_none=False,
         allowed_values=(-1, 0, 1),
         name="frames_logical"

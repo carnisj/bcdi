@@ -762,7 +762,7 @@ class Diffractometer(ABC):
           a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
           motor values accordingly.
         """
-        return data, np.ones(data.shape[0])
+        return data, np.ones(data.shape[0], dtype=int)
 
     def valid_name(self, stage_name):
         """

@@ -214,7 +214,7 @@ def valid_1d_array(array, min_length=1, allow_none=True,
     valid_ndarray(array, ndim=(1,))
 
     if allowed_types is not None:
-        if any(type(val) not in allowed_types for val in array):
+        if all(not isinstance(array[0], my_type) for my_type in allowed_types):
             raise TypeError(f"{name}: got an unexpected type not in {allowed_types}")
 
     if allowed_values is not None:

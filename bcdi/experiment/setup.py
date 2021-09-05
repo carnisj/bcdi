@@ -10,7 +10,7 @@
 """Setup class that defines the experimental geometry."""
 from collections.abc import Sequence
 import gc
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import pathlib
 from scipy.interpolate import RegularGridInterpolator
@@ -708,7 +708,7 @@ class Setup:
         valid.valid_1d_array(
             frames_logical,
             allow_none=True,
-            allowed_types=int,
+            allowed_types=Integral,
             allowed_values=(-1, 0, 1),
             name="frames_logical"
         )

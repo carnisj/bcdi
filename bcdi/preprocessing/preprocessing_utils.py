@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import datetime
 import matplotlib.pyplot as plt
 import multiprocessing as mp
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import sys
 from scipy.ndimage.measurements import center_of_mass
@@ -1407,7 +1407,7 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
         frames_logical = np.ones(data.shape[0])
     valid.valid_1d_array(
         frames_logical,
-        allowed_types=int,
+        allowed_types=Integral,
         allow_none=False,
         allowed_values=(0, 1),
         name="frames_logical"
