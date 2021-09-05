@@ -1115,8 +1115,10 @@ class DiffractometerCRISTAL(Diffractometer):
         :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
-           The length of frames_logical is equal to the number of measured frames.
+          - 'frames_logical': array of length the number of measured frames.
+            In case of cropping/padding the number of frames changes. A frame whose
+            index is set to 1 means that it is used, 0 means not used, -1 means
+            padded (added) frame
 
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
@@ -1542,10 +1544,12 @@ class DiffractometerID01(Diffractometer):
         :param scan_number: the scan number to load
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
-           The length of frames_logical is equal to the number of measured frames.
-         - 'follow_bragg': boolean, True for energy scans where the detector position
-           is changed during the scan to follow the Bragg peak.
+          - 'frames_logical': array of length the number of measured frames.
+            In case of cropping/padding the number of frames changes. A frame whose
+            index is set to 1 means that it is used, 0 means not used, -1 means
+            padded (added) frame
+          - 'follow_bragg': boolean, True for energy scans where the detector position
+            is changed during the scan to follow the Bragg peak.
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
@@ -2474,8 +2478,10 @@ class DiffractometerSIXS(Diffractometer):
         :param logfile: nxsReady Dataset object of SIXS .nxs scan file
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
-           The length of frames_logical is equal to the number of measured frames.
+          - 'frames_logical': array of length the number of measured frames.
+            In case of cropping/padding the number of frames changes. A frame whose
+            index is set to 1 means that it is used, 0 means not used, -1 means
+            padded (added) frame
 
         :return: (beta, mu, gamma, delta, energy) values
         """

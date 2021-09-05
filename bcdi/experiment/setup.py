@@ -683,9 +683,10 @@ class Setup:
         :param kwargs:
 
          - 'scan_number': the scan number to load
-         - 'frames_logical': array of initial length the number of measured frames.
-           In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used..
+         - 'frames_logical': array of length the number of measured frames.
+           In case of cropping/padding the number of frames changes. A frame whose
+           index is set to 1 means that it is used, 0 means not used, -1 means padded
+           (added) frame
          -'follow_bragg': True when in energy scans the detector was also
            scanned to follow the Bragg peak
 

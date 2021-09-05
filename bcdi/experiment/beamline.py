@@ -347,9 +347,10 @@ class Beamline(ABC):
           - 'logfile': the logfile created in Setup.create_logfile()
           - 'nb_frames': the number of frames in the current dataset
           - 'scan_number': the scan number to load
-          - 'frames_logical': array of initial length the number of measured frames.
-            In case of padding the length changes. A frame whose index is set to 1 means
-            that it is used, 0 means not used.
+          - 'frames_logical': array of length the number of measured frames.
+            In case of cropping/padding the number of frames changes. A frame whose
+            index is set to 1 means that it is used, 0 means not used, -1 means
+            padded (added) frame
           -'follow_bragg': True when in energy scans the detector was also
             scanned to follow the Bragg peak
 
@@ -489,9 +490,10 @@ class BeamlineCRISTAL(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
@@ -821,9 +823,10 @@ class BeamlineID01(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
@@ -1149,9 +1152,10 @@ class BeamlineNANOMAX(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
@@ -1474,9 +1478,10 @@ class BeamlineP10(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
@@ -1880,9 +1885,10 @@ class BeamlineSIXS(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
@@ -2142,9 +2148,10 @@ class Beamline34ID(Beamline):
         :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
-        :param frames_logical: array of initial length the number of measured frames.
-         In case of padding the length changes. A frame whose index is set to 1 means
-         that it is used, 0 means not used.
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
         :param follow_bragg: True when in energy scans the detector was also scanned
          to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
