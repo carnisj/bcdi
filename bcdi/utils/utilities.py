@@ -125,6 +125,58 @@ def bin_data(array, binning, debugging=False):
     return newarray
 
 
+def bin_parameters(binning, nb_frames, params, debugging=True):
+    """
+    Bin some parameters.
+
+    It selects parameter values taking into account an eventual binning of the data.
+    The use case is to bin diffractometer motor positions for a dataset binned along
+    the rocking curve axis.
+
+    :param binning: binning factor for the axis corresponding to the rocking curve
+    :param nb_frames: number of frames of the rocking curve dimension
+    :param params: list of parameters
+    :param debugging: set to True to have printed parameters
+    :return: parameters of the same length, taking into account binning
+    """
+    if binning == 1:  # nothing to do
+        return params
+
+    if debugging:
+        print(params)
+
+    nb_param = len(params)
+    print(
+        nb_param,
+        "motor parameters modified to take into account "
+        "binning of the rocking curve axis",
+    )
+
+    if (binning % 1) != 0:
+        raise ValueError("Invalid binning value")
+    for idx, val in enumerate(params):
+        try:
+            param_length = len(params[idx])
+            if param_length != nb_frames:
+                raise ValueError(
+                    "parameter ",
+                    idx,
+                    "length",
+                    param_length,
+                    "different from nb_frames",
+                    nb_frames,
+                )
+        except TypeError:  # int or float
+            params[idx] = np.repeat(params[idx], nb_frames)
+        temp = params[idx]
+        params[idx] = temp[::binning]
+
+    if debugging:
+        print(params)
+
+    return params
+
+
 def catch_error(exception):
     """
     Process exception in asynchronous multiprocessing.
