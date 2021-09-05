@@ -557,7 +557,7 @@ class Diffractometer(ABC):
          totality of the following keys:
 
           - 'logfile': file containing the information about the scan and image numbers
-            (specfile, .fio...)
+            (specfile, .fio...), created in Setup.create_logfile()
           - 'scan_number': the scan number to load
           - 'detector': the detector object: Class experiment_utils.Detector()
           - 'setup': an instance of the class Setup
@@ -572,11 +572,14 @@ class Diffractometer(ABC):
             detector frame while loading. It saves a lot of memory for large detectors.
           - 'debugging': set to True to see plots
 
-        :return:
+        :return: in this order
 
          - the 3D data array in the detector frame
          - the 2D mask array
-         - the monitor values for normalization
+         - the monitor values for normalization as a 1D array of length data.shape[0]
+         - frames_logical as a 1D array of length the original number of 2D frames, 0 if
+          a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
+          motor values accordingly.
 
         """
 
@@ -648,7 +651,8 @@ class Diffractometer(ABC):
         This method is beamline dependent. It must be implemented in the child classes.
 
         :param kwargs: beamline_specific parameters
-        :return: the diffractometer motors positions for the particular setup.
+        :return: the diffractometer motors positions for the particular setup. The
+        energy (1D array or number) is expected to be the last element of the tuple.
         """
 
     @staticmethod
@@ -742,6 +746,27 @@ class Diffractometer(ABC):
         # from outer circles to inner circles
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
+    @staticmethod
+    def select_frames(data, monitor):
+        """
+        Select frames, updae the monitor and create a logical array.
+
+        Override this method in the child classes of you want to implement a particular
+        behavior, for example if two frames were taken at a same motor position and you
+        want to delete one or average them...
+
+        :param data: a 3D data array
+        :param monitor: a 1D array of length data.shape[0], corresponding to the
+         intensity monitor values
+        :return:
+         - the updated 3D data, eventually cropped along the first axis
+         - the updated monitor, eventually cropped
+         - frames_logical as a 1D array of length the original number of 2D frames, 0 if
+          a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
+          motor values accordingly.
+        """
+        return data, monitor, np.ones(data.shape[0])
+
     def valid_name(self, stage_name):
         """
         Check if the stage is defined.
@@ -796,7 +821,7 @@ class Diffractometer34ID(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, delta, gamma = self.motor_positions(setup=setup)
+        theta, phi, delta, gamma, _ = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
@@ -831,12 +856,12 @@ class Diffractometer34ID(Diffractometer):
         """Load 34ID-C data including detector/background corrections."""
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
 
-    def motor_positions(self, setup):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :return: (theta, phi, delta, gamma) motor positions
+        :return: (theta, phi, delta, gamma, energy) values
         """
         if not setup.custom_scan:
             raise NotImplementedError("Only custom_scan implemented for 34ID")
@@ -844,9 +869,7 @@ class Diffractometer34ID(Diffractometer):
         phi = setup.custom_motors["phi"]
         gamma = setup.custom_motors["gamma"]
         delta = setup.custom_motors["delta"]
-        energy = setup.energy
-
-        return theta, phi, delta, gamma, energy
+        return theta, phi, delta, gamma, setup.energy
 
     @staticmethod
     def read_device(**kwargs):
@@ -1076,7 +1099,11 @@ class DiffractometerCRISTAL(Diffractometer):
         mask2d = mask2d[
             loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
         ]
-        return data, mask2d, monitor
+
+        # select frames
+        data, monitor, frames_logical = self.select_frames(data, monitor)
+
+        return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -1088,27 +1115,14 @@ class DiffractometerCRISTAL(Diffractometer):
         :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: an instance of the class Setup
         :param kwargs:
+         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
+           The length of frames_logical is equal to the number of measured frames.
 
-         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
-           (padded frame). The initial length is equal to the number of measured
-           frames. In case of data padding, the length changes.
-
-        :return: (mgomega, mgphi, gamma, delta) motor positions
+        :return: (mgomega, mgphi, gamma, delta, energy) values
         """
         # check and load kwargs
-        valid.valid_kwargs(
-            kwargs=kwargs,
-            allowed_kwargs={"follow_bragg", "frames_logical"},
-            name="kwargs",
-        )
         frames_logical = kwargs.get("frames_logical")
-        if frames_logical is not None:
-            if not isinstance(frames_logical, (list, np.ndarray)):
-                raise TypeError("frames_logical should be a list/array")
-            if not all(val in {-1, 0, 1} for val in frames_logical):
-                raise ValueError(
-                    "frames_logical should be a list of values in {-1, 0, 1}"
-                )
+        valid.valid_1d_array(frames_logical, allowed_values=(0, 1))
 
         if not setup.custom_scan:
             group_key = list(logfile.keys())[0]
@@ -1136,7 +1150,7 @@ class DiffractometerCRISTAL(Diffractometer):
             if frames_logical is not None:
                 scanned_motor = scanned_motor[
                     np.nonzero(frames_logical)
-                ]  # exclude positions corresponding to empty frames
+                ]  # exclude positions corresponding to deleted frames
 
             if setup.rocking_angle == "outofplane":
                 mgomega = scanned_motor  # mgomega is scanned
@@ -1370,7 +1384,7 @@ class DiffractometerID01(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
-        mu, eta, phi, nu, delta, _, frames_logical = self.motor_positions(
+        mu, eta, phi, nu, delta, _ = self.motor_positions(
             logfile=logfile,
             scan_number=scan_number,
             setup=setup,
@@ -1513,7 +1527,11 @@ class DiffractometerID01(Diffractometer):
         mask2d = mask2d[
             loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
         ]
-        return data, mask2d, monitor
+
+        # select frames
+        data, monitor, frames_logical = self.select_frames(data, monitor)
+
+        return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
         """
@@ -1524,31 +1542,18 @@ class DiffractometerID01(Diffractometer):
         :param scan_number: the scan number to load
         :param setup: an instance of the class Setup
         :param kwargs:
-
-         - 'frames_logical': array of 0 (frame non used) or 1 (frame used) or -1
-           (padded frame). The initial length is equal to the number of measured
-           frames. In case of data padding, the length changes.
+         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
+           The length of frames_logical is equal to the number of measured frames.
          - 'follow_bragg': boolean, True for energy scans where the detector position
            is changed during the scan to follow the Bragg peak.
 
-        :return: (mu, eta, phi, nu, delta, energy) motor positions
+        :return: (mu, eta, phi, nu, delta, energy) values
         """
         # check and load kwargs
-        valid.valid_kwargs(
-            kwargs=kwargs,
-            allowed_kwargs={"follow_bragg", "frames_logical"},
-            name="kwargs",
-        )
         follow_bragg = kwargs.get("follow_bragg", False)
         frames_logical = kwargs.get("frames_logical")
         valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
-        if frames_logical is not None:
-            if not isinstance(frames_logical, (list, np.ndarray)):
-                raise TypeError("frames_logical should be a list/array")
-            if not all(val in {-1, 0, 1} for val in frames_logical):
-                raise ValueError(
-                    "frames_logical should be a list of values in {-1, 0, 1}"
-                )
+        valid.valid_1d_array(frames_logical, allowed_values=(0, 1))
 
         energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
         old_names = False
@@ -1641,7 +1646,7 @@ class DiffractometerID01(Diffractometer):
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
 
-        return mu, eta, phi, nu, delta, energy, frames_logical
+        return mu, eta, phi, nu, delta, energy
 
     @staticmethod
     def read_device(logfile, scan_number, device_name, **kwargs):
@@ -1727,7 +1732,7 @@ class DiffractometerNANOMAX(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, gamma, delta, _, _ = self.motor_positions(
+        theta, phi, gamma, delta, _, = self.motor_positions(
             logfile=logfile, setup=setup
         )
 
@@ -1835,16 +1840,20 @@ class DiffractometerNANOMAX(Diffractometer):
         mask2d = mask2d[
             loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
         ]
-        return data, mask2d, monitor
 
-    def motor_positions(self, logfile, setup):
+        # select frames
+        data, monitor, frames_logical = self.select_frames(data, monitor)
+
+        return data, mask2d, monitor, frames_logical
+
+    def motor_positions(self, logfile, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
 
         :param logfile: Silx SpecFile object containing the information about the scan
          and image numbers
         :param setup: an instance of the class Setup
-        :return: (theta, phi, gamma, delta, energy, radius) motor positions
+        :return: (theta, phi, gamma, delta, energy) values
         """
         if not setup.custom_scan:
             # Detector positions
@@ -1853,7 +1862,6 @@ class DiffractometerNANOMAX(Diffractometer):
             # positionners
             delta = logfile["/" + group_key + "/snapshot/delta"][:]
             gamma = logfile["/" + group_key + "/snapshot/gamma"][:]
-            radius = logfile["/" + group_key + "/snapshot/radius"][:]
             energy = logfile["/" + group_key + "/snapshot/energy"][:]
 
             if setup.rocking_angle == "inplane":
@@ -1884,10 +1892,9 @@ class DiffractometerNANOMAX(Diffractometer):
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
-            radius = setup.custom_motors["radius"]
             energy = setup.custom_motors["energy"]
 
-        return theta, phi, gamma, delta, energy, radius
+        return theta, phi, gamma, delta, energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -1961,7 +1968,7 @@ class DiffractometerP10(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mu, om, chi, phi, gamma, delta = self.motor_positions(
+        mu, om, chi, phi, gamma, delta, _ = self.motor_positions(
             logfile=logfile, setup=setup
         )
 
@@ -2142,15 +2149,19 @@ class DiffractometerP10(Diffractometer):
         mask2d = mask2d[
             loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
         ]
-        return data, mask2d, monitor
 
-    def motor_positions(self, logfile, setup):
+        # select frames
+        data, monitor, frames_logical = self.select_frames(data, monitor)
+
+        return data, mask2d, monitor, frames_logical
+
+    def motor_positions(self, logfile, setup, **kwargs):
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param logfile: path of the . fio file containing the information about the scan
         :param setup: an instance of the class Setup
-        :return: (om, phi, chi, mu, gamma, delta) motor positions
+        :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
         if not setup.custom_scan:
             fio = open(logfile, "r")
@@ -2336,7 +2347,7 @@ class DiffractometerSIXS(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        beta, mu, gamma, delta, frames_logical = self.motor_positions(
+        beta, mu, gamma, delta, _ = self.motor_positions(
             logfile=logfile, setup=setup, frames_logical=frames_logical
         )
         # define the circles of interest for BCDI
@@ -2450,7 +2461,11 @@ class DiffractometerSIXS(Diffractometer):
         mask2d = mask2d[
             loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
         ]
-        return data, mask2d, monitor
+
+        # select frames
+        data, monitor, frames_logical = self.select_frames(data, monitor)
+
+        return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
         """
@@ -2459,25 +2474,17 @@ class DiffractometerSIXS(Diffractometer):
         :param logfile: nxsReady Dataset object of SIXS .nxs scan file
         :param setup: an instance of the class Setup
         :param kwargs:
+         - 'frames_logical': 1D array of 0 (frame non used) or 1 (frame used).
+           The length of frames_logical is equal to the number of measured frames.
 
-         - frames_logical: array of 0 (frame non used) or 1 (frame used) or -1
-           (padded frame). The initial length is equal to the number of measured
-           frames. In case of data padding, the length changes.
-
-        :return: (beta, mu, gamma, delta) motor positions and updated frames_logical
+        :return: (beta, mu, gamma, delta, energy) values
         """
         # check and load kwargs
         valid.valid_kwargs(
             kwargs=kwargs, allowed_kwargs={"frames_logical"}, name="kwargs"
         )
         frames_logical = kwargs.get("frames_logical")
-        if frames_logical is not None:
-            if not isinstance(frames_logical, (list, np.ndarray)):
-                raise TypeError("frames_logical should be a list/array")
-            if not all(val in {-1, 0, 1} for val in frames_logical):
-                raise ValueError(
-                    "frames_logical should be a list of values in {-1, 0, 1}"
-                )
+        valid.valid_1d_array(frames_logical, allowed_values=(0, 1))
 
         if not setup.custom_scan:
             delta = logfile.delta[0]  # not scanned
@@ -2512,7 +2519,7 @@ class DiffractometerSIXS(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return beta, mu, gamma, delta, setup.energy, frames_logical
+        return beta, mu, gamma, delta, setup.energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):

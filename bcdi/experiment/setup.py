@@ -685,49 +685,47 @@ class Setup:
          - 'scan_number': the scan number to load
          - 'frames_logical': array of initial length the number of measured frames.
            In case of padding the length changes. A frame whose index is set to 1 means
-           that it is used, 0 means not used, -1 means padded (added) frame.
+           that it is used, 0 means not used..
          -'follow_bragg': True when in energy scans the detector was also
            scanned to follow the Bragg peak
 
         :return:
-
-         - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal frame:
-           for incident angle = 0, x is downstream, y outboard, and z vertical up. The
-           output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values seem wrong,
-           check if diffractometer angles have default values set at 0, otherwise use the
-           parameter setup.diffractometer.sample_offsets to correct it.
+         - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal
+           frame: for incident angle = 0, x is downstream, y outboard, and z vertical
+           up. The output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values
+           seem wrong, check if diffractometer angles have default values set at 0,
+           otherwise use the parameter setup.diffractometer.sample_offsets to correct it
          - updated frames_logical
 
         """
+        # check some parameters
         follow_bragg = kwargs.get("follow_bragg", False)
+        if not isinstance(follow_bragg, bool):
+            raise TypeError("follow_bragg should be a boolean, got "
+                            f"{type(follow_bragg)}")
         frames_logical = kwargs.get("frames_logical")
+        valid.valid_1d_array(frames_logical, allow_none=True, allowed_values=(0, 1))
         scan_number = kwargs.get("scan_number")
+        if not isinstance(scan_number, int):
+            raise TypeError("scan_number should be an integer, got "
+                            f"{type(scan_number)}")
 
-        if frames_logical is None:
-            # not sure why we need this
-            frames_logical = self._beamline.retrieve_data_length()
-
-        motor_positions = self.diffractometer.motor_positions(
-            logfile=logfile,
+        # process motor positions
+        processed_positions = self._beamline.process_positions(
             setup=self,
+            logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
 
-        processed_positions = self._beamline.process_positions(
-            motor_positions=motor_positions,
-            binning=self.detector.binning,
-            rocking_angle=self.rocking_angle,
-            nb_frames=nb_frames
-        )
-
+        # calculate q values
         qx, qy, qz = hxrd.Ang2Q.area(
             **processed_positions[:-1],
             en=processed_positions[-1],
             delta=self.detector.offsets
         )
-
         print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
         return qx, qz, qy, frames_logical
 
@@ -809,11 +807,12 @@ class Setup:
                 title=title + " before interpolation\n",
             )
 
-        ortho_matrix = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_matrix(
             array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
             pixel_x=self.detector.unbinned_pixel_size[1],
             pixel_y=self.detector.unbinned_pixel_size[0],
+            direct_space=True,
         )
 
         ################################################
@@ -1272,11 +1271,12 @@ class Setup:
         ######################################################################
         # calculate the transformation matrix based on the beamline geometry #
         ######################################################################
-        transfer_matrix = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_matrix(
             array_shape=input_shape,
             tilt_angle=tilt,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
 
@@ -1874,11 +1874,12 @@ class Setup:
             name="array_shape",
         )
 
-        ortho_matrix = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_matrix(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
         # ortho_matrix is the transformation matrix
@@ -1905,7 +1906,7 @@ class Setup:
         return new_z, new_y, new_x
 
     def transformation_matrix(
-        self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True
+        self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
     ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
@@ -1921,7 +1922,6 @@ class Setup:
          direct space
         :param verbose: True to have printed comments
         :return:
-
          - the transformation matrix from the detector frame to the laboratory frame
          - the q offset (3D vector) if direct_space is False.
 
@@ -1971,7 +1971,7 @@ class Setup:
             mymatrix[:, 0] = array_shape[2] * mymatrix[:, 0]
             mymatrix[:, 1] = array_shape[1] * mymatrix[:, 1]
             mymatrix[:, 2] = array_shape[0] * mymatrix[:, 2]
-            return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
+            return 2 * np.pi * np.linalg.inv(mymatrix).transpose(), None
 
         # reciprocal length scale in  1/nm
         return mymatrix, q_offset
@@ -1999,12 +1999,12 @@ class Setup:
             name="array_shape",
         )
 
-        transfer_matrix = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_matrix(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
-            direct_space=True,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
         # transfer_matrix is the transformation matrix
