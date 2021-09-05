@@ -73,7 +73,11 @@ def apply_logical_array(arrays, frames_logical):
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
     valid.valid_1d_array(
-        frames_logical, allow_none=False, allowed_values=(-1, 0, 1)
+        frames_logical,
+        allowed_types=int,
+        allow_none=False,
+        allowed_values=(-1, 0, 1),
+        name="frames_logical"
     )
 
     # number of measured frames during the experiment

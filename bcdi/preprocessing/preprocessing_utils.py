@@ -1405,7 +1405,13 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
 
     if frames_logical is None:
         frames_logical = np.ones(data.shape[0])
-    valid.valid_1d_array(frames_logical, allow_none=False, allowed_values=(0, 1))
+    valid.valid_1d_array(
+        frames_logical,
+        allowed_types=int,
+        allow_none=False,
+        allowed_values=(0, 1),
+        name="frames_logical"
+    )
 
     # check if there are empty frames
     is_intensity = np.zeros(data.shape[0])
