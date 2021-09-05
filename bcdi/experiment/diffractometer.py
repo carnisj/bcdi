@@ -1101,7 +1101,9 @@ class DiffractometerCRISTAL(Diffractometer):
         data, frames_logical = self.select_frames(data)
         
         # crop the monitor if necessary
-        monitor = util.apply_logical_array(array=monitor, frames_logical=frames_logical)
+        monitor = util.apply_logical_array(
+            arrays=monitor, frames_logical=frames_logical
+        )
 
         return data, mask2d, monitor, frames_logical
 
@@ -1508,8 +1510,9 @@ class DiffractometerID01(Diffractometer):
         data, frames_logical = self.select_frames(data)
 
         # crop the monitor if necessary
-        monitor = util.apply_logical_array(array=monitor, frames_logical=frames_logical)
-        
+        monitor = util.apply_logical_array(
+            arrays=monitor, frames_logical=frames_logical
+        )
         return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, scan_number, setup, **kwargs):
@@ -1805,8 +1808,9 @@ class DiffractometerNANOMAX(Diffractometer):
         data, frames_logical = self.select_frames(data)
 
         # crop the monitor if necessary
-        monitor = util.apply_logical_array(array=monitor, frames_logical=frames_logical)
-
+        monitor = util.apply_logical_array(
+            arrays=monitor, frames_logical=frames_logical
+        )
         return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
@@ -2117,8 +2121,9 @@ class DiffractometerP10(Diffractometer):
         data, frames_logical = self.select_frames(data)
 
         # crop the monitor if necessary
-        monitor = util.apply_logical_array(array=monitor, frames_logical=frames_logical)
-
+        monitor = util.apply_logical_array(
+            arrays=monitor, frames_logical=frames_logical
+        )
         return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
@@ -2414,8 +2419,9 @@ class DiffractometerSIXS(Diffractometer):
         data, frames_logical = self.select_frames(data)
 
         # crop the monitor if necessary
-        monitor = util.apply_logical_array(array=monitor, frames_logical=frames_logical)
-
+        monitor = util.apply_logical_array(
+            arrays=monitor, frames_logical=frames_logical
+        )
         return data, mask2d, monitor, frames_logical
 
     def motor_positions(self, logfile, setup, **kwargs):
