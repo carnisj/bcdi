@@ -705,7 +705,7 @@ class Setup:
             raise TypeError("follow_bragg should be a boolean, got "
                             f"{type(follow_bragg)}")
         frames_logical = kwargs.get("frames_logical")
-        valid.valid_1d_array(frames_logical, allow_none=True, allowed_values=(0, 1))
+        valid.valid_1d_array(frames_logical, allow_none=True, allowed_values=(-1, 0, 1))
         scan_number = kwargs.get("scan_number")
         if not isinstance(scan_number, int):
             raise TypeError("scan_number should be an integer, got "
