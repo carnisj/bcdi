@@ -372,11 +372,8 @@ diff_pattern = util.bin_data(
 )
 mask = util.bin_data(array=mask, binning=phasing_binning, debugging=False)
 
-(
-    numz,
-    numy,
-    numx,
-) = diff_pattern.shape  # this shape will be used for the calculation of q values
+numz, numy, numx, = diff_pattern.shape
+# this shape will be used for the calculation of q values
 print(
     f"\nMeasured data shape = {numz}, {numy}, {numx},"
     f" Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}"
