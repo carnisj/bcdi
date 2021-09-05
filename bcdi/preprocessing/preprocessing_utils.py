@@ -1410,7 +1410,7 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
         allowed_types=Integral,
         allow_none=False,
         allowed_values=(0, 1),
-        name="frames_logical"
+        name="frames_logical",
     )
 
     # check if there are empty frames
@@ -3054,7 +3054,7 @@ def load_data(
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
     else:
-        data, mask2d, monitor, frames_logical= setup.diffractometer.load_data(
+        data, mask2d, monitor, frames_logical = setup.diffractometer.load_data(
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,

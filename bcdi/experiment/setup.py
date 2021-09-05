@@ -702,20 +702,22 @@ class Setup:
         # check some parameters
         follow_bragg = kwargs.get("follow_bragg", False)
         if not isinstance(follow_bragg, bool):
-            raise TypeError("follow_bragg should be a boolean, got "
-                            f"{type(follow_bragg)}")
+            raise TypeError(
+                "follow_bragg should be a boolean, got " f"{type(follow_bragg)}"
+            )
         frames_logical = kwargs.get("frames_logical")
         valid.valid_1d_array(
             frames_logical,
             allow_none=True,
             allowed_types=Integral,
             allowed_values=(-1, 0, 1),
-            name="frames_logical"
+            name="frames_logical",
         )
         scan_number = kwargs.get("scan_number")
         if not isinstance(scan_number, int):
-            raise TypeError("scan_number should be an integer, got "
-                            f"{type(scan_number)}")
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
 
         # process motor positions
         processed_positions = self._beamline.process_positions(
@@ -724,14 +726,14 @@ class Setup:
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
 
         # calculate q values
         qx, qy, qz = hxrd.Ang2Q.area(
             **processed_positions[:-1],
             en=processed_positions[-1],
-            delta=self.detector.offsets
+            delta=self.detector.offsets,
         )
         print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
         return qx, qz, qy, frames_logical

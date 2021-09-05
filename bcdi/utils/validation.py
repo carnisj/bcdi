@@ -170,8 +170,14 @@ def valid_container(
     return True
 
 
-def valid_1d_array(array, min_length=1, allow_none=True,
-                   allowed_types=None, allowed_values=None, name=None):
+def valid_1d_array(
+    array,
+    min_length=1,
+    allow_none=True,
+    allowed_types=None,
+    allowed_values=None,
+    name=None,
+):
     """
     Check if the array is 1D and satisfies the requirements.
 
@@ -192,22 +198,26 @@ def valid_1d_array(array, min_length=1, allow_none=True,
         allowed_types=int,
         allow_none=False,
         min_included=1,
-        name="min_length"
+        name="min_length",
     )
     if isinstance(allowed_types, type):
         allowed_types = (allowed_types,)
-    valid_container(allowed_types,
-                    container_types=(tuple, list, set),
-                    allow_none=True,
-                    item_types=type,
-                    name="allowed_types")
+    valid_container(
+        allowed_types,
+        container_types=(tuple, list, set),
+        allow_none=True,
+        item_types=type,
+        name="allowed_types",
+    )
     if isinstance(allowed_values, Number):
         allowed_values = (allowed_values,)
-    valid_container(allowed_values,
-                    container_types=(tuple, list, set, np.ndarray),
-                    allow_none=True,
-                    item_types=int,
-                    name="allowed_values")
+    valid_container(
+        allowed_values,
+        container_types=(tuple, list, set, np.ndarray),
+        allow_none=True,
+        item_types=int,
+        name="allowed_values",
+    )
     name = name or "array"
 
     # check requirements
@@ -382,7 +392,8 @@ def valid_item(
 
 
 def valid_ndarray(
-        arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True, name=None):
+    arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True, name=None
+):
     """
     Check that arrays have the same shape and the correct number of dimensions.
 
@@ -434,7 +445,8 @@ def valid_ndarray(
         ndim = (arrays[0].ndim,)
     if not all(array.ndim in ndim for array in arrays):
         raise ValueError(
-            f"{name}: all arrays should have a number of dimensions in {ndim}")
+            f"{name}: all arrays should have a number of dimensions in {ndim}"
+        )
 
     if fix_ndim:
         if not all(array.ndim == arrays[0].ndim for array in arrays):

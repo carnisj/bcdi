@@ -473,12 +473,12 @@ class BeamlineCRISTAL(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at CRISTAL.
@@ -502,7 +502,7 @@ class BeamlineCRISTAL(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -532,11 +532,11 @@ class BeamlineCRISTAL(Beamline):
                     axis=0,
                 )
             if (
-                    nb_steps > nb_frames
+                nb_steps > nb_frames
             ):  # data has been cropped, we suppose it is centered in z dimension
                 mgomega = mgomega[
-                          (nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2
-                          ]
+                    (nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2
+                ]
 
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
             print("mgomega", mgomega)
@@ -559,7 +559,7 @@ class BeamlineCRISTAL(Beamline):
                 )
             if nb_steps > nb_frames:
                 # data has been cropped, we suppose it is centered in z dimension
-                mgphi = mgphi[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+                mgphi = mgphi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
 
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -813,12 +813,12 @@ class BeamlineID01(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at ID01.
@@ -842,7 +842,7 @@ class BeamlineID01(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1149,12 +1149,12 @@ class BeamlineNANOMAX(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at NANOMAX.
@@ -1178,7 +1178,7 @@ class BeamlineNANOMAX(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1482,12 +1482,12 @@ class BeamlineP10(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at P10.
@@ -1511,7 +1511,7 @@ class BeamlineP10(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1896,12 +1896,12 @@ class BeamlineSIXS(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at SIXS.
@@ -1925,7 +1925,7 @@ class BeamlineSIXS(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1965,7 +1965,7 @@ class BeamlineSIXS(Beamline):
         return util.bin_parameters(
             binning=setup.detector.binning[0],
             nb_frames=nb_frames,
-            params=[beta, mu, gamma, delta, energy]
+            params=[beta, mu, gamma, delta, energy],
         )
 
     def transformation_matrix(
@@ -2166,12 +2166,12 @@ class Beamline34ID(Beamline):
 
     @staticmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at 34ID-C.
@@ -2195,7 +2195,7 @@ class Beamline34ID(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            follow_bragg=follow_bragg
+            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -2258,7 +2258,7 @@ class Beamline34ID(Beamline):
         return util.bin_parameters(
             binning=setup.detector.binning[0],
             nb_frames=nb_frames,
-            params=[theta, phi, delta, gamma, energy]
+            params=[theta, phi, delta, gamma, energy],
         )
 
     def transformation_matrix(

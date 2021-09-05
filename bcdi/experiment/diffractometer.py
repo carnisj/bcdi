@@ -1099,7 +1099,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         # select frames
         data, frames_logical = self.select_frames(data)
-        
+
         # crop the monitor if necessary
         monitor = util.apply_logical_array(
             arrays=monitor, frames_logical=frames_logical
@@ -1537,9 +1537,7 @@ class DiffractometerID01(Diffractometer):
         old_names = False
         if not setup.custom_scan:
             motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_values = logfile[
-                str(scan_number) + ".1"
-            ].motor_positions
+            motor_values = logfile[str(scan_number) + ".1"].motor_positions
             # positioners
             labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
             labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
@@ -1695,9 +1693,13 @@ class DiffractometerNANOMAX(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, gamma, delta, _, = self.motor_positions(
-            logfile=logfile, setup=setup
-        )
+        (
+            theta,
+            phi,
+            gamma,
+            delta,
+            _,
+        ) = self.motor_positions(logfile=logfile, setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
@@ -2444,7 +2446,7 @@ class DiffractometerSIXS(Diffractometer):
                 except AttributeError:
                     # the alias dictionnary was probably not provided
                     beta = 0
-                    
+
             # remove user-defined sample offsets (sample: beta, mu)
             beta = beta - self.sample_offsets[0]
             mu = mu - self.sample_offsets[1]

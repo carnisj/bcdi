@@ -77,7 +77,7 @@ def apply_logical_array(arrays, frames_logical):
         allowed_types=Integral,
         allow_none=False,
         allowed_values=(-1, 0, 1),
-        name="frames_logical"
+        name="frames_logical",
     )
 
     # number of measured frames during the experiment
