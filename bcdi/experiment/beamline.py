@@ -502,10 +502,17 @@ class BeamlineCRISTAL(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mgomega, mgphi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(mgomega, mgphi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
@@ -835,10 +842,17 @@ class BeamlineID01(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mu, eta, phi, nu, delta, energy = util.apply_logical_array(
+            arrays=(mu, eta, phi, nu, delta, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             print("phi", phi)
             nb_steps = len(eta)
@@ -1164,10 +1178,17 @@ class BeamlineNANOMAX(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        theta, phi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(theta, phi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
@@ -1490,10 +1511,17 @@ class BeamlineP10(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mu, om, chi, phi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(mu, om, chi, phi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         print("chi", chi)
         print("mu", mu)
         if setup.rocking_angle == "outofplane":  # om rocking curve
@@ -1897,10 +1925,17 @@ class BeamlineSIXS(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        beta, mu, gamma, delta, energy = util.apply_logical_array(
+            arrays=(beta, mu, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         print("beta", beta)
         if setup.rocking_angle == "inplane":  # mu rocking curve
             nb_steps = len(mu)
@@ -2160,10 +2195,17 @@ class Beamline34ID(Beamline):
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
-            frames_logical=frames_logical,
             follow_bragg=follow_bragg
         )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        theta, phi, delta, gamma, energy = util.apply_logical_array(
+            arrays=(theta, phi, delta, gamma, energy),
+            frames_logical=frames_logical,
+        )
 
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
         if setup.rocking_angle == "outofplane":  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
