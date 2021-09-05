@@ -79,17 +79,17 @@ def apply_logical_array(arrays, frames_logical):
     # number of measured frames during the experiment
     # frames_logical[idx]=-1 means that a frame was added (padding) at index idx
     original_frames = frames_logical[frames_logical != -1]
-    nb_original = original_frames.sum()
+    nb_original = int(original_frames.sum())
 
     output = []
-    for idx, array in enumerate(arrays):
+    for array in arrays:
         if isinstance(array, Real):
-            output[idx] = array
+            output.append(array)
         else:
             valid.valid_ndarray(array, ndim=1, shape=(nb_original,))
             # padding occurs only at the edges of the dataset, so the original data is
             # contiguous, we can use array indexing directly
-            output[idx] = array[original_frames != 0]
+            output.append(array[original_frames != 0])
     return output
 
 
