@@ -1465,12 +1465,12 @@ def remove_avg_background(
             bounds_error=False,
             fill_value=np.nan,
         )
-        for index in range(len(ind_z)):
-            array[ind_z[index], ind_y[index], ind_x[index]] = array[
-                ind_z[index], ind_y[index], ind_x[index]
+        for index, item in enumerate(ind_z):
+            array[item, ind_y[index], ind_x[index]] = array[
+                item, ind_y[index], ind_x[index]
             ] - interpolation(
                 np.sqrt(
-                    qx[ind_z[index]] ** 2
+                    qx[item] ** 2
                     + qz[ind_y[index]] ** 2
                     + qy[ind_x[index]] ** 2
                 )
@@ -1485,12 +1485,12 @@ def remove_avg_background(
             bounds_error=False,
             fill_value=np.nan,
         )
-        for index in range(len(ind_z)):
-            array[ind_z[index], ind_y[index], ind_x[index]] = array[
-                ind_z[index], ind_y[index], ind_x[index]
+        for index, item in enumerate(ind_z):
+            array[item, ind_y[index], ind_x[index]] = array[
+                item, ind_y[index], ind_x[index]
             ] / interpolation(
                 np.sqrt(
-                    qx[ind_z[index]] ** 2
+                    qx[item] ** 2
                     + qz[ind_y[index]] ** 2
                     + qy[ind_x[index]] ** 2
                 )

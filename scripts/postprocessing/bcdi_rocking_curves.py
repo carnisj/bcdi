@@ -470,9 +470,9 @@ x_axis = np.asarray(x_axis)
 uniq_xaxis = np.unique(x_axis)
 mean_tilt = np.empty(len(uniq_xaxis))
 std_tilt = np.empty(len(uniq_xaxis))
-for idx in range(len(uniq_xaxis)):
-    mean_tilt[idx] = np.mean(tilt_com[x_axis == uniq_xaxis[idx]])
-    std_tilt[idx] = np.std(tilt_com[x_axis == uniq_xaxis[idx]])
+for idx, item in enumerate(uniq_xaxis):
+    mean_tilt[idx] = np.mean(tilt_com[x_axis == item])
+    std_tilt[idx] = np.std(tilt_com[x_axis == item])
 
 fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(12, 9))
 ax0.plot(scans, tilt_com, "-o")
@@ -508,9 +508,9 @@ if convert_to_q:
     q_com = np.asarray(q_com)
     mean_q = np.empty(len(uniq_xaxis))
     std_q = np.empty(len(uniq_xaxis))
-    for idx in range(len(uniq_xaxis)):
-        mean_q[idx] = np.mean(q_com[x_axis == uniq_xaxis[idx]])
-        std_q[idx] = np.std(q_com[x_axis == uniq_xaxis[idx]])
+    for idx, item in enumerate(uniq_xaxis):
+        mean_q[idx] = np.mean(q_com[x_axis == item])
+        std_q[idx] = np.std(q_com[x_axis == item])
 
     fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, figsize=(12, 9))
     ax0.plot(scans, q_com, "-o")

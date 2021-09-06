@@ -108,11 +108,11 @@ fieldnames = ["scans", "modulus", "phase", "strain"]
 datasets = {new_list: [] for new_list in fieldnames}  # create dictionnary
 datasets["scans"].append(scans)
 
-for index in range(len(scans)):
+for index, item in enumerate(scans):
 
     file_path = filedialog.askopenfilename(
         initialdir=rootfolder,
-        title="Select amp-disp-strain file for S" + str(scans[index]),
+        title="Select amp-disp-strain file for S" + str(item),
         filetypes=[("NPZ", "*.npz")],
     )
     npzfile = np.load(file_path)
@@ -292,7 +292,7 @@ for index in range(len(scans)):
     bulk = pu.find_bulk(amp=amp, support_threshold=isosurface, method=isosurface_method)
 
     np.savez_compressed(
-        savedir + "S" + str(scans[index]) + "_amp_disp_strain_matched" + comment,
+        savedir + "S" + str(item) + "_amp_disp_strain_matched" + comment,
         amp=amp,
         displacement=phase,
         bulk=bulk,

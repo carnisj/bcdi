@@ -121,8 +121,8 @@ if np.isnan(origin[1]):
 if np.isnan(origin[2]):
     origin[2] = int(nx // 2)
 
-for idx in range(len(origin)):
-    origin[idx] = origin[idx] // bin_factor
+for idx, item in enumerate(origin):
+    item = item // bin_factor
 print("origin after binning: ", origin)
 #################
 # load q values #
@@ -170,9 +170,9 @@ if save_txt:
             + "{:10s}".format("median")
             + "\n"
         )
-        for idx in range(len(q_axis)):
+        for idx, item in enumerate(q_axis):
             file.write(
-                "{:8.6f}".format(q_axis[idx])
+                "{:8.6f}".format(item)
                 + "\t"
                 + "{:10.1f}".format(y_mean_masked[idx])
                 + "\t"
