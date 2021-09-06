@@ -52,6 +52,14 @@ class TestCreateDetector(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             create_detector("unknown")
 
+    def test_name_wrong_type(self):
+        with self.assertRaises(NotImplementedError):
+            create_detector(777)
+
+    def test_name_wrong_none(self):
+        with self.assertRaises(NotImplementedError):
+            create_detector(None)
+
 
 class TestDetector(unittest.TestCase):
     """Tests related to detector instantiation."""
