@@ -27,6 +27,32 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
+class TestCreateDetector(unittest.TestCase):
+    """Tests related to create_detector."""
+
+    def test_create_maxipix(self):
+        self.assertIsInstance(create_detector("Maxipix"), Maxipix)
+
+    def test_create_eiger2m(self):
+        self.assertIsInstance(create_detector("Eiger2M"), Eiger2M)
+
+    def test_create_eiger4m(self):
+        self.assertIsInstance(create_detector("Eiger4M"), Eiger4M)
+
+    def test_create_timepix(self):
+        self.assertIsInstance(create_detector("Timepix"), Timepix)
+
+    def test_create_merlin(self):
+        self.assertIsInstance(create_detector("Merlin"), Merlin)
+
+    def test_create_dummy(self):
+        self.assertIsInstance(create_detector("Dummy"), Dummy)
+
+    def test_create_unknown_detector(self):
+        with self.assertRaises(NotImplementedError):
+            create_detector("unknown")
+
+
 class TestDetector(unittest.TestCase):
     """Tests related to detector instantiation."""
 
@@ -46,9 +72,6 @@ class TestMaxipix(unittest.TestCase):
         self.det = Maxipix("Maxipix")
         self.data = np.ones(self.det.unbinned_pixel_number)
         self.mask = np.zeros(self.det.unbinned_pixel_number)
-
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
 
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
@@ -71,9 +94,6 @@ class TestEiger2M(unittest.TestCase):
         self.det = Eiger2M("Eiger2M")
         self.data = np.ones(self.det.unbinned_pixel_number)
         self.mask = np.zeros(self.det.unbinned_pixel_number)
-
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
 
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (2164, 1030))
@@ -122,9 +142,6 @@ class TestEiger4M(unittest.TestCase):
         self.data = np.ones(self.det.unbinned_pixel_number)
         self.mask = np.zeros(self.det.unbinned_pixel_number)
 
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
-
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (2167, 2070))
 
@@ -159,9 +176,6 @@ class TestTimepix(unittest.TestCase):
     def setUp(self) -> None:
         self.det = Timepix("Timepix")
 
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
-
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (256, 256))
 
@@ -176,9 +190,6 @@ class TestMerlin(unittest.TestCase):
         self.det = Merlin("Merlin")
         self.data = np.ones(self.det.unbinned_pixel_number)
         self.mask = np.zeros(self.det.unbinned_pixel_number)
-
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
 
     def test_unbinned_pixel_number_default(self):
         self.assertTupleEqual(self.det.unbinned_pixel_number, (515, 515))
@@ -199,9 +210,6 @@ class TestDummy(unittest.TestCase):
 
     def setUp(self) -> None:
         self.det = Dummy("dummy")
-
-    def test_create_instance(self):
-        self.assertIsInstance(self.det, Detector)
 
     def test_unbinned_pixel_number_wrong_type(self):
         with self.assertRaises(TypeError):
@@ -246,6 +254,7 @@ class TestDummy(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    run_tests(TestCreateDetector)
     run_tests(TestDetector)
     run_tests(TestMaxipix)
     run_tests(TestEiger2M)
