@@ -644,13 +644,15 @@ class Diffractometer(ABC):
         return frame, mask2d, monitor
 
     @abstractmethod
-    def motor_positions(self, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Retrieve motor positions.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
-        :param kwargs: beamline_specific parameters
+        :param setup: an instance of the class Setup
+        :param kwargs: beamline_specific parameters, see the documentation for the
+         child class.
         :return: the diffractometer motors positions for the particular setup. The
          energy (1D array or number) is expected to be the last element of the tuple.
         """
@@ -1001,7 +1003,10 @@ class DiffractometerCRISTAL(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mgomega, mgphi, gamma, delta, _ = self.motor_positions(logfile, setup)
+        mgomega, mgphi, gamma, delta, _ = self.motor_positions(
+            setup=setup,
+            logfile=logfile
+        )
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
@@ -1121,17 +1126,20 @@ class DiffractometerCRISTAL(Diffractometer):
 
         return data, mask2d, monitor[0], frames_logical
 
-    def motor_positions(self, logfile, setup, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
 
         It will look for the correct entry 'rocking_angle' in the dictionary
         Setup.actuators, and use the default entry otherwise.
 
-        :param logfile: h5py File object of CRISTAL .nxs scan file
         :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': h5py File object of CRISTAL .nxs scan file
+
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
+        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             group_key = list(logfile.keys())[0]
             energy = (
@@ -1378,9 +1386,9 @@ class DiffractometerID01(Diffractometer):
 
         # load motor positions
         mu, eta, phi, nu, delta, _ = self.motor_positions(
+            setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            setup=setup,
             follow_bragg=follow_bragg,
         )
 
@@ -1529,21 +1537,23 @@ class DiffractometerID01(Diffractometer):
         )
         return data, mask2d, monitor[0], frames_logical
 
-    def motor_positions(self, logfile, scan_number, setup, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
 
-        :param logfile: Silx SpecFile object containing the information about the scan
-         and image numbers
-        :param scan_number: the scan number to load
         :param setup: an instance of the class Setup
         :param kwargs:
-          - 'follow_bragg': boolean, True for energy scans where the detector position
-            is changed during the scan to follow the Bragg peak.
+         - 'logfile': Silx SpecFile object containing the information about the scan
+           and image numbers
+         - 'scan_number': the scan number to load
+         - 'follow_bragg': boolean, True for energy scans where the detector position
+           is changed during the scan to follow the Bragg peak.
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
-        # check and load kwargs
+        # load and check kwargs
+        logfile = kwargs["logfile"]
+        scan_number = kwargs["scan_number"]
         follow_bragg = kwargs.get("follow_bragg", False)
         valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
@@ -1713,7 +1723,7 @@ class DiffractometerNANOMAX(Diffractometer):
             gamma,
             delta,
             _,
-        ) = self.motor_positions(logfile=logfile, setup=setup)
+        ) = self.motor_positions(setup=setup, logfile=logfile)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
@@ -1829,15 +1839,18 @@ class DiffractometerNANOMAX(Diffractometer):
         )
         return data, mask2d, monitor[0], frames_logical
 
-    def motor_positions(self, logfile, setup, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
 
-        :param logfile: Silx SpecFile object containing the information about the scan
-         and image numbers
         :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': Silx SpecFile object containing the information about the scan
+           and image numbers
+
         :return: (theta, phi, gamma, delta, energy) values
         """
+        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             # Detector positions
             group_key = list(logfile.keys())[0]  # currently 'entry'
@@ -1952,7 +1965,7 @@ class DiffractometerP10(Diffractometer):
 
         # load the motor positions
         mu, om, chi, phi, gamma, delta, _ = self.motor_positions(
-            logfile=logfile, setup=setup
+            setup=setup, logfile=logfile
         )
 
         # define the circles of interest for BCDI
@@ -2142,14 +2155,17 @@ class DiffractometerP10(Diffractometer):
         )
         return data, mask2d, monitor[0], frames_logical
 
-    def motor_positions(self, logfile, setup, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the .fio file from the scan and extract motor positions.
 
-        :param logfile: path of the . fio file containing the information about the scan
         :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': path of the . fio file containing the information about the scan
+
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
+        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             fio = open(logfile, "r")
             index_om = None
@@ -2318,7 +2334,7 @@ class DiffractometerSIXS(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        beta, mu, gamma, delta, _ = self.motor_positions(logfile=logfile, setup=setup)
+        beta, mu, gamma, delta, _ = self.motor_positions(setup=setup, logfile=logfile)
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
             grazing = (beta,)  # beta below the whole diffractomter at SIXS
@@ -2440,14 +2456,17 @@ class DiffractometerSIXS(Diffractometer):
         )
         return data, mask2d, monitor[0], frames_logical
 
-    def motor_positions(self, logfile, setup, **kwargs):
+    def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions at SIXS.
 
-        :param logfile: nxsReady Dataset object of SIXS .nxs scan file
         :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': nxsReady Dataset object of SIXS .nxs scan file
+
         :return: (beta, mu, gamma, delta, energy) values
         """
+        logfile = kwargs["logfile=logfile"]
         if not setup.custom_scan:
             mu = logfile.mu[:]  # scanned
             delta = logfile.delta[0]  # not scanned

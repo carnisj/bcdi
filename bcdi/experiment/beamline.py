@@ -499,8 +499,8 @@ class BeamlineCRISTAL(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
@@ -839,8 +839,8 @@ class BeamlineID01(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mu, eta, phi, nu, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
@@ -1175,8 +1175,8 @@ class BeamlineNANOMAX(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         theta, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
@@ -1508,8 +1508,8 @@ class BeamlineP10(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mu, om, chi, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
@@ -1922,8 +1922,8 @@ class BeamlineSIXS(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         beta, mu, gamma, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
@@ -2192,8 +2192,8 @@ class Beamline34ID(Beamline):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         theta, phi, delta, gamma, energy = setup.diffractometer.motor_positions(
-            logfile=logfile,
             setup=setup,
+            logfile=logfile,
             scan_number=scan_number,
             follow_bragg=follow_bragg,
         )
