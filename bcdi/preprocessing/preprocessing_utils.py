@@ -1768,21 +1768,9 @@ def grid_bcdi_labframe(
     )
 
     numz, numy, numx = interp_data.shape
-    plot_comment = (
-        "_"
-        + str(numz)
-        + "_"
-        + str(numy)
-        + "_"
-        + str(numx)
-        + "_"
-        + str(final_binning[0])
-        + "_"
-        + str(final_binning[1])
-        + "_"
-        + str(final_binning[2])
-        + ".png"
-    )
+    plot_comment = (f"_{numz}_{numy}_{numx}_"
+                    f"{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png"
+                    )
 
     max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(
