@@ -339,11 +339,7 @@ class TestValidContainer(unittest.TestCase):
 
     def test_validcontainer_invalid_name(self):
         self.assertRaises(
-            TypeError,
-            valid.valid_container,
-            obj=(),
-            container_types=tuple,
-            name=0
+            TypeError, valid.valid_container, obj=(), container_types=tuple, name=0
         )
 
 
@@ -417,7 +413,7 @@ class TestValidKwargs(unittest.TestCase):
             valid.valid_kwargs,
             kwargs={"test": 0, "red": None},
             allowed_kwargs={"test", "red"},
-            name=0
+            name=0,
         )
 
 
@@ -577,11 +573,7 @@ class TestValidItem(unittest.TestCase):
 
     def test_validitem_invalid_name(self):
         self.assertRaises(
-            TypeError,
-            valid.valid_item,
-            value=1,
-            allowed_types=Real,
-            name=0
+            TypeError, valid.valid_item, value=1, allowed_types=Real, name=0
         )
 
 
@@ -639,64 +631,51 @@ class TestValid1dArray(unittest.TestCase):
         self.assertTrue(valid.valid_1d_array(array=self.data, allowed_types=None))
 
     def test_allowedtypes_not_type(self):
-        self.assertRaises(TypeError,
-                          valid.valid_1d_array,
-                          array=self.data,
-                          allowed_types=(list, 0))
+        self.assertRaises(
+            TypeError, valid.valid_1d_array, array=self.data, allowed_types=(list, 0)
+        )
 
     def test_allowedtypes_integral(self):
         self.assertTrue(valid.valid_1d_array(array=self.data, allowed_types=Integral))
 
     def test_allowedtypes_float(self):
-        self.assertTrue(valid.valid_1d_array(
-            array=np.ones(4, dtype=float), allowed_types=(int, float)))
+        self.assertTrue(
+            valid.valid_1d_array(
+                array=np.ones(4, dtype=float), allowed_types=(int, float)
+            )
+        )
 
     def test_allowedtypes_wrongtype(self):
         self.assertRaises(
-            TypeError,
-            valid.valid_1d_array,
-            value=self.data,
-            allowed_types=float)
+            TypeError, valid.valid_1d_array, value=self.data, allowed_types=float
+        )
 
     def test_allowedvalues_wrong_type(self):
-        self.assertRaises(TypeError,
-                          valid.valid_1d_array,
-                          array=self.data,
-                          allowed_values="a")
+        self.assertRaises(
+            TypeError, valid.valid_1d_array, array=self.data, allowed_values="a"
+        )
 
     def test_allowedvalues_list(self):
-        self.assertTrue(valid.valid_1d_array(
-                          array=self.data,
-                          allowed_values=[0, 1]))
+        self.assertTrue(valid.valid_1d_array(array=self.data, allowed_values=[0, 1]))
 
     def test_allowedvalues_set(self):
-        self.assertTrue(valid.valid_1d_array(
-                          array=self.data,
-                          allowed_values={0, 1}))
+        self.assertTrue(valid.valid_1d_array(array=self.data, allowed_values={0, 1}))
 
     def test_allowedvalues_array(self):
-        self.assertTrue(valid.valid_1d_array(
-                          array=self.data,
-                          allowed_values=np.array([0, 1])))
+        self.assertTrue(
+            valid.valid_1d_array(array=self.data, allowed_values=np.array([0, 1]))
+        )
 
     def test_allowedvalues_correct(self):
-        self.assertTrue(valid.valid_1d_array(
-                          array=self.data,
-                          allowed_values=1))
+        self.assertTrue(valid.valid_1d_array(array=self.data, allowed_values=1))
 
     def test_allowedvalues_wrong_value(self):
-        self.assertRaises(ValueError,
-                          valid.valid_1d_array,
-                          array=self.data,
-                          allowed_values=2)
+        self.assertRaises(
+            ValueError, valid.valid_1d_array, array=self.data, allowed_values=2
+        )
 
     def test_invalid_name(self):
-        self.assertRaises(
-            TypeError,
-            valid.valid_1d_array,
-            arrays=self.data,
-            name=0
-        )
+        self.assertRaises(TypeError, valid.valid_1d_array, arrays=self.data, name=0)
 
 
 class TestValidNdArray(unittest.TestCase):
@@ -835,12 +814,7 @@ class TestValidNdArray(unittest.TestCase):
         )
 
     def test_invalid_name(self):
-        self.assertRaises(
-            TypeError,
-            valid.valid_ndarray,
-            arrays=self.data,
-            name=0
-        )
+        self.assertRaises(TypeError, valid.valid_ndarray, arrays=self.data, name=0)
 
 
 if __name__ == "__main__":
