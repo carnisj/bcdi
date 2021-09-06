@@ -333,26 +333,30 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def process_positions(**kwargs):
+    def process_positions(
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False
+    ):
         """
         Load and crop/pad motor positions depending on the current number of frames.
 
         The current number of frames may be different from the original number of frames
         if the data was cropped/padded, and motor values must be processed accordingly.
 
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
-
-          - 'setup': an instance of the class Setup
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'nb_frames': the number of frames in the current dataset
-          - 'scan_number': the scan number to load
-          - 'frames_logical': array of length the number of measured frames.
-            In case of cropping/padding the number of frames changes. A frame whose
-            index is set to 1 means that it is used, 0 means not used, -1 means
-            padded (added) frame
-          - 'follow_bragg': True when in energy scans the detector was also
-            scanned to follow the Bragg peak
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
 
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
