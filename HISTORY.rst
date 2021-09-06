@@ -1,3 +1,10 @@
+
+* Create new validations functions valid_ndarray and valid_1d_array, implement the
+  corresponding unit tests.
+
+* Refactor: rename preprocessing_utils.regrid to calc_qvalues_xrutils and move it to
+  Setup. Put all the beamline dependent code in the corresponding Beamline child class.
+
 Version 0.1.5
 -------------
 
