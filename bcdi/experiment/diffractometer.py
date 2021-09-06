@@ -31,7 +31,7 @@ from abc import ABC, abstractmethod
 import fabio
 from functools import reduce
 import h5py
-from numbers import Number, Real
+from numbers import Integral, Number, Real
 import numpy as np
 import os
 import re
@@ -578,8 +578,8 @@ class Diffractometer(ABC):
          - the 2D mask array
          - the monitor values for normalization as a 1D array of length data.shape[0]
          - frames_logical as a 1D array of length the original number of 2D frames, 0 if
-          a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
-          motor values accordingly.
+           a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
+           motor values accordingly.
 
         """
 
@@ -632,7 +632,7 @@ class Diffractometer(ABC):
         if normalize == "sum_roi":
             monitor = util.sum_roi(array=frame, roi=detector.sum_roi)
 
-        frame = frame[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
+        frame = frame[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         if bin_during_loading:
             frame = util.bin_data(
@@ -652,7 +652,7 @@ class Diffractometer(ABC):
 
         :param kwargs: beamline_specific parameters
         :return: the diffractometer motors positions for the particular setup. The
-        energy (1D array or number) is expected to be the last element of the tuple.
+         energy (1D array or number) is expected to be the last element of the tuple.
         """
 
     @staticmethod
@@ -747,7 +747,7 @@ class Diffractometer(ABC):
         return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
 
     @staticmethod
-    def select_frames(data):
+    def select_frames(data, frames_pattern=None):
         """
         Select frames, updae the monitor and create a logical array.
 
@@ -756,13 +756,25 @@ class Diffractometer(ABC):
         want to delete one or average them...
 
         :param data: a 3D data array
+        :param frames_pattern: 1D array of int, of length data.shape[0]. If
+         frames_pattern is 0 at index, the frame at data[index] will be skipped,
+         if 1 the frame will added to the stack.
         :return:
          - the updated 3D data, eventually cropped along the first axis
-         - frames_logical as a 1D array of length the original number of 2D frames, 0 if
-          a frame was removed, 1 if it wasn't. It can be used later to crop goniometer
-          motor values accordingly.
+         - a 1D array of length the original number of 2D frames, 0 if a frame was
+           removed, 1 if it wasn't. It can be used later to crop goniometer motor values
+           accordingly.
+
         """
-        return data, np.ones(data.shape[0], dtype=int)
+        if frames_pattern is None:
+            frames_pattern = np.ones(data.shape[0], dtype=int)
+        valid.valid_1d_array(frames_pattern,
+                             length=data.shape[0],
+                             allow_none=True,
+                             allowed_types=Integral,
+                             allowed_values=(0, 1),
+                             name="frames_pattern")
+        return data[frames_pattern != 0], frames_pattern
 
     def valid_name(self, stage_name):
         """
@@ -1093,9 +1105,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
+        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -1502,9 +1512,7 @@ class DiffractometerID01(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
+        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -1802,9 +1810,7 @@ class DiffractometerNANOMAX(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
+        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -2102,22 +2108,18 @@ class DiffractometerP10(Diffractometer):
                 sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)
-                data[start_index : start_index + tempdata_length, :, :] = np.asarray(
-                    series_data
-                )
+                data[start_index: start_index + tempdata_length, :, :] =\
+                    np.asarray(series_data)
                 if normalize == "sum_roi":
-                    monitor[start_index : start_index + tempdata_length] = np.asarray(
-                        series_monitor
-                    )
+                    monitor[start_index: start_index + tempdata_length] =\
+                        np.asarray(series_monitor)
                 start_index += tempdata_length
                 if start_index == nb_img:
                     break
 
         print("")
         # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
+        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -2413,9 +2415,7 @@ class DiffractometerSIXS(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
+        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
 
         # select frames
         data, frames_logical = self.select_frames(data)

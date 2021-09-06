@@ -351,7 +351,7 @@ class Beamline(ABC):
             In case of cropping/padding the number of frames changes. A frame whose
             index is set to 1 means that it is used, 0 means not used, -1 means
             padded (added) frame
-          -'follow_bragg': True when in energy scans the detector was also
+          - 'follow_bragg': True when in energy scans the detector was also
             scanned to follow the Bragg peak
 
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
