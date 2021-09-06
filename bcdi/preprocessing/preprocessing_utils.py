@@ -3389,10 +3389,7 @@ def reload_bcdi_data(
         name="preprocessing_utils.reload_bcdi_data",
     )
 
-    if normalize:
-        normalize_method = "monitor"
-    else:
-        normalize_method = "skip"
+    normalize_method = "monitor" if normalize else "skip"
 
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
