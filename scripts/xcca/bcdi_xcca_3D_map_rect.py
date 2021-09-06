@@ -110,7 +110,7 @@ def main(calc_self, user_comment):
     print("the CCF map will be calculated for {:d} q values: ".format(len(q_range)))
     for idx, item in enumerate(q_range):
         if calc_self:
-            print("q1 = {:.3f}  q2 = {:.3f}".format(item, item))
+            print(f"q1 = {item:.3f}  q2 = {item:.3f}")
         else:
             print("q1 = {:.3f}  q2 = {:.3f}".format(q_range[0], item))
     warnings.filterwarnings("ignore")
