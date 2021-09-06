@@ -2474,27 +2474,25 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     ] = 0  # 0 is a valid entry for ma.masked_array
     phase_wrapped = ma.masked_array(np.angle(obj), mask=unwrap_support)
 
-    if debugging:
-        if ndim == 3:
-            gu.multislices_plot(
-                phase_wrapped.data,
-                plot_colorbar=True,
-                title="Object before unwrapping",
-                reciprocal_space=reciprocal_space,
-                is_orthogonal=is_orthogonal,
-            )
+    if debugging and ndim == 3:
+        gu.multislices_plot(
+            phase_wrapped.data,
+            plot_colorbar=True,
+            title="Object before unwrapping",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
 
     phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
-    if debugging:
-        if ndim == 3:
-            gu.multislices_plot(
-                phase_unwrapped,
-                plot_colorbar=True,
-                title="Object after unwrapping",
-                reciprocal_space=reciprocal_space,
-                is_orthogonal=is_orthogonal,
-            )
+    if debugging and ndim == 3:
+        gu.multislices_plot(
+            phase_unwrapped,
+            plot_colorbar=True,
+            title="Object after unwrapping",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())
     return phase_unwrapped, extent_phase

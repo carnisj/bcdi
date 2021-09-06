@@ -1104,9 +1104,12 @@ def imshow_plot(
         raise TypeError("sum_frames should be a boolean")
     if scale not in {"linear", "log"}:
         raise ValueError('scale should be either "linear" or "log"')
-    if not np.isnan(vmin) and not np.isnan(vmax):
-        if vmin >= vmax:
-            raise ValueError("vmin should be strictly smaller than vmax")
+    if (
+        not np.isnan(vmin)
+        and not np.isnan(vmax)
+        and vmin >= vmax
+    ):
+        raise ValueError("vmin should be strictly smaller than vmax")
     ###############
     # load kwargs #
     ###############
@@ -1414,9 +1417,8 @@ def loop_thru_scan(
         elif dim == 1:
             if idx > nby - 1:
                 idx = 0
-        elif dim == 2:
-            if idx > nbx - 1:
-                idx = 0
+        elif dim == 2 and idx > nbx - 1:
+            idx = 0
 
     elif key == "d":  # show previous frame
         idx = idx - 1
@@ -1426,9 +1428,8 @@ def loop_thru_scan(
         elif dim == 1:
             if idx < 0:
                 idx = nby - 1
-        elif dim == 2:
-            if idx < 0:
-                idx = nbx - 1
+        elif dim == 2 and idx < 0:
+            idx = nbx - 1
 
     elif key == "right":  # increase colobar max
         if scale == "linear":

@@ -928,9 +928,11 @@ class DataSet:
         for el in self.attlist:
             bla = self.__getattribute__(el)
             # get the attributes from list one by one
-            if isinstance(bla, (np.ndarray, np.generic)):
-                if len(bla.shape) == 3:  # check for image stacks
-                    list2d.append(el)
+            if (
+                isinstance(bla, (np.ndarray, np.generic))
+                and len(bla.shape) == 3
+            ):  # check for image stacks
+                list2d.append(el)
         if len(list2d) > 0:
             self._list2d = list2d
             return list2d
