@@ -8,7 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from numbers import Real
+from numbers import Integral, Real
 import numpy as np
 import bcdi.utils.validation as valid
 
@@ -585,11 +585,126 @@ class TestValidItem(unittest.TestCase):
         )
 
 
+class TestValid1dArray(unittest.TestCase):
+    """
+    Tests on valid_1darray.
+
+    valid_1d_array(array, length=None, min_length=None, allow_none=True,
+    allowed_types=None, allowed_values=None, name=None)
+    """
+
+    def setUp(self) -> None:
+        self.data = np.ones(7, dtype=int)
+
+    def test_length_wrong_type_float(self):
+        self.assertRaises(TypeError, valid.valid_1d_array, self.data, legnth=1.5)
+
+    def test_length_negative(self):
+        self.assertRaises(ValueError, valid.valid_1d_array, self.data, length=-1)
+
+    def test_length_null(self):
+        self.assertTrue(valid.valid_1d_array(np.empty(0), length=0))
+
+    def test_length_None(self):
+        self.assertTrue(valid.valid_1d_array(self.data, length=None))
+
+    def test_minlength_wrong_type_float(self):
+        self.assertRaises(TypeError, valid.valid_1d_array, self.data, min_length=1.5)
+
+    def test_minlength_negative(self):
+        self.assertRaises(ValueError, valid.valid_1d_array, self.data, min_length=-1)
+
+    def test_minlength_null(self):
+        self.assertTrue(valid.valid_1d_array(self.data, min_length=0))
+
+    def test_minlength_None(self):
+        self.assertTrue(valid.valid_1d_array(self.data, min_length=None))
+
+    def test_minlength_equal_length(self):
+        self.assertTrue(valid.valid_1d_array(self.data, min_length=7))
+
+    def test_allow_none_wrong_type_string(self):
+        self.assertRaises(TypeError, valid.valid_1d_array, self.data, allow_none="true")
+
+    def test_allow_none_wrong_type_float(self):
+        self.assertRaises(TypeError, valid.valid_1d_array, self.data, allow_none=0)
+
+    def test_allow_none_true(self):
+        self.assertTrue(valid.valid_1d_array(None, allow_none=True))
+
+    def test_allow_none_false(self):
+        self.assertRaises(ValueError, valid.valid_1d_array, None, allow_none=False)
+
+    def test_allowedtypes_none(self):
+        self.assertTrue(valid.valid_1d_array(array=self.data, allowed_types=None))
+
+    def test_allowedtypes_not_type(self):
+        self.assertRaises(TypeError,
+                          valid.valid_1d_array,
+                          array=self.data,
+                          allowed_types=(list, 0))
+
+    def test_allowedtypes_integral(self):
+        self.assertTrue(valid.valid_1d_array(array=self.data, allowed_types=Integral))
+
+    def test_allowedtypes_float(self):
+        self.assertTrue(valid.valid_1d_array(
+            array=np.ones(4, dtype=float), allowed_types=(int, float)))
+
+    def test_allowedtypes_wrongtype(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_1d_array,
+            value=self.data,
+            allowed_types=float)
+
+    def test_allowedvalues_wrong_type(self):
+        self.assertRaises(TypeError,
+                          valid.valid_1d_array,
+                          array=self.data,
+                          allowed_values="a")
+
+    def test_allowedvalues_list(self):
+        self.assertTrue(valid.valid_1d_array(
+                          array=self.data,
+                          allowed_values=[0, 1]))
+
+    def test_allowedvalues_set(self):
+        self.assertTrue(valid.valid_1d_array(
+                          array=self.data,
+                          allowed_values={0, 1}))
+
+    def test_allowedvalues_array(self):
+        self.assertTrue(valid.valid_1d_array(
+                          array=self.data,
+                          allowed_values=np.array([0, 1])))
+
+    def test_allowedvalues_correct(self):
+        self.assertTrue(valid.valid_1d_array(
+                          array=self.data,
+                          allowed_values=1))
+
+    def test_allowedvalues_wrong_value(self):
+        self.assertRaises(ValueError,
+                          valid.valid_1d_array,
+                          array=self.data,
+                          allowed_values=2)
+
+    def test_invalid_name(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_1d_array,
+            arrays=self.data,
+            name=0
+        )
+
+
 class TestValidNdArray(unittest.TestCase):
     """
     Tests on valid_ndarray.
 
-    valid_ndarray(arrays, ndim=None, shape=None)
+    valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True,
+                  name=None)
     """
 
     def setUp(self) -> None:
@@ -649,6 +764,9 @@ class TestValidNdArray(unittest.TestCase):
 
     def test_arrays_empty(self):
         self.assertRaises(ValueError, valid.valid_ndarray, arrays=())
+
+    def test_arrays_None(self):
+        self.assertRaises(ValueError, valid.valid_ndarray, arrays=None)
 
     def test_arrays_mixed_types_int(self):
         self.assertRaises(TypeError, valid.valid_ndarray, arrays=(self.data, 1))
@@ -729,4 +847,5 @@ if __name__ == "__main__":
     run_tests(TestValidContainer)
     run_tests(TestValidKwargs)
     run_tests(TestValidItem)
+    run_tests(TestValid1dArray)
     run_tests(TestValidNdArray)

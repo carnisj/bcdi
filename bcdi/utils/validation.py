@@ -367,14 +367,14 @@ def valid_1d_array(
         length,
         allowed_types=int,
         allow_none=True,
-        min_included=1,
+        min_included=0,
         name="length",
     )
     valid_item(
         min_length,
         allowed_types=int,
         allow_none=True,
-        min_included=1,
+        min_included=0,
         name="min_length",
     )
     if isinstance(allowed_types, type):
@@ -392,9 +392,13 @@ def valid_1d_array(
         allowed_values,
         container_types=(tuple, list, set, np.ndarray),
         allow_none=True,
-        item_types=int,
+        item_types=Number,
         name="allowed_values",
     )
+
+    if not isinstance(allow_none, bool):
+        raise TypeError("allow_none should be a boolean")
+
     if name is not None and not isinstance(name, str):
         raise TypeError("name should be a string")
     name = name or "array"
@@ -459,6 +463,7 @@ def valid_ndarray(
         container_types=(tuple, list),
         item_types=np.ndarray,
         min_length=1,
+        allow_none=False,
         name="arrays",
     )
     if not isinstance(fix_ndim, bool):
