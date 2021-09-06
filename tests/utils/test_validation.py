@@ -337,6 +337,15 @@ class TestValidContainer(unittest.TestCase):
             allow_none=False,
         )
 
+    def test_validcontainer_invalid_name(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_container,
+            obj=(),
+            container_types=tuple,
+            name=0
+        )
+
 
 class TestValidKwargs(unittest.TestCase):
     """
@@ -400,6 +409,15 @@ class TestValidKwargs(unittest.TestCase):
             valid.valid_kwargs,
             kwargs={"test": 0, "red": None},
             allowed_kwargs={"test", "blue"},
+        )
+
+    def test_validkwargs_invalid_name(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_kwargs,
+            kwargs={"test": 0, "red": None},
+            allowed_kwargs={"test", "red"},
+            name=0
         )
 
 
@@ -557,6 +575,15 @@ class TestValidItem(unittest.TestCase):
             ValueError, valid.valid_item, value=1, allowed_types=Real, max_excluded=0
         )
 
+    def test_validitem_invalid_name(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_item,
+            value=1,
+            allowed_types=Real,
+            name=0
+        )
+
 
 class TestValidNdArray(unittest.TestCase):
     """
@@ -687,6 +714,14 @@ class TestValidNdArray(unittest.TestCase):
     def test_fix_shape_false(self):
         self.assertTrue(
             valid.valid_ndarray(arrays=(self.data, np.zeros((1, 1))), fix_shape=False)
+        )
+
+    def test_invalid_name(self):
+        self.assertRaises(
+            TypeError,
+            valid.valid_ndarray,
+            arrays=self.data,
+            name=0
         )
 
 

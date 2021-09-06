@@ -101,7 +101,11 @@ def valid_container(
     if not isinstance(allow_none, bool):
         raise TypeError("allow_none should be a boolean")
 
+    if name is not None and not isinstance(name, str):
+        raise TypeError("name should be a string")
     name = name or "obj"
+
+    # check if requirements are satisfied
 
     # check if the object is None
     if not allow_none and obj is None:
@@ -182,7 +186,11 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
     # check the validity of the parameters
     if not isinstance(kwargs, dict):
         raise TypeError("kwargs should be a dictionnary")
+    if name is not None and not isinstance(name, str):
+        raise TypeError("name should be a string")
+    name = name or "obj"
 
+    # check if requirements are satisfied
     if isinstance(allowed_kwargs, str):
         allowed_kwargs = (allowed_kwargs,)
     if not isinstance(allowed_kwargs, (tuple, list, set)):
@@ -260,7 +268,11 @@ def valid_item(
     if not isinstance(allow_none, bool):
         raise TypeError("allow_none should be a boolean")
 
+    if name is not None and not isinstance(name, str):
+        raise TypeError("name should be a string")
     name = name or "obj"
+
+    # check if requirements are satisfied
 
     # check if value is None
     if not allow_none and value is None:
@@ -383,9 +395,11 @@ def valid_1d_array(
         item_types=int,
         name="allowed_values",
     )
+    if name is not None and not isinstance(name, str):
+        raise TypeError("name should be a string")
     name = name or "array"
 
-    # check requirements
+    # check if requirements are satisfied
     valid_ndarray(array, ndim=(1,))
     if length is not None and len(array) != length:
         raise ValueError(f"{name}: array should be of length {length}")
@@ -452,7 +466,11 @@ def valid_ndarray(
     if not isinstance(fix_shape, bool):
         raise TypeError(f"fix_shape should be a boolean, got {type(fix_shape)}")
 
-    name = name or "array"
+    if name is not None and not isinstance(name, str):
+        raise TypeError("name should be a string")
+    name = name or "obj"
+
+    # check if requirements are satisfied
 
     # check the number of dimensions
     if ndim is None:
