@@ -121,8 +121,8 @@ fontsize = 10
 sum_img = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 fig = plt.figure(figsize=(6, 5))
 with writer.saving(fig, homedir + "S" + str(scan) + "_movie.mp4", dpi=100):
-    for index in range(len(ccdn)):
-        i = int(ccdn[index])
+    for index, item in enumerate(ccdn):
+        i = int(item)
         e = fabio.open(ccdfiletmp % i)
         ccdraw = e.data
         ccdraw = flatfield * ccdraw

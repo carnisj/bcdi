@@ -172,8 +172,8 @@ for idx in range(nb_scans):
         datadir, "data_mpx4_%05d.edf.gz"
     )  # template for the CCD file names
     index_offset = 0
-    for index in range(len(ccdn)):
-        i = int(ccdn[index])
+    for index, item in enumerate(ccdn):
+        i = int(item)
         e = fabio.open(ccdfiletmp % i)
         rawdata = e.data
         rawdata[rawdata <= photon_threshold] = 0

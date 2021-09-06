@@ -1278,15 +1278,15 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     print(
         "Reverse the rotation direction to compensate the rotation of the Ewald sphere"
     )
-    for idx in range(len(cdi_angle)):
-        detector_angle[idx] = cdi_angle[0] - (cdi_angle[idx] - cdi_angle[0])
+    for idx, item in enumerate(cdi_angle):
+        detector_angle[idx] = cdi_angle[0] - (item - cdi_angle[0])
 
     wrap_angle = wrap(
         obj=detector_angle, start_angle=detector_angle.min(), range_angle=180
     )
-    for idx in range(len(wrap_angle)):
+    for idx, item in enumerate(wrap_angle):
         duplicate = np.isclose(
-            wrap_angle[:idx], wrap_angle[idx], rtol=1e-06, atol=1e-06
+            wrap_angle[:idx], item, rtol=1e-06, atol=1e-06
         ).sum()
         # duplicate will be different from 0 if there is a duplicated angle
         frames_logical[idx] = frames_logical[idx] * (
@@ -1538,8 +1538,8 @@ def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
     qx = np.zeros((nbz, nby, nbx))
 
     # calculate q values of the detector frame for each angular position and stack them
-    for idx in range(len(cdi_angle)):
-        angle = cdi_angle[idx] * np.pi / 180
+    for idx, item in enumerate(cdi_angle):
+        angle = item * np.pi / 180
         if not anticlockwise:
             rotation_matrix = np.array(
                 [

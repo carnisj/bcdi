@@ -229,11 +229,11 @@ try:
 except TypeError:  # one output is None
     fig.text(0.15, 0.90, "at least one output is None", size=12)
 fig.text(0.15, 0.80, lineshape + " fit", size=12)
-for idx in range(len(constraint_var)):
+for idx, item in enumerate(constraint_var):
     fig.text(
         0.15,
         (0.75 - 0.1 * idx),
-        constraint_var[idx] + " = " + constraint_expr[idx],
+        item + " = " + constraint_expr[idx],
         size=12,
     )
 fig.savefig(datadir + lineshape + " fit.png")

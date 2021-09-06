@@ -159,8 +159,7 @@ delta = np.zeros(nb_img - len(frames_to_exclude))
 gamma = np.zeros(nb_img - len(frames_to_exclude))
 sum_data = np.zeros((roi[1] - roi[0], roi[3] - roi[2]))
 
-for index in range(len(scanlist)):
-    scan = scanlist[index]
+for index, scan in enumerate(scanlist):
     dataset = nxsReady.DataSet(
         datadir + ccdfiletmp % scan,
         ccdfiletmp % scan,

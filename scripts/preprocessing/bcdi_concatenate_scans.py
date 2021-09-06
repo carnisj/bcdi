@@ -247,19 +247,19 @@ corr_coeff = []  # list of correlation coefficients
 sumdata = np.copy(refdata)  # refdata must not be modified
 summask = refmask  # refmask is not used elsewhere
 
-for idx in range(len(scans)):
+for idx, item in enumerate(scans):
     if idx == reference_scan:
-        combined_list.append(scans[idx])
+        combined_list.append(item)
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
-    samplename = sample_name[idx] + "_" + str("{:05d}").format(scans[idx])
+    samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
     print("\n Opening ", samplename)
     data = np.load(
         homedir
         + samplename
         + parent_folder
         + "S"
-        + str(scans[idx])
+        + str(item)
         + "_pynx"
         + suffix[idx]
     )["data"]
@@ -268,7 +268,7 @@ for idx in range(len(scans)):
         + samplename
         + parent_folder
         + "S"
-        + str(scans[idx])
+        + str(item)
         + "_maskpynx"
         + suffix[idx]
     )["mask"]
@@ -283,7 +283,7 @@ for idx in range(len(scans)):
             sum_frames=True,
             scale="log",
             plot_colorbar=True,
-            title="S" + str(scans[idx]) + "\n Data before shift",
+            title="S" + str(item) + "\n Data before shift",
             vmin=0,
             reciprocal_space=True,
             is_orthogonal=is_orthogonal,
@@ -294,7 +294,7 @@ for idx in range(len(scans)):
             sum_frames=True,
             scale="linear",
             plot_colorbar=True,
-            title="S" + str(scans[idx]) + "\n Mask before shift",
+            title="S" + str(item) + "\n Mask before shift",
             vmin=0,
             reciprocal_space=True,
             is_orthogonal=is_orthogonal,
@@ -319,7 +319,7 @@ for idx in range(len(scans)):
                 sum_frames=True,
                 scale="log",
                 plot_colorbar=True,
-                title="S" + str(scans[idx]) + "\n Data after shift",
+                title="S" + str(item) + "\n Data after shift",
                 vmin=0,
                 reciprocal_space=True,
                 is_orthogonal=is_orthogonal,
@@ -330,7 +330,7 @@ for idx in range(len(scans)):
                 sum_frames=True,
                 scale="linear",
                 plot_colorbar=True,
-                title="S" + str(scans[idx]) + "\n Mask after shift",
+                title="S" + str(item) + "\n Mask after shift",
                 vmin=0,
                 reciprocal_space=True,
                 is_orthogonal=is_orthogonal,
@@ -388,12 +388,12 @@ for idx in range(len(scans)):
     )
     corr_coeff.append(round(correlation, 2))
     if correlation >= correlation_threshold:
-        combined_list.append(scans[idx])
+        combined_list.append(item)
         sumdata = sumdata + data
         if combine_masks:
             summask = summask + mask
     else:
-        print("Scan ", scans[idx], ", correlation below threshold, skip concatenation")
+        print("Scan ", item, ", correlation below threshold, skip concatenation")
 
 ###################################################################################
 # process boundaries, where some voxels can be undefined after aligning a dataset #

@@ -101,8 +101,8 @@ pivot, _, q_values, lattice, peaks = simu.lattice(
 )
 # peaks in the format [[h, l, k], ...]:
 # CXI convention downstream , vertical up, outboard
-for idx in range(len(peaks)):
-    print("Miller indices:", peaks[idx], "    at pixels:", lattice[idx])
+for idx, item in enumerate(peaks):
+    print("Miller indices:", item, "    at pixels:", lattice[idx])
 
 ##############################################
 # convolute the lattice with a 3D peak shape #

@@ -84,8 +84,8 @@ if (
 if len(qconv.sampleAxis) + len(qconv.detectorAxis) != len(bounds):
     raise ValueError("number of specified bounds invalid")
 nb_free = 0
-for idx in range(len(bounds)):
-    if type(bounds[idx]) is tuple:
+for idx, item in enumerate(bounds):
+    if type(item) is tuple:
         nb_free = nb_free + 1
 if nb_free > 3:
     raise ValueError("maximum of three free motors exceeded")

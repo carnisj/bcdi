@@ -114,11 +114,11 @@ def main(calc_self, user_comment):
         raise ValueError("at least 2 values are needed for q_range")
 
     print("the CCF map will be calculated for {:d} q values: ".format(len(q_range)))
-    for idx in range(len(q_range)):
+    for idx, item in enumerate(q_range):
         if calc_self:
-            print("q1 = {:.3f}  q2 = {:.3f}".format(q_range[idx], q_range[idx]))
+            print("q1 = {:.3f}  q2 = {:.3f}".format(item, item))
         else:
-            print("q1 = {:.3f}  q2 = {:.3f}".format(q_range[0], q_range[idx]))
+            print("q1 = {:.3f}  q2 = {:.3f}".format(q_range[0], item))
     warnings.filterwarnings("ignore")
 
     ###################
