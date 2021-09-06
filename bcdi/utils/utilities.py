@@ -180,7 +180,7 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
     :param nb_frames: number of frames of the rocking curve dimension
     :param params: list of parameters
     :param debugging: set to True to have printed parameters
-    :return: parameters of the same length, taking into account binning
+    :return: list of parameters (same list length), taking into account binning
     """
     if binning == 1:  # nothing to do
         return params

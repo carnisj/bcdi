@@ -731,7 +731,7 @@ class Setup:
 
         # calculate q values
         qx, qy, qz = hxrd.Ang2Q.area(
-            **processed_positions[:-1],
+            *processed_positions[:-1],
             en=processed_positions[-1],
             delta=self.detector.offsets,
         )
