@@ -277,7 +277,7 @@ def beamstop_correction(data, detector, setup, debugging=False):
         factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
         pixels_large = [-33, 35, -31, 36]
         # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [-14, 14 ,-11, 16]
+        pixels_small = [-14, 14 , -11, 16]
         # boundaries of the small wafer relative to the direct beam (V x H)
     elif energy == 10000:
         factor_large = 2.1 / 0.47337  # 5mm*5mm (200um thick) Si wafer
