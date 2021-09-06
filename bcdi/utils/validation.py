@@ -32,7 +32,7 @@ def valid_container(
 
     :param obj: the object to be tested
     :param container_types: list of the allowed types for obj
-    :param length: required length
+    :param length: int, required length
     :param min_length: mininum length (inclusive)
     :param max_length: maximum length (inclusive)
     :param item_types: list of the allowed types for the object items
@@ -326,7 +326,88 @@ def valid_item(
     return True
 
 
-def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
+def valid_1d_array(
+    array,
+    length=None,
+    min_length=None,
+    allow_none=True,
+    allowed_types=None,
+    allowed_values=None,
+    name=None,
+):
+    """
+    Check if the array is 1D and satisfies the requirements.
+
+    :param array: the numpy array to be checked
+    :param length: int, required length
+    :param min_length: int, minimum length of the array
+    :param allow_none: bool, True if the array can be None
+    :param allowed_types: list or tuple of valid types
+    :param allowed_values: Sequence of allowed values for the array
+    :param name: name of the calling object appearing in exception messages
+    :return: bool, True if all checks passed
+    """
+    if array is None and allow_none:
+        return True
+
+    # check parameters
+    valid_item(
+        length,
+        allowed_types=int,
+        allow_none=True,
+        min_included=1,
+        name="length",
+    )
+    valid_item(
+        min_length,
+        allowed_types=int,
+        allow_none=True,
+        min_included=1,
+        name="min_length",
+    )
+    if isinstance(allowed_types, type):
+        allowed_types = (allowed_types,)
+    valid_container(
+        allowed_types,
+        container_types=(tuple, list, set),
+        allow_none=True,
+        item_types=type,
+        name="allowed_types",
+    )
+    if isinstance(allowed_values, Number):
+        allowed_values = (allowed_values,)
+    valid_container(
+        allowed_values,
+        container_types=(tuple, list, set, np.ndarray),
+        allow_none=True,
+        item_types=int,
+        name="allowed_values",
+    )
+    name = name or "array"
+
+    # check requirements
+    valid_ndarray(array, ndim=(1,))
+    if length is not None and len(array) != length:
+        raise ValueError(f"{name}: array should be of length {length}")
+
+    if min_length is not None and len(array) < min_length:
+        raise ValueError(f"{name}: array should be of length >= {min_length}")
+
+    if allowed_types is not None and all(
+        not isinstance(array[0], my_type) for my_type in allowed_types
+    ):
+        raise TypeError(f"{name}: got an unexpected type not in {allowed_types}")
+
+    if allowed_values is not None and any(val not in allowed_values for val in array):
+        raise ValueError(f"{name}: got an unexpected value not in {allowed_values}")
+
+    # every tests passed, return True
+    return True
+
+
+def valid_ndarray(
+    arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True, name=None
+):
     """
     Check that arrays have the same shape and the correct number of dimensions.
 
@@ -335,6 +416,7 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
     :param shape: sequence of int, shape to be comared with
     :param fix_ndim: bool, if True the shape of all arrays should be equal
     :param fix_shape: bool, if True the shape of all arrays should be equal
+    :param name: name of the calling object appearing in exception messages
     :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
@@ -370,15 +452,20 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
     if not isinstance(fix_shape, bool):
         raise TypeError(f"fix_shape should be a boolean, got {type(fix_shape)}")
 
+    name = name or "array"
+
     # check the number of dimensions
     if ndim is None:
         ndim = (arrays[0].ndim,)
     if not all(array.ndim in ndim for array in arrays):
-        raise ValueError(f"all arrays should have a number of dimensions in {ndim}")
+        raise ValueError(
+            f"{name}: all arrays should have a number of dimensions in {ndim}"
+        )
+
     if fix_ndim:
         if not all(array.ndim == arrays[0].ndim for array in arrays):
             raise ValueError(
-                "all arrays should have the same number of dimensions"
+                f"{name}: all arrays should have the same number of dimensions"
                 f" {arrays[0].ndim}"
             )
     else:
@@ -388,7 +475,7 @@ def valid_ndarray(arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True):
     if shape is None or any(val is None for val in shape):
         shape = arrays[0].shape
     if fix_shape and not all(array.shape == shape for array in arrays):
-        raise ValueError(f"all arrays should have the same shape {shape}")
+        raise ValueError(f"{name}: all arrays should have the same shape {shape}")
 
     # every tests passed, return True
     return True

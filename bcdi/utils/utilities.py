@@ -15,7 +15,7 @@ import gc
 import json
 import h5py
 from matplotlib import pyplot as plt
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import os
 from scipy.interpolate import interp1d, RegularGridInterpolator
@@ -52,6 +52,49 @@ class CustomEncoder(json.JSONEncoder):
         for idx in range(obj.shape[0]):
             output.append(CustomEncoder.ndarray_to_list(obj[idx]))
         return output
+
+
+def apply_logical_array(arrays, frames_logical):
+    """
+    Apply a logical array to a sequence of arrays.
+
+    Assuming a 1D array, it will be cropped where frames_logical is 0.
+
+    :param arrays: a list or tuple of numbers or 1D arrays
+    :param frames_logical: array of length the number of measured frames.
+     In case of cropping/padding the number of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used, -1 means padded
+     (added) frame
+    :return: the sequence of cropped arrays
+    """
+    if frames_logical is None:
+        return arrays
+
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_1d_array(
+        frames_logical,
+        allowed_types=Integral,
+        allow_none=False,
+        allowed_values=(-1, 0, 1),
+        name="frames_logical",
+    )
+
+    # number of measured frames during the experiment
+    # frames_logical[idx]=-1 means that a frame was added (padding) at index idx
+    original_frames = frames_logical[frames_logical != -1]
+    nb_original = int(original_frames.sum())
+
+    output = []
+    for array in arrays:
+        if isinstance(array, Real):
+            output.append(array)
+        else:
+            valid.valid_ndarray(array, ndim=1, shape=(nb_original,))
+            # padding occurs only at the edges of the dataset, so the original data is
+            # contiguous, we can use array indexing directly
+            output.append(array[original_frames != 0])
+    return output
 
 
 def bin_data(array, binning, debugging=False):
@@ -123,6 +166,53 @@ def bin_data(array, binning, debugging=False):
             reciprocal_space=True,
         )
     return newarray
+
+
+def bin_parameters(binning, nb_frames, params, debugging=True):
+    """
+    Bin some parameters.
+
+    It selects parameter values taking into account an eventual binning of the data.
+    The use case is to bin diffractometer motor positions for a dataset binned along
+    the rocking curve axis.
+
+    :param binning: binning factor for the axis corresponding to the rocking curve
+    :param nb_frames: number of frames of the rocking curve dimension
+    :param params: list of parameters
+    :param debugging: set to True to have printed parameters
+    :return: parameters of the same length, taking into account binning
+    """
+    if binning == 1:  # nothing to do
+        return params
+
+    if debugging:
+        print(params)
+
+    nb_param = len(params)
+    print(
+        nb_param,
+        "motor parameters modified to take into account "
+        "binning of the rocking curve axis",
+    )
+
+    if (binning % 1) != 0:
+        raise ValueError("Invalid binning value")
+    for idx, param in enumerate(params):
+        try:  # check if param has a length
+            if len(params[idx]) != nb_frames:
+                raise ValueError(
+                    f"parameter {idx}: length {len(params[idx])} "
+                    f"different from nb_frames {nb_frames}"
+                )
+        except TypeError:  # int or float
+            params[idx] = np.repeat(param, nb_frames)
+        temp = params[idx]
+        params[idx] = temp[::binning]
+
+    if debugging:
+        print(params)
+
+    return params
 
 
 def catch_error(exception):

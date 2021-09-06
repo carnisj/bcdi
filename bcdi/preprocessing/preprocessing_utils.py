@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import datetime
 import matplotlib.pyplot as plt
 import multiprocessing as mp
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import sys
 from scipy.ndimage.measurements import center_of_mass
@@ -285,13 +285,15 @@ def beamstop_correction(data, detector, setup, debugging=False):
             35,
             -31,
             36,
-        ]  # boundaries of the large wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [
             -14,
             14,
             -11,
             16,
-        ]  # boundaries of the small wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the small wafer relative to the direct beam (V x H)
     elif energy == 8700:
         factor_large = 1 / 0.32478  # 5mm*5mm (100um thick) Si wafer
         factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
@@ -300,13 +302,15 @@ def beamstop_correction(data, detector, setup, debugging=False):
             35,
             -31,
             36,
-        ]  # boundaries of the large wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [
             -14,
             14,
             -11,
             16,
-        ]  # boundaries of the small wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the small wafer relative to the direct beam (V x H)
     elif energy == 10000:
         factor_large = 2.1 / 0.47337  # 5mm*5mm (200um thick) Si wafer
         factor_small = 4.5 / 0.47337  # 3mm*3mm (300um thick) Si wafer
@@ -315,13 +319,15 @@ def beamstop_correction(data, detector, setup, debugging=False):
             34,
             -34,
             35,
-        ]  # boundaries of the large wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [
             -21,
             21,
             -21,
             21,
-        ]  # boundaries of the small wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the small wafer relative to the direct beam (V x H)
     else:  # energy = 10235
         factor_large = 2.1 / 0.51431  # 5mm*5mm (200um thick) Si wafer
         factor_small = 4.5 / 0.51431  # 3mm*3mm (300um thick) Si wafer
@@ -330,13 +336,15 @@ def beamstop_correction(data, detector, setup, debugging=False):
             35,
             -33,
             36,
-        ]  # boundaries of the large wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the large wafer relative to the direct beam (V x H)
         pixels_small = [
             -20,
             22,
             -20,
             22,
-        ]  # boundaries of the small wafer relative to the direct beam (V x H)
+        ]
+        # boundaries of the small wafer relative to the direct beam (V x H)
 
     # define boolean arrays for the large and the small square beam stops
     large_square = np.zeros((nby, nbx))
@@ -567,58 +575,6 @@ def beamstop_correction(data, detector, setup, debugging=False):
             reciprocal_space=True,
         )
     return data
-
-
-def bin_parameters(binning, nb_frames, params, debugging=True):
-    """
-    Bin some parameters.
-
-    It selects parameter values taking into account an eventual binning of the data.
-    The use case is to bin diffractometer motor positions for a dataset binned along
-    the rocking curve axis.
-
-    :param binning: binning factor for the axis corresponding to the rocking curve
-    :param nb_frames: number of frames of the rocking curve dimension
-    :param params: list of parameters
-    :param debugging: set to True to have printed parameters
-    :return: parameters of the same length, taking into account binning
-    """
-    if binning == 1:  # nothing to do
-        return params
-
-    if debugging:
-        print(params)
-
-    nb_param = len(params)
-    print(
-        nb_param,
-        "motor parameters modified to take into account "
-        "binning of the rocking curve axis",
-    )
-
-    if (binning % 1) != 0:
-        raise ValueError("Invalid binning value")
-    for idx in range(len(params)):
-        try:
-            param_length = len(params[idx])
-            if param_length != nb_frames:
-                raise ValueError(
-                    "parameter ",
-                    idx,
-                    "length",
-                    param_length,
-                    "different from nb_frames",
-                    nb_frames,
-                )
-        except TypeError:  # int or float
-            params[idx] = np.repeat(params[idx], nb_frames)
-        temp = params[idx]
-        params[idx] = temp[::binning]
-
-    if debugging:
-        print(params)
-
-    return params
 
 
 def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
@@ -1417,7 +1373,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
-def check_empty_frames(data, mask=None, monitor=None):
+def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
     """
     Check if there is intensity for all frames.
 
@@ -1428,14 +1384,14 @@ def check_empty_frames(data, mask=None, monitor=None):
     :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
      same shape as data
     :param monitor: a numpy 1D array of shape equal to data.shape[0]
+    :param frames_logical: 1D array of length equal to the number of measured frames.
+     In case of cropping the length of the stack of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used.
     :return:
-
      - cropped data as a numpy 3D array
      - cropped mask as a numpy 3D array
      - cropped monitor as a numpy 1D array
-     - frames_logical: 1D array of length equal to the number of measured frames.
-       In case of cropping the length of the stack of frames changes. A frame whose
-       index is set to 1 means that it is used, 0 means not used.
+     - updated frames_logical
 
     """
     valid.valid_ndarray(arrays=data, ndim=3)
@@ -1447,10 +1403,26 @@ def check_empty_frames(data, mask=None, monitor=None):
         if monitor.ndim != 1 or len(monitor) != data.shape[0]:
             raise ValueError("monitor be a 1D array of length data.shae[0]")
 
-    frames_logical = np.zeros(data.shape[0])
-    frames_logical[np.argwhere(data.sum(axis=(1, 2)))] = 1
-    if frames_logical.sum() != data.shape[0]:
+    if frames_logical is None:
+        frames_logical = np.ones(data.shape[0])
+    valid.valid_1d_array(
+        frames_logical,
+        allowed_types=Integral,
+        allow_none=False,
+        allowed_values=(0, 1),
+        name="frames_logical",
+    )
+
+    # check if there are empty frames
+    is_intensity = np.zeros(data.shape[0])
+    is_intensity[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if is_intensity.sum() != data.shape[0]:
         print("\nEmpty frame detected, cropping the data\n")
+
+    # update frames_logical
+    frames_logical = np.multiply(frames_logical, is_intensity)
+
+    # remove empty frames from the data and update the mask and the monitor
     data = data[np.nonzero(frames_logical)]
     mask = mask[np.nonzero(frames_logical)]
     monitor = monitor[np.nonzero(frames_logical)]
@@ -1994,13 +1966,11 @@ def grid_bcdi_xrayutil(
             " the corresponding detector ROI should be provided\n"
             "otherwise q values will be wrong."
         )
-    qx, qz, qy, frames_logical = regrid(
+    qx, qz, qy, frames_logical = setup.calc_qvalues_xrutils(
         logfile=logfile,
+        hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan_number,
-        detector=detector,
-        setup=setup,
-        hxrd=hxrd,
         frames_logical=frames_logical,
         follow_bragg=follow_bragg,
     )
@@ -3084,7 +3054,7 @@ def load_data(
         data, mask3d, monitor, frames_logical = load_filtered_data(detector=detector)
 
     else:
-        data, mask2d, monitor = setup.diffractometer.load_data(
+        data, mask2d, monitor, frames_logical = setup.diffractometer.load_data(
             logfile=logfile,
             setup=setup,
             scan_number=scan_number,
@@ -3112,7 +3082,7 @@ def load_data(
 
         # check for empty frames (no beam)
         data, mask3d, monitor, frames_logical = check_empty_frames(
-            data=data, mask=mask3d, monitor=monitor
+            data=data, mask=mask3d, monitor=monitor, frames_logical=frames_logical
         )
 
         # intensity normalization
@@ -3423,448 +3393,6 @@ def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=
         plt.close(fig)
 
     return array, monitor
-
-
-def regrid(
-    logfile,
-    nb_frames,
-    scan_number,
-    detector,
-    setup,
-    hxrd,
-    frames_logical=None,
-    follow_bragg=False,
-):
-    """
-    Load beamline motor positions and calculate q positions for orthogonalization.
-
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped
-     or padded, it may be different from the length of frames_logical.
-    :param scan_number: the scan number to load
-    :param detector: an instance of the class Detector
-    :param setup: an instance of the class Setup
-    :param hxrd: an initialized xrayutilities HXRD object used for the
-     orthogonalization of the dataset
-    :param frames_logical: array of initial length the number of measured frames.
-     In case of padding the length changes. A frame whose index is set to 1 means
-     that it is used, 0 means not used, -1 means padded (added) frame.
-    :param follow_bragg: True when in energy scans the detector was also scanned to
-     follow the Bragg peak
-    :return:
-     - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal frame:
-       for incident angle = 0, x is downstream, y outboard, and z vertical up. The
-       output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values seem wrong,
-       check if diffractometer angles have default values set at 0, otherwise use the
-       parameter setup.diffractometer.sample_offsets to correct it.
-     - updated frames_logical
-
-    """
-    binning = detector.binning
-
-    if frames_logical is None:  # retrieve the raw data length, then len(frames_logical)
-        # may be different from nb_frames
-        if setup.beamline in {"ID01", "CRISTAL", "SIXS_2018", "SIXS_2019"}:
-            _, _, _, frames_logical = load_data(
-                logfile=logfile, scan_number=scan_number, detector=detector, setup=setup
-            )
-        else:  # frames_logical parameter not used yet for other beamlines
-            pass
-
-    if follow_bragg and setup.beamline != "ID01":
-        raise ValueError('"follow_bragg" option implemented only for ID01 beamline')
-
-    if setup.beamline == "ID01":
-        (
-            mu,
-            eta,
-            phi,
-            nu,
-            delta,
-            energy,
-            frames_logical,
-        ) = setup.diffractometer.motor_positions(
-            logfile=logfile,
-            scan_number=scan_number,
-            setup=setup,
-            frames_logical=frames_logical,
-            follow_bragg=follow_bragg,
-        )
-        chi = 0  # virtual chi
-        if setup.rocking_angle == "outofplane":  # eta rocking curve
-            print("phi", phi)
-            nb_steps = len(eta)
-
-            tilt_angle = (eta[1:] - eta[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                eta = np.concatenate(
-                    (
-                        eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        eta,
-                        eta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                eta = eta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "inplane":  # phi rocking curve
-            print("eta", eta)
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "energy":
-            pass
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-        mu, eta, chi, phi, nu, delta, energy = bin_parameters(
-            binning=binning[0],
-            nb_frames=nb_frames,
-            params=[mu, eta, chi, phi, nu, delta, energy],
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            mu, eta, chi, phi, nu, delta, en=energy, delta=detector.offsets
-        )
-
-    elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
-        beta, mu, gamma, delta, frames_logical = setup.diffractometer.motor_positions(
-            logfile=logfile, setup=setup
-        )
-
-        print("beta", beta)
-        if setup.rocking_angle == "inplane":  # mu rocking curve
-            nb_steps = len(mu)
-            tilt_angle = (mu[1:] - mu[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mu = np.concatenate(
-                    (
-                        mu[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mu,
-                        mu[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                mu = mu[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        else:
-            raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
-        beta, mu, gamma, delta = bin_parameters(
-            binning=binning[0], nb_frames=nb_frames, params=[beta, mu, gamma, delta]
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            beta, mu, beta, gamma, delta, en=setup.energy, delta=detector.offsets
-        )
-
-    elif setup.beamline == "CRISTAL":
-        mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
-            logfile=logfile, setup=setup, frames_logical=frames_logical
-        )
-
-        if setup.rocking_angle == "outofplane":  # mgomega rocking curve
-            nb_steps = len(mgomega)
-            tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mgomega = np.concatenate(
-                    (
-                        mgomega[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mgomega,
-                        mgomega[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                mgomega = mgomega[
-                    (nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2
-                ]
-
-        elif setup.rocking_angle == "inplane":  # mgphi rocking curve
-            print("mgomega", mgomega)
-            nb_steps = len(mgphi)
-            tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mgphi = np.concatenate(
-                    (
-                        mgphi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mgphi,
-                        mgphi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                mgphi = mgphi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-        mgomega, mgphi, gamma, delta, energy = bin_parameters(
-            binning=binning[0],
-            nb_frames=nb_frames,
-            params=[mgomega, mgphi, gamma, delta, energy],
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            mgomega, mgphi, gamma, delta, en=energy, delta=detector.offsets
-        )
-
-    elif setup.beamline == "P10":
-        mu, om, chi, phi, gamma, delta = setup.diffractometer.motor_positions(
-            logfile=logfile, setup=setup
-        )
-
-        print("chi", chi)
-        print("mu", mu)
-        if setup.rocking_angle == "outofplane":  # om rocking curve
-            print("phi", phi)
-            nb_steps = len(om)
-            tilt_angle = (om[1:] - om[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                om = np.concatenate(
-                    (
-                        om[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        om,
-                        om[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                om = om[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "inplane":  # phi rocking curve
-            print("om", om)
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-        mu, om, chi, phi, gamma, delta = bin_parameters(
-            binning=binning[0],
-            nb_frames=nb_frames,
-            params=[mu, om, chi, phi, gamma, delta],
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            mu, om, chi, phi, gamma, delta, en=setup.energy, delta=detector.offsets
-        )
-
-    elif setup.beamline == "NANOMAX":
-        theta, phi, gamma, delta, energy, _ = setup.diffractometer.motor_positions(
-            logfile=logfile, setup=setup
-        )
-
-        if setup.rocking_angle == "outofplane":  # theta rocking curve
-            nb_steps = len(theta)
-            tilt_angle = (theta[1:] - theta[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                theta = np.concatenate(
-                    (
-                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        theta,
-                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "inplane":  # phi rocking curve
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "energy":
-            pass
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-        delta, gamma, phi, theta, energy = bin_parameters(
-            binning=binning[0],
-            nb_frames=nb_frames,
-            params=[delta, gamma, phi, theta, energy],
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            theta, phi, gamma, delta, en=energy, delta=detector.offsets
-        )
-
-    elif setup.beamline == "34ID":
-        theta, phi, delta, gamma = setup.diffractometer.motor_positions(setup=setup)
-
-        if setup.rocking_angle == "outofplane":  # phi rocking curve
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "inplane":  # theta rocking curve
-            nb_steps = len(theta)
-            tilt_angle = (theta[1:] - theta[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                theta = np.concatenate(
-                    (
-                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        theta,
-                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
-        elif setup.rocking_angle == "energy":
-            pass
-
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-        theta, phi, delta, gamma = bin_parameters(
-            binning=binning[0], nb_frames=nb_frames, params=[theta, phi, delta, gamma]
-        )
-        qx, qy, qz = hxrd.Ang2Q.area(
-            theta, phi, delta, gamma, en=setup.energy, delta=detector.offsets
-        )
-
-    else:
-        raise ValueError('Wrong value for "beamline" parameter: beamline not supported')
-    print('Use "sample_offsets" to correct the diffractometer values\n')
-    return qx, qz, qy, frames_logical
 
 
 def reload_bcdi_data(

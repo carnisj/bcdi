@@ -10,7 +10,7 @@
 """Setup class that defines the experimental geometry."""
 from collections.abc import Sequence
 import gc
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 import pathlib
 from scipy.interpolate import RegularGridInterpolator
@@ -57,6 +57,8 @@ class Setup:
        to the number of elements in custom_images.
      - 'custom_motors': list of motor values when the scan does no follow
        the beamline's usual directory format.
+     - 'follow_bragg':bool, True when the detector is also scanned during energy scans
+       to follow the Bragg peak
      - 'sample_inplane': sample inplane reference direction along the beam at
        0 angles in xrayutilities frame (x is downstream, y outboard, and z vertical
        up at zero incident angle).
@@ -115,6 +117,7 @@ class Setup:
                 "offset_inplane",
                 "actuators",
                 "is_series",
+                "follow_bragg",
             },
             name="Setup.__init__",
         )
@@ -129,6 +132,7 @@ class Setup:
         self.custom_monitor = kwargs.get("custom_monitor")  # list or tuple
         self.custom_motors = kwargs.get("custom_motors")  # dictionnary
         self.actuators = kwargs.get("actuators", {})  # list or tuple
+        self.follow_bragg = kwargs.get("follow_bragg", False)  # boolean
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
         self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
@@ -574,6 +578,7 @@ class Setup:
             "sample_offsets_deg": self.diffractometer.sample_offsets,
             "direct_beam_pixel": self.direct_beam,
             "filtered_data": self.filtered_data,
+            "follow_bragg": self.follow_bragg,
             "custom_scan": self.custom_scan,
             "custom_images": self.custom_images,
             "actuators": self.actuators,
@@ -654,8 +659,9 @@ class Setup:
             f"pixel_size={self.detector.unbinned_pixel_size}, "
             f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
-            f"filtered_data={self.filtered_data}, "
-            f"custom_scan={self.custom_scan},\n"
+            f"filtered_data={self.filtered_data},\n"
+            f"follow_bragg={self.follow_bragg}, "
+            f"custom_scan={self.custom_scan}, "
             f"custom_images={self.custom_images},\n"
             f"custom_monitor={self.custom_monitor},\n"
             f"custom_motors={self.custom_motors},\n"
@@ -664,6 +670,73 @@ class Setup:
             f"offset_inplane={self.offset_inplane}, "
             f"is_series={self.is_series})"
         )
+
+    def calc_qvalues_xrutils(self, logfile, hxrd, nb_frames, **kwargs):
+        """
+        Calculate the 3D q values of the BCDI scan using xrayutilities.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param hxrd: an initialized xrayutilities HXRD object used for the
+         orthogonalization of the dataset
+        :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped
+         or padded, it may be different from the original length len(frames_logical)
+        :param kwargs:
+
+         - 'scan_number': the scan number to load
+         - 'frames_logical': array of length the number of measured frames.
+           In case of cropping/padding the number of frames changes. A frame whose
+           index is set to 1 means that it is used, 0 means not used, -1 means padded
+           (added) frame
+         - 'follow_bragg': True when in energy scans the detector was also
+           scanned to follow the Bragg peak
+
+        :return:
+         - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal
+           frame: for incident angle = 0, x is downstream, y outboard, and z vertical
+           up. The output of hxrd.Ang2Q.area is qx, qy, qz is this order. If q values
+           seem wrong, check if diffractometer angles have default values set at 0,
+           otherwise use the parameter setup.diffractometer.sample_offsets to correct it
+         - updated frames_logical
+
+        """
+        # check some parameters
+        follow_bragg = kwargs.get("follow_bragg", False)
+        if not isinstance(follow_bragg, bool):
+            raise TypeError(
+                "follow_bragg should be a boolean, got " f"{type(follow_bragg)}"
+            )
+        frames_logical = kwargs.get("frames_logical")
+        valid.valid_1d_array(
+            frames_logical,
+            allow_none=True,
+            allowed_types=Integral,
+            allowed_values=(-1, 0, 1),
+            name="frames_logical",
+        )
+        scan_number = kwargs.get("scan_number")
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
+
+        # process motor positions
+        processed_positions = self._beamline.process_positions(
+            setup=self,
+            logfile=logfile,
+            nb_frames=nb_frames,
+            scan_number=scan_number,
+            frames_logical=frames_logical,
+            follow_bragg=follow_bragg,
+        )
+
+        # calculate q values
+        qx, qy, qz = hxrd.Ang2Q.area(
+            **processed_positions[:-1],
+            en=processed_positions[-1],
+            delta=self.detector.offsets,
+        )
+        print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
+        return qx, qz, qy, frames_logical
 
     def create_logfile(self, scan_number, root_folder, filename):
         """
@@ -743,11 +816,12 @@ class Setup:
                 title=title + " before interpolation\n",
             )
 
-        ortho_matrix = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_matrix(
             array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
             pixel_x=self.detector.unbinned_pixel_size[1],
             pixel_y=self.detector.unbinned_pixel_size[0],
+            direct_space=True,
         )
 
         ################################################
@@ -1206,11 +1280,12 @@ class Setup:
         ######################################################################
         # calculate the transformation matrix based on the beamline geometry #
         ######################################################################
-        transfer_matrix = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_matrix(
             array_shape=input_shape,
             tilt_angle=tilt,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
 
@@ -1808,11 +1883,12 @@ class Setup:
             name="array_shape",
         )
 
-        ortho_matrix = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_matrix(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
         # ortho_matrix is the transformation matrix
@@ -1839,7 +1915,7 @@ class Setup:
         return new_z, new_y, new_x
 
     def transformation_matrix(
-        self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space=True, verbose=True
+        self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
     ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
@@ -1855,7 +1931,6 @@ class Setup:
          direct space
         :param verbose: True to have printed comments
         :return:
-
          - the transformation matrix from the detector frame to the laboratory frame
          - the q offset (3D vector) if direct_space is False.
 
@@ -1905,7 +1980,7 @@ class Setup:
             mymatrix[:, 0] = array_shape[2] * mymatrix[:, 0]
             mymatrix[:, 1] = array_shape[1] * mymatrix[:, 1]
             mymatrix[:, 2] = array_shape[0] * mymatrix[:, 2]
-            return 2 * np.pi * np.linalg.inv(mymatrix).transpose()
+            return 2 * np.pi * np.linalg.inv(mymatrix).transpose(), None
 
         # reciprocal length scale in  1/nm
         return mymatrix, q_offset
@@ -1933,12 +2008,12 @@ class Setup:
             name="array_shape",
         )
 
-        transfer_matrix = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_matrix(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
-            direct_space=True,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
+            direct_space=True,
             verbose=verbose,
         )
         # transfer_matrix is the transformation matrix

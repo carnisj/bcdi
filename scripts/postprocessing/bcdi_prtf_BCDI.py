@@ -376,7 +376,8 @@ mask = util.bin_data(array=mask, binning=phasing_binning, debugging=False)
     numz,
     numy,
     numx,
-) = diff_pattern.shape  # this shape will be used for the calculation of q values
+) = diff_pattern.shape
+# this shape will be used for the calculation of q values
 print(
     f"\nMeasured data shape = {numz}, {numy}, {numx},"
     f" Max(measured amplitude)={np.sqrt(diff_pattern).max():.1f}"
@@ -446,13 +447,11 @@ if simulation:
         eta, 0, 0, inplane_simu, outofplane_simu, delta=(0, 0, 0, 0, 0)
     )
 else:
-    qx, qz, qy, _ = pru.regrid(
+    qx, qz, qy, _ = setup.calc_qvalues_xrutils(
         logfile=logfile,
+        hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan,
-        detector=detector,
-        setup=setup,
-        hxrd=hxrd,
         follow_bragg=follow_bragg,
     )
 

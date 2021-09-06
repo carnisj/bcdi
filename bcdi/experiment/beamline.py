@@ -28,6 +28,7 @@ import h5py
 from math import isclose
 from silx.io.specfile import SpecFile
 import xrayutilities as xu
+from ..utils import utilities as util
 
 
 def create_beamline(name, **kwargs):
@@ -330,6 +331,31 @@ class Beamline(ABC):
             * self.orientation_lookup[self.detector_ver]
         )
 
+    @staticmethod
+    @abstractmethod
+    def process_positions(
+        setup, logfile, nb_frames, scan_number, frames_logical=None, follow_bragg=False
+    ):
+        """
+        Load and crop/pad motor positions depending on the current number of frames.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+
     @abstractmethod
     def transformation_matrix(
         self,
@@ -443,6 +469,105 @@ class BeamlineCRISTAL(Beamline):
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
+
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at CRISTAL.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mgomega, mgphi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(mgomega, mgphi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        if setup.rocking_angle == "outofplane":  # mgomega rocking curve
+            nb_steps = len(mgomega)
+            tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                mgomega = np.concatenate(
+                    (
+                        mgomega[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        mgomega,
+                        mgomega[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if (
+                nb_steps > nb_frames
+            ):  # data has been cropped, we suppose it is centered in z dimension
+                mgomega = mgomega[
+                    (nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2
+                ]
+
+        elif setup.rocking_angle == "inplane":  # mgphi rocking curve
+            print("mgomega", mgomega)
+            nb_steps = len(mgphi)
+            tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                mgphi = np.concatenate(
+                    (
+                        mgphi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        mgphi,
+                        mgphi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                mgphi = mgphi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[mgomega, mgphi, gamma, delta, energy],
+        )
 
     def transformation_matrix(
         self,
@@ -685,6 +810,107 @@ class BeamlineID01(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at ID01.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        mu, eta, phi, nu, delta, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mu, eta, phi, nu, delta, energy = util.apply_logical_array(
+            arrays=(mu, eta, phi, nu, delta, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        if setup.rocking_angle == "outofplane":  # eta rocking curve
+            print("phi", phi)
+            nb_steps = len(eta)
+            tilt_angle = (eta[1:] - eta[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                eta = np.concatenate(
+                    (
+                        eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        eta,
+                        eta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if (
+                nb_steps > nb_frames
+            ):  # data has been cropped, we suppose it is centered in z dimension
+                eta = eta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            print("eta", eta)
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+
+            if (
+                nb_steps < nb_frames
+            ):  # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                phi = np.concatenate(
+                    (
+                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        phi,
+                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "energy":
+            pass
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[mu, eta, phi, nu, delta, energy],
+        )
+
     def transformation_matrix(
         self,
         wavelength,
@@ -920,6 +1146,104 @@ class BeamlineNANOMAX(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at NANOMAX.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        theta, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        theta, phi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(theta, phi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        if setup.rocking_angle == "outofplane":  # theta rocking curve
+            nb_steps = len(theta)
+            tilt_angle = (theta[1:] - theta[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                theta = np.concatenate(
+                    (
+                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        theta,
+                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if (
+                nb_steps > nb_frames
+            ):  # data has been cropped, we suppose it is centered in z dimension
+                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                phi = np.concatenate(
+                    (
+                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        phi,
+                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "energy":
+            pass
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[delta, gamma, phi, theta, energy],
+        )
+
     def transformation_matrix(
         self,
         wavelength,
@@ -1154,6 +1478,105 @@ class BeamlineP10(Beamline):
         default_dirname = "e4m/"
         template_imagefile = specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
+
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at P10.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        mu, om, chi, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        mu, om, chi, phi, gamma, delta, energy = util.apply_logical_array(
+            arrays=(mu, om, chi, phi, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        print("chi", chi)
+        print("mu", mu)
+        if setup.rocking_angle == "outofplane":  # om rocking curve
+            print("phi", phi)
+            nb_steps = len(om)
+            tilt_angle = (om[1:] - om[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                om = np.concatenate(
+                    (
+                        om[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        om,
+                        om[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                om = om[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            print("om", om)
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                phi = np.concatenate(
+                    (
+                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        phi,
+                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[mu, om, chi, phi, gamma, delta, energy],
+        )
 
     def transformation_matrix(
         self,
@@ -1470,6 +1893,80 @@ class BeamlineSIXS(Beamline):
 
         return homedir, default_dirname, specfile, template_imagefile
 
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at SIXS.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        beta, mu, gamma, delta, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        beta, mu, gamma, delta, energy = util.apply_logical_array(
+            arrays=(beta, mu, gamma, delta, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        print("beta", beta)
+        if setup.rocking_angle == "inplane":  # mu rocking curve
+            nb_steps = len(mu)
+            tilt_angle = (mu[1:] - mu[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                mu = np.concatenate(
+                    (
+                        mu[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        mu,
+                        mu[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                mu = mu[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        else:
+            raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[beta, mu, gamma, delta, energy],
+        )
+
     def transformation_matrix(
         self,
         wavelength,
@@ -1646,7 +2143,7 @@ class Beamline34ID(Beamline):
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
-        Initialize paths used for data processing and logging at SIXS.
+        Initialize paths used for data processing and logging at 34ID-C.
 
         :param root_folder: folder of the experiment, where all scans are stored
         :param sample_name: string in front of the scan number in the data folder
@@ -1665,6 +2162,103 @@ class Beamline34ID(Beamline):
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
+
+    @staticmethod
+    def process_positions(
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at 34ID-C.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        theta, phi, delta, gamma, energy = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+            follow_bragg=follow_bragg,
+        )
+        # first, remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        theta, phi, delta, gamma, energy = util.apply_logical_array(
+            arrays=(theta, phi, delta, gamma, energy),
+            frames_logical=frames_logical,
+        )
+
+        # then, eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        if setup.rocking_angle == "outofplane":  # phi rocking curve
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                phi = np.concatenate(
+                    (
+                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        phi,
+                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "inplane":  # theta rocking curve
+            nb_steps = len(theta)
+            tilt_angle = (theta[1:] - theta[0:-1]).mean()
+
+            if nb_steps < nb_frames:
+                # data has been padded, we suppose it is centered in z dimension
+                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+                pad_high = int(
+                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+                )
+                theta = np.concatenate(
+                    (
+                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
+                        theta,
+                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
+                    ),
+                    axis=0,
+                )
+            if nb_steps > nb_frames:
+                # data has been cropped, we suppose it is centered in z dimension
+                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
+
+        elif setup.rocking_angle == "energy":
+            pass
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[theta, phi, delta, gamma, energy],
+        )
 
     def transformation_matrix(
         self,
