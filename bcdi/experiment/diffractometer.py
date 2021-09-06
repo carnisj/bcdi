@@ -746,7 +746,7 @@ class Diffractometer(ABC):
 
         # calculate the total tranformation matrix by rotating back
         # from outer circles to inner circles
-        return np.array(reduce(lambda x, y: np.matmul(x, y), rotation_matrices))
+        return np.array(reduce(np.matmul, rotation_matrices))
 
     @staticmethod
     def select_frames(data, frames_pattern=None):
