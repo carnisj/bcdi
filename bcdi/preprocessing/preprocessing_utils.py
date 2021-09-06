@@ -89,14 +89,7 @@ def align_diffpattern(
             shiftz = ref_piz - piz
             shifty = ref_piy - piy
             shiftx = ref_pix - pix
-        print(
-            "z shift",
-            str("{:.2f}".format(shiftz)),
-            ", y shift",
-            str("{:.2f}".format(shifty)),
-            ", x shift",
-            str("{:.2f}".format(shiftx)),
-        )
+        print(f"Shifts (z, y, x) = ({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f})")
         if all(val == 0 for val in (shiftz, shifty, shiftx)):
             if not return_shift:
                 return data, mask
@@ -171,12 +164,7 @@ def align_diffpattern(
             piy, pix = center_of_mass(abs(data))
             shifty = ref_piy - piy
             shiftx = ref_pix - pix
-        print(
-            "y shift",
-            str("{:.2f}".format(shifty)),
-            ", x shift",
-            str("{:.2f}".format(shiftx)),
-        )
+        print(f"Shifts (y, x) = ({shifty:.2f}, {shiftx:.2f})")
         if all(val == 0 for val in (shifty, shiftx)):
             if not return_shift:
                 return data, mask
@@ -280,70 +268,30 @@ def beamstop_correction(data, detector, setup, debugging=False):
     if energy == 8200:
         factor_large = 1 / 0.26273  # 5mm*5mm (100um thick) Si wafer
         factor_small = 1 / 0.26273  # 3mm*3mm (100um thick) Si wafer
-        pixels_large = [
-            -33,
-            35,
-            -31,
-            36,
-        ]
+        pixels_large = [-33, 35, -31, 36]
         # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [
-            -14,
-            14,
-            -11,
-            16,
-        ]
+        pixels_small = [-14, 14, -11, 16]
         # boundaries of the small wafer relative to the direct beam (V x H)
     elif energy == 8700:
         factor_large = 1 / 0.32478  # 5mm*5mm (100um thick) Si wafer
         factor_small = 1 / 0.32478  # 3mm*3mm (100um thick) Si wafer
-        pixels_large = [
-            -33,
-            35,
-            -31,
-            36,
-        ]
+        pixels_large = [-33, 35, -31, 36]
         # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [
-            -14,
-            14,
-            -11,
-            16,
-        ]
+        pixels_small = [-14, 14, -11, 16]
         # boundaries of the small wafer relative to the direct beam (V x H)
     elif energy == 10000:
         factor_large = 2.1 / 0.47337  # 5mm*5mm (200um thick) Si wafer
         factor_small = 4.5 / 0.47337  # 3mm*3mm (300um thick) Si wafer
-        pixels_large = [
-            -36,
-            34,
-            -34,
-            35,
-        ]
+        pixels_large = [-36, 34, -34, 35]
         # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [
-            -21,
-            21,
-            -21,
-            21,
-        ]
+        pixels_small = [-21, 21, -21, 21]
         # boundaries of the small wafer relative to the direct beam (V x H)
     else:  # energy = 10235
         factor_large = 2.1 / 0.51431  # 5mm*5mm (200um thick) Si wafer
         factor_small = 4.5 / 0.51431  # 3mm*3mm (300um thick) Si wafer
-        pixels_large = [
-            -34,
-            35,
-            -33,
-            36,
-        ]
+        pixels_large = [-34, 35, -33, 36]
         # boundaries of the large wafer relative to the direct beam (V x H)
-        pixels_small = [
-            -20,
-            22,
-            -20,
-            22,
-        ]
+        pixels_small = [-20, 22, -20, 22]
         # boundaries of the small wafer relative to the direct beam (V x H)
 
     # define boolean arrays for the large and the small square beam stops
@@ -1821,19 +1769,8 @@ def grid_bcdi_labframe(
 
     numz, numy, numx = interp_data.shape
     plot_comment = (
-        "_"
-        + str(numz)
-        + "_"
-        + str(numy)
-        + "_"
-        + str(numx)
-        + "_"
-        + str(final_binning[0])
-        + "_"
-        + str(final_binning[1])
-        + "_"
-        + str(final_binning[2])
-        + ".png"
+        f"_{numz}_{numy}_{numx}_"
+        f"{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png"
     )
 
     max_z = interp_data.sum(axis=0).max()
@@ -3441,10 +3378,7 @@ def reload_bcdi_data(
         name="preprocessing_utils.reload_bcdi_data",
     )
 
-    if normalize:
-        normalize_method = "monitor"
-    else:
-        normalize_method = "skip"
+    normalize_method = "monitor" if normalize else "skip"
 
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
