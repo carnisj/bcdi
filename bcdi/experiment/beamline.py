@@ -22,13 +22,15 @@ The available beamlines are:
 
 """
 from abc import ABC, abstractmethod
-import numpy as np
-import os
 import h5py
 from math import isclose
+import numpy as np
+from numbers import Real
+import os
 from silx.io.specfile import SpecFile
 import xrayutilities as xu
 from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def create_beamline(name, **kwargs):
@@ -356,6 +358,47 @@ class Beamline(ABC):
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
 
+    @staticmethod
+    def process_tilt(array, nb_steps, nb_frames, angular_step):
+        """
+        Crop or pad array depending on how compare two numbers.
+
+        Cropping or padding depends on the number of current frames compared to the
+        number of motor steps. For padding it assumes that array is linear in the
+        angular_step.
+
+        :param array: a 1D numpy array of motor values
+        :param nb_steps: int, the number of motor positions
+        :param nb_frames: int, the number of frames
+        :param angular_step: float, the angular tilt of the rocking curve
+        :return: the cropped/padded array
+        """
+        # check parameters
+        valid.valid_1d_array(array, length=nb_steps, allow_none=False, name="array")
+        valid.valid_item(nb_steps, allowed_types=int, min_excluded=0, name="nb_steps")
+        valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
+        valid.valid_item(angular_step, allowed_types=Real, name="angular_step")
+
+        if nb_steps < nb_frames:
+            # data has been padded, we suppose it is centered in z dimension
+            pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
+            pad_high = int(
+                (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
+            )
+            array = np.concatenate(
+                (
+                    array[0] + np.arange(-pad_low, 0, 1) * angular_step,
+                    array,
+                    array[-1] + np.arange(1, pad_high + 1, 1) * angular_step,
+                ),
+                axis=0,
+            )
+        if (
+                nb_steps > nb_frames
+        ):  # data has been cropped, we suppose it is centered in z dimension
+            array = array[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+        return array
+
     @abstractmethod
     def transformation_matrix(
         self,
@@ -470,14 +513,14 @@ class BeamlineCRISTAL(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at CRISTAL.
@@ -515,51 +558,22 @@ class BeamlineCRISTAL(Beamline):
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             nb_steps = len(mgomega)
             tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mgomega = np.concatenate(
-                    (
-                        mgomega[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mgomega,
-                        mgomega[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                mgomega = mgomega[
-                    (nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2
-                ]
-
+            mgomega = self.process_tilt(
+                mgomega,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
             print("mgomega", mgomega)
             nb_steps = len(mgphi)
             tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mgphi = np.concatenate(
-                    (
-                        mgphi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mgphi,
-                        mgphi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                mgphi = mgphi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            mgphi = self.process_tilt(
+                mgphi,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -810,14 +824,14 @@ class BeamlineID01(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at ID01.
@@ -856,50 +870,22 @@ class BeamlineID01(Beamline):
             print("phi", phi)
             nb_steps = len(eta)
             tilt_angle = (eta[1:] - eta[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                eta = np.concatenate(
-                    (
-                        eta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        eta,
-                        eta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                eta = eta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            eta = self.process_tilt(
+                eta,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             print("eta", eta)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if (
-                nb_steps < nb_frames
-            ):  # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            phi = self.process_tilt(
+                phi,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "energy":
             pass
         else:
@@ -1146,14 +1132,14 @@ class BeamlineNANOMAX(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at NANOMAX.
@@ -1191,48 +1177,21 @@ class BeamlineNANOMAX(Beamline):
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                theta = np.concatenate(
-                    (
-                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        theta,
-                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if (
-                nb_steps > nb_frames
-            ):  # data has been cropped, we suppose it is centered in z dimension
-                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            theta = self.process_tilt(
+                theta,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            phi = self.process_tilt(
+                phi,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "energy":
             pass
         else:
@@ -1479,14 +1438,14 @@ class BeamlineP10(Beamline):
         template_imagefile = specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at P10.
@@ -1527,48 +1486,22 @@ class BeamlineP10(Beamline):
             print("phi", phi)
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                om = np.concatenate(
-                    (
-                        om[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        om,
-                        om[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                om = om[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            om = self.process_tilt(
+                om,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             print("om", om)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            phi = self.process_tilt(
+                phi,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -1893,14 +1826,14 @@ class BeamlineSIXS(Beamline):
 
         return homedir, default_dirname, specfile, template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at SIXS.
@@ -1939,25 +1872,12 @@ class BeamlineSIXS(Beamline):
         if setup.rocking_angle == "inplane":  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = (mu[1:] - mu[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                mu = np.concatenate(
-                    (
-                        mu[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        mu,
-                        mu[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                mu = mu[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            mu = self.process_tilt(
+                mu,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
 
@@ -2163,14 +2083,14 @@ class Beamline34ID(Beamline):
         default_dirname = "data/"
         return homedir, default_dirname, "", template_imagefile
 
-    @staticmethod
     def process_positions(
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
+            self,
+            setup,
+            logfile,
+            nb_frames,
+            scan_number,
+            frames_logical=None,
+            follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at 34ID-C.
@@ -2208,47 +2128,21 @@ class Beamline34ID(Beamline):
         if setup.rocking_angle == "outofplane":  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                phi = np.concatenate(
-                    (
-                        phi[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        phi,
-                        phi[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                phi = phi[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            phi = self.process_tilt(
+                phi,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "inplane":  # theta rocking curve
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
-
-            if nb_steps < nb_frames:
-                # data has been padded, we suppose it is centered in z dimension
-                pad_low = int((nb_frames - nb_steps + ((nb_frames - nb_steps) % 2)) / 2)
-                pad_high = int(
-                    (nb_frames - nb_steps + 1) / 2 - ((nb_frames - nb_steps) % 2)
-                )
-                theta = np.concatenate(
-                    (
-                        theta[0] + np.arange(-pad_low, 0, 1) * tilt_angle,
-                        theta,
-                        theta[-1] + np.arange(1, pad_high + 1, 1) * tilt_angle,
-                    ),
-                    axis=0,
-                )
-            if nb_steps > nb_frames:
-                # data has been cropped, we suppose it is centered in z dimension
-                theta = theta[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
-
+            theta = self.process_tilt(
+                theta,
+                nb_steps=nb_steps,
+                nb_frames=nb_frames,
+                angular_step=tilt_angle
+            )
         elif setup.rocking_angle == "energy":
             pass
         else:
