@@ -236,7 +236,7 @@ if center_method == "com":
 else:  # 'max'
     psf_cen = list(
         map(
-            lambda x: int(x),
+            int,
             np.unravel_index(psf_partial_coh.argmax(), shape=psf_partial_coh.shape),
         )
     )
