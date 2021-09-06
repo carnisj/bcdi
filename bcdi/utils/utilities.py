@@ -197,20 +197,15 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
 
     if (binning % 1) != 0:
         raise ValueError("Invalid binning value")
-    for idx, val in enumerate(params):
-        try:
-            param_length = len(params[idx])
-            if param_length != nb_frames:
+    for idx, param in enumerate(params):
+        try:  # check if param has a length
+            if len(params[idx]) != nb_frames:
                 raise ValueError(
-                    "parameter ",
-                    idx,
-                    "length",
-                    param_length,
-                    "different from nb_frames",
-                    nb_frames,
+                    f"parameter {idx}: length {len(params[idx])} "
+                    f"different from nb_frames {nb_frames}"
                 )
         except TypeError:  # int or float
-            params[idx] = np.repeat(params[idx], nb_frames)
+            params[idx] = np.repeat(param, nb_frames)
         temp = params[idx]
         params[idx] = temp[::binning]
 
