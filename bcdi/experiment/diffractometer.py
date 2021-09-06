@@ -632,7 +632,7 @@ class Diffractometer(ABC):
         if normalize == "sum_roi":
             monitor = util.sum_roi(array=frame, roi=detector.sum_roi)
 
-        frame = frame[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        frame = frame[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
 
         if bin_during_loading:
             frame = util.bin_data(
@@ -768,12 +768,14 @@ class Diffractometer(ABC):
         """
         if frames_pattern is None:
             frames_pattern = np.ones(data.shape[0], dtype=int)
-        valid.valid_1d_array(frames_pattern,
-                             length=data.shape[0],
-                             allow_none=True,
-                             allowed_types=Integral,
-                             allowed_values=(0, 1),
-                             name="frames_pattern")
+        valid.valid_1d_array(
+            frames_pattern,
+            length=data.shape[0],
+            allow_none=True,
+            allowed_types=Integral,
+            allowed_values=(0, 1),
+            name="frames_pattern",
+        )
         return data[frames_pattern != 0], frames_pattern
 
     def valid_name(self, stage_name):
@@ -1105,7 +1107,9 @@ class DiffractometerCRISTAL(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -1512,7 +1516,9 @@ class DiffractometerID01(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -1810,7 +1816,9 @@ class DiffractometerNANOMAX(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -2108,18 +2116,22 @@ class DiffractometerP10(Diffractometer):
                 sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)
-                data[start_index: start_index + tempdata_length, :, :] =\
-                    np.asarray(series_data)
+                data[start_index : start_index + tempdata_length, :, :] = np.asarray(
+                    series_data
+                )
                 if normalize == "sum_roi":
-                    monitor[start_index: start_index + tempdata_length] =\
-                        np.asarray(series_monitor)
+                    monitor[start_index : start_index + tempdata_length] = np.asarray(
+                        series_monitor
+                    )
                 start_index += tempdata_length
                 if start_index == nb_img:
                     break
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
 
         # select frames
         data, frames_logical = self.select_frames(data)
@@ -2415,7 +2427,9 @@ class DiffractometerSIXS(Diffractometer):
 
         print("")
         # update the mask
-        mask2d = mask2d[loading_roi[0]:loading_roi[1], loading_roi[2]:loading_roi[3]]
+        mask2d = mask2d[
+            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+        ]
 
         # select frames
         data, frames_logical = self.select_frames(data)

@@ -393,16 +393,12 @@ def valid_1d_array(
     if min_length is not None and len(array) < min_length:
         raise ValueError(f"{name}: array should be of length >= {min_length}")
 
-    if (
-            allowed_types is not None and
-            all(not isinstance(array[0], my_type) for my_type in allowed_types)
+    if allowed_types is not None and all(
+        not isinstance(array[0], my_type) for my_type in allowed_types
     ):
         raise TypeError(f"{name}: got an unexpected type not in {allowed_types}")
 
-    if (
-            allowed_values is not None and
-            any(val not in allowed_values for val in array)
-    ):
+    if allowed_values is not None and any(val not in allowed_values for val in array):
         raise ValueError(f"{name}: got an unexpected value not in {allowed_values}")
 
     # every tests passed, return True
