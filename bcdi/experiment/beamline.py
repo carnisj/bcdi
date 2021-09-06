@@ -334,12 +334,7 @@ class Beamline(ABC):
     @staticmethod
     @abstractmethod
     def process_positions(
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False
+        setup, logfile, nb_frames, scan_number, frames_logical=None, follow_bragg=False
     ):
         """
         Load and crop/pad motor positions depending on the current number of frames.

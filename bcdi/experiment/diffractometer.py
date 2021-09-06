@@ -1004,8 +1004,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         # load the motor positions
         mgomega, mgphi, gamma, delta, _ = self.motor_positions(
-            setup=setup,
-            logfile=logfile
+            setup=setup, logfile=logfile
         )
 
         # define the circles of interest for BCDI
