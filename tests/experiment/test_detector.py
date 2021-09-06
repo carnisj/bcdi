@@ -60,17 +60,17 @@ class TestCreateDetector(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             create_detector(None)
 
+    def test_name_missing(self):
+        with self.assertRaises(TypeError):
+            create_detector()
+
 
 class TestDetector(unittest.TestCase):
-    """Tests related to detector instantiation."""
+    """Tests related to the properties of the base class."""
 
     def test_create_detector_from_abc(self):
         with self.assertRaises(TypeError):
             Detector(name="Maxipix")
-
-    def test_instantiation_missing_parameter(self):
-        with self.assertRaises(TypeError):
-            create_detector()
 
 
 class TestMaxipix(unittest.TestCase):
