@@ -411,12 +411,14 @@ class Diffractometer(ABC):
         return index_circle
 
     @abstractmethod
-    def goniometer_values(self, **kwargs):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer values.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
+        :param setup: the experimental setup: Class Setup
+        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs: beamline_specific parameters
         :return: a list of motor positions
         """
@@ -556,8 +558,7 @@ class Diffractometer(ABC):
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': file containing the information about the scan and image numbers
-            (specfile, .fio...), created in Setup.create_logfile()
+          - 'logfile': the logfile created in Setup.create_logfile()
           - 'scan_number': the scan number to load
           - 'detector': the detector object: Class experiment_utils.Detector()
           - 'setup': an instance of the class Setup
@@ -926,7 +927,7 @@ class DiffractometerCRISTAL(Diffractometer):
         """
         Look for the entry corresponding to the detector data in CRISTAL dataset.
 
-        :param logfile: h5py File object of CRISTAL .nxs scan file
+        :param logfile: the logfile created in Setup.create_logfile()
         :param actuators: dictionary defining the entries corresponding to actuators
         :param root: root folder name in the data file
         :param detector_shape: tuple or list of two integer (nb_pixels_vertical,
@@ -979,14 +980,15 @@ class DiffractometerCRISTAL(Diffractometer):
             f"and pattern={pattern}"
         )
 
-    def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image
-         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -998,6 +1000,7 @@ class DiffractometerCRISTAL(Diffractometer):
            outer to the most inner circle
 
         """
+        logfile = kwargs["logfile"]
         # check some parameter
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
@@ -1134,7 +1137,7 @@ class DiffractometerCRISTAL(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': h5py File object of CRISTAL .nxs scan file
+         - 'logfile': the logfile created in Setup.create_logfile()
 
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
@@ -1347,17 +1350,16 @@ class DiffractometerID01(Diffractometer):
         )
 
     def goniometer_values(
-        self, logfile, scan_number, setup, stage_name="bcdi", **kwargs
+        self, setup, stage_name="bcdi", **kwargs
     ):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image
-         numbers (specfile, .fio...)
-        :param scan_number: the scan number to load
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+         - 'scan_number': the scan number to load
          - 'follow_bragg': boolean, True for energy scans where the detector position
            is changed during the scan to follow the Bragg peak.
 
@@ -1373,6 +1375,8 @@ class DiffractometerID01(Diffractometer):
 
         """
         # load kwargs
+        logfile = kwargs["logfile"]
+        scan_number = kwargs["scan_number"]
         follow_bragg = kwargs.get("follow_bragg", False)
         valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
@@ -1542,8 +1546,7 @@ class DiffractometerID01(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': Silx SpecFile object containing the information about the scan
-           and image numbers
+         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
          - 'follow_bragg': boolean, True for energy scans where the detector position
            is changed during the scan to follow the Bragg peak.
@@ -1692,14 +1695,15 @@ class DiffractometerNANOMAX(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image
-         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -1711,6 +1715,7 @@ class DiffractometerNANOMAX(Diffractometer):
            outer to the most inner circle
 
         """
+        logfile = kwargs["logfile"]
         # check some parameter
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
@@ -1844,8 +1849,7 @@ class DiffractometerNANOMAX(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': Silx SpecFile object containing the information about the scan
-           and image numbers
+         - 'logfile': the logfile created in Setup.create_logfile()
 
         :return: (theta, phi, gamma, delta, energy) values
         """
@@ -1939,14 +1943,15 @@ class DiffractometerP10(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param logfile: file containing the information about the scan and image
-         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -1958,6 +1963,7 @@ class DiffractometerP10(Diffractometer):
            outer to the most inner circle
 
         """
+        logfile = kwargs["logfile"]
         # check some parameter
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
@@ -2160,7 +2166,7 @@ class DiffractometerP10(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': path of the . fio file containing the information about the scan
+         - 'logfile': the logfile created in Setup.create_logfile()
 
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
@@ -2309,14 +2315,15 @@ class DiffractometerSIXS(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, logfile, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
 
-        :param logfile: file containing the information about the scan and image
-         numbers (specfile, .fio...)
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -2328,6 +2335,7 @@ class DiffractometerSIXS(Diffractometer):
            outer to the most inner circle
 
         """
+        logfile = kwargs["logfile"]
         # check some parameters
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
@@ -2461,7 +2469,7 @@ class DiffractometerSIXS(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': nxsReady Dataset object of SIXS .nxs scan file
+         - 'logfile': the logfile created in Setup.create_logfile()
 
         :return: (beta, mu, gamma, delta, energy) values
         """
