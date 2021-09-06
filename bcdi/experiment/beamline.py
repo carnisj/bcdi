@@ -393,10 +393,9 @@ class Beamline(ABC):
                 ),
                 axis=0,
             )
-        if (
-                nb_steps > nb_frames
-        ):  # data has been cropped, we suppose it is centered in z dimension
-            array = array[(nb_steps - nb_frames) // 2: (nb_steps + nb_frames) // 2]
+        if nb_steps > nb_frames:
+            # data has been cropped, we suppose it is centered in z dimension
+            array = array[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
         return array
 
     @abstractmethod
@@ -514,13 +513,13 @@ class BeamlineCRISTAL(Beamline):
         return homedir, default_dirname, "", template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at CRISTAL.
@@ -559,20 +558,14 @@ class BeamlineCRISTAL(Beamline):
             nb_steps = len(mgomega)
             tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
             mgomega = self.process_tilt(
-                mgomega,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                mgomega, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
             print("mgomega", mgomega)
             nb_steps = len(mgphi)
             tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
             mgphi = self.process_tilt(
-                mgphi,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                mgphi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -825,13 +818,13 @@ class BeamlineID01(Beamline):
         return homedir, default_dirname, specfile_name, template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at ID01.
@@ -871,20 +864,14 @@ class BeamlineID01(Beamline):
             nb_steps = len(eta)
             tilt_angle = (eta[1:] - eta[0:-1]).mean()
             eta = self.process_tilt(
-                eta,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                eta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             print("eta", eta)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "energy":
             pass
@@ -1133,13 +1120,13 @@ class BeamlineNANOMAX(Beamline):
         return homedir, default_dirname, "", template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at NANOMAX.
@@ -1178,19 +1165,13 @@ class BeamlineNANOMAX(Beamline):
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
             theta = self.process_tilt(
-                theta,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                theta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "energy":
             pass
@@ -1439,13 +1420,13 @@ class BeamlineP10(Beamline):
         return homedir, default_dirname, specfile, template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at P10.
@@ -1487,20 +1468,14 @@ class BeamlineP10(Beamline):
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
-                om,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             print("om", om)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1827,13 +1802,13 @@ class BeamlineSIXS(Beamline):
         return homedir, default_dirname, specfile, template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at SIXS.
@@ -1873,10 +1848,7 @@ class BeamlineSIXS(Beamline):
             nb_steps = len(mu)
             tilt_angle = (mu[1:] - mu[0:-1]).mean()
             mu = self.process_tilt(
-                mu,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                mu, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
@@ -2084,13 +2056,13 @@ class Beamline34ID(Beamline):
         return homedir, default_dirname, "", template_imagefile
 
     def process_positions(
-            self,
-            setup,
-            logfile,
-            nb_frames,
-            scan_number,
-            frames_logical=None,
-            follow_bragg=False,
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at 34ID-C.
@@ -2129,19 +2101,13 @@ class Beamline34ID(Beamline):
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # theta rocking curve
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
             theta = self.process_tilt(
-                theta,
-                nb_steps=nb_steps,
-                nb_frames=nb_frames,
-                angular_step=tilt_angle
+                theta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "energy":
             pass
