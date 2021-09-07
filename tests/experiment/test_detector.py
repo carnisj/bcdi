@@ -94,19 +94,19 @@ class TestDetector(unittest.TestCase):
 
     def test_binning_list_wrong_type(self):
         with self.assertRaises(TypeError):
-            Maxipix(name="Maxipix", binning=(2.0, 2.0, 1.0))
+            Maxipix(name="Maxipix", binning=[2.0, 2.0, 1.0])
 
     def test_binning_list_wrong_length(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", binning=(2, 2))
+            Maxipix(name="Maxipix", binning=[2, 2])
 
     def test_binning_list_wrong_value(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", binning=(2, 2, 0))
+            Maxipix(name="Maxipix", binning=[2, 2, 0])
 
     def test_binning_list_wrong_value_none(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", binning=(2, 2, None))
+            Maxipix(name="Maxipix", binning=[2, 2, None])
 
     def test_binning_none(self):
         with self.assertRaises(ValueError):
@@ -177,19 +177,19 @@ class TestDetector(unittest.TestCase):
 
     def test_preprocessing_binning_list_wrong_type(self):
         with self.assertRaises(TypeError):
-            Maxipix(name="Maxipix", preprocessing_binning=(2.0, 2.0, 1.0))
+            Maxipix(name="Maxipix", preprocessing_binning=[2.0, 2.0, 1.0])
 
     def test_preprocessing_binning_list_wrong_length(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", preprocessing_binning=(2, 2))
+            Maxipix(name="Maxipix", preprocessing_binning=[2, 2])
 
     def test_preprocessing_binning_list_wrong_value(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", preprocessing_binning=(2, 2, 0))
+            Maxipix(name="Maxipix", preprocessing_binning=[2, 2, 0])
 
     def test_preprocessing_binning_list_wrong_value_none(self):
         with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", preprocessing_binning=(2, 2, None))
+            Maxipix(name="Maxipix", preprocessing_binning=[2, 2, None])
 
     def test_preprocessing_binning_none_default(self):
         det = Maxipix(name="Maxipix", preprocessing_binning=None)
@@ -198,6 +198,39 @@ class TestDetector(unittest.TestCase):
     def test_preprocessing_binning_correct(self):
         det = Maxipix(name="Maxipix", preprocessing_binning=(2, 2, 1))
         self.assertEqual(det.preprocessing_binning, (2, 2, 1))
+
+    def test_roi_number(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", roi=2)
+
+    def test_roi_list_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", roi=[2.0, 512, 12, 35])
+
+    def test_roi_list_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", roi=[2, 2])
+
+    def test_roi_list_wrong_value_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", roi=[None, 512, 12, 35])
+
+    def test_roi_list_wrong_value_decreasing_y(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", roi=[128, 0, 12, 35])
+
+    def test_roi_list_wrong_value_decreasing_x(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", roi=[0, 256, 128, 35])
+
+    def test_roi_none_default(self):
+        det = Maxipix(name="Maxipix", roi=None)
+        self.assertEqual(det.roi, [0, self.det.nb_pixel_y, 0, self.det.nb_pixel_x])
+
+    def test_roi_correct_tuple(self):
+        det = Maxipix(name="Maxipix", roi=(2, 252, 1, 35))
+        self.assertEqual(det.roi, (2, 252, 1, 35))
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""

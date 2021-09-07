@@ -291,11 +291,13 @@ class Detector(ABC):
             value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
         valid.valid_container(
             value,
-            container_types=(tuple, list),
+            container_types=(tuple, list, np.ndarray),
             length=4,
             item_types=int,
             name="Detector.roi",
         )
+        if value[1] <= value[0] or value[3] <= value[2]:
+            raise ValueError("roi coordinates should be increasing in x and y")
         self._roi = value
 
     @property
