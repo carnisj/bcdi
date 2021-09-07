@@ -72,6 +72,9 @@ class TestDetector(unittest.TestCase):
      Tests are performed via the instantiation of the Maxipix.
      """
 
+    def setUp(self) -> None:
+        self.det = Maxipix("Maxipix")
+
     def test_create_detector_from_abc(self):
         with self.assertRaises(TypeError):
             Detector(name="Maxipix")
@@ -113,7 +116,88 @@ class TestDetector(unittest.TestCase):
         det = Maxipix(name="Maxipix", binning=(2, 2, 1))
         self.assertEqual(det.binning, (2, 2, 1))
 
+    def test_counter_beamline_wrong_type(self):
+        with self.assertRaises(TypeError):
+            self.det.counter(1)
 
+    def test_counter_beamline_not_supported(self):
+        self.assertEqual(self.det.counter("test"), None)
+
+    def test_counter_beamline_supported(self):
+        self.assertEqual(self.det.counter("ID01"), "mpx4inr")
+
+    def test_datadir_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", datadir=0)
+
+    def test_datadir_none(self):
+        det = Maxipix(name="Maxipix", datadir=None)
+        self.assertEqual(det.datadir, None)
+
+    def test_datadir_correct(self):
+        det = Maxipix(name="Maxipix", datadir="C:/test/")
+        self.assertEqual(det.datadir, "C:/test/")
+
+    def test_name(self):
+        self.assertEqual(self.det.name, "Maxipix")
+
+    def test_nb_pixel_x(self):
+        # for Maxipix, unbinned_pixel_number = (516, 516)
+        self.det.preprocessing_binning = (1, 1, 2)
+        self.assertEqual(self.det.nb_pixel_x, 258)
+
+    def test_nb_pixel_y(self):
+        # for Maxipix, unbinned_pixel_number = (516, 516)
+        self.det.preprocessing_binning = (1, 3, 2)
+        self.assertEqual(self.det.nb_pixel_y, 172)
+
+    def test_nb_pixel_y_truncated(self):
+        # for Maxipix, unbinned_pixel_number = (516, 516)
+        self.det.preprocessing_binning = (1, 7, 2)
+        self.assertEqual(self.det.nb_pixel_y, 73)
+
+    def test_params(self):
+        self.assertIsInstance(self.det.params, dict)
+
+    def test_pixelsize_x(self):
+        # for Maxipix, unbinned_pixel_number = (55e-06, 55e-06)
+        self.det.preprocessing_binning = (2, 2, 3)
+        self.det.binning = (1, 2, 2)
+        self.assertEqual(self.det.pixelsize_x, 330e-6)
+
+    def test_pixelsize_y(self):
+        # for Maxipix, unbinned_pixel_number = (55e-06, 55e-06)
+        self.det.preprocessing_binning = (2, 2, 3)
+        self.det.binning = (1, 2, 2)
+        self.assertEqual(self.det.pixelsize_y, 220e-6)
+
+    def test_preprocessing_binning_number(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", preprocessing_binning=2)
+
+    def test_preprocessing_binning_list_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", preprocessing_binning=(2.0, 2.0, 1.0))
+
+    def test_preprocessing_binning_list_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", preprocessing_binning=(2, 2))
+
+    def test_preprocessing_binning_list_wrong_value(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", preprocessing_binning=(2, 2, 0))
+
+    def test_preprocessing_binning_list_wrong_value_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", preprocessing_binning=(2, 2, None))
+
+    def test_preprocessing_binning_none_default(self):
+        det = Maxipix(name="Maxipix", preprocessing_binning=None)
+        self.assertEqual(det.preprocessing_binning, (1, 1, 1))
+
+    def test_preprocessing_binning_correct(self):
+        det = Maxipix(name="Maxipix", preprocessing_binning=(2, 2, 1))
+        self.assertEqual(det.preprocessing_binning, (2, 2, 1))
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
