@@ -66,11 +66,53 @@ class TestCreateDetector(unittest.TestCase):
 
 
 class TestDetector(unittest.TestCase):
-    """Tests related to the properties of the base class."""
+    """
+    Tests related to the properties of the base class.
+
+     Tests are performed via the instantiation of the Maxipix.
+     """
 
     def test_create_detector_from_abc(self):
         with self.assertRaises(TypeError):
             Detector(name="Maxipix")
+
+    def test_linearity_function_not_callable(self):
+        with self.assertRaises(TypeError):
+            Maxipix("Maxipix", linearity_func=0)
+
+    def test_linearity_function_callable(self):
+        func = lambda x: x**2
+        det = Maxipix("Maxipix", linearity_func=func)
+        self.assertEqual(det._linearity_func, func)
+
+    def test_binning_number(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", binning=2)
+
+    def test_binning_list_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", binning=(2.0, 2.0, 1.0))
+
+    def test_binning_list_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", binning=(2, 2))
+
+    def test_binning_list_wrong_value(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", binning=(2, 2, 0))
+
+    def test_binning_list_wrong_value_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", binning=(2, 2, None))
+
+    def test_binning_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", binning=None)
+
+    def test_binning_correct(self):
+        det = Maxipix(name="Maxipix", binning=(2, 2, 1))
+        self.assertEqual(det.binning, (2, 2, 1))
+
 
 
 class TestMaxipix(unittest.TestCase):
