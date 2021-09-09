@@ -314,6 +314,8 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.rootdir",
         )
+        if value is not None and not os.path.isdir(value):
+            raise ValueError(f"The directory {value} does not exist")
         self._rootdir = value
 
     @property

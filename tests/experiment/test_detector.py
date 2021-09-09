@@ -7,7 +7,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from pyfakefs import fake_filesystem_unittest
 import numpy as np
+import os
 import unittest
 from bcdi.experiment.detector import (
     create_detector,
@@ -65,7 +67,7 @@ class TestCreateDetector(unittest.TestCase):
             create_detector()
 
 
-class TestDetector(unittest.TestCase):
+class TestDetector(fake_filesystem_unittest.TestCase):
     """
     Tests related to the properties of the base class.
 
@@ -73,6 +75,10 @@ class TestDetector(unittest.TestCase):
      """
 
     def setUp(self) -> None:
+        self.setUpPyfakefs()
+        self.valid_path = "/gpfs/bcdi/data"
+        os.makedirs(self.valid_path)
+        print(os.path.isdir(self.valid_path))
         self.det = Maxipix("Maxipix")
 
     def test_create_detector_from_abc(self):
@@ -230,6 +236,10 @@ class TestDetector(unittest.TestCase):
     def test_roi_correct_tuple(self):
         det = Maxipix(name="Maxipix", roi=(2, 252, 1, 35))
         self.assertEqual(det.roi, (2, 252, 1, 35))
+
+    def test_rootdir_exists(self):
+        det = Maxipix(name="Maxipix", rootdir=self.valid_path)
+        self.assertTrue(det.rootdir, self.valid_path)
 
 
 class TestMaxipix(unittest.TestCase):
