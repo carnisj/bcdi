@@ -239,7 +239,23 @@ class TestDetector(fake_filesystem_unittest.TestCase):
 
     def test_rootdir_exists(self):
         det = Maxipix(name="Maxipix", rootdir=self.valid_path)
-        self.assertTrue(det.rootdir, self.valid_path)
+        self.assertEqual(det.rootdir, self.valid_path)
+
+    def test_rootdir_not_exist(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", rootdir="this directory does not exist")
+
+    def test_rootdir_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", rootdir=777)
+
+    def test_rootdir_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", rootdir="")
+
+    def test_rootdir_None(self):
+        det = Maxipix(name="Maxipix", rootdir=None)
+        self.assertEqual(det.rootdir, None)
 
 
 class TestMaxipix(unittest.TestCase):
