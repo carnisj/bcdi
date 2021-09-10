@@ -186,6 +186,8 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.datadir",
         )
+        if value is not None and not os.path.isdir(value):
+            raise ValueError(f"The directory {value} does not exist")
         self._datadir = value
 
     @property

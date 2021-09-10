@@ -141,8 +141,12 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertEqual(det.datadir, None)
 
     def test_datadir_correct(self):
-        det = Maxipix(name="Maxipix", datadir="C:/test/")
-        self.assertEqual(det.datadir, "C:/test/")
+        det = Maxipix(name="Maxipix", datadir=self.valid_path)
+        self.assertEqual(det.datadir, self.valid_path)
+
+    def test_datadir_not_exist(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", datadir="this directory does not exist")
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
@@ -273,6 +277,13 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", sample_name="S")
         self.assertEqual(det.sample_name, "S")
 
+    def test_scandir_datadir_defined(self):
+        det = Maxipix(name="Maxipix", datadir="/gpfs/bcdi/test")
+        self.assertEqual(det.scandir, "/gpfs/bcdi/")
+
+    def test_scandir_datadir_none(self):
+        det = Maxipix(name="Maxipix", datadir=None)
+        self.assertEqual(det.scandir, None)
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
