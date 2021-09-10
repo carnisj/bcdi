@@ -278,12 +278,55 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertEqual(det.sample_name, "S")
 
     def test_scandir_datadir_defined(self):
-        det = Maxipix(name="Maxipix", datadir="/gpfs/bcdi/test")
-        self.assertEqual(det.scandir, "/gpfs/bcdi/")
+        dir_path = os.path.abspath(os.path.join(self.valid_path, os.pardir)) + "/"
+        det = Maxipix(name="Maxipix", datadir=self.valid_path)
+        self.assertEqual(
+            det.scandir,
+            dir_path.replace("\\", "/")
+        )
 
     def test_scandir_datadir_none(self):
         det = Maxipix(name="Maxipix", datadir=None)
         self.assertEqual(det.scandir, None)
+
+    def test_sum_roi_number(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sum_roi=2)
+
+    def test_sum_roi_list_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sum_roi=[2.0, 512, 12, 35])
+
+    def test_sum_roi_list_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[2, 2])
+
+    def test_sum_roi_list_wrong_value_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[None, 512, 12, 35])
+
+    def test_sum_roi_list_wrong_value_decreasing_y(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[128, 0, 12, 35])
+
+    def test_sum_roi_list_wrong_value_decreasing_x(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[0, 256, 128, 35])
+
+    def test_sum_roi_none_default(self):
+        det = Maxipix(name="Maxipix", sum_roi=None)
+        self.assertEqual(det.sum_roi, [0, self.det.nb_pixel_y, 0, self.det.nb_pixel_x])
+
+    def test_sum_roi_none_default_roi_defined(self):
+        det = Maxipix(name="Maxipix", sum_roi=None, roi=(2, 252, 1, 35))
+        self.assertEqual(det.sum_roi, det.roi)
+        self.assertEqual(det.sum_roi, (2, 252, 1, 35))
+
+    def test_sum_roi_empty_list(self):
+        det = Maxipix(name="Maxipix", sum_roi=(), roi=(2, 252, 1, 35))
+        self.assertEqual(det.sum_roi, det.roi)
+        self.assertEqual(det.sum_roi, (2, 252, 1, 35))
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""

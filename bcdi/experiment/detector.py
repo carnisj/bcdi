@@ -376,10 +376,7 @@ class Detector(ABC):
     @sum_roi.setter
     def sum_roi(self, value):
         if not value:  # None or empty list/tuple
-            if not self.roi:
-                value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-            else:
-                value = self.roi
+            value = self.roi
         valid.valid_container(
             value,
             container_types=(tuple, list),
@@ -387,6 +384,8 @@ class Detector(ABC):
             item_types=int,
             name="Detector.sum_roi",
         )
+        if value[1] <= value[0] or value[3] <= value[2]:
+            raise ValueError("roi coordinates should be increasing in x and y")
         self._sum_roi = value
 
     @property
