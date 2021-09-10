@@ -349,7 +349,8 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.savedir",
         )
-        pathlib.Path(value).mkdir(parents=True, exist_ok=True)
+        if value is not None:
+            pathlib.Path(value).mkdir(parents=True, exist_ok=True)
         self._savedir = value
 
     @property
