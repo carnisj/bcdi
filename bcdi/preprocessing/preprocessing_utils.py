@@ -1285,9 +1285,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
         obj=detector_angle, start_angle=detector_angle.min(), range_angle=180
     )
     for idx, item in enumerate(wrap_angle):
-        duplicate = np.isclose(
-            wrap_angle[:idx], item, rtol=1e-06, atol=1e-06
-        ).sum()
+        duplicate = np.isclose(wrap_angle[:idx], item, rtol=1e-06, atol=1e-06).sum()
         # duplicate will be different from 0 if there is a duplicated angle
         frames_logical[idx] = frames_logical[idx] * (
             duplicate == 0
@@ -1914,10 +1912,8 @@ def grid_bcdi_xrayutil(
 
     # below is specific to ID01 energy scans
     # where frames are duplicated for undulator gap change
-    if (
-        setup.beamline == "ID01"
-        and setup.rocking_angle == "energy"
-    ):  # frames need to be removed
+    if setup.beamline == "ID01" and setup.rocking_angle == "energy":
+        # frames need to be removed
         tempdata = np.zeros(((frames_logical != 0).sum(), numy, numx))
         offset_frame = 0
         for idx in range(numz):

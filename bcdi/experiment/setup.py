@@ -12,7 +12,6 @@ from collections.abc import Sequence
 import gc
 from numbers import Real, Integral
 import numpy as np
-import pathlib
 from scipy.interpolate import RegularGridInterpolator
 
 from ..graph import graph_utils as gu
@@ -895,7 +894,6 @@ class Setup:
         template_imagefile,
         data_dirname=None,
         save_dirname="result",
-        create_savedir=False,
         verbose=False,
     ):
         """
@@ -931,8 +929,6 @@ class Setup:
          the scan folder (no subfolder)
         :param save_dirname: name of the saving folder, by default 'save_dir/result/'
          will be created
-        :param create_savedir: boolean, True to create the saving folder if it does
-         not exist
         :param verbose: True to print the paths
         """
         if not isinstance(scan_number, int):
@@ -994,8 +990,6 @@ class Setup:
             savedir = homedir + save_dirname + "/"
         if not savedir.endswith("/"):
             savedir += "/"
-        if create_savedir:
-            pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
         # update the detector instance
         (

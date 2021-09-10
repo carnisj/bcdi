@@ -72,7 +72,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     Tests related to the properties of the base class.
 
      Tests are performed via the instantiation of the Maxipix.
-     """
+    """
 
     def setUp(self) -> None:
         self.setUpPyfakefs()
@@ -90,7 +90,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
             Maxipix("Maxipix", linearity_func=0)
 
     def test_linearity_function_callable(self):
-        func = lambda x: x**2
+        func = lambda x: x ** 2
         det = Maxipix("Maxipix", linearity_func=func)
         self.assertEqual(det._linearity_func, func)
 
@@ -141,8 +141,12 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertEqual(det.datadir, None)
 
     def test_datadir_correct(self):
-        det = Maxipix(name="Maxipix", datadir="C:/test/")
-        self.assertEqual(det.datadir, "C:/test/")
+        det = Maxipix(name="Maxipix", datadir=self.valid_path)
+        self.assertEqual(det.datadir, self.valid_path)
+
+    def test_datadir_not_exist(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", datadir="this directory does not exist")
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
@@ -239,7 +243,110 @@ class TestDetector(fake_filesystem_unittest.TestCase):
 
     def test_rootdir_exists(self):
         det = Maxipix(name="Maxipix", rootdir=self.valid_path)
-        self.assertTrue(det.rootdir, self.valid_path)
+        self.assertEqual(det.rootdir, self.valid_path)
+
+    def test_rootdir_not_exist(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", rootdir="this directory does not exist")
+
+    def test_rootdir_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", rootdir=777)
+
+    def test_rootdir_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", rootdir="")
+
+    def test_rootdir_None(self):
+        det = Maxipix(name="Maxipix", rootdir=None)
+        self.assertEqual(det.rootdir, None)
+
+    def test_sample_name_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sample_name=777)
+
+    def test_sample_name_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sample_name="")
+
+    def test_sample_name_None(self):
+        det = Maxipix(name="Maxipix", sample_name=None)
+        self.assertEqual(det.sample_name, None)
+
+    def test_sample_name_correct(self):
+        det = Maxipix(name="Maxipix", sample_name="S")
+        self.assertEqual(det.sample_name, "S")
+
+    def test_scandir_datadir_defined(self):
+        dir_path = os.path.abspath(os.path.join(self.valid_path, os.pardir)) + "/"
+        det = Maxipix(name="Maxipix", datadir=self.valid_path)
+        self.assertEqual(det.scandir, dir_path.replace("\\", "/"))
+
+    def test_scandir_datadir_none(self):
+        det = Maxipix(name="Maxipix", datadir=None)
+        self.assertEqual(det.scandir, None)
+
+    def test_sum_roi_number(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sum_roi=2)
+
+    def test_sum_roi_list_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sum_roi=[2.0, 512, 12, 35])
+
+    def test_sum_roi_list_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[2, 2])
+
+    def test_sum_roi_list_wrong_value_none(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[None, 512, 12, 35])
+
+    def test_sum_roi_list_wrong_value_decreasing_y(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[128, 0, 12, 35])
+
+    def test_sum_roi_list_wrong_value_decreasing_x(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sum_roi=[0, 256, 128, 35])
+
+    def test_sum_roi_none_default(self):
+        det = Maxipix(name="Maxipix", sum_roi=None)
+        self.assertEqual(det.sum_roi, [0, self.det.nb_pixel_y, 0, self.det.nb_pixel_x])
+
+    def test_sum_roi_none_default_roi_defined(self):
+        det = Maxipix(name="Maxipix", sum_roi=None, roi=(2, 252, 1, 35))
+        self.assertEqual(det.sum_roi, det.roi)
+        self.assertEqual(det.sum_roi, (2, 252, 1, 35))
+
+    def test_sum_roi_empty_list(self):
+        det = Maxipix(name="Maxipix", sum_roi=(), roi=(2, 252, 1, 35))
+        self.assertEqual(det.sum_roi, det.roi)
+        self.assertEqual(det.sum_roi, (2, 252, 1, 35))
+
+    def test_template_file_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", template_file=777)
+
+    def test_template_file_None(self):
+        det = Maxipix(name="Maxipix", template_file=None)
+        self.assertEqual(det.template_file, None)
+
+    def test_template_file_correct(self):
+        det = Maxipix(name="Maxipix", template_file="S")
+        self.assertEqual(det.template_file, "S")
+
+    def test_template_imagefile_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", template_imagefile=777)
+
+    def test_template_imagefile_None(self):
+        det = Maxipix(name="Maxipix", template_imagefile=None)
+        self.assertEqual(det.template_imagefile, None)
+
+    def test_template_imagefile_correct(self):
+        det = Maxipix(name="Maxipix", template_imagefile="S")
+        self.assertEqual(det.template_imagefile, "S")
 
 
 class TestMaxipix(unittest.TestCase):

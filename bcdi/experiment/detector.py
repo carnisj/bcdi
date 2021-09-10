@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numbers import Real
 import os
+import pathlib
 
 from bcdi.utils import validation as valid
 
@@ -185,6 +186,8 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.datadir",
         )
+        if value is not None and not os.path.isdir(value):
+            raise ValueError(f"The directory {value} does not exist")
         self._datadir = value
 
     @property
@@ -348,6 +351,8 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.savedir",
         )
+        if value is not None:
+            pathlib.Path(value).mkdir(parents=True, exist_ok=True)
         self._savedir = value
 
     @property
@@ -371,10 +376,7 @@ class Detector(ABC):
     @sum_roi.setter
     def sum_roi(self, value):
         if not value:  # None or empty list/tuple
-            if not self.roi:
-                value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
-            else:
-                value = self.roi
+            value = self.roi
         valid.valid_container(
             value,
             container_types=(tuple, list),
@@ -382,6 +384,8 @@ class Detector(ABC):
             item_types=int,
             name="Detector.sum_roi",
         )
+        if value[1] <= value[0] or value[3] <= value[2]:
+            raise ValueError("roi coordinates should be increasing in x and y")
         self._sum_roi = value
 
     @property

@@ -450,10 +450,11 @@ valid_name = "bcdi_preprocess_BCDI"
 if isinstance(scans, int):
     scans = (scans,)
 
-if (
-    len(scans) > 1
-    and center_fft not in ["crop_asymmetric_ZYX", "pad_Z", "pad_asymmetric_ZYX"]
-):
+if len(scans) > 1 and center_fft not in [
+    "crop_asymmetric_ZYX",
+    "pad_Z",
+    "pad_asymmetric_ZYX",
+]:
     center_fft = "skip"
     # avoid croping the detector plane XY while centering the Bragg peak
     # otherwise outputs may have a different size,
@@ -619,7 +620,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         save_dir=save_dir,
         save_dirname=save_dirname,
         verbose=True,
-        create_savedir=create_savedir,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
     )

@@ -255,13 +255,7 @@ for idx, item in enumerate(scans):
     samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
     print("\n Opening ", samplename)
     data = np.load(
-        homedir
-        + samplename
-        + parent_folder
-        + "S"
-        + str(item)
-        + "_pynx"
-        + suffix[idx]
+        homedir + samplename + parent_folder + "S" + str(item) + "_pynx" + suffix[idx]
     )["data"]
     mask = np.load(
         homedir
