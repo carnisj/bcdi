@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numbers import Real
 import os
+import pathlib
 
 from bcdi.utils import validation as valid
 
@@ -348,6 +349,7 @@ class Detector(ABC):
             allow_none=True,
             name="Detector.savedir",
         )
+        pathlib.Path(value).mkdir(parents=True, exist_ok=True)
         self._savedir = value
 
     @property
