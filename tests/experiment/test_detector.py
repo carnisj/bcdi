@@ -257,6 +257,22 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", rootdir=None)
         self.assertEqual(det.rootdir, None)
 
+    def test_sample_name_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", sample_name=777)
+
+    def test_sample_name_wrong_length(self):
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", sample_name="")
+
+    def test_sample_name_None(self):
+        det = Maxipix(name="Maxipix", sample_name=None)
+        self.assertEqual(det.sample_name, None)
+
+    def test_sample_name_correct(self):
+        det = Maxipix(name="Maxipix", sample_name="S")
+        self.assertEqual(det.sample_name, "S")
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
