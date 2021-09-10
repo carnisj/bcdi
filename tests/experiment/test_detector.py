@@ -72,7 +72,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     Tests related to the properties of the base class.
 
      Tests are performed via the instantiation of the Maxipix.
-     """
+    """
 
     def setUp(self) -> None:
         self.setUpPyfakefs()
@@ -90,7 +90,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
             Maxipix("Maxipix", linearity_func=0)
 
     def test_linearity_function_callable(self):
-        func = lambda x: x**2
+        func = lambda x: x ** 2
         det = Maxipix("Maxipix", linearity_func=func)
         self.assertEqual(det._linearity_func, func)
 
@@ -280,10 +280,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_scandir_datadir_defined(self):
         dir_path = os.path.abspath(os.path.join(self.valid_path, os.pardir)) + "/"
         det = Maxipix(name="Maxipix", datadir=self.valid_path)
-        self.assertEqual(
-            det.scandir,
-            dir_path.replace("\\", "/")
-        )
+        self.assertEqual(det.scandir, dir_path.replace("\\", "/"))
 
     def test_scandir_datadir_none(self):
         det = Maxipix(name="Maxipix", datadir=None)
@@ -350,6 +347,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_template_imagefile_correct(self):
         det = Maxipix(name="Maxipix", template_imagefile="S")
         self.assertEqual(det.template_imagefile, "S")
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""

@@ -1104,11 +1104,7 @@ def imshow_plot(
         raise TypeError("sum_frames should be a boolean")
     if scale not in {"linear", "log"}:
         raise ValueError('scale should be either "linear" or "log"')
-    if (
-        not np.isnan(vmin)
-        and not np.isnan(vmax)
-        and vmin >= vmax
-    ):
+    if not np.isnan(vmin) and not np.isnan(vmax) and vmin >= vmax:
         raise ValueError("vmin should be strictly smaller than vmax")
     ###############
     # load kwargs #
