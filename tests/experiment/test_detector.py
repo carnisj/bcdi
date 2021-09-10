@@ -327,6 +327,29 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertEqual(det.sum_roi, det.roi)
         self.assertEqual(det.sum_roi, (2, 252, 1, 35))
 
+    def test_template_file_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", template_file=777)
+
+    def test_template_file_None(self):
+        det = Maxipix(name="Maxipix", template_file=None)
+        self.assertEqual(det.template_file, None)
+
+    def test_template_file_correct(self):
+        det = Maxipix(name="Maxipix", template_file="S")
+        self.assertEqual(det.template_file, "S")
+
+    def test_template_imagefile_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Maxipix(name="Maxipix", template_imagefile=777)
+
+    def test_template_imagefile_None(self):
+        det = Maxipix(name="Maxipix", template_imagefile=None)
+        self.assertEqual(det.template_imagefile, None)
+
+    def test_template_imagefile_correct(self):
+        det = Maxipix(name="Maxipix", template_imagefile="S")
+        self.assertEqual(det.template_imagefile, "S")
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
