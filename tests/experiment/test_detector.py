@@ -385,30 +385,65 @@ class TestMaxipix(unittest.TestCase):
         self.assertTrue(np.all(np.isclose(
             self.det._background_subtraction(data, background), background)))
 
-    def test_background_wrong_ndim(self):
+    def test_background_subtraction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
         background = 0.5 * np.ones((3, 3))
         with self.assertRaises(ValueError):
             self.det._background_subtraction(data, background)
 
-    def test_background_wrong_type(self):
+    def test_background_subtraction_wrong_type(self):
         data = 5
         background = 0.5 * np.ones((3, 3))
         with self.assertRaises(TypeError):
             self.det._background_subtraction(data, background)
 
-    def test_background_wrong_shape(self):
+    def test_background_subtraction_wrong_shape(self):
         data = np.ones((3, 3))
         background = 0.5 * np.ones((3, 4))
         with self.assertRaises(ValueError):
             self.det._background_subtraction(data, background)
 
-    def test_background_none(self):
+    def test_background_subtraction_none(self):
         data = np.ones((3, 3))
         background = None
         self.assertTrue(np.all(np.isclose(
             self.det._background_subtraction(data, background), data)))
 
+    def test_flatfield_correction_correct(self):
+        data = np.ones((3, 3))
+        flatfield = np.ones((3, 3))
+        self.assertTrue(np.all(np.isclose(
+            self.det._flatfield_correction(data, flatfield), data)))
+
+    def test_flatfield_correction_float(self):
+        data = np.ones((3, 3))
+        flatfield = 0.5 * np.ones((3, 3))
+        self.assertTrue(np.all(np.isclose(
+            self.det._flatfield_correction(data, flatfield), flatfield)))
+
+    def test_flatfield_correction_wrong_ndim(self):
+        data = np.ones((3, 3, 3))
+        flatfield = 0.5 * np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._flatfield_correction(data, flatfield)
+
+    def test_flatfield_correction_wrong_type(self):
+        data = 5
+        flatfield = 0.5 * np.ones((3, 3))
+        with self.assertRaises(TypeError):
+            self.det._flatfield_correction(data, flatfield)
+
+    def test_flatfield_correction_wrong_shape(self):
+        data = np.ones((3, 3))
+        flatfield = 0.5 * np.ones((3, 4))
+        with self.assertRaises(ValueError):
+            self.det._flatfield_correction(data, flatfield)
+
+    def test_flatfield_correction_none(self):
+        data = np.ones((3, 3))
+        flatfield = None
+        self.assertTrue(np.all(np.isclose(
+            self.det._flatfield_correction(data, flatfield), data)))
 
 class TestEiger2M(unittest.TestCase):
     """Tests related to the Eiger2M detector."""
