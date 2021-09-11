@@ -39,15 +39,15 @@ BCDI can be used as a python library with the following main modules:
    facet strain.
 
 3) :mod:`bcdi.experiment`: definition of the experimental geometry
-   (beamline, setup, detector...).
+   (beamline, setup, detector, diffractometer...).
 
 4) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
-5) :mod:`bcdi.postprocessing`: various methods for post-processing the complex output
+5) :mod:`bcdi.postprocessing`: methods for post-processing the complex output
    of a phasing algorithm.
 
-6) :mod:`bcdi.preprocessing`: various methods for pre-processing the diffraction
-   intensity.
+6) :mod:`bcdi.preprocessing`: methods for pre-processing the diffraction
+   intensity in Bragg CDI or forward CDI geometry.
 
 7) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity
    based on FFT or kinematical sum. It can include a displacement field, noise,
