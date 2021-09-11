@@ -8,17 +8,13 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Functions related to forward CDI data loading and preprocessing (3D scans)."""
 
-import datetime
+
 import matplotlib.pyplot as plt
-import multiprocessing as mp
 from numbers import Real
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
-import sys
-import time
 
+from ..experiment import diffractometer as diff
 from ..graph import graph_utils as gu
-import preprocessing_utils as pru
 from ..utils import utilities as util
 from ..utils import validation as valid
 
@@ -324,157 +320,6 @@ def beamstop_correction(data, detector, setup, debugging=False):
     return data
 
 
-def cartesian2cylind(grid_shape, pivot, offset_angle, debugging=False):
-    """
-    Find the corresponding cylindrical coordinates of a cartesian 3D grid.
-
-    The longitudinal axis of the cylindrical frame (rotation axis) is axis 1.
-
-    :param grid_shape: tuple, shape of the 3D cartesion grid
-    :param pivot: tuple of two numbers, position in pixels of the origin of reciprocal
-     space (vertical, horizontal)
-    :param offset_angle: reference angle for the angle wrapping
-    :param debugging: True to see more plots
-    :return: the corresponding 1D array of angular coordinates, 1D array of height
-     coordinates, 1D array of radial coordinates
-    """
-    valid.valid_container(
-        grid_shape,
-        container_types=(list, tuple),
-        length=3,
-        item_types=int,
-        name="preprocessing_utils.cartesian2cylind",
-    )
-    valid.valid_container(
-        pivot,
-        container_types=(list, tuple),
-        length=2,
-        item_types=Real,
-        name="preprocessing_utils.cartesian2cylind",
-    )
-
-    _, numy, numx = grid_shape  # numz = numx by construction
-    pivot_y, pivot_x = pivot
-    z_interp, y_interp, x_interp = np.meshgrid(
-        np.linspace(-pivot_x, -pivot_x + numx, num=numx, endpoint=False),
-        np.linspace(pivot_y - numy, pivot_y, num=numy, endpoint=False),
-        np.linspace(pivot_x - numx, pivot_x, num=numx, endpoint=False),
-        indexing="ij",
-    )  # z_interp changes along rows, x_interp along columns
-    # z_interp downstream, same direction as detector X rotated by +90deg
-    # y_interp vertical up, opposite to detector Y
-    # x_interp along outboard, opposite to detector X
-
-    # map these points to (cdi_angle, Y, X), the measurement cylindrical coordinates
-    interp_angle = pru.wrap(
-        obj=np.arctan2(z_interp, -x_interp),
-        start_angle=offset_angle * np.pi / 180,
-        range_angle=np.pi,
-    )  # in radians, located in the range [start_angle, start_angle+np.pi[
-
-    interp_height = (
-        y_interp  # only need to flip the axis in the vertical direction (rotation axis)
-    )
-
-    sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
-    sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(
-        interp_angle[x_interp == 0]
-    )
-
-    interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
-
-    if debugging:
-        gu.imshow_plot(
-            interp_angle * 180 / np.pi,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="calculated polar angle for a 2D grid\n"
-            "perpendicular to the rotation axis",
-        )
-
-        gu.imshow_plot(
-            sign_array,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="sign_array",
-        )
-
-        gu.imshow_plot(
-            interp_radius,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="calculated polar radius for a 2D grid\n"
-            "perpendicular to the rotation axis",
-        )
-
-    return interp_angle, interp_height, interp_radius
-
-
-def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
-    """
-    Find the corresponding polar coordinates of a cartesian 2D grid.
-
-    The grid is assumed perpendicular to the rotation axis.
-
-    :param nb_pixels: number of pixels of the axis of the squared grid
-    :param pivot: position in pixels of the origin of the polar coordinates system
-    :param offset_angle: reference angle for the angle wrapping
-    :param debugging: True to see more plots
-    :return: the corresponding 1D array of angular coordinates, 1D array of radial
-     coordinates
-    """
-    z_interp, x_interp = np.meshgrid(
-        np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
-        np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
-        indexing="ij",
-    )  # z_interp changes along rows, x_interp along columns
-    # z_interp downstream, same direction as detector X rotated by +90deg
-    # x_interp along outboard opposite to detector X
-
-    # map these points to (cdi_angle, X), the measurement polar coordinates
-    interp_angle = pru.wrap(
-        obj=np.arctan2(z_interp, -x_interp),
-        start_angle=offset_angle * np.pi / 180,
-        range_angle=np.pi,
-    )  # in radians, located in the range [start_angle, start_angle+np.pi[
-
-    sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
-    sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(
-        interp_angle[x_interp == 0]
-    )
-
-    interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
-
-    if debugging:
-        gu.imshow_plot(
-            interp_angle * 180 / np.pi,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="calculated polar angle for the 2D grid",
-        )
-
-        gu.imshow_plot(
-            sign_array,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="sign_array",
-        )
-
-        gu.imshow_plot(
-            interp_radius,
-            plot_colorbar=True,
-            scale="linear",
-            labels=("Qx (z_interp)", "Qy (x_interp)"),
-            title="calculated polar radius for the 2D grid",
-        )
-    return interp_angle, interp_radius
-
-
 def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     """
     Check for overlaps of the sample rotation motor position in forward CDI experiment.
@@ -502,7 +347,7 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     for idx, item in enumerate(cdi_angle):
         detector_angle[idx] = cdi_angle[0] - (item - cdi_angle[0])
 
-    wrap_angle = pru.wrap(
+    wrap_angle = util.wrap(
         obj=detector_angle, start_angle=detector_angle.min(), range_angle=180
     )
     for idx, item in enumerate(wrap_angle):
@@ -838,182 +683,6 @@ def grid_cdi(
     return interp_data, interp_mask, [qx, qz, qy], frames_logical
 
 
-def grid_cylindrical(
-    array,
-    rotation_angle,
-    direct_beam,
-    interp_angle,
-    interp_radius,
-    comment="",
-    multiprocessing=False,
-):
-    """
-    Interpolate a tomographic dataset onto cartesian coordinates.
-
-    The initial 3D array is in cylindrical coordinates. There is no benefit from
-    multiprocessing, the data transfers are the limiting factor.
-
-    :param array: 3D array of intensities measured in the detector frame
-    :param rotation_angle: array, rotation angle values for the rocking scan
-    :param direct_beam: position in pixels of the rotation pivot in the direction
-     perpendicular to the rotation axis
-    :param interp_angle: 2D array, polar angles for the interpolation in a plane
-     perpendicular to the rotation axis
-    :param interp_radius: 2D array, polar radii for the interpolation in a plane
-     perpendicular to the rotation axis
-    :param comment: a comment to be printed
-    :param multiprocessing: True to use multiprocessing
-    :return: the 3D array interpolated onto the 3D cartesian grid
-    """
-    valid.valid_ndarray(arrays=array, ndim=3)
-
-    def collect_result(result):
-        """
-        Process the result after asynchronous multiprocessing.
-
-        This callback function updates global arrays.
-
-        :param result: the output of interp_slice, containing the 2d interpolated slice
-         and the slice index
-        """
-        nonlocal interp_array, number_y, slices_done
-        slices_done = slices_done + 1
-        # result is a tuple: data, mask, counter, file_index
-        # stack the 2D interpolated frame along the rotation axis,
-        # taking into account the flip of the detector Y axis (pointing down) compare
-        # to the laboratory frame vertical axis (pointing up)
-        interp_array[:, number_y - (result[1] + 1), :] = result[0]
-        sys.stdout.write(
-            "\r    gridding progress: {:d}%".format(int(slices_done / number_y * 100))
-        )
-        sys.stdout.flush()
-
-    rotation_step = rotation_angle[1] - rotation_angle[0]
-    if rotation_step < 0:
-        # flip rotation_angle and the data accordingly, RegularGridInterpolator
-        # takes only increasing position vectors
-        rotation_angle = np.flip(rotation_angle)
-        array = np.flip(array, axis=0)
-
-    _, number_y, _ = array.shape
-    _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
-    interp_array = np.zeros((numx, number_y, numx), dtype=array.dtype)
-    slices_done = 0
-
-    start = time.time()
-    if multiprocessing:
-        print(
-            "\nGridding",
-            comment,
-            ", number of processors used: ",
-            min(mp.cpu_count(), number_y),
-        )
-        mp.freeze_support()
-        pool = mp.Pool(
-            processes=min(mp.cpu_count(), number_y)
-        )  # use this number of processesu
-
-        for idx in range(number_y):
-            pool.apply_async(
-                interp_2dslice,
-                args=(
-                    array[:, idx, :],
-                    idx,
-                    rotation_angle,
-                    direct_beam,
-                    interp_angle,
-                    interp_radius,
-                ),
-                callback=collect_result,
-                error_callback=util.catch_error,
-            )
-            # interp_2dslice must be a pickable object,
-            # i.e. defined at the top level of the module
-
-        pool.close()
-        pool.join()  # postpones the execution of next line of code until all processes
-        # in the queue are done.
-
-    else:  # no multiprocessing
-        print("\nGridding", comment, ", no multiprocessing")
-        for idx in range(
-            number_y
-        ):  # loop over 2D frames perpendicular to the rotation axis
-            temp_array, _ = interp_2dslice(
-                array[:, idx, :],
-                idx,
-                rotation_angle,
-                direct_beam,
-                interp_angle,
-                interp_radius,
-            )
-
-            # stack the 2D interpolated frame along the rotation axis,
-            # taking into account the flip of the
-            # detector Y axis (pointing down) compare to the laboratory frame
-            # vertical axis (pointing up)
-            interp_array[:, number_y - (idx + 1), :] = temp_array
-            sys.stdout.write(
-                "\rGridding progress: {:d}%".format(int((idx + 1) / number_y * 100))
-            )
-            sys.stdout.flush()
-
-    end = time.time()
-    print(
-        "\nTime ellapsed for gridding data:",
-        str(datetime.timedelta(seconds=int(end - start))),
-    )
-    return interp_array
-
-
-def interp_2dslice(
-    array, slice_index, rotation_angle, direct_beam, interp_angle, interp_radius
-):
-    """
-    Interpolate a 2D slice from a tomographic dataset onto cartesian coordinates.
-
-    The initial 3D array is in cylindrical coordinates.
-
-    :param array: 3D array of intensities measured in the detector frame
-    :param slice_index: the index along the rotation axis of the 2D slice in array to
-     interpolate
-    :param rotation_angle: array, rotation angle values for the rocking scan
-    :param direct_beam: position in pixels of the rotation pivot in the direction
-     perpendicular to the rotation axis
-    :param interp_angle: 2D array, polar angles for the interpolation in a plane
-     perpendicular to the rotation axis
-    :param interp_radius: 2D array, polar radii for the interpolation in a plane
-     perpendicular to the rotation axis
-    :return: the interpolated slice, the slice index
-    """
-    valid.valid_ndarray(arrays=array, ndim=3)
-    # position of the experimental data points
-    number_x = array.shape[1]
-    rgi = RegularGridInterpolator(
-        (
-            rotation_angle * np.pi / 180,
-            np.arange(-direct_beam, -direct_beam + number_x, 1),
-        ),
-        array,
-        method="linear",
-        bounds_error=False,
-        fill_value=np.nan,
-    )
-
-    # interpolate the data onto the new points
-    tmp_array = rgi(
-        np.concatenate(
-            (
-                interp_angle.reshape((1, interp_angle.size)),
-                interp_radius.reshape((1, interp_angle.size)),
-            )
-        ).transpose()
-    )
-    tmp_array = tmp_array.reshape(interp_angle.shape)
-
-    return tmp_array, slice_index
-
-
 def load_cdi_data(
     logfile,
     scan_number,
@@ -1069,7 +738,7 @@ def load_cdi_data(
         name="preprocessing_utils.load_cdi_data",
     )
 
-    rawdata, rawmask, monitor, frames_logical = pru.load_data(
+    rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
         logfile=logfile,
         scan_number=scan_number,
         detector=detector,
@@ -1230,7 +899,7 @@ def reload_cdi_data(
             )
 
         print("Intensity normalization using " + normalize_method)
-        data, monitor = pru.normalize_dataset(
+        data, monitor = diff.normalize_dataset(
             array=data,
             monitor=monitor,
             norm_to_min=True,

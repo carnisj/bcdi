@@ -23,7 +23,6 @@ from scipy.stats import multivariate_normal
 from scipy.stats import norm, pearsonr
 from skimage.restoration import unwrap_phase
 from ..graph import graph_utils as gu
-from ..preprocessing.preprocessing_utils import wrap
 from ..utils import image_registration as reg
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -1429,7 +1428,7 @@ def get_strain(
             temp_phase = np.copy(phase)
             temp_phase = temp_phase + offset
             # wrap again the offseted phase
-            temp_phase = wrap(
+            temp_phase = util.wrap(
                 obj=temp_phase, start_angle=-extent_phase / 2, range_angle=extent_phase
             )
         else:  # no need to copy the phase, offset = 0

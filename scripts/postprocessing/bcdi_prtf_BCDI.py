@@ -617,7 +617,7 @@ if flag_interact:
         linecut_prtf = np.copy(prtf_matrix)
         print("\nInterpolating the 3D PRTF on nan values, it will take some time ...")
         print(f"nb_nans before interpolation = {np.isnan(linecut_prtf).sum()}")
-        linecut_prtf, nb_filtered, _ = pru.mean_filter(
+        linecut_prtf, nb_filtered, _ = util.mean_filter(
             data=linecut_prtf,
             nb_neighbours=1,
             interpolate="interp_isolated",

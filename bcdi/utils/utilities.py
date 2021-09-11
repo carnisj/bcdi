@@ -1186,6 +1186,141 @@ def lorentzian(x_axis, amp, cen, sig):
     return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
 
 
+def mean_filter(
+    data,
+    nb_neighbours,
+    mask=None,
+    target_val=0,
+    extent=1,
+    min_count=3,
+    interpolate="mask_isolated",
+    debugging=False,
+):
+    """
+    Mask or apply a mean filter to data.
+
+    The procedure is applied only if the empty pixel is surrounded by nb_neighbours or
+    more pixels with at least min_count intensity per pixel.
+
+    :param data: 2D or 3D array to be filtered
+    :param nb_neighbours: minimum number of non-zero neighboring pixels for median
+     filtering
+    :param mask: mask array of the same shape as data
+    :param target_val: value where to interpolate, allowed values are int>=0 or np.nan
+    :param extent: in pixels, extent of the averaging window from the reference pixel
+     (extent=1, 2, 3 ... corresponds to window width=3, 5, 7 ... )
+    :param min_count: minimum intensity (inclusive) in the neighboring pixels to
+     interpolate, the pixel will be masked otherwise.
+    :param interpolate: based on 'nb_neighbours', if 'mask_isolated' will mask
+     isolated pixels, if 'interp_isolated' will interpolate isolated pixels
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: updated data and mask, number of pixels treated
+    """
+    valid.valid_ndarray(arrays=data, ndim=(2, 3))
+    # check some mparameters
+    if mask is None:
+        mask = np.zeros(data.shape)
+    valid.valid_ndarray(arrays=mask, shape=data.shape)
+
+    if not np.isnan(target_val) and not isinstance(target_val, int):
+        raise ValueError(
+            "target_val should be nan or an integer, cannot assess float equality"
+        )
+
+    valid.valid_item(
+        nb_neighbours, allowed_types=int, min_excluded=0, name="mean_filter"
+    )
+    valid.valid_item(extent, allowed_types=int, min_excluded=0, name="mean_filter")
+    valid.valid_item(min_count, allowed_types=int, min_included=0, name="mean_filter")
+
+    if interpolate not in {"mask_isolated", "interp_isolated"}:
+        raise ValueError(
+            f"invalid value '{interpolate}' for interpolate,"
+            f" allowed are 'mask_isolated' and 'interp_isolated'"
+        )
+    if not isinstance(debugging, bool):
+        raise TypeError(f"debugging should be a boolean, got {type(debugging)}")
+
+    # find all voxels to be processed
+    if target_val is np.nan:
+        target_pixels = np.argwhere(np.isnan(data))
+    else:
+        target_pixels = np.argwhere(data == target_val)
+    nb_pixels = 0
+
+    if debugging:
+        gu.combined_plots(
+            tuple_array=(data, mask),
+            tuple_sum_frames=(False, False),
+            tuple_sum_axis=(0, 0),
+            tuple_width_v=(None, None),
+            tuple_width_h=(None, None),
+            tuple_colorbar=(True, True),
+            tuple_vmin=(-1, 0),
+            tuple_vmax=(np.nan, 1),
+            tuple_scale=("log", "linear"),
+            tuple_title=("Data before filtering", "Mask before filtering"),
+            reciprocal_space=True,
+        )
+
+    if data.ndim == 2:
+        for indx in range(target_pixels.shape[0]):
+            pixrow = target_pixels[indx, 0]
+            pixcol = target_pixels[indx, 1]
+            temp = data[
+                pixrow - extent : pixrow + extent + 1,
+                pixcol - extent : pixcol + extent + 1,
+            ]
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if (
+                temp.size >= nb_neighbours and (temp > min_count).all()
+            ):  # nb_neighbours is >= 1
+                nb_pixels += 1
+                if interpolate == "interp_isolated":
+                    data[pixrow, pixcol] = temp.mean()
+                    mask[pixrow, pixcol] = 0
+                else:
+                    mask[pixrow, pixcol] = 1
+    else:  # 3D
+        for indx in range(target_pixels.shape[0]):
+            pix_z = target_pixels[indx, 0]
+            pix_y = target_pixels[indx, 1]
+            pix_x = target_pixels[indx, 2]
+            temp = data[
+                pix_z - extent : pix_z + extent + 1,
+                pix_y - extent : pix_y + extent + 1,
+                pix_x - extent : pix_x + extent + 1,
+            ]
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if (
+                temp.size >= nb_neighbours and (temp > min_count).all()
+            ):  # nb_neighbours is >= 1
+                nb_pixels += 1
+                if interpolate == "interp_isolated":
+                    data[pix_z, pix_y, pix_x] = temp.mean()
+                    mask[pix_z, pix_y, pix_x] = 0
+                else:
+                    mask[pix_z, pix_y, pix_x] = 1
+
+    if debugging:
+        gu.combined_plots(
+            tuple_array=(data, mask),
+            tuple_sum_frames=(True, True),
+            tuple_sum_axis=(0, 0),
+            tuple_width_v=(None, None),
+            tuple_width_h=(None, None),
+            tuple_colorbar=(True, True),
+            tuple_vmin=(-1, 0),
+            tuple_vmax=(np.nan, 1),
+            tuple_scale=("log", "linear"),
+            tuple_title=("Data after filtering", "Mask after filtering"),
+            reciprocal_space=True,
+        )
+
+    return data, nb_pixels, mask
+
+
 def objective_lmfit(params, x_axis, data, distribution):
     """
     Calculate the total residual for fits to several data sets.
@@ -1227,94 +1362,6 @@ def line(x_array, a, b):
     :return: an array of length N containing the y values
     """
     return a * x_array + b
-
-
-def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
-    """
-    Normalize array using the monitor values.
-
-    :param array: the 3D array to be normalized
-    :param monitor: the monitor values
-    :param savedir: path where to save the debugging figure
-    :param norm_to_min: bool, True to normalize to min(monitor) instead of max(monitor),
-     avoid multiplying the noise
-    :param debugging: bool, True to see plots
-    :return:
-
-     - normalized dataset
-     - updated monitor
-     - a title for plotting
-
-    """
-    valid.valid_ndarray(arrays=array, ndim=3)
-    ndim = array.ndim
-    nbz, nby, nbx = array.shape
-    original_max = None
-    original_data = None
-
-    if ndim != 3:
-        raise ValueError("Array should be 3D")
-
-    if debugging:
-        original_data = np.copy(array)
-        original_max = original_data.max()
-        original_data[original_data < 5] = 0  # remove the background
-        original_data = original_data.sum(
-            axis=1
-        )  # the first axis is the normalization axis
-
-    print(
-        "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
-            monitor.min(), monitor.max(), monitor.mean()
-        )
-    )
-
-    if norm_to_min:
-        print("Data normalization by monitor.min()/monitor\n")
-        monitor = monitor.min() / monitor  # will divide higher intensities
-    else:  # norm to max
-        print("Data normalization by monitor.max()/monitor\n")
-        monitor = monitor.max() / monitor  # will multiply lower intensities
-
-    nbz = array.shape[0]
-    if len(monitor) != nbz:
-        raise ValueError(
-            "The frame number and the monitor data length are different:",
-            f"got {nbz} frames but {len(monitor)} monitor values",
-        )
-
-    for idx in range(nbz):
-        array[idx, :, :] = array[idx, :, :] * monitor[idx]
-
-    if debugging:
-        norm_data = np.copy(array)
-        # rescale norm_data to original_data for easier comparison
-        norm_data = norm_data * original_max / norm_data.max()
-        norm_data[norm_data < 5] = 0  # remove the background
-        norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
-        fig = gu.combined_plots(
-            tuple_array=(monitor, original_data, norm_data),
-            tuple_sum_frames=False,
-            tuple_colorbar=False,
-            tuple_vmin=(np.nan, 0, 0),
-            tuple_vmax=np.nan,
-            tuple_title=(
-                "monitor.min() / monitor",
-                "Before norm (thres. 5)",
-                "After norm (thres. 5)",
-            ),
-            tuple_scale=("linear", "log", "log"),
-            xlabel=("Frame number", "Detector X", "Detector X"),
-            is_orthogonal=False,
-            ylabel=("Counts (a.u.)", "Frame number", "Frame number"),
-            position=(211, 223, 224),
-            reciprocal_space=True,
-        )
-        if savedir is not None:
-            fig.savefig(savedir + f"monitor_{nbz}_{nby}_{nbx}.png")
-        plt.close(fig)
-
-    return array, monitor
 
 
 def plane(xy_array, a, b, c):

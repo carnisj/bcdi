@@ -17,6 +17,7 @@ The available beamlines are:
 - BeamlineSIXS
 - Beamline34ID
 - BeamlineP10
+- BeamlineP10SAXS
 - BeamlineCRISTAL
 - BeamlineNANOMAX
 
@@ -49,6 +50,8 @@ def create_beamline(name, **kwargs):
         return Beamline34ID(name=name, **kwargs)
     if name == "P10":
         return BeamlineP10(name=name, **kwargs)
+    if name == "P10_SAXS":
+        return BeamlineP10SAXS(name=name, **kwargs)
     if name == "CRISTAL":
         return BeamlineCRISTAL(name=name, **kwargs)
     if name == "NANOMAX":
@@ -1675,6 +1678,84 @@ class BeamlineP10(Beamline):
             )
 
         return mymatrix, q_offset
+
+
+class BeamlineP10SAXS(BeamlineP10):
+    """
+    Definition of PETRA III P10 beamline for the USAXS setup.
+
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    def process_positions(
+        self,
+        setup,
+        logfile,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+        follow_bragg=False,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at P10.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :param follow_bragg: True when in energy scans the detector was also scanned
+         to follow the Bragg peak
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+
+    def transformation_matrix(
+        self,
+        wavelength,
+        distance,
+        pixel_x,
+        pixel_y,
+        inplane,
+        outofplane,
+        grazing_angle,
+        tilt,
+        rocking_angle,
+        verbose=True,
+    ):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param wavelength: X-ray wasvelength in nm
+        :param distance: detector distance in nm
+        :param pixel_x: horizontal detector pixel size in nm
+        :param pixel_y: vertical detector pixel size in nm
+        :param inplane: horizontal detector angle in radians
+        :param outofplane: vertical detector angle in radians
+        :param grazing_angle: angle or list of angles of the sample circles which are
+         below the rotated circle
+        :param tilt: angular step of the rocking curve in radians
+        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param verbose: True to have printed comments
+        :return: a tuple of two numpy arrays
+
+         - the transformation matrix from the detector frame to the
+           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
+           numpy array of shape (3,3)
+         - the q offset (3D vector)
+
+        """
 
 
 class BeamlineSIXS(Beamline):

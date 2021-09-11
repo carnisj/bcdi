@@ -1269,7 +1269,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         for idx in range(
             pad_width[0], nz - pad_width[1]
         ):  # filter only frames whith data (not padded)
-            data[idx, :, :], processed_pix, mask[idx, :, :] = pru.mean_filter(
+            data[idx, :, :], processed_pix, mask[idx, :, :] = util.mean_filter(
                 data=data[idx, :, :],
                 nb_neighbours=medfilt_order,
                 mask=mask[idx, :, :],

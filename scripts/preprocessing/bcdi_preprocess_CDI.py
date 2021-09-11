@@ -25,7 +25,6 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.preprocessing.tomography_utils as tomo
 import bcdi.utils.validation as valid
 
@@ -1067,7 +1066,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         print("\nFiltering isolated pixels")
         nb_pix = 0
         for idx in range(nz):  # filter only frames whith data (not padded)
-            data[idx, :, :], numb_pix, mask[idx, :, :] = pru.mean_filter(
+            data[idx, :, :], numb_pix, mask[idx, :, :] = util.mean_filter(
                 data=data[idx, :, :],
                 nb_neighbours=medfilt_order,
                 mask=mask[idx, :, :],
