@@ -20,7 +20,6 @@ import numpy as np
 import sys
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import RegularGridInterpolator
-from scipy.interpolate import griddata
 import time
 import tkinter as tk
 from tkinter import filedialog
@@ -1979,21 +1978,8 @@ def grid_bcdi_xrayutil(
     )
 
     numz, numy, numx = interp_data.shape
-    plot_comment = (
-        "_"
-        + str(numz)
-        + "_"
-        + str(numy)
-        + "_"
-        + str(numx)
-        + "_"
-        + str(final_binning[0])
-        + "_"
-        + str(final_binning[1])
-        + "_"
-        + str(final_binning[2])
-        + ".png"
-    )
+    plot_comment = (f"_{numz}_{numy}_{numx}"
+                    f"_{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png")
 
     max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(
@@ -2073,6 +2059,7 @@ def grid_cdi(
     frames_logical,
     correct_curvature=False,
     debugging=False,
+    **kwargs,
 ):
     """
     Interpolate reciprocal space forward CDI data.
@@ -2095,39 +2082,30 @@ def grid_cdi(
     :param correct_curvature: if True, will correct for the curvature of
      the Ewald sphere
     :param debugging: set to True to see plots
+    :param kwargs:
+     - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
+       of the interpolation range. The first value is for the data, the second for the
+       mask. Default is (0, 0)
+
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard)
     """
+    fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     if setup.beamline == "P10":
         if setup.rocking_angle == "inplane":
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle = motor_positions_p10_saxs(logfile=logfile, setup=setup)
+                cdi_angle = setup.diffractometer.motor_positions(
+                    setup=setup, logfile=logfile
+                )
         else:
             raise ValueError(
                 "out-of-plane rotation not yet implemented for forward CDI data"
             )
     else:
         raise ValueError("Not yet implemented for beamlines other than P10")
-
-    wavelength = setup.wavelength * 1e9  # convert to nm
-    distance = setup.distance * 1e9  # convert to nm
-    pixel_x = (
-        detector.pixelsize_x * 1e9
-    )  # convert to nm, binned pixel size in the horizontal direction
-    pixel_y = (
-        detector.pixelsize_y * 1e9
-    )  # convert to nm, binned pixel size in the vertical direction
-    lambdaz = wavelength * distance
-    directbeam_y = int(
-        (setup.direct_beam[0] - detector.roi[0]) / detector.binning[1]
-    )  # vertical
-    directbeam_x = int(
-        (setup.direct_beam[1] - detector.roi[2]) / detector.binning[2]
-    )  # horizontal
-    print("\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x)
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(
         data=data,
@@ -2142,216 +2120,16 @@ def grid_cdi(
     print("\nData shape after check_cdi_angle and before regridding:", nbz, nby, nbx)
     print("\nAngle range:", cdi_angle.min(), cdi_angle.max())
 
-    # calculate the number of voxels available to accomodate the gridded data
-    # directbeam_x and directbeam_y already are already taking into account
-    # the ROI and binning
-    numx = 2 * max(
-        directbeam_x, nbx - directbeam_x
-    )  # number of interpolated voxels in the plane perpendicular
-    # to the rotation axis. It will accomodate the full data range.
-    numy = nby  # no change of the voxel numbers along the rotation axis
-    print("\nData shape after regridding:", numx, numy, numx)
-
-    # update the direct beam position due to an eventual padding along X
-    if nbx - directbeam_x < directbeam_x:
-        pivot = directbeam_x
-    else:  # padding to the left along x, need to correct the pivot position
-        pivot = nbx - directbeam_x
-
-    if not correct_curvature:
-        loop_2d = True
-        dqx = (
-            2 * np.pi / lambdaz * pixel_x
-        )  # in 1/nm, downstream, pixel_x is the binned pixel size
-        dqz = (
-            2 * np.pi / lambdaz * pixel_y
-        )  # in 1/nm, vertical up, pixel_y is the binned pixel size
-        dqy = (
-            2 * np.pi / lambdaz * pixel_x
-        )  # in 1/nm, outboard, pixel_x is the binned pixel size
-
-        # calculation of q based on P10 geometry
-        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
-        # downstream, same direction as detector X rotated by +90deg
-        qz = (
-            np.arange(directbeam_y - numy, directbeam_y, 1) * dqz
-        )  # vertical up opposite to detector Y
-        qy = (
-            np.arange(directbeam_x - numx, directbeam_x, 1) * dqy
-        )  # outboard opposite to detector X
-        print(
-            "q spacing for interpolation (z,y,x)=",
-            str("{:.6f}".format(dqx)),
-            str("{:.6f}".format(dqz)),
-            str("{:.6f}".format(dqy)),
-            " (1/nm)",
-        )
-
-        if loop_2d:  # loop over 2D slices perpendicular to the rotation axis,
-            # slower but needs less memory
-
-            # find the corresponding polar coordinates of a cartesian 2D grid
-            # perpendicular to the rotation axis
-            interp_angle, interp_radius = cartesian2polar(
-                nb_pixels=numx,
-                pivot=pivot,
-                offset_angle=cdi_angle.min(),
-                debugging=debugging,
-            )
-
-            interp_data = grid_cylindrical(
-                array=data,
-                rotation_angle=cdi_angle,
-                direct_beam=directbeam_x,
-                interp_angle=interp_angle,
-                interp_radius=interp_radius,
-                comment="data",
-            )
-
-            interp_mask = grid_cylindrical(
-                array=mask,
-                rotation_angle=cdi_angle,
-                direct_beam=directbeam_x,
-                interp_angle=interp_angle,
-                interp_radius=interp_radius,
-                comment="mask",
-            )
-
-            interp_mask[np.nonzero(interp_mask)] = 1
-            interp_mask = interp_mask.astype(int)
-        else:  # interpolate in one shot using a 3D RegularGridInterpolator
-
-            # Calculate the coordinates of a cartesian 3D grid expressed
-            # in the cylindrical basis
-            interp_angle, interp_height, interp_radius = cartesian2cylind(
-                grid_shape=(numx, numy, numx),
-                pivot=(directbeam_y, pivot),
-                offset_angle=cdi_angle.min(),
-                debugging=debugging,
-            )
-
-            if cdi_angle[1] - cdi_angle[0] < 0:
-                # flip rotation_angle and the data accordingly,
-                # RegularGridInterpolator takes only increasing position vectors
-                cdi_angle = np.flip(cdi_angle)
-                data = np.flip(data, axis=0)
-                mask = np.flip(mask, axis=0)
-
-            # Interpolate the data onto a cartesian 3D grid
-            print("Gridding data")
-            rgi = RegularGridInterpolator(
-                (
-                    cdi_angle * np.pi / 180,
-                    np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                    np.arange(-directbeam_x, -directbeam_x + nbx, 1),
-                ),
-                data,
-                method="linear",
-                bounds_error=False,
-                fill_value=np.nan,
-            )
-            interp_data = rgi(
-                np.concatenate(
-                    (
-                        interp_angle.reshape((1, interp_angle.size)),
-                        interp_height.reshape((1, interp_angle.size)),
-                        interp_radius.reshape((1, interp_angle.size)),
-                    )
-                ).transpose()
-            )
-            interp_data = interp_data.reshape((numx, numy, numx))
-
-            # Interpolate the mask onto a cartesian 3D grid
-            print("Gridding mask")
-            rgi = RegularGridInterpolator(
-                (
-                    cdi_angle * np.pi / 180,
-                    np.arange(-directbeam_y, -directbeam_y + nby, 1),
-                    np.arange(-directbeam_x, -directbeam_x + nbx, 1),
-                ),
-                mask,
-                method="linear",
-                bounds_error=False,
-                fill_value=np.nan,
-            )
-            interp_mask = rgi(
-                np.concatenate(
-                    (
-                        interp_angle.reshape((1, interp_angle.size)),
-                        interp_height.reshape((1, interp_angle.size)),
-                        interp_radius.reshape((1, interp_angle.size)),
-                    )
-                ).transpose()
-            )
-            interp_mask = interp_mask.reshape((numx, numy, numx))
-            interp_mask[np.nonzero(interp_mask)] = 1
-            interp_mask = interp_mask.astype(int)
-
-    else:  # correction for Ewald sphere curvature
-        # calculate exact q values for each voxel of the 3D dataset
-        old_qx, old_qz, old_qy = ewald_curvature_saxs(
-            cdi_angle=cdi_angle, detector=detector, setup=setup
-        )
-
-        # create the grid for interpolation
-        qx = np.linspace(
-            old_qx.min(), old_qx.max(), numx, endpoint=False
-        )  # z downstream
-        qz = np.linspace(
-            old_qz.min(), old_qz.max(), numy, endpoint=False
-        )  # y vertical up
-        qy = np.linspace(old_qy.min(), old_qy.max(), numx, endpoint=False)  # x outboard
-
-        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing="ij")
-
-        # interpolate the data onto the new points using griddata
-        # (the original grid is not regular)
-        print("Interpolating the data using griddata, will take time...")
-        interp_data = griddata(
-            np.array(
-                [
-                    np.ndarray.flatten(old_qx),
-                    np.ndarray.flatten(old_qz),
-                    np.ndarray.flatten(old_qy),
-                ]
-            ).T,
-            np.ndarray.flatten(data),
-            np.array(
-                [
-                    np.ndarray.flatten(new_qx),
-                    np.ndarray.flatten(new_qz),
-                    np.ndarray.flatten(new_qy),
-                ]
-            ).T,
-            method="linear",
-            fill_value=np.nan,
-        )
-        interp_data = interp_data.reshape((numx, numy, numx))
-
-        # interpolate the mask onto the new points
-        print("Interpolating the mask using griddata, will take time...")
-        interp_mask = griddata(
-            np.array(
-                [
-                    np.ndarray.flatten(old_qx),
-                    np.ndarray.flatten(old_qz),
-                    np.ndarray.flatten(old_qy),
-                ]
-            ).T,
-            np.ndarray.flatten(mask),
-            np.array(
-                [
-                    np.ndarray.flatten(new_qx),
-                    np.ndarray.flatten(new_qz),
-                    np.ndarray.flatten(new_qy),
-                ]
-            ).T,
-            method="linear",
-            fill_value=np.nan,
-        )
-        interp_mask = interp_mask.reshape((numx, numy, numx))
-        interp_mask[np.nonzero(interp_mask)] = 1
-        interp_mask = interp_mask.astype(int)
+    (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_tomo(
+        arrays=(data, mask),
+        fill_value=fill_value,
+        correct_curvature=correct_curvature,
+        verbose=True,
+        debugging=debugging,
+        scale=("log", "linear"),
+        title=("data", "mask"),
+    )
+    qx, qz, qy = q_values
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -2364,20 +2142,14 @@ def grid_cdi(
     # calculate the position in pixels of the origin of the reciprocal space
     pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
     # 90 degrees conter-clockwise rotation of detector X around qz, downstream
-    pivot_y = int(
-        numy - directbeam_y
-    )  # detector Y vertical down, opposite to qz vertical up
-    pivot_x = int(
-        numx - directbeam_x
-    )  # detector X inboard at P10, opposite to qy outboard
+    _, numy, numx = interp_data.shape
+    pivot_y = int(numy - corrected_dirbeam[0])
+    # detector Y vertical down, opposite to qz vertical up
+    pivot_x = int(numx - corrected_dirbeam[1])
+    # detector X inboard at P10, opposite to qy outboard
     print(
-        "\nOrigin of the reciprocal space  (Qx,Qz,Qy): "
-        + str(pivot_z)
-        + ","
-        + str(pivot_y)
-        + ","
-        + str(pivot_x)
-        + "\n"
+        "\nOrigin of the reciprocal space (Qx,Qz,Qy): "
+        f"({pivot_z}, {pivot_y}, {pivot_x})\n"
     )
 
     # plot the gridded data
@@ -2387,19 +2159,8 @@ def grid_cdi(
         detector.preprocessing_binning[2] * detector.binning[2],
     )
     plot_comment = (
-        "_"
-        + str(numx)
-        + "_"
-        + str(numy)
-        + "_"
-        + str(numx)
-        + "_"
-        + str(final_binning[0])
-        + "_"
-        + str(final_binning[1])
-        + "_"
-        + str(final_binning[2])
-        + ".png"
+        f"_{numx}_{numy}_{numx}"
+        f"_{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png"
     )
     # sample rotation around the vertical direction at P10: the effective
     # binning in axis 0 is binning[2]
@@ -3202,44 +2963,6 @@ def mean_filter(
         )
 
     return data, nb_pixels, mask
-
-
-def motor_positions_p10_saxs(logfile, setup):
-    """
-    Load the .fio file from the scan and extract motor positions for P10 SAXS setup.
-
-    :param logfile: path of the . fio file containing the information about the scan
-    :param setup: an instance of the class Setup
-    :return: sprz or hprz motor positions
-    """
-    if setup.rocking_angle != "inplane":
-        raise ValueError('Wrong value for "rocking_angle" parameter')
-
-    if not setup.custom_scan:
-        index_phi = None
-        phi = []
-
-        fio = open(logfile, "r")
-        fio_lines = fio.readlines()
-        for line in fio_lines:
-            this_line = line.strip()
-            words = this_line.split()
-
-            if "Col" in words:
-                if "sprz" in words or "hprz" in words:  # sprz or hprz (SAXS) scanned
-                    # template = ' Col 0 sprz DOUBLE\n'
-                    index_phi = int(words[1]) - 1  # python index starts at 0
-                    print(words, "  Index Phi=", index_phi)
-            if index_phi is not None and util.is_numeric(
-                words[0]
-            ):  # we are reading data and index_phi is defined
-                phi.append(float(words[index_phi]))
-
-        phi = np.asarray(phi, dtype=float)
-        fio.close()
-    else:
-        phi = setup.custom_motors["phi"]
-    return phi
 
 
 def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
