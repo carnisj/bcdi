@@ -436,11 +436,13 @@ class Detector(ABC):
 
         Convention: (vertical, horizontal)
         """
+        return 1, 1
 
     @property
     @abstractmethod
     def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 1, 1
 
     def __repr__(self):
         """Representation string of the Detector instance."""

@@ -11,6 +11,7 @@ from pyfakefs import fake_filesystem_unittest
 import numpy as np
 import os
 import unittest
+from unittest.mock import patch
 from bcdi.experiment.detector import (
     create_detector,
     Detector,
@@ -348,28 +349,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", template_imagefile="S")
         self.assertEqual(det.template_imagefile, "S")
 
-
-class TestMaxipix(unittest.TestCase):
-    """Tests related to the Maxipix detector."""
-
-    def setUp(self) -> None:
-        self.det = Maxipix("Maxipix")
-        self.data = np.ones(self.det.unbinned_pixel_number)
-        self.mask = np.zeros(self.det.unbinned_pixel_number)
-
-    def test_unbinned_pixel_number_default(self):
-        self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
-
-    def test_unbinned_pixel_size_default(self):
-        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
-
-    def test_mask_gaps(self):
-        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
-        self.assertTrue(np.all(data[:, 255:261]) == 0)
-        self.assertTrue(np.all(data[255:261, :]) == 0)
-        self.assertTrue(np.all(mask[:, 255:261]) == 1)
-        self.assertTrue(np.all(mask[255:261, :]) == 1)
-
     def test_repr(self):
         self.assertIsInstance(self.det.__repr__(), str)
 
@@ -515,6 +494,53 @@ class TestMaxipix(unittest.TestCase):
         self.det.linearity_func = func
         with self.assertRaises(ValueError):
             self.det._linearity_correction(data)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class(self):
+        det = Detector("Maxipix")
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        output = det._mask_gaps(data, mask)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_ndim(self):
+        det = Detector("Maxipix")
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(ValueError):
+            det._mask_gaps(data, mask)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_shape(self):
+        det = Detector("Maxipix")
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 4))
+        with self.assertRaises(ValueError):
+            det._mask_gaps(data, mask)
+
+
+class TestMaxipix(unittest.TestCase):
+    """Tests related to the Maxipix detector."""
+
+    def setUp(self) -> None:
+        self.det = Maxipix("Maxipix")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
+
+    def test_unbinned_pixel_number_default(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
+
+    def test_unbinned_pixel_size_default(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 255:261]) == 0)
+        self.assertTrue(np.all(data[255:261, :]) == 0)
+        self.assertTrue(np.all(mask[:, 255:261]) == 1)
+        self.assertTrue(np.all(mask[255:261, :]) == 1)
 
 
 class TestEiger2M(unittest.TestCase):
