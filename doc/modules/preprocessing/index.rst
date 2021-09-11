@@ -13,8 +13,14 @@
 API Reference
 -------------
 
-preprocessing_utils
-^^^^^^^^^^^^^^^^^^^
+bcdi_utils
+^^^^^^^^^^
 
-.. automodule:: bcdi.preprocessing.preprocessing_utils
+.. automodule:: bcdi.preprocessing.bcdi_utils
+   :members:
+
+cdi_utils
+^^^^^^^^^
+
+.. automodule:: bcdi.preprocessing.cdi_utils
    :members:
