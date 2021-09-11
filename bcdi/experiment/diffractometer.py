@@ -17,6 +17,7 @@ The available diffractometers are:
 - DiffractometerSIXS
 - Diffractometer34ID
 - DiffractometerP10
+- DiffractometerP10SAXS
 - DiffractometerCRISTAL
 - DiffractometerNANOMAX
 
@@ -60,6 +61,8 @@ def create_diffractometer(beamline, sample_offsets):
         return Diffractometer34ID(sample_offsets)
     if beamline == "P10":
         return DiffractometerP10(sample_offsets)
+    if beamline == "P10_SAXS":
+        return DiffractometerP10SAXS()
     if beamline == "CRISTAL":
         return DiffractometerCRISTAL(sample_offsets)
     if beamline == "NANOMAX":
@@ -2311,7 +2314,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
 
-    - sample: hpz (also called hprz)
+    - sample: phi (names hprz or sprz at the beamline)
 
     """
     sample_rotations = ["y+"]
@@ -2319,6 +2322,92 @@ class DiffractometerP10SAXS(DiffractometerP10):
 
     def __init__(self):
         super().__init__(sample_offsets=(0,))
+
+    def goniometer_values(self, setup, stage_name="cdi", **kwargs):
+        """
+        Retrieve goniometer motor positions for a CDI tomographic scan.
+
+        :param setup: the experimental setup: Class Setup
+        :param stage_name: supported stage name, 'cdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
+        :return: a tuple of angular values in degrees, depending on stage_name:
+
+         - 'cdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
+
+        """
+        logfile = kwargs["logfile"]
+        # check some parameter
+        if stage_name not in {"cdi", "sample", "detector"}:
+            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
+
+        # load the motor positions
+        phi, _ = self.motor_positions(setup=setup, logfile=logfile)
+
+        # define the circles of interest for CDI
+        # no circle yet below phi at P10
+        if setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (0,)
+            tilt = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
+        sample_angles = (phi,)
+        detector_angles = None
+        if stage_name == "sample":
+            return sample_angles
+        if stage_name == "detector":
+            return detector_angles
+        return tilt, grazing, None, None
+
+    def motor_positions(self, setup, **kwargs):
+        """
+        Load the .fio file from the scan and extract motor positions.
+
+        :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
+        :return: (phi, energy) values
+        """
+        logfile = kwargs["logfile"]
+        if setup.rocking_angle != "inplane":
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        if not setup.custom_scan:
+            index_phi = None
+            phi = []
+
+            fio = open(logfile, "r")
+            fio_lines = fio.readlines()
+            for line in fio_lines:
+                this_line = line.strip()
+                words = this_line.split()
+
+                if "Col" in words:
+                    if "sprz" in words or "hprz" in words:
+                        # sprz or hprz (SAXS) scanned
+                        # template = ' Col 0 sprz DOUBLE\n'
+                        index_phi = int(words[1]) - 1  # python index starts at 0
+                        print(words, "  Index Phi=", index_phi)
+                if index_phi is not None and util.is_numeric(
+                    words[0]
+                ):  # we are reading data and index_phi is defined
+                    phi.append(float(words[index_phi]))
+
+            phi = np.asarray(phi, dtype=float)
+            fio.close()
+        else:
+            phi = setup.custom_motors["phi"]
+        return phi, setup.energy
 
 
 class DiffractometerSIXS(Diffractometer):
