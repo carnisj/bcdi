@@ -187,15 +187,13 @@ class Detector(ABC):
 
     @property
     def linearity_func(self):
-        """Function for correcting the non-linearity of the detector with high flux."""
+        """Correction of the non-linearity of the detector with high incoming flux."""
         return self._linearity_func
 
     @linearity_func.setter
     def linearity_func(self, value):
         if value is not None and not callable(value):
-            raise TypeError(
-                f"linearity_func should be a function, got {type(value)}"
-            )
+            raise TypeError(f"linearity_func should be a function, got {type(value)}")
         self._linearity_func = value
 
     @property
@@ -583,10 +581,8 @@ class Detector(ABC):
 
         """
         valid.valid_ndarray(
-            (data, mask),
-            ndim=2,
-            shape=self.unbinned_pixel_number,
-            fix_shape=True)
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
         return data, mask
 
     def _saturation_correction(self, data, mask, nb_frames):
@@ -639,10 +635,8 @@ class Maxipix(Detector):
 
         """
         valid.valid_ndarray(
-            (data, mask),
-            ndim=2,
-            shape=self.unbinned_pixel_number,
-            fix_shape=True)
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:261] = 0
         data[255:261, :] = 0
@@ -688,10 +682,8 @@ class Eiger2M(Detector):
 
         """
         valid.valid_ndarray(
-            (data, mask),
-            ndim=2,
-            shape=self.unbinned_pixel_number,
-            fix_shape=True)
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:259] = 0
         data[:, 513:517] = 0
@@ -759,10 +751,8 @@ class Eiger4M(Detector):
 
         """
         valid.valid_ndarray(
-            (data, mask),
-            ndim=2,
-            shape=self.unbinned_pixel_number,
-            fix_shape=True)
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 0:1] = 0
         data[:, -1:] = 0
@@ -839,10 +829,8 @@ class Merlin(Detector):
 
         """
         valid.valid_ndarray(
-            (data, mask),
-            ndim=2,
-            shape=self.unbinned_pixel_number,
-            fix_shape=True)
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:260] = 0
         data[255:260, :] = 0

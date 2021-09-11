@@ -355,14 +355,24 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_background_subtraction_correct(self):
         data = np.ones((3, 3))
         background = np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), np.zeros((3, 3)))))
+        self.assertTrue(
+            np.all(
+                np.isclose(
+                    self.det._background_subtraction(data, background), np.zeros((3, 3))
+                )
+            )
+        )
 
     def test_background_subtraction_float(self):
         data = np.ones((3, 3))
         background = 0.5 * np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), background)))
+        self.assertTrue(
+            np.all(
+                np.isclose(
+                    self.det._background_subtraction(data, background), background
+                )
+            )
+        )
 
     def test_background_subtraction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
@@ -385,20 +395,25 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_background_subtraction_none(self):
         data = np.ones((3, 3))
         background = None
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._background_subtraction(data, background), data))
+        )
 
     def test_flatfield_correction_correct(self):
         data = np.ones((3, 3))
         flatfield = np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._flatfield_correction(data, flatfield), data))
+        )
 
     def test_flatfield_correction_float(self):
         data = np.ones((3, 3))
         flatfield = 0.5 * np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), flatfield)))
+        self.assertTrue(
+            np.all(
+                np.isclose(self.det._flatfield_correction(data, flatfield), flatfield)
+            )
+        )
 
     def test_flatfield_correction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
@@ -421,8 +436,9 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_flatfield_correction_none(self):
         data = np.ones((3, 3))
         flatfield = None
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._flatfield_correction(data, flatfield), data))
+        )
 
     def test_hotpixels_correction_correct(self):
         data = np.ones((3, 3))
@@ -472,21 +488,20 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         func = lambda x: x ** 2
         data = np.ones((3, 3))
         self.det.linearity_func = func
-        self.assertTrue(np.all(np.isclose(
-            self.det._linearity_correction(data), data)))
+        self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
 
     def test_linearity_correction_zero(self):
         func = lambda x: x - x
         data = np.ones((3, 3))
         self.det.linearity_func = func
-        self.assertTrue(np.all(np.isclose(
-            self.det._linearity_correction(data), np.zeros((3, 3)))))
+        self.assertTrue(
+            np.all(np.isclose(self.det._linearity_correction(data), np.zeros((3, 3))))
+        )
 
     def test_linearity_correction_none(self):
         data = np.ones((3, 3))
         self.det.linearity_func = None
-        self.assertTrue(np.all(np.isclose(
-            self.det._linearity_correction(data), data)))
+        self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
 
     def test_linearity_correction_wrong_ndim(self):
         func = lambda x: x ** 2
@@ -627,6 +642,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         mask = np.zeros((3, 3))
         with self.assertRaises(ValueError):
             det._saturation_correction(data, mask, nb_frames=0)
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
