@@ -111,12 +111,7 @@ class Detector(ABC):
         # load the kwargs
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
         self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
-        linearity_func = kwargs.get("linearity_func")
-        if linearity_func is not None and not callable(linearity_func):
-            raise TypeError(
-                f"linearity_func should be a function, got {type(linearity_func)}"
-            )
-        self._linearity_func = linearity_func
+        self.linearity_func = kwargs.get("linearity_func")
 
         # load other positional arguments
         self.binning = binning
@@ -189,6 +184,19 @@ class Detector(ABC):
         if value is not None and not os.path.isdir(value):
             raise ValueError(f"The directory {value} does not exist")
         self._datadir = value
+
+    @property
+    def linearity_func(self):
+        """Function for correcting the non-linearity of the detector with high flux."""
+        return self._linearity_func
+
+    @linearity_func.setter
+    def linearity_func(self, value):
+        if value is not None and not callable(value):
+            raise TypeError(
+                f"linearity_func should be a function, got {type(value)}"
+            )
+        self._linearity_func = value
 
     @property
     def name(self):
@@ -510,13 +518,11 @@ class Detector(ABC):
         :param data: a 2D numpy array
         :return: the corrected data array
         """
-        if self._linearity_func is not None:
-            if not callable(self._linearity_func):
-                raise TypeError("linearity_function is not callable")
+        if self.linearity_func is not None:
             valid.valid_ndarray(data, ndim=2)
             data = data.astype(float)
             nby, nbx = data.shape
-            return self._linearity_func(data.flatten()).reshape((nby, nbx))
+            return self.linearity_func(data.flatten()).reshape((nby, nbx))
         return data
 
     def mask_detector(

@@ -85,15 +85,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(TypeError):
             Detector(name="Maxipix")
 
-    def test_linearity_function_not_callable(self):
-        with self.assertRaises(TypeError):
-            Maxipix("Maxipix", linearity_func=0)
-
-    def test_linearity_function_callable(self):
-        func = lambda x: x ** 2
-        det = Maxipix("Maxipix", linearity_func=func)
-        self.assertEqual(det._linearity_func, func)
-
     def test_binning_number(self):
         with self.assertRaises(TypeError):
             Maxipix(name="Maxipix", binning=2)
@@ -147,6 +138,15 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_datadir_not_exist(self):
         with self.assertRaises(ValueError):
             Maxipix(name="Maxipix", datadir="this directory does not exist")
+
+    def test_linearity_function_not_callable(self):
+        with self.assertRaises(TypeError):
+            Maxipix("Maxipix", linearity_func=0)
+
+    def test_linearity_function_callable(self):
+        func = lambda x: x ** 2
+        det = Maxipix("Maxipix", linearity_func=func)
+        self.assertEqual(det._linearity_func, func)
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
