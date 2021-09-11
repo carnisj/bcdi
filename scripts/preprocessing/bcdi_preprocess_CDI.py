@@ -173,6 +173,11 @@ template_imagefile = "_master.h5"  # ''_data_%06d.h5'
 ######################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame
 # True for using data in detector frame
+fill_value_mask = 0  # 0 (not masked) or 1 (masked).
+# It will define how the pixels outside of the data range are
+# processed during the interpolation. Because of the large number of masked pixels,
+# phase retrieval converges better if the pixels are not masked (0 intensity
+# imposed). The data is by default set to 0 outside of the defined range.
 correct_curvature = (
     False  # True to correcture q values for the curvature of Ewald sphere
 )
@@ -744,6 +749,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 setup=setup,
                 frames_logical=frames_logical,
                 correct_curvature=correct_curvature,
+                fill_value=(0, fill_value_mask),
                 debugging=debug,
             )
 
