@@ -146,7 +146,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_linearity_function_callable(self):
         func = lambda x: x ** 2
         det = Maxipix("Maxipix", linearity_func=func)
-        self.assertEqual(det._linearity_func, func)
+        self.assertEqual(det.linearity_func, func)
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
@@ -488,6 +488,33 @@ class TestMaxipix(unittest.TestCase):
         output = self.det._hotpixels_correction(data, mask, hotpixels)
         self.assertTrue(np.all(np.isclose(output[0], data)))
         self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_linearity_correction_correct(self):
+        func = lambda x: x ** 2
+        data = np.ones((3, 3))
+        self.det.linearity_func = func
+        self.assertTrue(np.all(np.isclose(
+            self.det._linearity_correction(data), data)))
+
+    def test_linearity_correction_zero(self):
+        func = lambda x: x - x
+        data = np.ones((3, 3))
+        self.det.linearity_func = func
+        self.assertTrue(np.all(np.isclose(
+            self.det._linearity_correction(data), np.zeros((3, 3)))))
+
+    def test_linearity_correction_none(self):
+        data = np.ones((3, 3))
+        self.det.linearity_func = None
+        self.assertTrue(np.all(np.isclose(
+            self.det._linearity_correction(data), data)))
+
+    def test_linearity_correction_wrong_ndim(self):
+        func = lambda x: x ** 2
+        data = np.ones((3, 3, 3))
+        self.det.linearity_func = func
+        with self.assertRaises(ValueError):
+            self.det._linearity_correction(data)
 
 
 class TestEiger2M(unittest.TestCase):
