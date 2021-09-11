@@ -495,11 +495,38 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(ValueError):
             self.det._linearity_correction(data)
 
+    def test_mask_detector_correct(self):
+        det = Timepix("Timepix")
+        data = np.ones(det.unbinned_pixel_number)
+        mask = np.zeros(det.unbinned_pixel_number)
+        output = det.mask_detector(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_mask_detector_wrong_ndim(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
+    def test_mask_detector_shape_mismatch(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 4))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
+    def test_mask_detector_invalid_shape(self):
+        """Shape of Maxipix is (516, 516)."""
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
     @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
     def test_mask_gaps_base_class(self):
         det = Detector("Maxipix")
-        data = np.ones((3, 3))
-        mask = np.zeros((3, 3))
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 1))
         output = det._mask_gaps(data, mask)
         self.assertTrue(np.all(np.isclose(output[0], data)))
         self.assertTrue(np.all(np.isclose(output[1], mask)))
@@ -507,16 +534,16 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
     def test_mask_gaps_base_class_wrong_ndim(self):
         det = Detector("Maxipix")
-        data = np.ones((3, 3))
-        mask = np.zeros((3, 3, 3))
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 1, 3))
         with self.assertRaises(ValueError):
             det._mask_gaps(data, mask)
 
     @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
     def test_mask_gaps_base_class_wrong_shape(self):
         det = Detector("Maxipix")
-        data = np.ones((3, 3))
-        mask = np.zeros((3, 4))
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 2))
         with self.assertRaises(ValueError):
             det._mask_gaps(data, mask)
 

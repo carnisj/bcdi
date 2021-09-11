@@ -422,7 +422,7 @@ def valid_ndarray(
 
     :param arrays: a sequence of numpy ndarrays
     :param ndim: int, the number of dimensions to be compared with
-    :param shape: sequence of int, shape to be comared with
+    :param shape: sequence of int, shape to be compared with
     :param fix_ndim: bool, if True the shape of all arrays should be equal
     :param fix_shape: bool, if True the shape of all arrays should be equal
     :param name: name of the calling object appearing in exception messages

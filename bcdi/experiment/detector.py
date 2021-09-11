@@ -570,8 +570,7 @@ class Detector(ABC):
 
         return data, mask
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -583,7 +582,11 @@ class Detector(ABC):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask),
+            ndim=2,
+            shape=self.unbinned_pixel_number,
+            fix_shape=True)
         return data, mask
 
     def _saturation_correction(self, data, mask, nb_frames):
@@ -621,8 +624,7 @@ class Maxipix(Detector):
         # is used at several beamlines
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -634,7 +636,11 @@ class Maxipix(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask),
+            ndim=2,
+            shape=self.unbinned_pixel_number,
+            fix_shape=True)
 
         data[:, 255:261] = 0
         data[255:261, :] = 0
@@ -667,8 +673,7 @@ class Eiger2M(Detector):
         # is used at several beamlines
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -680,7 +685,11 @@ class Eiger2M(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask),
+            ndim=2,
+            shape=self.unbinned_pixel_number,
+            fix_shape=True)
 
         data[:, 255:259] = 0
         data[:, 513:517] = 0
@@ -735,8 +744,7 @@ class Eiger4M(Detector):
         super().__init__(name=name, **kwargs)
         self.saturation_threshold = 4000000000
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -748,7 +756,11 @@ class Eiger4M(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask),
+            ndim=2,
+            shape=self.unbinned_pixel_number,
+            fix_shape=True)
 
         data[:, 0:1] = 0
         data[:, -1:] = 0
@@ -812,8 +824,7 @@ class Merlin(Detector):
         super().__init__(name=name, **kwargs)
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -825,7 +836,11 @@ class Merlin(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask),
+            ndim=2,
+            shape=self.unbinned_pixel_number,
+            fix_shape=True)
 
         data[:, 255:260] = 0
         data[255:260, :] = 0
