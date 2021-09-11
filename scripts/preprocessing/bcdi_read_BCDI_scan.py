@@ -183,7 +183,6 @@ setup.init_paths(
     save_dir=save_dir,
     save_dirname=save_dirname,
     verbose=True,
-    create_savedir=True,
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
 )

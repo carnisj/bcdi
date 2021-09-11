@@ -229,8 +229,7 @@ def calc_ccf_rect(point, q1_name, q2_name, bin_values, q_int):
     ccf_uniq_val = np.zeros(len(counter_indices))
     for idx, item in enumerate(counter_indices):
         ccf_uniq_val[idx] = (
-            q_int[q1_name][point, 3]
-            * q_int[q2_name][nearest_indices == item, 3]
+            q_int[q1_name][point, 3] * q_int[q2_name][nearest_indices == item, 3]
         ).sum()
 
     return ccf_uniq_val, counter_val, counter_indices

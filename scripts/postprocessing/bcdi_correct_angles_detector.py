@@ -178,7 +178,6 @@ setup.init_paths(
     scan_number=scan,
     root_folder=root_folder,
     save_dir=None,
-    create_savedir=False,
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
     verbose=True,

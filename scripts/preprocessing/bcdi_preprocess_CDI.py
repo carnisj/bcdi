@@ -483,7 +483,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         save_dir=save_dir,
         save_dirname=save_dirname,
         verbose=True,
-        create_savedir=create_savedir,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
     )

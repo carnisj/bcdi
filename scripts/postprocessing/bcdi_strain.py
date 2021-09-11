@@ -445,7 +445,6 @@ setup.init_paths(
     save_dir=save_dir,
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
-    create_savedir=True,
 )
 
 logfile = setup.create_logfile(

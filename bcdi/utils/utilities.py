@@ -1469,11 +1469,7 @@ def remove_avg_background(
             array[item, ind_y[index], ind_x[index]] = array[
                 item, ind_y[index], ind_x[index]
             ] - interpolation(
-                np.sqrt(
-                    qx[item] ** 2
-                    + qz[ind_y[index]] ** 2
-                    + qy[ind_x[index]] ** 2
-                )
+                np.sqrt(qx[item] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2)
             )
     elif method == "normalize":
         avg_background[np.isnan(avg_background)] = 1
@@ -1489,11 +1485,7 @@ def remove_avg_background(
             array[item, ind_y[index], ind_x[index]] = array[
                 item, ind_y[index], ind_x[index]
             ] / interpolation(
-                np.sqrt(
-                    qx[item] ** 2
-                    + qz[ind_y[index]] ** 2
-                    + qy[ind_x[index]] ** 2
-                )
+                np.sqrt(qx[item] ** 2 + qz[ind_y[index]] ** 2 + qy[ind_x[index]] ** 2)
             )
 
     array[np.isnan(array)] = 0

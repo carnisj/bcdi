@@ -1349,9 +1349,7 @@ class DiffractometerID01(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(
-        self, setup, stage_name="bcdi", **kwargs
-    ):
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
