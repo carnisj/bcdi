@@ -344,10 +344,10 @@ data[data <= threshold] = 0
 ########################
 # load motor positions #
 ########################
-fast_positions = pru.get_motor_pos(
+fast_positions = setup.diffractometer.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=fast_motor
 )
-slow_positions = pru.get_motor_pos(
+slow_positions = setup.diffractometer.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=slow_motor
 )
 

@@ -321,7 +321,7 @@ data[np.nonzero(mask)] = 0
 ########################
 # load motor positions #
 ########################
-motor_positions = pru.get_motor_pos(
+motor_positions = setup.diffractometer.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=motor_name
 )
 
