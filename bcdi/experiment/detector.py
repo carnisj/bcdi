@@ -111,12 +111,7 @@ class Detector(ABC):
         # load the kwargs
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
         self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
-        linearity_func = kwargs.get("linearity_func")
-        if linearity_func is not None and not callable(linearity_func):
-            raise TypeError(
-                f"linearity_func should be a function, got {type(linearity_func)}"
-            )
-        self._linearity_func = linearity_func
+        self.linearity_func = kwargs.get("linearity_func")
 
         # load other positional arguments
         self.binning = binning
@@ -189,6 +184,17 @@ class Detector(ABC):
         if value is not None and not os.path.isdir(value):
             raise ValueError(f"The directory {value} does not exist")
         self._datadir = value
+
+    @property
+    def linearity_func(self):
+        """Correction of the non-linearity of the detector with high incoming flux."""
+        return self._linearity_func
+
+    @linearity_func.setter
+    def linearity_func(self, value):
+        if value is not None and not callable(value):
+            raise TypeError(f"linearity_func should be a function, got {type(value)}")
+        self._linearity_func = value
 
     @property
     def name(self):
@@ -428,11 +434,13 @@ class Detector(ABC):
 
         Convention: (vertical, horizontal)
         """
+        return 1, 1
 
     @property
     @abstractmethod
     def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 1, 1
 
     def __repr__(self):
         """Representation string of the Detector instance."""
@@ -510,13 +518,11 @@ class Detector(ABC):
         :param data: a 2D numpy array
         :return: the corrected data array
         """
-        if self._linearity_func is not None:
-            if not callable(self._linearity_func):
-                raise TypeError("linearity_function is not callable")
+        if self.linearity_func is not None:
             valid.valid_ndarray(data, ndim=2)
             data = data.astype(float)
             nby, nbx = data.shape
-            return self._linearity_func(data.flatten()).reshape((nby, nbx))
+            return self.linearity_func(data.flatten()).reshape((nby, nbx))
         return data
 
     def mask_detector(
@@ -562,8 +568,7 @@ class Detector(ABC):
 
         return data, mask
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -575,14 +580,18 @@ class Detector(ABC):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
         return data, mask
 
     def _saturation_correction(self, data, mask, nb_frames):
         """
         Mask pixels above a certain threshold.
 
-        This is detector dependent.
+        This is detector dependent. If a 2D frames was obtained by summing a series of
+        frames (e.g. series measurement at P10), the threshold is multiplied
+        accordingly.
 
         :param data: a 2D numpy array
         :param mask: a 2D numpy array of the same shape as data
@@ -613,8 +622,7 @@ class Maxipix(Detector):
         # is used at several beamlines
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -626,7 +634,9 @@ class Maxipix(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:261] = 0
         data[255:261, :] = 0
@@ -659,8 +669,7 @@ class Eiger2M(Detector):
         # is used at several beamlines
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -672,7 +681,9 @@ class Eiger2M(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:259] = 0
         data[:, 513:517] = 0
@@ -727,8 +738,7 @@ class Eiger4M(Detector):
         super().__init__(name=name, **kwargs)
         self.saturation_threshold = 4000000000
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -740,7 +750,9 @@ class Eiger4M(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 0:1] = 0
         data[:, -1:] = 0
@@ -804,8 +816,7 @@ class Merlin(Detector):
         super().__init__(name=name, **kwargs)
         self.saturation_threshold = 1e6
 
-    @staticmethod
-    def _mask_gaps(data, mask):
+    def _mask_gaps(self, data, mask):
         """
         Mask the gaps between sensors in the detector.
 
@@ -817,7 +828,9 @@ class Merlin(Detector):
          - the updated mask
 
         """
-        valid.valid_ndarray((data, mask), ndim=2)
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
 
         data[:, 255:260] = 0
         data[255:260, :] = 0

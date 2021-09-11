@@ -11,6 +11,7 @@ from pyfakefs import fake_filesystem_unittest
 import numpy as np
 import os
 import unittest
+from unittest.mock import patch
 from bcdi.experiment.detector import (
     create_detector,
     Detector,
@@ -85,15 +86,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(TypeError):
             Detector(name="Maxipix")
 
-    def test_linearity_function_not_callable(self):
-        with self.assertRaises(TypeError):
-            Maxipix("Maxipix", linearity_func=0)
-
-    def test_linearity_function_callable(self):
-        func = lambda x: x ** 2
-        det = Maxipix("Maxipix", linearity_func=func)
-        self.assertEqual(det._linearity_func, func)
-
     def test_binning_number(self):
         with self.assertRaises(TypeError):
             Maxipix(name="Maxipix", binning=2)
@@ -147,6 +139,15 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_datadir_not_exist(self):
         with self.assertRaises(ValueError):
             Maxipix(name="Maxipix", datadir="this directory does not exist")
+
+    def test_linearity_function_not_callable(self):
+        with self.assertRaises(TypeError):
+            Maxipix("Maxipix", linearity_func=0)
+
+    def test_linearity_function_callable(self):
+        func = lambda x: x ** 2
+        det = Maxipix("Maxipix", linearity_func=func)
+        self.assertEqual(det.linearity_func, func)
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
@@ -348,42 +349,30 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", template_imagefile="S")
         self.assertEqual(det.template_imagefile, "S")
 
-
-class TestMaxipix(unittest.TestCase):
-    """Tests related to the Maxipix detector."""
-
-    def setUp(self) -> None:
-        self.det = Maxipix("Maxipix")
-        self.data = np.ones(self.det.unbinned_pixel_number)
-        self.mask = np.zeros(self.det.unbinned_pixel_number)
-
-    def test_unbinned_pixel_number_default(self):
-        self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
-
-    def test_unbinned_pixel_size_default(self):
-        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
-
-    def test_mask_gaps(self):
-        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
-        self.assertTrue(np.all(data[:, 255:261]) == 0)
-        self.assertTrue(np.all(data[255:261, :]) == 0)
-        self.assertTrue(np.all(mask[:, 255:261]) == 1)
-        self.assertTrue(np.all(mask[255:261, :]) == 1)
-
     def test_repr(self):
         self.assertIsInstance(self.det.__repr__(), str)
 
     def test_background_subtraction_correct(self):
         data = np.ones((3, 3))
         background = np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), np.zeros((3, 3)))))
+        self.assertTrue(
+            np.all(
+                np.isclose(
+                    self.det._background_subtraction(data, background), np.zeros((3, 3))
+                )
+            )
+        )
 
     def test_background_subtraction_float(self):
         data = np.ones((3, 3))
         background = 0.5 * np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), background)))
+        self.assertTrue(
+            np.all(
+                np.isclose(
+                    self.det._background_subtraction(data, background), background
+                )
+            )
+        )
 
     def test_background_subtraction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
@@ -406,20 +395,25 @@ class TestMaxipix(unittest.TestCase):
     def test_background_subtraction_none(self):
         data = np.ones((3, 3))
         background = None
-        self.assertTrue(np.all(np.isclose(
-            self.det._background_subtraction(data, background), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._background_subtraction(data, background), data))
+        )
 
     def test_flatfield_correction_correct(self):
         data = np.ones((3, 3))
         flatfield = np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._flatfield_correction(data, flatfield), data))
+        )
 
     def test_flatfield_correction_float(self):
         data = np.ones((3, 3))
         flatfield = 0.5 * np.ones((3, 3))
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), flatfield)))
+        self.assertTrue(
+            np.all(
+                np.isclose(self.det._flatfield_correction(data, flatfield), flatfield)
+            )
+        )
 
     def test_flatfield_correction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
@@ -442,8 +436,235 @@ class TestMaxipix(unittest.TestCase):
     def test_flatfield_correction_none(self):
         data = np.ones((3, 3))
         flatfield = None
-        self.assertTrue(np.all(np.isclose(
-            self.det._flatfield_correction(data, flatfield), data)))
+        self.assertTrue(
+            np.all(np.isclose(self.det._flatfield_correction(data, flatfield), data))
+        )
+
+    def test_hotpixels_correction_correct(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        output = self.det._hotpixels_correction(data, mask, hotpixels)
+        self.assertTrue(np.all(np.isclose(output[0], np.zeros((3, 3)))))
+        self.assertTrue(np.all(np.isclose(output[1], np.ones((3, 3)))))
+
+    def test_hotpixels_correction_wrong_ndim(self):
+        data = np.ones((3, 3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_type(self):
+        data = 5
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        with self.assertRaises(TypeError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_shape(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 4))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_value(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = 2 * np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_none(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = None
+        output = self.det._hotpixels_correction(data, mask, hotpixels)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_linearity_correction_correct(self):
+        func = lambda x: x ** 2
+        data = np.ones((3, 3))
+        self.det.linearity_func = func
+        self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
+
+    def test_linearity_correction_zero(self):
+        func = lambda x: x - x
+        data = np.ones((3, 3))
+        self.det.linearity_func = func
+        self.assertTrue(
+            np.all(np.isclose(self.det._linearity_correction(data), np.zeros((3, 3))))
+        )
+
+    def test_linearity_correction_none(self):
+        data = np.ones((3, 3))
+        self.det.linearity_func = None
+        self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
+
+    def test_linearity_correction_wrong_ndim(self):
+        func = lambda x: x ** 2
+        data = np.ones((3, 3, 3))
+        self.det.linearity_func = func
+        with self.assertRaises(ValueError):
+            self.det._linearity_correction(data)
+
+    def test_mask_detector_correct(self):
+        det = Timepix("Timepix")
+        data = np.ones(det.unbinned_pixel_number)
+        mask = np.zeros(det.unbinned_pixel_number)
+        output = det.mask_detector(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_mask_detector_wrong_type(self):
+        data = 1
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(TypeError):
+            self.det.mask_detector(data, mask)
+
+    def test_mask_detector_wrong_ndim(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
+    def test_mask_detector_shape_mismatch(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 4))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
+    def test_mask_detector_invalid_shape(self):
+        """Shape of Maxipix is (516, 516)."""
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        with self.assertRaises(ValueError):
+            self.det.mask_detector(data, mask)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class(self):
+        det = Detector("Maxipix")
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 1))
+        output = det._mask_gaps(data, mask)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_ndim(self):
+        det = Detector("Maxipix")
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 1, 3))
+        with self.assertRaises(ValueError):
+            det._mask_gaps(data, mask)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_type(self):
+        det = Detector("Maxipix")
+        data = 1
+        mask = np.zeros((1, 1))
+        with self.assertRaises(TypeError):
+            det._mask_gaps(data, mask)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_shape(self):
+        det = Detector("Maxipix")
+        data = np.ones((1, 1))
+        mask = np.zeros((1, 2))
+        with self.assertRaises(ValueError):
+            det._mask_gaps(data, mask)
+
+    def test_saturation_correction_above(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], np.zeros(data.shape))))
+        self.assertTrue(np.all(np.isclose(output[1], np.ones(data.shape))))
+
+    def test_saturation_correction_edge_case(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 10
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_saturation_correction_shape_mismatch(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 4))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_wrong_ndim(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_wrong_type(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(TypeError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_nbframes_2(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=2)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_saturation_correction_nbframes_wrong_type(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(TypeError):
+            det._saturation_correction(data, mask, nb_frames=2.0)
+
+    def test_saturation_correction_nbframes_wrong_value(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=0)
+
+
+class TestMaxipix(unittest.TestCase):
+    """Tests related to the Maxipix detector."""
+
+    def setUp(self) -> None:
+        self.det = Maxipix("Maxipix")
+        self.data = np.ones(self.det.unbinned_pixel_number)
+        self.mask = np.zeros(self.det.unbinned_pixel_number)
+
+    def test_unbinned_pixel_number_default(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
+
+    def test_unbinned_pixel_size_default(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_mask_gaps(self):
+        data, mask = self.det._mask_gaps(data=self.data, mask=self.mask)
+        self.assertTrue(np.all(data[:, 255:261]) == 0)
+        self.assertTrue(np.all(data[255:261, :]) == 0)
+        self.assertTrue(np.all(mask[:, 255:261]) == 1)
+        self.assertTrue(np.all(mask[255:261, :]) == 1)
+
 
 class TestEiger2M(unittest.TestCase):
     """Tests related to the Eiger2M detector."""
