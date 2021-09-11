@@ -1229,6 +1229,94 @@ def line(x_array, a, b):
     return a * x_array + b
 
 
+def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
+    """
+    Normalize array using the monitor values.
+
+    :param array: the 3D array to be normalized
+    :param monitor: the monitor values
+    :param savedir: path where to save the debugging figure
+    :param norm_to_min: bool, True to normalize to min(monitor) instead of max(monitor),
+     avoid multiplying the noise
+    :param debugging: bool, True to see plots
+    :return:
+
+     - normalized dataset
+     - updated monitor
+     - a title for plotting
+
+    """
+    valid.valid_ndarray(arrays=array, ndim=3)
+    ndim = array.ndim
+    nbz, nby, nbx = array.shape
+    original_max = None
+    original_data = None
+
+    if ndim != 3:
+        raise ValueError("Array should be 3D")
+
+    if debugging:
+        original_data = np.copy(array)
+        original_max = original_data.max()
+        original_data[original_data < 5] = 0  # remove the background
+        original_data = original_data.sum(
+            axis=1
+        )  # the first axis is the normalization axis
+
+    print(
+        "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
+            monitor.min(), monitor.max(), monitor.mean()
+        )
+    )
+
+    if norm_to_min:
+        print("Data normalization by monitor.min()/monitor\n")
+        monitor = monitor.min() / monitor  # will divide higher intensities
+    else:  # norm to max
+        print("Data normalization by monitor.max()/monitor\n")
+        monitor = monitor.max() / monitor  # will multiply lower intensities
+
+    nbz = array.shape[0]
+    if len(monitor) != nbz:
+        raise ValueError(
+            "The frame number and the monitor data length are different:",
+            f"got {nbz} frames but {len(monitor)} monitor values",
+        )
+
+    for idx in range(nbz):
+        array[idx, :, :] = array[idx, :, :] * monitor[idx]
+
+    if debugging:
+        norm_data = np.copy(array)
+        # rescale norm_data to original_data for easier comparison
+        norm_data = norm_data * original_max / norm_data.max()
+        norm_data[norm_data < 5] = 0  # remove the background
+        norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
+        fig = gu.combined_plots(
+            tuple_array=(monitor, original_data, norm_data),
+            tuple_sum_frames=False,
+            tuple_colorbar=False,
+            tuple_vmin=(np.nan, 0, 0),
+            tuple_vmax=np.nan,
+            tuple_title=(
+                "monitor.min() / monitor",
+                "Before norm (thres. 5)",
+                "After norm (thres. 5)",
+            ),
+            tuple_scale=("linear", "log", "log"),
+            xlabel=("Frame number", "Detector X", "Detector X"),
+            is_orthogonal=False,
+            ylabel=("Counts (a.u.)", "Frame number", "Frame number"),
+            position=(211, 223, 224),
+            reciprocal_space=True,
+        )
+        if savedir is not None:
+            fig.savefig(savedir + f"monitor_{nbz}_{nby}_{nbx}.png")
+        plt.close(fig)
+
+    return array, monitor
+
+
 def plane(xy_array, a, b, c):
     """
     Return z values such that z = a*x + b*y + c.
