@@ -445,6 +445,51 @@ class TestMaxipix(unittest.TestCase):
         self.assertTrue(np.all(np.isclose(
             self.det._flatfield_correction(data, flatfield), data)))
 
+    def test_hotpixels_correction_correct(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        output = self.det._hotpixels_correction(data, mask, hotpixels)
+        self.assertTrue(np.all(np.isclose(output[0], np.zeros((3, 3)))))
+        self.assertTrue(np.all(np.isclose(output[1], np.ones((3, 3)))))
+
+    def test_hotpixels_correction_wrong_ndim(self):
+        data = np.ones((3, 3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_type(self):
+        data = 5
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 3))
+        with self.assertRaises(TypeError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_shape(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = np.ones((3, 4))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_wrong_value(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = 2 * np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._hotpixels_correction(data, mask, hotpixels)
+
+    def test_hotpixels_correction_none(self):
+        data = np.ones((3, 3))
+        mask = np.zeros((3, 3))
+        hotpixels = None
+        output = self.det._hotpixels_correction(data, mask, hotpixels)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+
 class TestEiger2M(unittest.TestCase):
     """Tests related to the Eiger2M detector."""
 
