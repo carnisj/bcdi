@@ -111,11 +111,9 @@ save_asint = (
 ###############################
 # beamline related parameters #
 ###############################
-beamline = (
-    "P10"  # name of the beamline, used for data loading and normalization by monitor
-)
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-rocking_angle = "inplane"  # "outofplane" or "inplane"
+beamline = "P10_SAXS"
+# name of the beamline, used for data loading and normalization by monitor
+# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'P10_SAXS'
 is_series = True  # specific to series measurement at P10
 
 custom_scan = False  # set it to True for a stack of images acquired without scan,
@@ -433,7 +431,7 @@ setup = Setup(
     beamline=beamline,
     detector=detector,
     energy=energy,
-    rocking_angle=rocking_angle,
+    rocking_angle="inplane",
     distance=sdd,
     direct_beam=direct_beam,
     custom_scan=custom_scan,
