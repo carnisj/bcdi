@@ -728,14 +728,14 @@ def load_cdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"photon_threshold"},
-        name="preprocessing_utils.load_cdi_data",
+        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(
         photon_threshold,
         allowed_types=Real,
         min_included=0,
-        name="preprocessing_utils.load_cdi_data",
+        name="photon_threshold",
     )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
@@ -860,14 +860,14 @@ def reload_cdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"photon_threshold"},
-        name="preprocessing_utils.reload_cdi_data",
+        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(
         photon_threshold,
         allowed_types=Real,
         min_included=0,
-        name="preprocessing_utils.reload_cdi_data",
+        name="photon_threshold",
     )
 
     nbz, nby, nbx = data.shape

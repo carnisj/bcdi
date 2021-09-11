@@ -19,7 +19,7 @@ import os
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 
 matplotlib.use("Qt5Agg")
 
@@ -63,10 +63,9 @@ invert_yaxis = True  # True to inverse the vertical axis
 ###############################
 # beamline related parameters #
 ###############################
-beamline = (
-    "P10"  # name of the beamlisne, used for data loading and normalization by monitor
-)
-# supported beamlines: 'P10' only for now, see preprocessing_utils.get_motor_pos()
+beamline = "P10"
+# name of the beamlisne, used for data loading and normalization by monitor
+# supported beamlines: 'P10' only for now
 is_series = False  # specific to series measurement at P10
 specfile_name = ""
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
@@ -324,7 +323,7 @@ if not (
 #############
 # load data #
 #############
-data, mask, monitor, frames_logical = pru.load_data(
+data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
     logfile=logfile,
     scan_number=scan,
     detector=detector,

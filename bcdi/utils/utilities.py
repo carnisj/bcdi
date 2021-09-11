@@ -1522,7 +1522,7 @@ def primes(number):
     :return: the list of prime dividers of number
     """
     valid.valid_item(
-        number, allowed_types=int, min_excluded=0, name="preprocessing_utils.primes"
+        number, allowed_types=int, min_excluded=0, name="number"
     )
     list_primes = [1]
     i = 2

@@ -18,7 +18,7 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
@@ -194,7 +194,7 @@ flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 
 if not filtered_data:
-    data, _, monitor, frames_logical = pru.load_data(
+    data, _, monitor, frames_logical = setup.diffractometer.load_check_dataset(
         logfile=logfile,
         scan_number=scan,
         detector=detector,
@@ -249,7 +249,7 @@ if numz != nb_frames:
 #######################
 # Find the Bragg peak #
 #######################
-z0, y0, x0 = pru.find_bragg(data, peak_method=peak_method)
+z0, y0, x0 = bu.find_bragg(data, peak_method=peak_method)
 z0 = np.rint(z0).astype(int)
 y0 = np.rint(y0).astype(int)
 x0 = np.rint(x0).astype(int)

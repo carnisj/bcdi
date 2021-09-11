@@ -10,10 +10,9 @@
 BCDI and forward CDI preprocessing.
 
 This package contains:
- - preprocessing_utils: functions related to data loading and preprocessing for BCDI,
-   before phase retrieval.
- - tomography_utils: functions related to data loading and preprocessing for forward
-   CDI 3D datasets, before phase retrieval.
+ - bcdi_utils: functions related to BCDI data preprocessing, before phase retrieval.
+ - cdi_utils: functions related to forward CDI data preprocessing, before phase
+  retrieval.
  - nxsReady, ReadNxs3: modules to load data at SIXS beamline
 
 """

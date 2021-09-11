@@ -14,7 +14,6 @@ import tkinter as tk
 from tkinter import filedialog
 import matplotlib.ticker as ticker
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 from bcdi.utils import image_registration as reg
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util

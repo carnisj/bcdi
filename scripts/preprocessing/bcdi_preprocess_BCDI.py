@@ -26,7 +26,7 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -744,7 +744,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     ]  # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
-            data, mask, frames_logical, monitor = pru.reload_bcdi_data(
+            data, mask, frames_logical, monitor = bu.reload_bcdi_data(
                 logfile=logfile,
                 scan_number=scan_nb,
                 data=data,
@@ -762,7 +762,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         hotpix_array = util.load_hotpixels(hotpixels_file)
         background = util.load_background(background_file)
 
-        data, mask, frames_logical, monitor = pru.load_bcdi_data(
+        data, mask, frames_logical, monitor = bu.load_bcdi_data(
             logfile=logfile,
             scan_number=scan_nb,
             detector=detector,
@@ -878,7 +878,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 # first two arguments in init_area are the direction of the detector,
                 # checked for ID01 and SIXS
 
-                data, mask, q_values, frames_logical = pru.grid_bcdi_xrayutil(
+                data, mask, q_values, frames_logical = bu.grid_bcdi_xrayutil(
                     data=data,
                     mask=mask,
                     scan_number=scan_nb,
@@ -895,7 +895,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 # (qx downstream, qy outboard, qz vertical up)
                 # for reference_axis, the frame is z downstream, y vertical up,
                 # x outboard but the order must be x,y,z
-                data, mask, q_values = pru.grid_bcdi_labframe(
+                data, mask, q_values = bu.grid_bcdi_labframe(
                     data=data,
                     mask=mask,
                     detector=detector,
@@ -959,7 +959,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ########################
     # crop/pad/center data #
     ########################
-    data, mask, pad_width, q_values, frames_logical = pru.center_fft(
+    data, mask, pad_width, q_values, frames_logical = bu.center_fft(
         data=data,
         mask=mask,
         detector=detector,

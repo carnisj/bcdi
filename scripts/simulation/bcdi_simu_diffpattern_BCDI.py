@@ -21,7 +21,6 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 

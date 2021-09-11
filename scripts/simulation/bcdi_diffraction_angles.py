@@ -10,9 +10,8 @@
 import numpy as np
 import xrayutilities as xu
 import sys
-import bcdi.experiment.experiment_utils as exp
+import bcdi.experiment.setup as exp
 import bcdi.simulation.simulation_utils as simu
-import bcdi.preprocessing.preprocessing_utils as pru
 
 helptext = """
 Calculate the position of the Bragg peaks for a material and a particular

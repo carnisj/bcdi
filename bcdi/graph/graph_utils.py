@@ -1968,7 +1968,7 @@ def savefig(
             "legend",
             "text",
         },
-        name="preprocessing_utils.load_monitor",
+        name="kwargs",
     )
     labelbottom = kwargs.get("labelbottom", True)
     labeltop = kwargs.get("labeltop", False)

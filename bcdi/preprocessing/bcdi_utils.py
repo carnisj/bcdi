@@ -281,7 +281,7 @@ def center_fft(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"fix_bragg", "fix_size", "pad_size", "q_values"},
-        name="preprocessing_utils.center_fft",
+        name="kwargs",
     )
     fix_bragg = kwargs.get("fix_bragg", [])
     fix_size = kwargs.get("fix_size", [])
@@ -1067,11 +1067,11 @@ def grid_bcdi_xrayutil(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"follow_bragg"},
-        name="preprocessing_utils.grid_bcdi_xrayutil",
+        name="kwargs",
     )
     follow_bragg = kwargs.get("follow_bragg", False)
     valid.valid_item(
-        follow_bragg, allowed_types=bool, name="preprocessing_utils.grid_bcdi_xrayutil"
+        follow_bragg, allowed_types=bool, name="follow_bragg"
     )
 
     numz, numy, numx = data.shape
@@ -1278,14 +1278,14 @@ def load_bcdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"photon_threshold"},
-        name="preprocessing_utils.load_bcdi_data",
+        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(
         photon_threshold,
         allowed_types=Real,
         min_included=0,
-        name="preprocessing_utils.load_bcdi_data",
+        name="photon_threshold",
     )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
@@ -1404,14 +1404,14 @@ def reload_bcdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"photon_threshold"},
-        name="preprocessing_utils.reload_bcdi_data",
+        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(
         photon_threshold,
         allowed_types=Real,
         min_included=0,
-        name="preprocessing_utils.reload_bcdi_data",
+        name="photon_threshold",
     )
 
     normalize_method = "monitor" if normalize else "skip"

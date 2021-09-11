@@ -25,7 +25,7 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.facet_recognition.facet_utils as fu
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 
@@ -348,7 +348,7 @@ if not reconstructed_data:  # load reciprocal space data
         scan_number=scan, root_folder=root_folder, filename=specfile_name
     )
 
-    data, mask, frames_logical, monitor = pru.load_bcdi_data(
+    data, mask, frames_logical, monitor = bu.load_bcdi_data(
         logfile=logfile,
         scan_number=scan,
         detector=detector,
@@ -358,7 +358,7 @@ if not reconstructed_data:  # load reciprocal space data
         normalize=normalize_flux,
         debugging=debug,
     )
-    data, _, q_values, _ = pru.grid_bcdi_xrayutil(
+    data, _, q_values, _ = bu.grid_bcdi_xrayutil(
         data=data,
         mask=mask,
         scan_number=scan,
