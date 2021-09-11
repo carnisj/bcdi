@@ -2105,8 +2105,8 @@ class DiffractometerNANOMAX(Diffractometer):
     - detector: gamma,delta.
 
     """
-    sample_rotations = ["x-", "y-"],
-    detector_rotations = ["y-", "x-"],
+    sample_rotations = ["x-", "y-"]
+    detector_rotations = ["y-", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
