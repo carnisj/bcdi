@@ -202,12 +202,13 @@ for index, item in enumerate(scans):
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=debug
         )
-        phase = pru.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+        phase = util.wrap(phase, start_angle=-extent_phase / 2,
+                          range_angle=extent_phase)
         phase = phase - phase[zcom, ycom, xcom]
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=debug
         )
-        phase = pru.wrap(
+        phase = util.wrap(
             phase, start_angle=-extent_phase / 2, range_angle=extent_phase
         )  # rewrap after modifying phase
         ref_amp = np.copy(amp)
@@ -223,12 +224,13 @@ for index, item in enumerate(scans):
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=False
         )
-        phase = pru.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+        phase = util.wrap(phase, start_angle=-extent_phase / 2,
+                          range_angle=extent_phase)
         phase = phase - phase[zcom, ycom, xcom]
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=False
         )
-        phase = pru.wrap(
+        phase = util.wrap(
             phase, start_angle=-extent_phase / 2, range_angle=extent_phase
         )  # rewrap after modifying phase
     print(

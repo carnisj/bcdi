@@ -599,7 +599,7 @@ print(
     int(extent_phase),
     "(rad)",
 )
-phase = pru.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(
         phase,
@@ -655,7 +655,7 @@ phase = pu.remove_offset(
 del support
 gc.collect()
 
-phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ##############################################################################
 # average the phase over a window or apodize to reduce noise in strain plots #
@@ -1056,7 +1056,7 @@ phase = pu.remove_offset(
 del support
 gc.collect()
 # Wrap the phase around 0 (no more offset)
-phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #

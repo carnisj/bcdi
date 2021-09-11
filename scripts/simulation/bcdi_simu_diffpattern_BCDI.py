@@ -225,7 +225,7 @@ if debug and not flat_phase:
         title="Phase before wrapping\n",
     )
 
-phase = pru.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
+phase = util.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
 
 support[abs(amp) < support_threshold * abs(amp).max()] = 0
 del amp

@@ -2066,3 +2066,15 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
             if number % k != 0:
                 return False
     return True
+
+
+def wrap(obj, start_angle, range_angle):
+    """
+    Wrap obj between start_angle and (start_angle + range_angle).
+
+    :param obj: number or array to be wrapped
+    :param start_angle: start angle of the range
+    :param range_angle: range
+    :return: wrapped angle in [start_angle, start_angle+range[
+    """
+    return (obj - start_angle + range_angle) % range_angle + start_angle

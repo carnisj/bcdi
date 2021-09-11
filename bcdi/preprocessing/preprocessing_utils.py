@@ -2036,18 +2036,6 @@ def reload_bcdi_data(
     return data, mask, frames_logical, monitor
 
 
-def wrap(obj, start_angle, range_angle):
-    """
-    Wrap obj between start_angle and (start_angle + range_angle).
-
-    :param obj: number or array to be wrapped
-    :param start_angle: start angle of the range
-    :param range_angle: range
-    :return: wrapped angle in [start_angle, start_angle+range[
-    """
-    return (obj - start_angle + range_angle) % range_angle + start_angle
-
-
 def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
     """
     Pad obj with zeros.
