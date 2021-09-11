@@ -503,6 +503,12 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertTrue(np.all(np.isclose(output[0], data)))
         self.assertTrue(np.all(np.isclose(output[1], mask)))
 
+    def test_mask_detector_wrong_type(self):
+        data = 1
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(TypeError):
+            self.det.mask_detector(data, mask)
+
     def test_mask_detector_wrong_ndim(self):
         data = np.ones((3, 3))
         mask = np.zeros((3, 3, 3))
@@ -540,6 +546,14 @@ class TestDetector(fake_filesystem_unittest.TestCase):
             det._mask_gaps(data, mask)
 
     @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
+    def test_mask_gaps_base_class_wrong_type(self):
+        det = Detector("Maxipix")
+        data = 1
+        mask = np.zeros((1, 1))
+        with self.assertRaises(TypeError):
+            det._mask_gaps(data, mask)
+
+    @patch("bcdi.experiment.detector.Detector.__abstractmethods__", set())
     def test_mask_gaps_base_class_wrong_shape(self):
         det = Detector("Maxipix")
         data = np.ones((1, 1))
@@ -547,6 +561,72 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(ValueError):
             det._mask_gaps(data, mask)
 
+    def test_saturation_correction_above(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], np.zeros(data.shape))))
+        self.assertTrue(np.all(np.isclose(output[1], np.ones(data.shape))))
+
+    def test_saturation_correction_edge_case(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 10
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_saturation_correction_shape_mismatch(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 4))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_wrong_ndim(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3, 3))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_wrong_type(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(TypeError):
+            det._saturation_correction(data, mask, nb_frames=1)
+
+    def test_saturation_correction_nbframes_2(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        output = det._saturation_correction(data, mask, nb_frames=2)
+        self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_saturation_correction_nbframes_wrong_type(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(TypeError):
+            det._saturation_correction(data, mask, nb_frames=2.0)
+
+    def test_saturation_correction_nbframes_wrong_value(self):
+        det = Maxipix("Maxipix")
+        det.saturation_threshold = 10
+        data = np.ones((3, 3)) * 11
+        mask = np.zeros((3, 3))
+        with self.assertRaises(ValueError):
+            det._saturation_correction(data, mask, nb_frames=0)
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""

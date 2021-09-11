@@ -593,7 +593,9 @@ class Detector(ABC):
         """
         Mask pixels above a certain threshold.
 
-        This is detector dependent.
+        This is detector dependent. If a 2D frames was obtained by summing a series of
+        frames (e.g. series measurement at P10), the threshold is multiplied
+        accordingly.
 
         :param data: a 2D numpy array
         :param mask: a 2D numpy array of the same shape as data
