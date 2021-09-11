@@ -263,6 +263,45 @@ class TestMaxipix(unittest.TestCase):
         self.assertTrue(np.all(mask[:, 255:261]) == 1)
         self.assertTrue(np.all(mask[255:261, :]) == 1)
 
+    def test_repr(self):
+        self.assertIsInstance(self.det.__repr__(), str)
+
+    def test_background_subtraction_correct(self):
+        data = np.ones((3, 3))
+        background = np.ones((3, 3))
+        self.assertTrue(np.all(np.isclose(
+            self.det._background_subtraction(data, background), np.zeros((3, 3)))))
+
+    def test_background_subtraction_float(self):
+        data = np.ones((3, 3))
+        background = 0.5 * np.ones((3, 3))
+        self.assertTrue(np.all(np.isclose(
+            self.det._background_subtraction(data, background), background)))
+
+    def test_background_wrong_ndim(self):
+        data = np.ones((3, 3, 3))
+        background = 0.5 * np.ones((3, 3))
+        with self.assertRaises(ValueError):
+            self.det._background_subtraction(data, background)
+
+    def test_background_wrong_type(self):
+        data = 5
+        background = 0.5 * np.ones((3, 3))
+        with self.assertRaises(TypeError):
+            self.det._background_subtraction(data, background)
+
+    def test_background_wrong_shape(self):
+        data = np.ones((3, 3))
+        background = 0.5 * np.ones((3, 4))
+        with self.assertRaises(ValueError):
+            self.det._background_subtraction(data, background)
+
+    def test_background_none(self):
+        data = np.ones((3, 3))
+        background = None
+        self.assertTrue(np.all(np.isclose(
+            self.det._background_subtraction(data, background), data)))
+
 
 class TestEiger2M(unittest.TestCase):
     """Tests related to the Eiger2M detector."""

@@ -460,8 +460,6 @@ class Detector(ABC):
         :param background: None or a 2D numpy array
         :return: the corrected data array
         """
-        if data.ndim != 2:
-            raise ValueError("data should be a 2D array")
         if background is not None:
             valid.valid_ndarray((data, background), ndim=2)
             return data - background
@@ -470,7 +468,7 @@ class Detector(ABC):
     @staticmethod
     def _flatfield_correction(data, flatfield):
         """
-        Apply flatfield correction to the data.
+        Apply flatfield correction to the data (multiplication).
 
         :param data: a 2D numpy ndarray
         :param flatfield: None or a 2D numpy array
