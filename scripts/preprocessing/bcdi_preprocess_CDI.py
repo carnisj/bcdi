@@ -25,7 +25,7 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
-import bcdi.preprocessing.tomography_utils as tomo
+import bcdi.preprocessing.cdi_utils as tomo
 import bcdi.utils.validation as valid
 
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt
