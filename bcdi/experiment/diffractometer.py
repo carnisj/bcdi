@@ -805,11 +805,13 @@ class Diffractometer34ID(Diffractometer):
     - detector: delta (inplane), gamma).
 
     """
+    sample_rotations = ["y+", "x+"]
+    detector_rotations = ["y+", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y+", "x+"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -907,11 +909,13 @@ class DiffractometerCRISTAL(Diffractometer):
     - detector: gamma, delta.
 
     """
+    sample_rotations = ["x-", "y+"]
+    detector_rotations = ["y+", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y+"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1341,11 +1345,13 @@ class DiffractometerID01(Diffractometer):
     - detector: nu,del.
 
     """
+    sample_rotations = ["y-", "x-", "y-"]
+    detector_rotations = ["y-", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y-", "x-", "y-"],
-            detector_circles=["y-", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1685,11 +1691,13 @@ class DiffractometerNANOMAX(Diffractometer):
     - detector: gamma,delta.
 
     """
+    sample_rotations = ["x-", "y-"],
+    detector_rotations = ["y-", "x-"],
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y-"],
-            detector_circles=["y-", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1933,11 +1941,13 @@ class DiffractometerP10(Diffractometer):
     - detector: gamma, delta.
 
     """
+    sample_rotations = ["y+", "x-", "z+", "y-"]
+    detector_rotations = ["y+", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y+", "x-", "z+", "y-"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -2294,6 +2304,23 @@ class DiffractometerP10(Diffractometer):
         return monitor
 
 
+class DiffractometerP10SAXS(DiffractometerP10):
+    """
+    Define P10 goniometer for the USAXS setup: 1 sample circle, no detector circle.
+
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+
+    - sample: hpz (also called hprz)
+
+    """
+    sample_rotations = ["y+"]
+    detector_rotations = []
+
+    def __init__(self):
+        super().__init__(sample_offsets=(0,))
+
+
 class DiffractometerSIXS(Diffractometer):
     """
     Define SIXS goniometer: 2 sample circles + 3 detector circles.
@@ -2305,11 +2332,13 @@ class DiffractometerSIXS(Diffractometer):
     - detector: beta, gamma, del.
 
     """
+    sample_rotations = ["x-", "y+"]
+    detector_rotations = ["x-", "y+", "x-"]
 
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y+"],
-            detector_circles=["x-", "y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
