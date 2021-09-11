@@ -6,7 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
-"""Functions related to forward CDI data loading and preprocessing (3D scans)."""
+"""Functions related to forward CDI data preprocessing, before phase retrieval."""
 
 
 import matplotlib.pyplot as plt

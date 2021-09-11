@@ -6,7 +6,7 @@
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
-"""Functions related to data loading and preprocessing, before phase retrieval."""
+"""Functions related to BCDI data preprocessing, before phase retrieval."""
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
