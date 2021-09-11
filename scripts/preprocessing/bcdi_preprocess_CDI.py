@@ -25,7 +25,7 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
-import bcdi.preprocessing.cdi_utils as tomo
+import bcdi.preprocessing.cdi_utils as cdi
 import bcdi.utils.validation as valid
 
 plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt
@@ -570,7 +570,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
-            data, mask, frames_logical, monitor = tomo.reload_cdi_data(
+            data, mask, frames_logical, monitor = cdi.reload_cdi_data(
                 logfile=logfile,
                 scan_number=scan_nb,
                 data=data,
@@ -588,7 +588,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         hotpix_array = util.load_hotpixels(hotpixels_file)
         background = util.load_background(background_file)
 
-        data, mask, frames_logical, monitor = tomo.load_cdi_data(
+        data, mask, frames_logical, monitor = cdi.load_cdi_data(
             logfile=logfile,
             scan_number=scan_nb,
             detector=detector,
@@ -741,7 +741,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             gc.collect()
 
             print("\nGridding the data in the orthonormal laboratory frame")
-            data, mask, q_values, frames_logical = tomo.grid_cdi(
+            data, mask, q_values, frames_logical = cdi.grid_cdi(
                 data=data,
                 mask=mask,
                 logfile=logfile,
