@@ -1202,7 +1202,7 @@ class Setup:
          RegularGridInterpolator
         :return: the interpolated slice, the slice index
         """
-        valid.valid_ndarray(arrays=array, ndim=3)
+        valid.valid_ndarray(arrays=array, ndim=2)
         # position of the experimental data points
         number_x = array.shape[1]
         rgi = RegularGridInterpolator(
@@ -1228,6 +1228,87 @@ class Setup:
         tmp_array = tmp_array.reshape(interp_angle.shape)
 
         return tmp_array, slice_index
+
+    def ortho_cdi(
+        self,
+        arrays,
+        cdi_angle,
+        fill_value=0,
+        correct_curvature=False,
+        debugging=False,
+    ):
+        """
+        Interpolate forward CDI data in the laboratory frame.
+
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
+         diffraction pattern and mask), in the detector frame
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
+         for the RegularGridInterpolator, same length as the number of arrays
+        :param correct_curvature: bool, True to take into account the curvature of the
+         Ewald sphere (uses griddata, very slow)
+        :param debugging: bool, True to see more plots
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
+         - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
+           downstream, qz is vertical up and qy is outboard.
+         - a tuple of two integersfor the corrected position of the direct beam (V, H)
+
+        """
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_ndarray(arrays, ndim=3)
+        nb_arrays = len(arrays)
+        valid.valid_item(
+            correct_curvature, allowed_types=bool, name="correct_curvature"
+        )
+        valid.valid_item(debugging, allowed_types=bool, name="debugging")
+        if isinstance(fill_value, Real):
+            fill_value = (fill_value,) * nb_arrays
+        valid.valid_container(
+            fill_value,
+            container_types=(tuple, list, np.ndarray),
+            length=nb_arrays,
+            item_types=Real,
+            name="fill_value",
+        )
+
+        #####################################################
+        # recalculate the direct beam position with binning #
+        #####################################################
+        directbeam_y = int(
+            (self.direct_beam[0] - self.detector.roi[0]) / self.detector.binning[1]
+        )
+        # vertical
+        directbeam_x = int(
+            (self.direct_beam[1] - self.detector.roi[2]) / self.detector.binning[2]
+        )
+        # horizontal
+        print(
+            "\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
+        )
+
+        #######################################
+        # interpolate the diffraction pattern #
+        #######################################
+        if correct_curvature:
+            arrays, q_values = self.transformation_cdi_ewald(
+                arrays=arrays,
+                direct_beam=(directbeam_y, directbeam_x),
+                cdi_angle=cdi_angle,
+                fill_value=fill_value,
+            )
+        else:
+            arrays, q_values = self.transformation_cdi(
+                arrays=arrays,
+                direct_beam=(directbeam_y, directbeam_x),
+                cdi_angle=cdi_angle,
+                fill_value=fill_value,
+                debugging=debugging,
+            )
+        return arrays, q_values, (directbeam_y, directbeam_x)
 
     def ortho_directspace(
         self,
@@ -1640,87 +1721,6 @@ class Setup:
         if nb_arrays == 1:
             output_arrays = output_arrays[0]  # return the array instead of the tuple
         return output_arrays, voxel_size
-
-    def ortho_cdi(
-        self,
-        cdi_angle,
-        arrays,
-        fill_value=0,
-        correct_curvature=False,
-        debugging=False,
-    ):
-        """
-        Interpolate forward CDI data in the laboratory frame.
-
-        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
-         diffraction pattern and mask), in the detector frame
-        :param cdi_angle: 1D array of measurement angles in degrees
-        :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
-         for the RegularGridInterpolator, same length as the number of arrays
-        :param correct_curvature: bool, True to take into account the curvature of the
-         Ewald sphere (uses griddata, very slow)
-        :param debugging: bool, True to see more plots
-        :return:
-         - an array (if a single array was provided) or a tuple of arrays interpolated
-           on an orthogonal grid (same length as the number of input arrays)
-         - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
-           downstream, qz is vertical up and qy is outboard.
-         - a tuple of two integersfor the corrected position of the direct beam (V, H)
-
-        """
-        #########################
-        # check some parameters #
-        #########################
-        valid.valid_ndarray(arrays, ndim=3)
-        nb_arrays = len(arrays)
-        valid.valid_item(
-            correct_curvature, allowed_types=bool, name="correct_curvature"
-        )
-        valid.valid_item(debugging, allowed_types=bool, name="debugging")
-        if isinstance(fill_value, Real):
-            fill_value = (fill_value,) * nb_arrays
-        valid.valid_container(
-            fill_value,
-            container_types=(tuple, list, np.ndarray),
-            length=nb_arrays,
-            item_types=Real,
-            name="fill_value",
-        )
-
-        #####################################################
-        # recalculate the direct beam position with binning #
-        #####################################################
-        directbeam_y = int(
-            (self.direct_beam[0] - self.detector.roi[0]) / self.detector.binning[1]
-        )
-        # vertical
-        directbeam_x = int(
-            (self.direct_beam[1] - self.detector.roi[2]) / self.detector.binning[2]
-        )
-        # horizontal
-        print(
-            "\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
-        )
-
-        #######################################
-        # interpolate the diffraction pattern #
-        #######################################
-        if correct_curvature:
-            arrays, q_values = self.transformation_cdi_ewald(
-                arrays=arrays,
-                direct_beam=(directbeam_y, directbeam_x),
-                cdi_angle=cdi_angle,
-                fill_value=fill_value,
-            )
-        else:
-            arrays, q_values = self.transformation_cdi(
-                arrays=arrays,
-                direct_beam=(directbeam_y, directbeam_x),
-                cdi_angle=cdi_angle,
-                fill_value=fill_value,
-                debugging=debugging,
-            )
-        return arrays, q_values, (directbeam_y, directbeam_x)
 
     def ortho_reciprocal(
         self,

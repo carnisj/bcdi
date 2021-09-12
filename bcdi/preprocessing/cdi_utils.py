@@ -427,20 +427,20 @@ def grid_cdi(
     """
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-    if setup.beamline == "P10":
+    if setup.beamline == "P10_SAXS":
         if setup.rocking_angle == "inplane":
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle = setup.diffractometer.motor_positions(
+                cdi_angle, _ = setup.diffractometer.motor_positions(
                     setup=setup, logfile=logfile
-                )
+                )  # second return value is the X-ray energy
         else:
             raise ValueError(
                 "out-of-plane rotation not yet implemented for forward CDI data"
             )
     else:
-        raise ValueError("Not yet implemented for beamlines other than P10")
+        raise NotImplementedError("Not yet implemented for beamlines other than P10")
 
     data, mask, cdi_angle, frames_logical = check_cdi_angle(
         data=data,
@@ -457,12 +457,10 @@ def grid_cdi(
 
     (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_cdi(
         arrays=(data, mask),
+        cdi_angle=cdi_angle,
         fill_value=fill_value,
         correct_curvature=correct_curvature,
-        verbose=True,
         debugging=debugging,
-        scale=("log", "linear"),
-        title=("data", "mask"),
     )
     qx, qz, qy = q_values
 
@@ -589,6 +587,7 @@ def load_cdi_data(
     scan_number,
     detector,
     setup,
+    bin_during_loading=False,
     flatfield=None,
     hotpixels=None,
     background=None,
@@ -607,6 +606,7 @@ def load_cdi_data(
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
+    :param bin_during_loading: True to bin the data during loading (faster)
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
@@ -625,6 +625,7 @@ def load_cdi_data(
      - the monitor values used for the intensity normalization
 
     """
+    valid.valid_item(bin_during_loading, allowed_types=bool, name="bin_during_loading")
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -644,6 +645,7 @@ def load_cdi_data(
         scan_number=scan_number,
         detector=detector,
         setup=setup,
+        bin_during_loading=bin_during_loading,
         flatfield=flatfield,
         hotpixels=hotpixels,
         background=background,

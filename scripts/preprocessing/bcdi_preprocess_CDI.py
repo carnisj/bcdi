@@ -28,9 +28,6 @@ import bcdi.utils.utilities as util
 import bcdi.preprocessing.cdi_utils as cdi
 import bcdi.utils.validation as valid
 
-plt.switch_backend("Qt5Agg")  # "Qt5Agg" or "Qt4Agg" depending on the version of Qt
-# installer, bug with Tk
-
 helptext = """
 Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize,
 filter and regrid the data. Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL,
@@ -45,18 +42,18 @@ Output files are saved in:
 """
 
 scans = [22]  # list or array of scan numbers
-root_folder = "D:/data/P10_August2019_CDI/data/"
-save_dir = "D:/data/P10_August2019_CDI/test/"
+root_folder = "C:/Users/Jerome/Documents/data/dataset_P10_saxs/"
+save_dir = root_folder + "test/"
 # images will be saved here, leave it to None otherwise
 # (default to data directory's parent)
-sample_name = [
-    "gold_2_2_2"
-]  # "S"  # # list of sample names. If only one name is indicated,
+sample_name = "gold_2_2_2"
+# "S"  # # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 1, 1]  # binning that will be used for phasing
+binning = [1, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
+bin_during_loading = False  # True to bin during loading, faster
 ##############################
 # parameters used in masking #
 ##############################
@@ -67,7 +64,7 @@ background_plot = (
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_method = "skip"  # 'skip' for no normalization,
+normalize_method = "monitor"  # 'skip' for no normalization,
 # 'monitor' to use the default monitor, 'sum_roi' to normalize
 # by the intensity summed in normalize_roi
 normalize_roi = None
@@ -90,14 +87,10 @@ medfilt_order = 8  # for custom median filter,
 # parameters used when reloading processed data #
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
-reload_orthogonal = (
-    False  # True if the reloaded data is already intepolated in an orthonormal frame
-)
-preprocessing_binning = [
-    1,
-    1,
-    1,
-]  # binning factors in each dimension of the binned data to be reloaded
+reload_orthogonal = False
+# True if the reloaded data is already intepolated in an orthonormal frame
+preprocessing_binning = (1, 1, 1)
+# binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
 ##################
@@ -105,9 +98,9 @@ save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_npz = True  # True to save the processed data in npz format
 save_to_mat = False  # True to save the processed data in mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
-save_asint = (
-    False  # if True, the result will be saved as an array of integers (save space)
-)
+save_asint = False
+# if True, the result will be saved as an array of integers (save space)
+
 ###############################
 # beamline related parameters #
 ###############################
@@ -134,10 +127,8 @@ specfile_name = ""
 # detector related parameters #
 ###############################
 detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-direct_beam = (
-    1349,
-    1321,
-)  # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
+direct_beam = (1349, 1321)
+# tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
 # unbinned detector.
 # This parameter is important for gridding the data onto the laboratory frame.
 roi_detector = [
@@ -154,12 +145,9 @@ photon_filter = "loading"  # 'loading' or 'postprocessing',
 # if 'loading', it is applied before binning;
 # if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
-hotpixels_file = (
-    None  # root_folder + 'hotpixels_HS4670.npz'  # non empty file path or None
-)
-flatfield_file = (
-    None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-)
+hotpixels_file = root_folder + 'hotpixels.npz'  # non empty file path or None
+flatfield_file = None
+# root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 template_imagefile = "_master.h5"  # ''_data_%06d.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
@@ -173,14 +161,13 @@ template_imagefile = "_master.h5"  # ''_data_%06d.h5'
 ######################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame
 # True for using data in detector frame
-fill_value_mask = 0  # 0 (not masked) or 1 (masked).
+fill_value_mask = 1  # 0 (not masked) or 1 (masked).
 # It will define how the pixels outside of the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
 # phase retrieval converges better if the pixels are not masked (0 intensity
 # imposed). The data is by default set to 0 outside of the defined range.
-correct_curvature = (
-    False  # True to correcture q values for the curvature of Ewald sphere
-)
+correct_curvature = False
+# True to correcture q values for the curvature of Ewald sphere
 fit_datarange = True  # if True, crop the final array within data range,
 # avoiding areas at the corners of the window viewed from the top, data is circular,
 # but the interpolation window is rectangular, with nan values outside of data
@@ -593,6 +580,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             scan_number=scan_nb,
             detector=detector,
             setup=setup,
+            bin_during_loading=bin_during_loading,
             flatfield=flatfield,
             hotpixels=hotpix_array,
             background=background,
