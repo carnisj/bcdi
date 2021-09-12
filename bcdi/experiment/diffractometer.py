@@ -782,7 +782,7 @@ class Diffractometer(ABC):
             min(detector.nb_pixel_x, detector.roi[3]),
         ]
 
-        # initialize the data array
+        # initialize the data array, the mask is binned afterwards in load_check_dataset
         if bin_during_loading:
             print(
                 "Binning the data: detector vertical axis by",
@@ -978,13 +978,13 @@ class Diffractometer(ABC):
                 print("Skip intensity normalization")
             else:
                 print("Intensity normalization using " + normalize)
-            data, monitor = normalize_dataset(
-                array=data,
-                monitor=monitor,
-                norm_to_min=True,
-                savedir=detector.savedir,
-                debugging=debugging,
-            )
+                data, monitor = normalize_dataset(
+                    array=data,
+                    monitor=monitor,
+                    norm_to_min=True,
+                    savedir=detector.savedir,
+                    debugging=debugging,
+                )
 
         return data, mask3d, monitor, frames_logical.astype(int)
 
@@ -1207,6 +1207,7 @@ class Diffractometer(ABC):
            accordingly.
 
         """
+        # TODO implement this
         if frames_pattern is None:
             frames_pattern = np.ones(data.shape[0], dtype=int)
         valid.valid_1d_array(
