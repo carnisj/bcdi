@@ -9,11 +9,14 @@
 
 """Setup class that defines the experimental geometry."""
 from collections.abc import Sequence
+import datetime
 import gc
+import multiprocessing as mp
 from numbers import Real, Integral
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
-
+from scipy.interpolate import griddata, RegularGridInterpolator
+import sys
+import time
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -815,7 +818,7 @@ class Setup:
                 title=title + " before interpolation\n",
             )
 
-        ortho_matrix, _ = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_bcdi(
             array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
             pixel_x=self.detector.unbinned_pixel_size[1],
@@ -883,6 +886,142 @@ class Setup:
             )
 
         return detector_obj
+
+    def grid_cylindrical(
+        self,
+        array,
+        rotation_angle,
+        direct_beam,
+        interp_angle,
+        interp_radius,
+        fill_value=np.nan,
+        comment="",
+        multiprocessing=False,
+    ):
+        """
+        Interpolate a tomographic dataset onto cartesian coordinates.
+
+        The initial 3D array is in cylindrical coordinates. There is no benefit from
+        multiprocessing, the data transfers are the limiting factor.
+
+        :param array: 3D array of intensities measured in the detector frame
+        :param rotation_angle: array, rotation angle values for the rocking scan
+        :param direct_beam: position in pixels of the rotation pivot in the direction
+         perpendicular to the rotation axis
+        :param interp_angle: 2D array, polar angles for the interpolation in a plane
+         perpendicular to the rotation axis
+        :param interp_radius: 2D array, polar radii for the interpolation in a plane
+         perpendicular to the rotation axis
+        :param fill_value: real number (np.nan allowed), fill_value parameter for the
+         RegularGridInterpolator
+        :param comment: a comment to be printed
+        :param multiprocessing: True to use multiprocessing
+        :return: the 3D array interpolated onto the 3D cartesian grid
+        """
+        valid.valid_ndarray(arrays=array, ndim=3)
+
+        def collect_result(result):
+            """
+            Process the result after asynchronous multiprocessing.
+
+            This callback function updates global arrays.
+
+            :param result: the output of interp_slice, containing the 2d interpolated
+             slice and the slice index
+            """
+            nonlocal interp_array, number_y, slices_done
+            slices_done = slices_done + 1
+            # result is a tuple: data, mask, counter, file_index
+            # stack the 2D interpolated frame along the rotation axis,
+            # taking into account the flip of the detector Y axis (pointing down)
+            # compare to the laboratory frame vertical axis (pointing up)
+            interp_array[:, number_y - (result[1] + 1), :] = result[0]
+            sys.stdout.write(
+                "\r    gridding progress: {:d}%".format(
+                    int(slices_done / number_y * 100)
+                )
+            )
+            sys.stdout.flush()
+
+        rotation_step = rotation_angle[1] - rotation_angle[0]
+        if rotation_step < 0:
+            # flip rotation_angle and the data accordingly, RegularGridInterpolator
+            # takes only increasing position vectors
+            rotation_angle = np.flip(rotation_angle)
+            array = np.flip(array, axis=0)
+
+        _, number_y, _ = array.shape
+        _, numx = interp_angle.shape  # data shape is (numx, numx) by construction
+        interp_array = np.zeros((numx, number_y, numx), dtype=array.dtype)
+        slices_done = 0
+
+        start = time.time()
+        if multiprocessing:
+            print(
+                "\nGridding",
+                comment,
+                ", number of processors used: ",
+                min(mp.cpu_count(), number_y),
+            )
+            mp.freeze_support()
+            pool = mp.Pool(
+                processes=min(mp.cpu_count(), number_y)
+            )  # use this number of processesu
+
+            for idx in range(number_y):
+                pool.apply_async(
+                    self.interp_2dslice,
+                    args=(
+                        array[:, idx, :],
+                        idx,
+                        rotation_angle,
+                        direct_beam,
+                        interp_angle,
+                        interp_radius,
+                        fill_value,
+                    ),
+                    callback=collect_result,
+                    error_callback=util.catch_error,
+                )
+                # interp_2dslice must be a pickable object,
+                # i.e. defined at the top level of the module
+
+            pool.close()
+            pool.join()
+            # postpones the execution of next line of code until all processes
+            # in the queue are done.
+
+        else:  # no multiprocessing
+            print("\nGridding", comment, ", no multiprocessing")
+            for idx in range(
+                number_y
+            ):  # loop over 2D frames perpendicular to the rotation axis
+                temp_array, _ = self.interp_2dslice(
+                    array=array[:, idx, :],
+                    slice_index=idx,
+                    rotation_angle=rotation_angle,
+                    direct_beam=direct_beam,
+                    interp_angle=interp_angle,
+                    interp_radius=interp_radius,
+                    fill_value=fill_value,
+                )
+
+                # stack the 2D interpolated frame along the rotation axis,
+                # taking into account the flip of the
+                # detector Y axis (pointing down) compare to the laboratory frame
+                # vertical axis (pointing up)
+                interp_array[:, number_y - (idx + 1), :] = temp_array
+                sys.stdout.write(
+                    "\rGridding progress: {:d}%".format(int((idx + 1) / number_y * 100))
+                )
+                sys.stdout.flush()
+
+        end = time.time()
+        print(
+            "\nTime ellapsed for gridding data:",
+            str(datetime.timedelta(seconds=int(end - start))),
+        )
+        return interp_array
 
     def init_paths(
         self,
@@ -1033,6 +1172,62 @@ class Setup:
             offset_inplane=self.offset_inplane,
             diffractometer=self.diffractometer,
         )
+
+    @staticmethod
+    def interp_2dslice(
+        array,
+        slice_index,
+        rotation_angle,
+        direct_beam,
+        interp_angle,
+        interp_radius,
+        fill_value,
+    ):
+        """
+        Interpolate a 2D slice from a tomographic dataset onto cartesian coordinates.
+
+        The initial 3D array is in cylindrical coordinates.
+
+        :param array: 3D array of intensities measured in the detector frame
+        :param slice_index: the index along the rotation axis of the 2D slice in array
+         to interpolate
+        :param rotation_angle: array, rotation angle values for the rocking scan
+        :param direct_beam: position in pixels of the rotation pivot in the direction
+         perpendicular to the rotation axis
+        :param interp_angle: 2D array, polar angles for the interpolation in a plane
+         perpendicular to the rotation axis
+        :param interp_radius: 2D array, polar radii for the interpolation in a plane
+         perpendicular to the rotation axis
+        :param fill_value: real number (np.nan allowed), fill_value parameter for the
+         RegularGridInterpolator
+        :return: the interpolated slice, the slice index
+        """
+        valid.valid_ndarray(arrays=array, ndim=3)
+        # position of the experimental data points
+        number_x = array.shape[1]
+        rgi = RegularGridInterpolator(
+            (
+                rotation_angle * np.pi / 180,
+                np.arange(-direct_beam, -direct_beam + number_x, 1),
+            ),
+            array,
+            method="linear",
+            bounds_error=False,
+            fill_value=fill_value,
+        )
+
+        # interpolate the data onto the new points
+        tmp_array = rgi(
+            np.concatenate(
+                (
+                    interp_angle.reshape((1, interp_angle.size)),
+                    interp_radius.reshape((1, interp_angle.size)),
+                )
+            ).transpose()
+        )
+        tmp_array = tmp_array.reshape(interp_angle.shape)
+
+        return tmp_array, slice_index
 
     def ortho_directspace(
         self,
@@ -1274,7 +1469,7 @@ class Setup:
         ######################################################################
         # calculate the transformation matrix based on the beamline geometry #
         ######################################################################
-        transfer_matrix, _ = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_bcdi(
             array_shape=input_shape,
             tilt_angle=tilt,
             pixel_x=pixel_x,
@@ -1290,7 +1485,7 @@ class Setup:
         rotation_matrix = util.rotation_matrix_3d(
             axis_to_align=reference_axis, reference_axis=q_com / np.linalg.norm(q_com)
         )
-        # rotation_matrix = np.identity(3)
+
         ################################################
         # calculate the full transfer matrix including #
         # the rotation into the crystal frame          #
@@ -1446,6 +1641,87 @@ class Setup:
             output_arrays = output_arrays[0]  # return the array instead of the tuple
         return output_arrays, voxel_size
 
+    def ortho_cdi(
+        self,
+        cdi_angle,
+        arrays,
+        fill_value=0,
+        correct_curvature=False,
+        debugging=False,
+    ):
+        """
+        Interpolate forward CDI data in the laboratory frame.
+
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
+         diffraction pattern and mask), in the detector frame
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
+         for the RegularGridInterpolator, same length as the number of arrays
+        :param correct_curvature: bool, True to take into account the curvature of the
+         Ewald sphere (uses griddata, very slow)
+        :param debugging: bool, True to see more plots
+        :return:
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
+         - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
+           downstream, qz is vertical up and qy is outboard.
+         - a tuple of two integersfor the corrected position of the direct beam (V, H)
+
+        """
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_ndarray(arrays, ndim=3)
+        nb_arrays = len(arrays)
+        valid.valid_item(
+            correct_curvature, allowed_types=bool, name="correct_curvature"
+        )
+        valid.valid_item(debugging, allowed_types=bool, name="debugging")
+        if isinstance(fill_value, Real):
+            fill_value = (fill_value,) * nb_arrays
+        valid.valid_container(
+            fill_value,
+            container_types=(tuple, list, np.ndarray),
+            length=nb_arrays,
+            item_types=Real,
+            name="fill_value",
+        )
+
+        #####################################################
+        # recalculate the direct beam position with binning #
+        #####################################################
+        directbeam_y = int(
+            (self.direct_beam[0] - self.detector.roi[0]) / self.detector.binning[1]
+        )
+        # vertical
+        directbeam_x = int(
+            (self.direct_beam[1] - self.detector.roi[2]) / self.detector.binning[2]
+        )
+        # horizontal
+        print(
+            "\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
+        )
+
+        #######################################
+        # interpolate the diffraction pattern #
+        #######################################
+        if correct_curvature:
+            arrays, q_values = self.transformation_cdi_ewald(
+                arrays=arrays,
+                direct_beam=(directbeam_y, directbeam_x),
+                cdi_angle=cdi_angle,
+                fill_value=fill_value,
+            )
+        else:
+            arrays, q_values = self.transformation_cdi(
+                arrays=arrays,
+                direct_beam=(directbeam_y, directbeam_x),
+                cdi_angle=cdi_angle,
+                fill_value=fill_value,
+                debugging=debugging,
+            )
+        return arrays, q_values, (directbeam_y, directbeam_x)
+
     def ortho_reciprocal(
         self,
         arrays,
@@ -1586,7 +1862,7 @@ class Setup:
         ##########################################################
         # calculate the transformation matrix (the unit is 1/nm) #
         ##########################################################
-        transfer_matrix, q_offset = self.transformation_matrix(
+        transfer_matrix, q_offset = self.transformation_bcdi(
             array_shape=(nbz, nby, nbx),
             tilt_angle=self.tilt_angle,
             direct_space=False,
@@ -1744,15 +2020,12 @@ class Setup:
         # qx downstream, qz vertical up, qy outboard
         # this assumes that the center of mass of the diffraction pattern
         # was at the center of the array
-        qx = (
-            np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z
-        )  # along z downstream
-        qz = (
-            np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y
-        )  # along y vertical up
-        qy = (
-            np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x
-        )  # along x outboard
+        qx = np.arange(-nz_output // 2, nz_output // 2, 1) * dq_along_z
+        # along z downstream
+        qz = np.arange(-ny_output // 2, ny_output // 2, 1) * dq_along_y
+        # along y vertical up
+        qy = np.arange(-nx_output // 2, nx_output // 2, 1) * dq_along_x
+        # along x outboard
 
         myz, myy, myx = np.meshgrid(qx, qz, qy, indexing="ij")
 
@@ -1877,7 +2150,7 @@ class Setup:
             name="array_shape",
         )
 
-        ortho_matrix, _ = self.transformation_matrix(
+        ortho_matrix, _ = self.transformation_bcdi(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
             pixel_x=pixel_x,
@@ -1908,7 +2181,7 @@ class Setup:
         )
         return new_z, new_y, new_x
 
-    def transformation_matrix(
+    def transformation_bcdi(
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
     ):
         """
@@ -1979,6 +2252,213 @@ class Setup:
         # reciprocal length scale in  1/nm
         return mymatrix, q_offset
 
+    def transformation_cdi(self, arrays, direct_beam, cdi_angle, fill_value, debugging):
+        """
+        Calculate the transformation matrix from detector frame to laboratory frame.
+
+        For the transformation in direct space, the length scale is in nm,
+        for the transformation in reciprocal space, it is in 1/nm.
+
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
+         diffraction pattern and mask), in the detector frame
+        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
+         for the RegularGridInterpolator, same length as the number of arrays
+        :param debugging: bool, True to see more plots
+        :return:
+
+         - a tuple of arrays interpolated on an orthogonal grid (same length as the
+           number of input arrays)
+         - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
+           downstream, qz is vertical up and qy is outboard.
+
+        """
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_ndarray(arrays, ndim=3)
+        valid.valid_container(
+            direct_beam,
+            container_types=(tuple, list),
+            length=2,
+            item_types=int,
+            name="direct_beam",
+        )
+        valid.valid_1d_array(
+            cdi_angle,
+            allowed_types=Real,
+            allow_none=False,
+            name="cdi_angle",
+        )
+        valid.valid_container(
+            fill_value,
+            container_types=(tuple, list),
+            length=2,
+            item_types=Real,
+            name="fill_value",
+        )
+        valid.valid_item(debugging, allowed_types=bool, name="debugging")
+
+        #########################
+        # convert lengths to nm #
+        #########################
+        wavelength = self.wavelength * 1e9
+        distance = self.distance * 1e9
+        pixel_x = self.detector.pixelsize_x * 1e9
+        # binned pixel size in the horizontal direction
+        pixel_y = self.detector.pixelsize_y * 1e9
+        # binned pixel size in the vertical direction
+        lambdaz = wavelength * distance
+
+        nbz, nby, nbx = arrays[0].shape
+        directbeam_y, directbeam_x = direct_beam
+        # calculate the number of voxels available to accomodate the gridded data
+        # directbeam_x and directbeam_y already are already taking into account
+        # the ROI and binning
+        numx = 2 * max(directbeam_x, nbx - directbeam_x)
+        # number of interpolated voxels in the plane perpendicular
+        # to the rotation axis. It will accomodate the full data range.
+        numy = nby  # no change of the voxel numbers along the rotation axis
+        print("\nData shape after regridding:", numx, numy, numx)
+
+        # update the direct beam position due to an eventual padding along X
+        if nbx - directbeam_x < directbeam_x:
+            pivot = directbeam_x
+        else:  # padding to the left along x, need to correct the pivot position
+            pivot = nbx - directbeam_x
+
+        dqx = 2 * np.pi / lambdaz * pixel_x
+        # in 1/nm, downstream, pixel_x is the binned pixel size
+        dqz = 2 * np.pi / lambdaz * pixel_y
+        # in 1/nm, vertical up, pixel_y is the binned pixel size
+        dqy = 2 * np.pi / lambdaz * pixel_x
+        # in 1/nm, outboard, pixel_x is the binned pixel size
+
+        ##########################################
+        # calculation of q based on P10 geometry #
+        ##########################################
+        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
+        # downstream, same direction as detector X rotated by +90deg
+        qz = np.arange(directbeam_y - numy, directbeam_y, 1) * dqz
+        # vertical up opposite to detector Y
+        qy = np.arange(directbeam_x - numx, directbeam_x, 1) * dqy
+        # outboard opposite to detector X
+        print(
+            "q spacing for the interpolation (z,y,x) = "
+            f"({dqx:.6f}, {dqz:.6f},{dqy:.6f}) (1/nm)"
+        )
+
+        ##############################################################
+        # loop over 2D slices perpendicular to the rotation axis     #
+        # slower than doing a 3D interpolation but needs less memory #
+        ##############################################################
+        # find the corresponding polar coordinates of a cartesian 2D grid
+        # perpendicular to the rotation axis
+        interp_angle, interp_radius = self._beamline.cartesian2polar(
+            nb_pixels=numx,
+            pivot=pivot,
+            offset_angle=cdi_angle.min(),
+            debugging=debugging,
+        )
+
+        #################################################
+        # Interpolate the data onto a cartesian 3D grid #
+        #################################################
+        output_arrays = []
+        comment = ("data", "mask")
+        for idx, array in enumerate(arrays):
+            ortho_array = self.grid_cylindrical(
+                array=array,
+                rotation_angle=cdi_angle,
+                direct_beam=directbeam_x,
+                interp_angle=interp_angle,
+                interp_radius=interp_radius,
+                fill_value=fill_value[idx],
+                comment=comment[idx],
+            )
+            output_arrays.append(ortho_array)
+
+        return output_arrays, (qx, qz, qy)
+
+    def transformation_cdi_ewald(self, arrays, direct_beam, cdi_angle, fill_value):
+        """
+        Interpolate forward CDI data considering the curvature of the Ewald sphere.
+
+        :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
+         diffraction pattern and mask), in the detector frame
+         :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
+         for the RegularGridInterpolator, same length as the number of arrays
+        :return:
+        """
+        nbz, nby, nbx = arrays[0].shape
+        directbeam_y, directbeam_x = direct_beam
+        # calculate the number of voxels available to accomodate the gridded data
+        # directbeam_x and directbeam_y already are already taking into account
+        # the ROI and binning
+        numx = 2 * max(directbeam_x, nbx - directbeam_x)
+        # number of interpolated voxels in the plane perpendicular
+        # to the rotation axis. It will accomodate the full data range.
+        numy = nby  # no change of the voxel numbers along the rotation axis
+        print("\nData shape after regridding:", numx, numy, numx)
+
+        # calculate exact q values for each voxel of the 3D dataset
+        old_qx, old_qz, old_qy = self._beamline.ewald_curvature_saxs(
+            wavelength=self.wavelength * 1e9,
+            pixelsize_x=self.detector.pixelsize_x * 1e9,
+            pixelsize_y=self.detector.pixelsize_y * 1e9,
+            distance=self.distance * 1e9,
+            array_shape=(nbz, nby, nbx),
+            cdi_angle=cdi_angle,
+            direct_beam=direct_beam,
+        )
+
+        # create the grid for interpolation
+        qx = np.linspace(
+            old_qx.min(), old_qx.max(), numx, endpoint=False
+        )  # z downstream
+        qz = np.linspace(
+            old_qz.min(), old_qz.max(), numy, endpoint=False
+        )  # y vertical up
+        qy = np.linspace(old_qy.min(), old_qy.max(), numx, endpoint=False)  # x outboard
+
+        new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing="ij")
+
+        ###########################################################
+        # interpolate the data onto the new points using griddata #
+        # (the original grid is not regular, very slow)           #
+        ###########################################################
+        print("Interpolating the data using griddata, will take time...")
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            # convert array type to float,
+            # for integers the interpolation can lead to artefacts
+            array = array.astype(float)
+            ortho_array = griddata(
+                np.array(
+                    [
+                        np.ndarray.flatten(old_qx),
+                        np.ndarray.flatten(old_qz),
+                        np.ndarray.flatten(old_qy),
+                    ]
+                ).T,
+                np.ndarray.flatten(array),
+                np.array(
+                    [
+                        np.ndarray.flatten(new_qx),
+                        np.ndarray.flatten(new_qz),
+                        np.ndarray.flatten(new_qy),
+                    ]
+                ).T,
+                method="linear",
+                fill_value=fill_value[idx],
+            )
+            ortho_array = ortho_array.reshape((numx, numy, numx))
+            output_arrays.append(ortho_array)
+        return output_arrays, (qx, qz, qy)
+
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """
         Calculate the direct space voxel sizes in the laboratory frame.
@@ -2002,7 +2482,7 @@ class Setup:
             name="array_shape",
         )
 
-        transfer_matrix, _ = self.transformation_matrix(
+        transfer_matrix, _ = self.transformation_bcdi(
             array_shape=array_shape,
             tilt_angle=tilt_angle,
             pixel_x=pixel_x,

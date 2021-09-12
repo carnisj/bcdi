@@ -30,6 +30,8 @@ from numbers import Real
 import os
 from silx.io.specfile import SpecFile
 import xrayutilities as xu
+
+from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
 
@@ -421,7 +423,7 @@ class Beamline(ABC):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -598,7 +600,7 @@ class BeamlineCRISTAL(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -906,7 +908,7 @@ class BeamlineID01(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -1206,7 +1208,7 @@ class BeamlineNANOMAX(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -1508,7 +1510,7 @@ class BeamlineP10(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -1690,72 +1692,206 @@ class BeamlineP10SAXS(BeamlineP10):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    def process_positions(
-        self,
-        setup,
-        logfile,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-        follow_bragg=False,
-    ):
+    @staticmethod
+    def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
         """
-        Load and crop/pad motor positions depending on the number of frames at P10.
+        Find the corresponding polar coordinates of a cartesian 2D grid.
 
-        The current number of frames may be different from the original number of frames
-        if the data was cropped/padded, and motor values must be processed accordingly.
+        The grid is assumed perpendicular to the rotation axis.
 
-        :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param nb_frames: the number of frames in the current dataset
-        :param scan_number: the scan number to load
-        :param frames_logical: array of length the number of measured frames.
-         In case of cropping/padding the number of frames changes. A frame whose
-         index is set to 1 means that it is used, 0 means not used, -1 means padded
-         (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
-        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        :param nb_pixels: number of pixels of the axis of the squared grid
+        :param pivot: position in pixels of the origin of the polar coordinates system
+        :param offset_angle: reference angle for the angle wrapping
+        :param debugging: True to see more plots
+        :return: the corresponding 1D array of angular coordinates, 1D array of radial
+         coordinates
         """
+        z_interp, x_interp = np.meshgrid(
+            np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
+            np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
+            indexing="ij",
+        )  # z_interp changes along rows, x_interp along columns
+        # z_interp downstream, same direction as detector X rotated by +90deg
+        # x_interp along outboard opposite to detector X
 
-    def transformation_matrix(
-        self,
+        # map these points to (cdi_angle, X), the measurement polar coordinates
+        interp_angle = util.wrap(
+            obj=np.arctan2(z_interp, -x_interp),
+            start_angle=offset_angle * np.pi / 180,
+            range_angle=np.pi,
+        )  # in radians, located in the range [start_angle, start_angle+np.pi[
+
+        sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
+        sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(
+            interp_angle[x_interp == 0]
+        )
+
+        interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+
+        if debugging:
+            gu.imshow_plot(
+                interp_angle * 180 / np.pi,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="calculated polar angle for the 2D grid",
+            )
+
+            gu.imshow_plot(
+                sign_array,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="sign_array",
+            )
+
+            gu.imshow_plot(
+                interp_radius,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="calculated polar radius for the 2D grid",
+            )
+        return interp_angle, interp_radius
+
+    @staticmethod
+    def ewald_curvature_saxs(
         wavelength,
+        beam_direction,
+        pixelsize_x,
+        pixelsize_y,
         distance,
-        pixel_x,
-        pixel_y,
-        inplane,
-        outofplane,
-        grazing_angle,
-        tilt,
-        rocking_angle,
-        verbose=True,
+        array_shape,
+        cdi_angle,
+        direct_beam,
+        anticlockwise=True,
     ):
         """
-        Calculate the transformation matrix from detector frame to laboratory frame.
+        Calculate q values taking into account the curvature of Ewald sphere.
 
-        For the transformation in direct space, the length scale is in nm,
-        for the transformation in reciprocal space, it is in 1/nm.
+        Based on the CXI detector geometry convention: Laboratory frame: z downstream,
+        y vertical up, x outboard. Detector axes: Y vertical and X horizontal
+        (detector Y is vertical down at out-of-plane angle=0, detector X is opposite
+        to x at inplane angle=0)
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
+        :param beam_direction: direction of the incident X-ray beam.
         :param distance: detector distance in nm
-        :param pixel_x: horizontal detector pixel size in nm
-        :param pixel_y: vertical detector pixel size in nm
-        :param inplane: horizontal detector angle in radians
-        :param outofplane: vertical detector angle in radians
-        :param grazing_angle: angle or list of angles of the sample circles which are
-         below the rotated circle
-        :param tilt: angular step of the rocking curve in radians
-        :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
-        :return: a tuple of two numpy arrays
-
-         - the transformation matrix from the detector frame to the
-           laboratory frame in reciprocal space (reciprocal length scale in  1/nm), as a
-           numpy array of shape (3,3)
-         - the q offset (3D vector)
-
+        :param pixelsize_x: horizontal binned detector pixel size in nm
+        :param pixelsize_y: vertical binned detector pixel size in nm
+        :param array_shape: tuple of three integers, shape of the dataset to be gridded
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
+        :param anticlockwise: True if the rotation is anticlockwise
+        :return: qx, qz, qy values in the laboratory frame
+         (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
+         nb_pixel_y * nb_angles
         """
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_container(
+            direct_beam,
+            container_types=(tuple, list),
+            length=2,
+            item_types=int,
+            name="direct_beam",
+        )
+        valid.valid_container(
+            array_shape,
+            container_types=(tuple, list),
+            length=3,
+            item_types=int,
+            min_excluded=1,
+            name="array_shape",
+        )
+        valid.valid_1d_array(
+            cdi_angle,
+            allowed_types=Real,
+            allow_none=False,
+            name="cdi_angle",
+        )
+        valid.valid_item(anticlockwise, allowed_types=bool, name="anticlockwise")
+
+        # calculate q values of the measurement
+        nbz, nby, nbx = array_shape
+        qz = np.empty((nbz, nby, nbx), dtype=float)
+        qy = np.empty((nbz, nby, nbx), dtype=float)
+        qx = np.empty((nbz, nby, nbx), dtype=float)
+
+        # calculate q values of the detector frame
+        # for each angular position and stack them
+        for idx, item in enumerate(cdi_angle):
+            angle = item * np.pi / 180
+            if not anticlockwise:
+                rotation_matrix = np.array(
+                    [
+                        [np.cos(angle), 0, -np.sin(angle)],
+                        [0, 1, 0],
+                        [np.sin(angle), 0, np.cos(angle)],
+                    ]
+                )
+            else:
+                rotation_matrix = np.array(
+                    [
+                        [np.cos(angle), 0, np.sin(angle)],
+                        [0, 1, 0],
+                        [-np.sin(angle), 0, np.cos(angle)],
+                    ]
+                )
+
+            myy, myx = np.meshgrid(
+                np.linspace(
+                    -direct_beam[0], -direct_beam[0] + nby, num=nby, endpoint=False
+                ),
+                np.linspace(
+                    -direct_beam[1], -direct_beam[1] + nbx, num=nbx, endpoint=False
+                ),
+                indexing="ij",
+            )
+
+            two_theta = np.arctan(myx * pixelsize_x / distance)
+            alpha_f = np.arctan(
+                np.divide(
+                    myy * pixelsize_y,
+                    np.sqrt(distance ** 2 + np.power(myx * pixelsize_x, 2)),
+                )
+            )
+
+            qlab0 = (
+                2
+                * np.pi
+                / wavelength
+                * (np.cos(alpha_f) * np.cos(two_theta) - beam_direction[0])
+            )
+            # along z* downstream
+            qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - beam_direction[1])
+            # along y* vertical up
+            qlab2 = (
+                2
+                * np.pi
+                / wavelength
+                * (np.cos(alpha_f) * np.sin(two_theta) - beam_direction[2])
+            )
+            # along x* outboard
+
+            qx[idx, :, :] = (
+                rotation_matrix[0, 0] * qlab0
+                + rotation_matrix[0, 1] * qlab1
+                + rotation_matrix[0, 2] * qlab2
+            )
+            qz[idx, :, :] = (
+                rotation_matrix[1, 0] * qlab0
+                + rotation_matrix[1, 1] * qlab1
+                + rotation_matrix[1, 2] * qlab2
+            )
+            qy[idx, :, :] = (
+                rotation_matrix[2, 0] * qlab0
+                + rotation_matrix[2, 1] * qlab1
+                + rotation_matrix[2, 2] * qlab2
+            )
+
+        return qx, qz, qy
 
 
 class BeamlineSIXS(Beamline):
@@ -1959,7 +2095,7 @@ class BeamlineSIXS(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
@@ -2220,7 +2356,7 @@ class Beamline34ID(Beamline):
         For the transformation in direct space, the length scale is in nm,
         for the transformation in reciprocal space, it is in 1/nm.
 
-        :param wavelength: X-ray wasvelength in nm
+        :param wavelength: X-ray wavelength in nm
         :param distance: detector distance in nm
         :param pixel_x: horizontal detector pixel size in nm
         :param pixel_y: vertical detector pixel size in nm
