@@ -145,7 +145,7 @@ photon_filter = "loading"  # 'loading' or 'postprocessing',
 # if 'loading', it is applied before binning;
 # if 'postprocessing', it is applied at the end of the script before saving
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
-hotpixels_file = root_folder + 'hotpixels.npz'  # non empty file path or None
+hotpixels_file = root_folder + "hotpixels.npz"  # non empty file path or None
 flatfield_file = None
 # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
 template_imagefile = "_master.h5"  # ''_data_%06d.h5'

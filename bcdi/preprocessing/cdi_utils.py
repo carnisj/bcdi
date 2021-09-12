@@ -653,9 +653,8 @@ def load_cdi_data(
         debugging=debugging,
     )
 
-    print(
-        (rawdata < 0).sum(), " negative data points masked"
-    )  # can happen when subtracting a background
+    print((rawdata < 0).sum(), " negative data points masked")
+    # can happen when subtracting a background
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
