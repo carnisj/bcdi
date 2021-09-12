@@ -1367,6 +1367,89 @@ def line(x_array, a, b):
     return a * x_array + b
 
 
+def pad_from_roi(arrays, roi, binning, pad_value=0):
+    """
+
+
+    :param arrays: a 3D array of a sequence of 3D arrays of the same shape
+    :param roi: the desired region of interest of the unbinned frame. For an array in
+    arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
+    :param binning: tuple of two integers (binning along Y, binning along X)
+    :param pad_value: number or tuple of nb_arrays numbers, will pad using this value
+    :return: an array (if a single array was provided) or a tuple of arrays interpolated
+     on an orthogonal grid (same length as the number of input arrays)
+    """
+    ####################
+    # check parameters #
+    ####################
+    valid.valid_ndarray(arrays, ndim=3)
+    nb_arrays = len(arrays)
+    valid.valid_container(
+        roi,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=4,
+        name="roi",
+    )
+    valid.valid_container(
+        binning,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=2,
+        name="binning",
+    )
+    if isinstance(pad_value, Real):
+        pad_value = (pad_value,) * nb_arrays
+    valid.valid_container(
+        pad_value,
+        container_types=(tuple, list, np.ndarray),
+        item_types=Real,
+        length=nb_arrays,
+        name="pad_value",
+    )
+
+    ##############################################
+    # calculate the starting indices for padding #
+    ##############################################
+    nbz, nby, nbx = arrays[0].shape
+    output_shape = (
+        nbz,
+        int(np.rint((roi[1] - roi[0]) / binning[0])),
+        int(np.rint((roi[3] - roi[2]) / binning[1])),
+    )
+
+    if output_shape[1] > nby or output_shape[2] > nbx:
+        if roi[0] < 0:  # padding on the left
+            starty = abs(roi[0] // binning[0])
+            # loaded data will start at this index
+        else:  # padding on the right
+            starty = 0
+        if roi[2] < 0:  # padding on the left
+            startx = abs(roi[2] // binning[0])
+            # loaded data will start at this index
+        else:  # padding on the right
+            startx = 0
+        start = [int(val) for val in [0, starty, startx]]
+        print("Paddind the data to the shape defined by the ROI")
+
+        ##############
+        # pad arrays #
+        ##############
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            array = crop_pad(
+                array=array,
+                pad_value=pad_value[idx],
+                pad_start=start,
+                output_shape=output_shape,
+            )
+            output_arrays.append(array)
+
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
+        return output_arrays
+
+
 def plane(xy_array, a, b, c):
     """
     Return z values such that z = a*x + b*y + c.
