@@ -100,7 +100,7 @@ def align_diffpattern(
             new_z = myz - shiftz
             new_y = myy - shifty
             new_x = myx - shiftx
-            del myx, myy, myz
+
             rgi = RegularGridInterpolator(
                 (old_z, old_y, old_x),
                 data,
@@ -173,7 +173,7 @@ def align_diffpattern(
             myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
             new_y = myy - shifty
             new_x = myx - shiftx
-            del myx, myy
+
             rgi = RegularGridInterpolator(
                 (old_y, old_x), data, method="linear", bounds_error=False, fill_value=0
             )
