@@ -54,6 +54,10 @@ debug = False  # set to True to see plots
 binning = [1, 2, 2]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 bin_during_loading = False  # True to bin during loading, require less memory
+frames_pattern = None
+# 1D array of int, of length data.shape[0]. If frames_pattern is 0 at index,
+# the frame at data[index] will be skipped, if 1 the frame will added to the stack.
+# Use this if you need to remove some frames and you know it in advance.
 ##############################
 # parameters used in masking #
 ##############################
@@ -580,6 +584,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             scan_number=scan_nb,
             detector=detector,
             setup=setup,
+            frames_pattern=frames_pattern,
             bin_during_loading=bin_during_loading,
             flatfield=flatfield,
             hotpixels=hotpix_array,

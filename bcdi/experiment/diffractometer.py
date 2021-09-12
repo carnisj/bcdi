@@ -862,6 +862,7 @@ class Diffractometer(ABC):
         scan_number,
         detector,
         setup,
+        frames_pattern=None,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -876,6 +877,9 @@ class Diffractometer(ABC):
         :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
+        :param frames_pattern: 1D array of int, of length data.shape[0]. If
+         frames_pattern is 0 at index, the frame at data[index] will be skipped,
+         if 1 the frame will added to the stack.
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
         :param background: the 2D background array to subtract to the data
@@ -947,7 +951,9 @@ class Diffractometer(ABC):
             #################
             # select frames #
             #################
-            data, frames_logical = self.select_frames(data)
+            data, frames_logical = self.select_frames(
+                data=data, frames_pattern=frames_pattern
+            )
 
             #################################
             # crop the monitor if necessary #
@@ -1214,7 +1220,6 @@ class Diffractometer(ABC):
            accordingly.
 
         """
-        # TODO implement this
         if frames_pattern is None:
             frames_pattern = np.ones(data.shape[0], dtype=int)
         valid.valid_1d_array(

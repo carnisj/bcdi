@@ -1265,8 +1265,11 @@ def load_bcdi_data(
      return a monitor based on the integrated intensity in the region of interest
      defined by detector.sum_roi, 'skip' to do nothing
     :param debugging:  set to True to see plots
-    :parama kwargs:
-     - 'photon_threshold' = float, photon threshold to apply before binning
+    :param kwargs:
+     - 'photon_threshold': float, photon threshold to apply before binning
+     - 'frames_pattern': 1D array of int, of length data.shape[0]. If
+       frames_pattern is 0 at index, the frame at data[index] will be skipped,
+       if 1 the frame will added to the stack.
 
     :return:
      - the 3D data and mask arrays
@@ -1279,7 +1282,7 @@ def load_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"photon_threshold"},
+        allowed_kwargs={"photon_threshold", "frames_pattern"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1289,12 +1292,20 @@ def load_bcdi_data(
         min_included=0,
         name="photon_threshold",
     )
+    frames_pattern = kwargs.get("frames_pattern")
+    valid.valid_1d_array(
+        frames_pattern,
+        allow_none=True,
+        allowed_values={0, 1},
+        name="frames_pattern"
+    )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
         logfile=logfile,
         scan_number=scan_number,
         detector=detector,
         setup=setup,
+        frames_pattern=frames_pattern,
         bin_during_loading=bin_during_loading,
         flatfield=flatfield,
         hotpixels=hotpixels,
