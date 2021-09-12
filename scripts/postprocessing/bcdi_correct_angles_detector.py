@@ -34,7 +34,7 @@ Input: direct beam and Bragg peak position, sample to detector distance, energy.
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
 scan = 76
-root_folder = "C:/Users/Jerome/Documents/data/P10_Longfei_Nov2020/data/"
+root_folder = "C:/Users/Jerome/Documents/data/dataset_P10/"
 sample_name = "B15_syn_S1_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -46,9 +46,8 @@ debug = False  # True to see more plots
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = (
-    "P10"  # name of the beamline, used for data loading and normalization by monitor
-)
+beamline = "P10"
+# name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
 actuators = None  # {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to
@@ -109,12 +108,7 @@ template_imagefile = "_master.h5"
 # define setup related parameters #
 ###################################
 beam_direction = (1, 0, 0)  # beam along z
-sample_offsets = (
-    0,
-    0,
-    90,
-    0,
-)
+sample_offsets = (0, 0, 90, 0)
 # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
 directbeam_x = 913.64  # x horizontal,  cch2 in xrayutilities
@@ -128,14 +122,12 @@ energy = 8170  # in eV, offset of 6eV at ID01
 ################################################
 get_temperature = False  # True to estimate the temperature using the reference
 # spacing of the material. Only for Pt.
-reflection = np.array(
-    [1, 1, 1]
-)  # measured reflection, use for estimating the temperature
+reflection = np.array([1, 1, 1])
+# measured reflection, use for estimating the temperature
 reference_spacing = None  # for calibrating the thermal expansion,
 # if None it is fixed to Pt 3.9236/norm(reflection)
-reference_temperature = (
-    None  # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-)
+reference_temperature = None
+# used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
 ##########################################################
 # end of user parameters
 ##########################################################
