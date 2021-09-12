@@ -2311,7 +2311,7 @@ class Setup:
         # binned pixel size in the vertical direction
         lambdaz = wavelength * distance
 
-        nbz, nby, nbx = arrays[0].shape
+        _, nby, nbx = arrays[0].shape
         directbeam_y, directbeam_x = direct_beam
         # calculate the number of voxels available to accomodate the gridded data
         # directbeam_x and directbeam_y already are already taking into account
@@ -2394,7 +2394,7 @@ class Setup:
         :return:
         """
         nbz, nby, nbx = arrays[0].shape
-        directbeam_y, directbeam_x = direct_beam
+        _, directbeam_x = direct_beam
         # calculate the number of voxels available to accomodate the gridded data
         # directbeam_x and directbeam_y already are already taking into account
         # the ROI and binning
