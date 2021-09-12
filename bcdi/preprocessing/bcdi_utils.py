@@ -1303,55 +1303,18 @@ def load_bcdi_data(
         debugging=debugging,
     )
 
-    print((rawdata < 0).sum(), " negative data points masked")
-    # can happen when subtracting a background
-    rawmask[rawdata < 0] = 1
-    rawdata[rawdata < 0] = 0
-
-    _, nby, nbx = rawdata.shape
-    # pad the data to the shape defined by the ROI
-    if (
-        detector.roi[1] - detector.roi[0] > nby
-        or detector.roi[3] - detector.roi[2] > nbx
-    ):
-        if detector.roi[0] < 0:  # padding on the left
-            starty = abs(detector.roi[0])  # loaded data will start at this index
-        else:  # padding on the right
-            starty = 0
-        if detector.roi[2] < 0:  # padding on the left
-            startx = abs(detector.roi[2])  # loaded data will start at this index
-        else:  # padding on the right
-            startx = 0
-        start = (0, starty, startx)
-        print("Paddind the data to the shape defined by the ROI")
-        rawdata = util.crop_pad(
-            array=rawdata,
-            pad_start=start,
-            output_shape=(
-                rawdata.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
-            ),
-        )
-        rawmask = util.crop_pad(
-            array=rawmask,
-            pad_value=1,
-            pad_start=start,
-            output_shape=(
-                rawmask.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
-            ),
-        )
-
-    # apply optional photon threshold before binning
+    #####################################################
+    # apply an optional photon threshold before binning #
+    #####################################################
     if photon_threshold != 0:
         rawmask[rawdata < photon_threshold] = 1
         rawdata[rawdata < photon_threshold] = 0
         print("Applying photon threshold before binning: < ", photon_threshold)
 
-    # bin data and mask in the detector plane if not already done during loading
-    # binning in the stacking dimension is done at the very end of the data processing
+    ####################################################################################
+    # bin data and mask in the detector plane if not already done during loading       #
+    # binning in the stacking dimension is done at the very end of the data processing #
+    ####################################################################################
     if not bin_during_loading and (
         (detector.binning[1] != 1) or (detector.binning[2] != 1)
     ):
@@ -1368,6 +1331,41 @@ def load_bcdi_data(
             rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False
         )
         rawmask[np.nonzero(rawmask)] = 1
+
+    ################################################
+    # pad the data to the shape defined by the ROI #
+    ################################################
+    _, nby, nbx = rawdata.shape
+    output_shape = (
+        rawdata.shape[0],
+        int(np.rint((detector.roi[1] - detector.roi[0]) / detector.binning[1])),
+        int(np.rint((detector.roi[3] - detector.roi[2]) / detector.binning[2])),
+    )
+
+    if output_shape[1] > nby or output_shape[2] > nbx:
+        if detector.roi[0] < 0:  # padding on the left
+            starty = abs(detector.roi[0] // detector.binning[1])
+            # loaded data will start at this index
+        else:  # padding on the right
+            starty = 0
+        if detector.roi[2] < 0:  # padding on the left
+            startx = abs(detector.roi[2] // detector.binning[2])
+            # loaded data will start at this index
+        else:  # padding on the right
+            startx = 0
+        start = [int(val) for val in [0, starty, startx]]
+        print("Paddind the data to the shape defined by the ROI")
+        rawdata = util.crop_pad(
+            array=rawdata,
+            pad_start=start,
+            output_shape=output_shape,
+        )
+        rawmask = util.crop_pad(
+            array=rawmask,
+            pad_value=1,
+            pad_start=start,
+            output_shape=output_shape,
+        )
 
     return rawdata, rawmask, frames_logical, monitor
 
