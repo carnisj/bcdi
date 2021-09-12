@@ -1529,6 +1529,9 @@ class BeamlineP10(Beamline):
          - the q offset (3D vector)
 
         """
+        if self.name == "P10_SAXS":
+            raise ValueError("Method invalid for P10_SAXS")
+
         lambdaz = wavelength * distance
         mymatrix = np.zeros((3, 3))
         q_offset = np.zeros(3)
