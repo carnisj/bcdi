@@ -704,9 +704,11 @@ def load_cdi_data(
         rawdata[rawdata < photon_threshold] = 0
         print("Applying photon threshold before binning: < ", photon_threshold)
 
-    # bin data and mask in the detector plane if needed
+    # bin data and mask in the detector plane if not already done during loading
     # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+    if not bin_during_loading and (
+        (detector.binning[1] != 1) or (detector.binning[2] != 1)
+    ):
         print(
             "Binning the data: detector vertical axis by",
             detector.binning[1],
