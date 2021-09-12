@@ -1425,7 +1425,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0):
         else:  # padding on the right
             starty = 0
         if roi[2] < 0:  # padding on the left
-            startx = abs(roi[2] // binning[0])
+            startx = abs(roi[2] // binning[1])
             # loaded data will start at this index
         else:  # padding on the right
             startx = 0
@@ -1448,6 +1448,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0):
         if nb_arrays == 1:
             output_arrays = output_arrays[0]  # return the array instead of the tuple
         return output_arrays
+    return arrays
 
 
 def plane(xy_array, a, b, c):
