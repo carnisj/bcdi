@@ -934,8 +934,8 @@ class Diffractometer(ABC):
             # update the mask #
             ###################
             mask2d = mask2d[
-                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
-                     ]
+                loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+            ]
             if bin_during_loading:
                 mask2d = util.bin_data(
                     mask2d,
