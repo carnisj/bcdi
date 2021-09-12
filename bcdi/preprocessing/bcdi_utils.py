@@ -1335,37 +1335,12 @@ def load_bcdi_data(
     ################################################
     # pad the data to the shape defined by the ROI #
     ################################################
-    _, nby, nbx = rawdata.shape
-    output_shape = (
-        rawdata.shape[0],
-        int(np.rint((detector.roi[1] - detector.roi[0]) / detector.binning[1])),
-        int(np.rint((detector.roi[3] - detector.roi[2]) / detector.binning[2])),
+    rawdata, rawmask = util.pad_from_roi(
+        arrays=(rawdata, rawmask),
+        roi=detector.roi,
+        binning=detector.binning[1:],
+        pad_value=(0, 1),
     )
-
-    if output_shape[1] > nby or output_shape[2] > nbx:
-        if detector.roi[0] < 0:  # padding on the left
-            starty = abs(detector.roi[0] // detector.binning[1])
-            # loaded data will start at this index
-        else:  # padding on the right
-            starty = 0
-        if detector.roi[2] < 0:  # padding on the left
-            startx = abs(detector.roi[2] // detector.binning[2])
-            # loaded data will start at this index
-        else:  # padding on the right
-            startx = 0
-        start = [int(val) for val in [0, starty, startx]]
-        print("Paddind the data to the shape defined by the ROI")
-        rawdata = util.crop_pad(
-            array=rawdata,
-            pad_start=start,
-            output_shape=output_shape,
-        )
-        rawmask = util.crop_pad(
-            array=rawmask,
-            pad_value=1,
-            pad_start=start,
-            output_shape=output_shape,
-        )
 
     return rawdata, rawmask, frames_logical, monitor
 
