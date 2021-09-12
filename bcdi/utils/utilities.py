@@ -1369,7 +1369,9 @@ def line(x_array, a, b):
 
 def pad_from_roi(arrays, roi, binning, pad_value=0):
     """
+    Pad a 3D stack of frames provided a region of interest.
 
+    The stacking is assumed to be on the first axis.
 
     :param arrays: a 3D array of a sequence of 3D arrays of the same shape
     :param roi: the desired region of interest of the unbinned frame. For an array in
