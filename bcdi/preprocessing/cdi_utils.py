@@ -644,10 +644,7 @@ def load_cdi_data(
     )
     frames_pattern = kwargs.get("frames_pattern")
     valid.valid_1d_array(
-        frames_pattern,
-        allow_none=True,
-        allowed_values={0, 1},
-        name="frames_pattern"
+        frames_pattern, allow_none=True, allowed_values={0, 1}, name="frames_pattern"
     )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(

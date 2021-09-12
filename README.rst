@@ -152,7 +152,7 @@ This module provides classes and methods for the definition of the experimental 
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
- * P10 (PETRA III)
+ * P10 (PETRA III): 6-circle and USAXS setups
  * CRISTAL (SOLEIL)
  * SIXS (SOLEIL)
  * NANOMAX (MAX IV)
