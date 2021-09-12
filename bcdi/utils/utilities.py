@@ -65,7 +65,7 @@ def apply_logical_array(arrays, frames_logical):
      In case of cropping/padding the number of frames changes. A frame whose
      index is set to 1 means that it is used, 0 means not used, -1 means padded
      (added) frame
-    :return: the sequence of cropped arrays
+    :return: an array (if a single array was provided) or a tuple of cropped arrays
     """
     if frames_logical is None:
         return arrays
@@ -94,6 +94,9 @@ def apply_logical_array(arrays, frames_logical):
             # padding occurs only at the edges of the dataset, so the original data is
             # contiguous, we can use array indexing directly
             output.append(array[original_frames != 0])
+
+    if len(arrays) == 1:
+        output = output[0]  # return the array instead of the tuple
     return output
 
 
