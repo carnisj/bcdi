@@ -1375,7 +1375,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0):
 
     :param arrays: a 3D array of a sequence of 3D arrays of the same shape
     :param roi: the desired region of interest of the unbinned frame. For an array in
-    arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
+     arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
     :param binning: tuple of two integers (binning along Y, binning along X)
     :param pad_value: number or tuple of nb_arrays numbers, will pad using this value
     :return: an array (if a single array was provided) or a tuple of arrays interpolated
