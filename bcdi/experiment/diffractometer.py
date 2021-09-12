@@ -915,7 +915,7 @@ class Diffractometer(ABC):
                 detector=detector
             )
         else:
-            data, mask2d, monitor, frames_logical = self.load_data(
+            data, mask2d, monitor, loading_roi = self.load_data(
                 logfile=logfile,
                 setup=setup,
                 scan_number=scan_number,
@@ -928,18 +928,52 @@ class Diffractometer(ABC):
                 debugging=debugging,
             )
 
-            # check for abnormally behaving pixels
+            print("")
+
+            ###################
+            # update the mask #
+            ###################
+            mask2d = mask2d[
+                     loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]
+                     ]
+            if bin_during_loading:
+                mask2d = util.bin_data(
+                    mask2d,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
+                )
+            mask2d[np.nonzero(mask2d)] = 1
+
+            #################
+            # select frames #
+            #################
+            data, frames_logical = self.select_frames(data)
+
+            #################################
+            # crop the monitor if necessary #
+            #################################
+            monitor = util.apply_logical_array(
+                arrays=monitor, frames_logical=frames_logical
+            )
+
+            ########################################
+            # check for abnormally behaving pixels #
+            ########################################
             data, mask2d = check_pixels(data=data, mask=mask2d, debugging=debugging)
             mask3d = np.repeat(mask2d[np.newaxis, :, :], data.shape[0], axis=0)
             mask3d[np.isnan(data)] = 1
             data[np.isnan(data)] = 0
 
-            # check for empty frames (no beam)
+            ####################################
+            # check for empty frames (no beam) #
+            ####################################
             data, mask3d, monitor, frames_logical = check_empty_frames(
                 data=data, mask=mask3d, monitor=monitor, frames_logical=frames_logical
             )
 
-            # intensity normalization
+            ###########################
+            # intensity normalization #
+            ###########################
             if normalize == "skip":
                 print("Skip intensity normalization")
             else:
@@ -1521,29 +1555,7 @@ class DiffractometerCRISTAL(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # bin the 2D mask if necessary
-        if bin_during_loading:
-            mask2d = util.bin_data(
-                mask2d, (detector.binning[1], detector.binning[2]), debugging=False
-            )
-        mask2d[np.nonzero(mask2d)] = 1
-
-        # apply the frames selection pattern to the data
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -1942,21 +1954,7 @@ class DiffractometerID01(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -2248,21 +2246,7 @@ class DiffractometerNANOMAX(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -2568,21 +2552,7 @@ class DiffractometerP10(Diffractometer):
                 start_index += tempdata_length
                 if start_index == nb_img:
                     break
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -2978,21 +2948,7 @@ class DiffractometerSIXS(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
