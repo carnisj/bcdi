@@ -2808,12 +2808,11 @@ class DiffractometerP10SAXS(DiffractometerP10):
                 this_line = line.strip()
                 words = this_line.split()
 
-                if "Col" in words:
-                    if "sprz" in words or "hprz" in words:
-                        # sprz or hprz (SAXS) scanned
-                        # template = ' Col 0 sprz DOUBLE\n'
-                        index_phi = int(words[1]) - 1  # python index starts at 0
-                        print(words, "  Index Phi=", index_phi)
+                if "Col" in words and ("sprz" in words or "hprz" in words):
+                    # sprz or hprz (SAXS) scanned
+                    # template = ' Col 0 sprz DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                    print(words, "  Index Phi=", index_phi)
                 if index_phi is not None and util.is_numeric(
                     words[0]
                 ):  # we are reading data and index_phi is defined
