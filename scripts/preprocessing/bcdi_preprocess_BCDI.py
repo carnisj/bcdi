@@ -71,6 +71,7 @@ user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
 binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
+bin_during_loading = False  # True to bin during loading, faster
 ##############################
 # parameters used in masking #
 ##############################
@@ -767,6 +768,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             scan_number=scan_nb,
             detector=detector,
             setup=setup,
+            bin_during_loading=bin_during_loading,
             flatfield=flatfield,
             hotpixels=hotpix_array,
             background=background,

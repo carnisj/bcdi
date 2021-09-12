@@ -1241,6 +1241,7 @@ def load_bcdi_data(
     scan_number,
     detector,
     setup,
+    bin_during_loading=False,
     flatfield=None,
     hotpixels=None,
     background=None,
@@ -1256,6 +1257,7 @@ def load_bcdi_data(
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
+    :param bin_during_loading: True to bin the data during loading (faster)
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
     :param background: the 2D background array to subtract to the data
@@ -1293,6 +1295,7 @@ def load_bcdi_data(
         scan_number=scan_number,
         detector=detector,
         setup=setup,
+        bin_during_loading=bin_during_loading,
         flatfield=flatfield,
         hotpixels=hotpixels,
         background=background,
@@ -1300,9 +1303,8 @@ def load_bcdi_data(
         debugging=debugging,
     )
 
-    print(
-        (rawdata < 0).sum(), " negative data points masked"
-    )  # can happen when subtracting a background
+    print((rawdata < 0).sum(), " negative data points masked")
+    # can happen when subtracting a background
     rawmask[rawdata < 0] = 1
     rawdata[rawdata < 0] = 0
 
