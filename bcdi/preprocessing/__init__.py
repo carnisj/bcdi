@@ -7,11 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """
-BCDI preprocessing.
+BCDI and forward CDI preprocessing.
 
 This package contains:
- - preprocessing_utils: functions related to data loading and preprocessing,
-   before phase retrieval.
+ - bcdi_utils: functions related to BCDI data preprocessing, before phase retrieval.
+ - cdi_utils: functions related to forward CDI data preprocessing, before phase
+  retrieval.
  - nxsReady, ReadNxs3: modules to load data at SIXS beamline
 
 """

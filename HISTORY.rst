@@ -1,3 +1,12 @@
+* move forward CDI gridding function to Setup
+
+* implement DiffractometerP10SAXS and BeamlineP10SAXS classes for forward CDI
+  experiments at P10
+
+* split the module ``preprocessing_utils`` in two modules, ``bcdi_utils`` and
+  ``cdi_utils``
+
+* Move generic functions from ``preprocessing_utils`` to `utilities`
 
 * Create new validations functions valid_ndarray and valid_1d_array, implement the
   corresponding unit tests.

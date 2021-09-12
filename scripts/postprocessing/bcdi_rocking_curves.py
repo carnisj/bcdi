@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -240,7 +240,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile
     )
 
-    data, mask, frames_logical, monitor = pru.load_bcdi_data(
+    data, mask, frames_logical, monitor = bu.load_bcdi_data(
         logfile=logfile,
         scan_number=scan_nb,
         detector=detector,

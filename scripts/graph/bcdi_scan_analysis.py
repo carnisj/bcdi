@@ -11,7 +11,6 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import h5py
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -20,7 +19,7 @@ import matplotlib.ticker as ticker
 import os
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 
@@ -55,10 +54,9 @@ invert_xaxis = False  # True to inverse the horizontal axis
 ###############################
 # beamline related parameters #
 ###############################
-beamline = (
-    "P10"  # name of the beamlisne, used for data loading and normalization by monitor
-)
-# supported beamlines: 'P10' only for now, see preprocessing_utils.get_motor_pos()
+beamline = "P10"
+# name of the beamlisne, used for data loading and normalization by monitor
+# supported beamlines: 'P10' only for now
 is_series = False  # specific to series measurement at P10
 specfile_name = ""
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
@@ -306,7 +304,7 @@ if scale not in {"linear", "log"}:
 #############
 # load data #
 #############
-data, mask, monitor, frames_logical = pru.load_data(
+data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
     logfile=logfile,
     scan_number=scan,
     detector=detector,
@@ -321,7 +319,7 @@ data[np.nonzero(mask)] = 0
 ########################
 # load motor positions #
 ########################
-motor_positions = pru.get_motor_pos(
+motor_positions = setup.diffractometer.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=motor_name
 )
 

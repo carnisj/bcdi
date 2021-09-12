@@ -21,7 +21,6 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 
@@ -225,7 +224,7 @@ if debug and not flat_phase:
         title="Phase before wrapping\n",
     )
 
-phase = pru.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
+phase = util.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
 
 support[abs(amp) < support_threshold * abs(amp).max()] = 0
 del amp

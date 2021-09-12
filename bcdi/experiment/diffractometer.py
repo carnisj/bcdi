@@ -17,6 +17,7 @@ The available diffractometers are:
 - DiffractometerSIXS
 - Diffractometer34ID
 - DiffractometerP10
+- DiffractometerP10SAXS
 - DiffractometerCRISTAL
 - DiffractometerNANOMAX
 
@@ -31,14 +32,196 @@ from abc import ABC, abstractmethod
 import fabio
 from functools import reduce
 import h5py
+from matplotlib import pyplot as plt
 from numbers import Integral, Number, Real
 import numpy as np
 import os
 import re
 import sys
+import tkinter as tk
+from tkinter import filedialog
+
+from ..graph import graph_utils as gu
 from .rotation_matrix import RotationMatrix
 from ..utils import utilities as util
 from ..utils import validation as valid
+
+
+def check_empty_frames(data, mask=None, monitor=None, frames_logical=None):
+    """
+    Check if there is intensity for all frames.
+
+    In case of beam dump, some frames may be empty. The data and optional mask will be
+    cropped to remove those empty frames.
+
+    :param data: a numpy 3D array
+    :param mask: a numpy 3D array of 0 (pixel not masked) and 1 (masked pixel),
+     same shape as data
+    :param monitor: a numpy 1D array of shape equal to data.shape[0]
+    :param frames_logical: 1D array of length equal to the number of measured frames.
+     In case of cropping the length of the stack of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used.
+    :return:
+     - cropped data as a numpy 3D array
+     - cropped mask as a numpy 3D array
+     - cropped monitor as a numpy 1D array
+     - updated frames_logical
+
+    """
+    valid.valid_ndarray(arrays=data, ndim=3)
+    if mask is not None:
+        valid.valid_ndarray(arrays=mask, shape=data.shape)
+    if monitor is not None:
+        if not isinstance(monitor, np.ndarray):
+            raise TypeError("monitor should be a numpy array")
+        if monitor.ndim != 1 or len(monitor) != data.shape[0]:
+            raise ValueError("monitor be a 1D array of length data.shae[0]")
+
+    if frames_logical is None:
+        frames_logical = np.ones(data.shape[0])
+    valid.valid_1d_array(
+        frames_logical,
+        allowed_types=Integral,
+        allow_none=False,
+        allowed_values=(0, 1),
+        name="frames_logical",
+    )
+
+    # check if there are empty frames
+    is_intensity = np.zeros(data.shape[0])
+    is_intensity[np.argwhere(data.sum(axis=(1, 2)))] = 1
+    if is_intensity.sum() != data.shape[0]:
+        print("\nEmpty frame detected, cropping the data\n")
+
+    # update frames_logical
+    frames_logical = np.multiply(frames_logical, is_intensity)
+
+    # remove empty frames from the data and update the mask and the monitor
+    data = data[np.nonzero(frames_logical)]
+    mask = mask[np.nonzero(frames_logical)]
+    monitor = monitor[np.nonzero(frames_logical)]
+    return data, mask, monitor, frames_logical
+
+
+def check_pixels(data, mask, debugging=False):
+    """
+    Check for hot pixels in the data using the mean value and the variance.
+
+    :param data: 3D diffraction data
+    :param mask: 2D or 3D mask. Mask will summed along the first axis if a 3D array.
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: the filtered 3D data and the updated 2D mask.
+    """
+    valid.valid_ndarray(arrays=data, ndim=3)
+    valid.valid_ndarray(arrays=mask, ndim=(2, 3))
+    nbz, nby, nbx = data.shape
+
+    if mask.ndim == 3:  # 3D array
+        print("Mask is a 3D array, summing it along axis 0")
+        mask = mask.sum(axis=0)
+        mask[np.nonzero(mask)] = 1
+    valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
+
+    print(
+        "\ncheck_pixels(): number of masked pixels due to detector gaps ="
+        f" {int(mask.sum())} on a total of {nbx*nby}"
+    )
+    meandata = data.mean(axis=0)  # 2D
+    vardata = 1 / data.var(axis=0)  # 2D
+    var_mean = vardata[vardata != np.inf].mean()
+    vardata[meandata == 0] = var_mean
+    # pixels were data=0 (i.e. 1/variance=inf) are set to the mean of  1/var:
+    # we do not want to mask pixels where there was no intensity during the scan
+
+    if debugging:
+        gu.combined_plots(
+            tuple_array=(mask, meandata, vardata),
+            tuple_sum_frames=False,
+            tuple_sum_axis=0,
+            tuple_width_v=None,
+            tuple_width_h=None,
+            tuple_colorbar=True,
+            tuple_vmin=0,
+            tuple_vmax=(1, 1, np.nan),
+            tuple_scale=("linear", "linear", "linear"),
+            tuple_title=(
+                "Input mask",
+                "check_pixels()\nmean(data) before masking",
+                "check_pixels()\n1/var(data) before masking",
+            ),
+            reciprocal_space=True,
+            position=(131, 132, 133),
+        )
+
+    # calculate the mean and variance of a single photon event along the rocking curve
+    min_count = 0.99  # pixels with only 1 photon count along the rocking curve,
+    # use the value 0.99 to be inclusive
+    mean_singlephoton = min_count / nbz
+    var_singlephoton = (
+        ((nbz - 1) * mean_singlephoton ** 2 + (min_count - mean_singlephoton) ** 2)
+        * 1
+        / nbz
+    )
+    print(
+        "check_pixels(): var_mean={:.2f}, 1/var_threshold={:.2f}".format(
+            var_mean, 1 / var_singlephoton
+        )
+    )
+
+    # mask hotpixels with zero variance
+    temp_mask = np.zeros((nby, nbx))
+    temp_mask[vardata == np.inf] = 1
+    # this includes only hotpixels since zero intensity pixels were set to var_mean
+    mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
+    vardata[vardata == np.inf] = 0  # update the array
+    print(
+        "check_pixels(): number of zero variance hotpixels = {:d}".format(
+            int(temp_mask.sum())
+        )
+    )
+
+    # filter out pixels which have a variance smaller that the threshold
+    # (note that  vardata = 1/data.var())
+    indices_badpixels = np.nonzero(vardata > 1 / var_singlephoton)
+    mask[indices_badpixels] = 1  # mask is 2D
+    print(
+        "check_pixels(): number of pixels with too low variance = {:d}\n".format(
+            indices_badpixels[0].shape[0]
+        )
+    )
+
+    # update the data array
+    indices_badpixels = np.nonzero(mask)  # update indices
+    for index in range(nbz):
+        tempdata = data[index, :, :]
+        tempdata[
+            indices_badpixels
+        ] = 0  # numpy array is mutable hence data will be modified
+
+    if debugging:
+        meandata = data.mean(axis=0)
+        vardata = 1 / data.var(axis=0)
+        vardata[meandata == 0] = var_mean  # 0 intensity pixels, not masked
+        gu.combined_plots(
+            tuple_array=(mask, meandata, vardata),
+            tuple_sum_frames=False,
+            tuple_sum_axis=0,
+            tuple_width_v=None,
+            tuple_width_h=None,
+            tuple_colorbar=True,
+            tuple_vmin=0,
+            tuple_vmax=(1, 1, np.nan),
+            tuple_scale="linear",
+            tuple_title=(
+                "Output mask",
+                "check_pixels()\nmean(data) after masking",
+                "check_pixels()\n1/var(data) after masking",
+            ),
+            reciprocal_space=True,
+            position=(131, 132, 133),
+        )
+    return data, mask
 
 
 def create_diffractometer(beamline, sample_offsets):
@@ -60,6 +243,8 @@ def create_diffractometer(beamline, sample_offsets):
         return Diffractometer34ID(sample_offsets)
     if beamline == "P10":
         return DiffractometerP10(sample_offsets)
+    if beamline == "P10_SAXS":
+        return DiffractometerP10SAXS()
     if beamline == "CRISTAL":
         return DiffractometerCRISTAL(sample_offsets)
     if beamline == "NANOMAX":
@@ -67,6 +252,127 @@ def create_diffractometer(beamline, sample_offsets):
     raise NotImplementedError(
         f"No diffractometer implemented for the beamline {beamline}"
     )
+
+
+def load_filtered_data(detector):
+    """
+    Load a filtered dataset and the corresponding mask.
+
+    :param detector: an instance of the class Detector
+    :return: the data and the mask array
+    """
+    root = tk.Tk()
+    root.withdraw()
+
+    file_path = filedialog.askopenfilename(
+        initialdir=detector.datadir,
+        title="Select data file",
+        filetypes=[("NPZ", "*.npz")],
+    )
+    data = np.load(file_path)
+    npz_key = data.files
+    data = data[npz_key[0]]
+    file_path = filedialog.askopenfilename(
+        initialdir=detector.datadir,
+        title="Select mask file",
+        filetypes=[("NPZ", "*.npz")],
+    )
+    mask = np.load(file_path)
+    npz_key = mask.files
+    mask = mask[npz_key[0]]
+
+    monitor = np.ones(data.shape[0])
+    frames_logical = np.ones(data.shape[0])
+
+    return data, mask, monitor, frames_logical
+
+
+def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=False):
+    """
+    Normalize array using the monitor values.
+
+    :param array: the 3D array to be normalized
+    :param monitor: the monitor values
+    :param savedir: path where to save the debugging figure
+    :param norm_to_min: bool, True to normalize to min(monitor) instead of max(monitor),
+     avoid multiplying the noise
+    :param debugging: bool, True to see plots
+    :return:
+
+     - normalized dataset
+     - updated monitor
+     - a title for plotting
+
+    """
+    valid.valid_ndarray(arrays=array, ndim=3)
+    ndim = array.ndim
+    nbz, nby, nbx = array.shape
+    original_max = None
+    original_data = None
+
+    if ndim != 3:
+        raise ValueError("Array should be 3D")
+
+    if debugging:
+        original_data = np.copy(array)
+        original_max = original_data.max()
+        original_data[original_data < 5] = 0  # remove the background
+        original_data = original_data.sum(
+            axis=1
+        )  # the first axis is the normalization axis
+
+    print(
+        "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
+            monitor.min(), monitor.max(), monitor.mean()
+        )
+    )
+
+    if norm_to_min:
+        print("Data normalization by monitor.min()/monitor\n")
+        monitor = monitor.min() / monitor  # will divide higher intensities
+    else:  # norm to max
+        print("Data normalization by monitor.max()/monitor\n")
+        monitor = monitor.max() / monitor  # will multiply lower intensities
+
+    nbz = array.shape[0]
+    if len(monitor) != nbz:
+        raise ValueError(
+            "The frame number and the monitor data length are different:",
+            f"got {nbz} frames but {len(monitor)} monitor values",
+        )
+
+    for idx in range(nbz):
+        array[idx, :, :] = array[idx, :, :] * monitor[idx]
+
+    if debugging:
+        norm_data = np.copy(array)
+        # rescale norm_data to original_data for easier comparison
+        norm_data = norm_data * original_max / norm_data.max()
+        norm_data[norm_data < 5] = 0  # remove the background
+        norm_data = norm_data.sum(axis=1)  # the first axis is the normalization axis
+        fig = gu.combined_plots(
+            tuple_array=(monitor, original_data, norm_data),
+            tuple_sum_frames=False,
+            tuple_colorbar=False,
+            tuple_vmin=(np.nan, 0, 0),
+            tuple_vmax=np.nan,
+            tuple_title=(
+                "monitor.min() / monitor",
+                "Before norm (thres. 5)",
+                "After norm (thres. 5)",
+            ),
+            tuple_scale=("linear", "log", "log"),
+            xlabel=("Frame number", "Detector X", "Detector X"),
+            is_orthogonal=False,
+            ylabel=("Counts (a.u.)", "Frame number", "Frame number"),
+            position=(211, 223, 224),
+            reciprocal_space=True,
+        )
+        if savedir is not None:
+            fig.savefig(savedir + f"monitor_{nbz}_{nby}_{nbx}.png")
+        plt.close(fig)
+
+    return array, monitor
 
 
 class Diffractometer(ABC):
@@ -476,7 +782,7 @@ class Diffractometer(ABC):
             min(detector.nb_pixel_x, detector.roi[3]),
         ]
 
-        # initialize the data array
+        # initialize the data array, the mask is binned afterwards in load_check_dataset
         if bin_during_loading:
             print(
                 "Binning the data: detector vertical axis by",
@@ -549,6 +855,145 @@ class Diffractometer(ABC):
         else:  # 'skip'
             monitor = np.ones(nb_frames)
         return monitor
+
+    def load_check_dataset(
+        self,
+        logfile,
+        scan_number,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+    ):
+        """
+        Load data, apply filters and concatenate it for phasing.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param scan_number: the scan number to load
+        :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory for large detectors.
+        :param debugging: set to True to see plots
+        :return:
+
+         - the 3D data array in the detector frame and the 3D mask array
+         - the monitor values for normalization
+         - frames_logical: 1D array of length equal to the number of measured frames.
+           In case of cropping the length of the stack of frames changes. A frame whose
+           index is set to 1 means that it is used, 0 means not used.
+
+        """
+        print(
+            "User-defined ROI size (VxH):",
+            detector.roi[1] - detector.roi[0],
+            detector.roi[3] - detector.roi[2],
+        )
+        print(
+            "Detector physical size without binning (VxH):",
+            detector.nb_pixel_y,
+            detector.nb_pixel_x,
+        )
+        print(
+            "Detector size with binning (VxH):",
+            detector.nb_pixel_y // detector.binning[1],
+            detector.nb_pixel_x // detector.binning[2],
+        )
+
+        if setup.filtered_data:
+            data, mask3d, monitor, frames_logical = load_filtered_data(
+                detector=detector
+            )
+        else:
+            data, mask2d, monitor, loading_roi = self.load_data(
+                logfile=logfile,
+                setup=setup,
+                scan_number=scan_number,
+                detector=detector,
+                flatfield=flatfield,
+                hotpixels=hotpixels,
+                background=background,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+
+            print("")
+
+            ###################
+            # update the mask #
+            ###################
+            mask2d = mask2d[
+                loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
+            ]
+            if bin_during_loading:
+                mask2d = util.bin_data(
+                    mask2d,
+                    (detector.binning[1], detector.binning[2]),
+                    debugging=debugging,
+                )
+            mask2d[np.nonzero(mask2d)] = 1
+
+            #################
+            # select frames #
+            #################
+            data, frames_logical = self.select_frames(data)
+
+            #################################
+            # crop the monitor if necessary #
+            #################################
+            monitor = util.apply_logical_array(
+                arrays=monitor, frames_logical=frames_logical
+            )
+
+            ########################################
+            # check for abnormally behaving pixels #
+            ########################################
+            data, mask2d = check_pixels(data=data, mask=mask2d, debugging=debugging)
+            mask3d = np.repeat(mask2d[np.newaxis, :, :], data.shape[0], axis=0)
+            mask3d[np.isnan(data)] = 1
+            data[np.isnan(data)] = 0
+
+            ####################################
+            # check for empty frames (no beam) #
+            ####################################
+            data, mask3d, monitor, frames_logical = check_empty_frames(
+                data=data, mask=mask3d, monitor=monitor, frames_logical=frames_logical
+            )
+
+            ###########################
+            # intensity normalization #
+            ###########################
+            if normalize == "skip":
+                print("Skip intensity normalization")
+            else:
+                print("Intensity normalization using " + normalize)
+                data, monitor = normalize_dataset(
+                    array=data,
+                    monitor=monitor,
+                    norm_to_min=True,
+                    savedir=detector.savedir,
+                    debugging=debugging,
+                )
+
+            ##########################################################################
+            # check for negative pixels, it can happen when subtracting a background #
+            ##########################################################################
+            print((data < 0).sum(), " negative data points masked")
+            mask3d[data < 0] = 1
+            data[data < 0] = 0
+
+        return data, mask3d, monitor, frames_logical.astype(int)
 
     @abstractmethod
     def load_data(self, **kwargs):
@@ -752,7 +1197,7 @@ class Diffractometer(ABC):
     @staticmethod
     def select_frames(data, frames_pattern=None):
         """
-        Select frames, updae the monitor and create a logical array.
+        Select frames, update the monitor and create a logical array.
 
         Override this method in the child classes of you want to implement a particular
         behavior, for example if two frames were taken at a same motor position and you
@@ -769,6 +1214,7 @@ class Diffractometer(ABC):
            accordingly.
 
         """
+        # TODO implement this
         if frames_pattern is None:
             frames_pattern = np.ones(data.shape[0], dtype=int)
         valid.valid_1d_array(
@@ -806,10 +1252,13 @@ class Diffractometer34ID(Diffractometer):
 
     """
 
+    sample_rotations = ["y+", "x+"]
+    detector_rotations = ["y+", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y+", "x+"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -908,10 +1357,13 @@ class DiffractometerCRISTAL(Diffractometer):
 
     """
 
+    sample_rotations = ["x-", "y+"]
+    detector_rotations = ["y+", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y+"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1111,22 +1563,7 @@ class DiffractometerCRISTAL(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -1342,10 +1779,13 @@ class DiffractometerID01(Diffractometer):
 
     """
 
+    sample_rotations = ["y-", "x-", "y-"]
+    detector_rotations = ["y-", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y-", "x-", "y-"],
-            detector_circles=["y-", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1522,21 +1962,7 @@ class DiffractometerID01(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -1686,10 +2112,13 @@ class DiffractometerNANOMAX(Diffractometer):
 
     """
 
+    sample_rotations = ["x-", "y-"]
+    detector_rotations = ["y-", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y-"],
-            detector_circles=["y-", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -1825,21 +2254,7 @@ class DiffractometerNANOMAX(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -1934,10 +2349,13 @@ class DiffractometerP10(Diffractometer):
 
     """
 
+    sample_rotations = ["y+", "x-", "z+", "y-"]
+    detector_rotations = ["y+", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["y+", "x-", "z+", "y-"],
-            detector_circles=["y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -2142,21 +2560,7 @@ class DiffractometerP10(Diffractometer):
                 start_index += tempdata_length
                 if start_index == nb_img:
                     break
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -2278,7 +2682,9 @@ class DiffractometerP10(Diffractometer):
                     device_values.append(float(words[index_device]))
 
         if index_device is None:
-            print(f"No device {device_name} in the logfile")
+            print(f"no device {device_name} in the logfile")
+        else:
+            print("found!")
         return np.asarray(device_values)
 
     def read_monitor(self, logfile, **kwargs):
@@ -2294,6 +2700,108 @@ class DiffractometerP10(Diffractometer):
         return monitor
 
 
+class DiffractometerP10SAXS(DiffractometerP10):
+    """
+    Define P10 goniometer for the USAXS setup: 1 sample circle, no detector circle.
+
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+
+    - sample: phi (names hprz or sprz at the beamline)
+
+    """
+
+    sample_rotations = ["y+"]
+    detector_rotations = []
+
+    def __init__(self):
+        super().__init__(sample_offsets=(0,))
+
+    def goniometer_values(self, setup, stage_name="cdi", **kwargs):
+        """
+        Retrieve goniometer motor positions for a CDI tomographic scan.
+
+        :param setup: the experimental setup: Class Setup
+        :param stage_name: supported stage name, 'cdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
+        :return: a tuple of angular values in degrees, depending on stage_name:
+
+         - 'cdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most
+           outer to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
+
+        """
+        logfile = kwargs["logfile"]
+        # check some parameter
+        if stage_name not in {"cdi", "sample", "detector"}:
+            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
+
+        # load the motor positions
+        phi, _ = self.motor_positions(setup=setup, logfile=logfile)
+
+        # define the circles of interest for CDI
+        # no circle yet below phi at P10
+        if setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (0,)
+            tilt = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
+        sample_angles = (phi,)
+        detector_angles = None
+        if stage_name == "sample":
+            return sample_angles
+        if stage_name == "detector":
+            return detector_angles
+        return tilt, grazing, None, None
+
+    def motor_positions(self, setup, **kwargs):
+        """
+        Load the .fio file from the scan and extract motor positions.
+
+        :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+
+        :return: (phi, energy) values
+        """
+        logfile = kwargs["logfile"]
+        if setup.rocking_angle != "inplane":
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        if not setup.custom_scan:
+            index_phi = None
+            phi = []
+
+            with open(logfile, "r") as fio:
+                fio_lines = fio.readlines()
+                for line in fio_lines:
+                    this_line = line.strip()
+                    words = this_line.split()
+
+                    if "Col" in words and ("sprz" in words or "hprz" in words):
+                        # sprz or hprz (SAXS) scanned
+                        # template = ' Col 0 sprz DOUBLE\n'
+                        index_phi = int(words[1]) - 1  # python index starts at 0
+                        print(words, "  Index Phi=", index_phi)
+                    if index_phi is not None and util.is_numeric(
+                        words[0]
+                    ):  # we are reading data and index_phi is defined
+                        phi.append(float(words[index_phi]))
+
+            phi = np.asarray(phi, dtype=float)
+        else:
+            phi = setup.custom_motors["phi"]
+        return phi, setup.energy
+
+
 class DiffractometerSIXS(Diffractometer):
     """
     Define SIXS goniometer: 2 sample circles + 3 detector circles.
@@ -2306,10 +2814,13 @@ class DiffractometerSIXS(Diffractometer):
 
     """
 
+    sample_rotations = ["x-", "y+"]
+    detector_rotations = ["x-", "y+", "x-"]
+
     def __init__(self, sample_offsets):
         super().__init__(
-            sample_circles=["x-", "y+"],
-            detector_circles=["x-", "y+", "x-"],
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
         )
 
@@ -2445,21 +2956,7 @@ class DiffractometerSIXS(Diffractometer):
             )
             sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
-        print("")
-        # update the mask
-        mask2d = mask2d[
-            loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]
-        ]
-
-        # select frames
-        data, frames_logical = self.select_frames(data)
-
-        # crop the monitor if necessary
-        monitor = util.apply_logical_array(
-            arrays=monitor, frames_logical=frames_logical
-        )
-        return data, mask2d, monitor[0], frames_logical
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """

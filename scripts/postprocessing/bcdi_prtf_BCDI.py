@@ -24,7 +24,7 @@ import xrayutilities as xu
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -544,7 +544,7 @@ if debug:
 
 if align_pattern:
     # align the reconstruction with the initial diffraction data
-    phased_fft, _ = pru.align_diffpattern(
+    phased_fft, _ = bu.align_diffpattern(
         reference_data=diff_pattern,
         data=phased_fft,
         method="registration",
@@ -617,7 +617,7 @@ if flag_interact:
         linecut_prtf = np.copy(prtf_matrix)
         print("\nInterpolating the 3D PRTF on nan values, it will take some time ...")
         print(f"nb_nans before interpolation = {np.isnan(linecut_prtf).sum()}")
-        linecut_prtf, nb_filtered, _ = pru.mean_filter(
+        linecut_prtf, nb_filtered, _ = util.mean_filter(
             data=linecut_prtf,
             nb_neighbours=1,
             interpolate="interp_isolated",

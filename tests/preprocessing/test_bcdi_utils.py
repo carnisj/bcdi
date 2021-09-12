@@ -8,7 +8,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-import bcdi.preprocessing.preprocessing_utils as pre
 
 
 def run_tests(test_class):

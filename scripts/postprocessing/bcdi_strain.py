@@ -28,7 +28,6 @@ import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.preprocessing.preprocessing_utils as pru
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -599,7 +598,7 @@ print(
     int(extent_phase),
     "(rad)",
 )
-phase = pru.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 if debug:
     gu.multislices_plot(
         phase,
@@ -655,7 +654,7 @@ phase = pu.remove_offset(
 del support
 gc.collect()
 
-phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ##############################################################################
 # average the phase over a window or apodize to reduce noise in strain plots #
@@ -1056,7 +1055,7 @@ phase = pu.remove_offset(
 del support
 gc.collect()
 # Wrap the phase around 0 (no more offset)
-phase = pru.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+phase = util.wrap(obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
 
 ################################################################
 # calculate the strain depending on which axis q is aligned on #

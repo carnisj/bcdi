@@ -65,7 +65,7 @@ def apply_logical_array(arrays, frames_logical):
      In case of cropping/padding the number of frames changes. A frame whose
      index is set to 1 means that it is used, 0 means not used, -1 means padded
      (added) frame
-    :return: the sequence of cropped arrays
+    :return: an array (if a single array was provided) or a tuple of cropped arrays
     """
     if frames_logical is None:
         return arrays
@@ -94,6 +94,9 @@ def apply_logical_array(arrays, frames_logical):
             # padding occurs only at the edges of the dataset, so the original data is
             # contiguous, we can use array indexing directly
             output.append(array[original_frames != 0])
+
+    if len(arrays) == 1:
+        output = output[0]  # return the array instead of the tuple
     return output
 
 
@@ -1186,6 +1189,141 @@ def lorentzian(x_axis, amp, cen, sig):
     return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
 
 
+def mean_filter(
+    data,
+    nb_neighbours,
+    mask=None,
+    target_val=0,
+    extent=1,
+    min_count=3,
+    interpolate="mask_isolated",
+    debugging=False,
+):
+    """
+    Mask or apply a mean filter to data.
+
+    The procedure is applied only if the empty pixel is surrounded by nb_neighbours or
+    more pixels with at least min_count intensity per pixel.
+
+    :param data: 2D or 3D array to be filtered
+    :param nb_neighbours: minimum number of non-zero neighboring pixels for median
+     filtering
+    :param mask: mask array of the same shape as data
+    :param target_val: value where to interpolate, allowed values are int>=0 or np.nan
+    :param extent: in pixels, extent of the averaging window from the reference pixel
+     (extent=1, 2, 3 ... corresponds to window width=3, 5, 7 ... )
+    :param min_count: minimum intensity (inclusive) in the neighboring pixels to
+     interpolate, the pixel will be masked otherwise.
+    :param interpolate: based on 'nb_neighbours', if 'mask_isolated' will mask
+     isolated pixels, if 'interp_isolated' will interpolate isolated pixels
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: updated data and mask, number of pixels treated
+    """
+    valid.valid_ndarray(arrays=data, ndim=(2, 3))
+    # check some mparameters
+    if mask is None:
+        mask = np.zeros(data.shape)
+    valid.valid_ndarray(arrays=mask, shape=data.shape)
+
+    if not np.isnan(target_val) and not isinstance(target_val, int):
+        raise ValueError(
+            "target_val should be nan or an integer, cannot assess float equality"
+        )
+
+    valid.valid_item(
+        nb_neighbours, allowed_types=int, min_excluded=0, name="mean_filter"
+    )
+    valid.valid_item(extent, allowed_types=int, min_excluded=0, name="mean_filter")
+    valid.valid_item(min_count, allowed_types=int, min_included=0, name="mean_filter")
+
+    if interpolate not in {"mask_isolated", "interp_isolated"}:
+        raise ValueError(
+            f"invalid value '{interpolate}' for interpolate,"
+            f" allowed are 'mask_isolated' and 'interp_isolated'"
+        )
+    if not isinstance(debugging, bool):
+        raise TypeError(f"debugging should be a boolean, got {type(debugging)}")
+
+    # find all voxels to be processed
+    if target_val is np.nan:
+        target_pixels = np.argwhere(np.isnan(data))
+    else:
+        target_pixels = np.argwhere(data == target_val)
+    nb_pixels = 0
+
+    if debugging:
+        gu.combined_plots(
+            tuple_array=(data, mask),
+            tuple_sum_frames=(False, False),
+            tuple_sum_axis=(0, 0),
+            tuple_width_v=(None, None),
+            tuple_width_h=(None, None),
+            tuple_colorbar=(True, True),
+            tuple_vmin=(-1, 0),
+            tuple_vmax=(np.nan, 1),
+            tuple_scale=("log", "linear"),
+            tuple_title=("Data before filtering", "Mask before filtering"),
+            reciprocal_space=True,
+        )
+
+    if data.ndim == 2:
+        for indx in range(target_pixels.shape[0]):
+            pixrow = target_pixels[indx, 0]
+            pixcol = target_pixels[indx, 1]
+            temp = data[
+                pixrow - extent : pixrow + extent + 1,
+                pixcol - extent : pixcol + extent + 1,
+            ]
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if (
+                temp.size >= nb_neighbours and (temp > min_count).all()
+            ):  # nb_neighbours is >= 1
+                nb_pixels += 1
+                if interpolate == "interp_isolated":
+                    data[pixrow, pixcol] = temp.mean()
+                    mask[pixrow, pixcol] = 0
+                else:
+                    mask[pixrow, pixcol] = 1
+    else:  # 3D
+        for indx in range(target_pixels.shape[0]):
+            pix_z = target_pixels[indx, 0]
+            pix_y = target_pixels[indx, 1]
+            pix_x = target_pixels[indx, 2]
+            temp = data[
+                pix_z - extent : pix_z + extent + 1,
+                pix_y - extent : pix_y + extent + 1,
+                pix_x - extent : pix_x + extent + 1,
+            ]
+            temp = temp[np.logical_and(~np.isnan(temp), temp != target_val)]
+            if (
+                temp.size >= nb_neighbours and (temp > min_count).all()
+            ):  # nb_neighbours is >= 1
+                nb_pixels += 1
+                if interpolate == "interp_isolated":
+                    data[pix_z, pix_y, pix_x] = temp.mean()
+                    mask[pix_z, pix_y, pix_x] = 0
+                else:
+                    mask[pix_z, pix_y, pix_x] = 1
+
+    if debugging:
+        gu.combined_plots(
+            tuple_array=(data, mask),
+            tuple_sum_frames=(True, True),
+            tuple_sum_axis=(0, 0),
+            tuple_width_v=(None, None),
+            tuple_width_h=(None, None),
+            tuple_colorbar=(True, True),
+            tuple_vmin=(-1, 0),
+            tuple_vmax=(np.nan, 1),
+            tuple_scale=("log", "linear"),
+            tuple_title=("Data after filtering", "Mask after filtering"),
+            reciprocal_space=True,
+        )
+
+    return data, nb_pixels, mask
+
+
 def objective_lmfit(params, x_axis, data, distribution):
     """
     Calculate the total residual for fits to several data sets.
@@ -1227,6 +1365,92 @@ def line(x_array, a, b):
     :return: an array of length N containing the y values
     """
     return a * x_array + b
+
+
+def pad_from_roi(arrays, roi, binning, pad_value=0):
+    """
+    Pad a 3D stack of frames provided a region of interest.
+
+    The stacking is assumed to be on the first axis.
+
+    :param arrays: a 3D array of a sequence of 3D arrays of the same shape
+    :param roi: the desired region of interest of the unbinned frame. For an array in
+     arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
+    :param binning: tuple of two integers (binning along Y, binning along X)
+    :param pad_value: number or tuple of nb_arrays numbers, will pad using this value
+    :return: an array (if a single array was provided) or a tuple of arrays interpolated
+     on an orthogonal grid (same length as the number of input arrays)
+    """
+    ####################
+    # check parameters #
+    ####################
+    valid.valid_ndarray(arrays, ndim=3)
+    nb_arrays = len(arrays)
+    valid.valid_container(
+        roi,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=4,
+        name="roi",
+    )
+    valid.valid_container(
+        binning,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=2,
+        name="binning",
+    )
+    if isinstance(pad_value, Real):
+        pad_value = (pad_value,) * nb_arrays
+    valid.valid_container(
+        pad_value,
+        container_types=(tuple, list, np.ndarray),
+        item_types=Real,
+        length=nb_arrays,
+        name="pad_value",
+    )
+
+    ##############################################
+    # calculate the starting indices for padding #
+    ##############################################
+    nbz, nby, nbx = arrays[0].shape
+    output_shape = (
+        nbz,
+        int(np.rint((roi[1] - roi[0]) / binning[0])),
+        int(np.rint((roi[3] - roi[2]) / binning[1])),
+    )
+
+    if output_shape[1] > nby or output_shape[2] > nbx:
+        if roi[0] < 0:  # padding on the left
+            starty = abs(roi[0] // binning[0])
+            # loaded data will start at this index
+        else:  # padding on the right
+            starty = 0
+        if roi[2] < 0:  # padding on the left
+            startx = abs(roi[2] // binning[1])
+            # loaded data will start at this index
+        else:  # padding on the right
+            startx = 0
+        start = [int(val) for val in [0, starty, startx]]
+        print("Paddind the data to the shape defined by the ROI")
+
+        ##############
+        # pad arrays #
+        ##############
+        output_arrays = []
+        for idx, array in enumerate(arrays):
+            array = crop_pad(
+                array=array,
+                pad_value=pad_value[idx],
+                pad_start=start,
+                output_shape=output_shape,
+            )
+            output_arrays.append(array)
+
+        if nb_arrays == 1:
+            output_arrays = output_arrays[0]  # return the array instead of the tuple
+        return output_arrays
+    return arrays
 
 
 def plane(xy_array, a, b, c):
@@ -1386,9 +1610,7 @@ def primes(number):
     :param number: the integer to be decomposed
     :return: the list of prime dividers of number
     """
-    valid.valid_item(
-        number, allowed_types=int, min_excluded=0, name="preprocessing_utils.primes"
-    )
+    valid.valid_item(number, allowed_types=int, min_excluded=0, name="number")
     list_primes = [1]
     i = 2
     while i * i <= number:
@@ -2066,3 +2288,15 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
             if number % k != 0:
                 return False
     return True
+
+
+def wrap(obj, start_angle, range_angle):
+    """
+    Wrap obj between start_angle and (start_angle + range_angle).
+
+    :param obj: number or array to be wrapped
+    :param start_angle: start angle of the range
+    :param range_angle: range
+    :return: wrapped angle in [start_angle, start_angle+range[
+    """
+    return (obj - start_angle + range_angle) % range_angle + start_angle

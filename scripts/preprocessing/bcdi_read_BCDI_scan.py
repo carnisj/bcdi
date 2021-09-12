@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.preprocessing_utils as pru
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -195,7 +195,7 @@ logfile = setup.create_logfile(
 #################
 # load the data #
 #################
-data, mask, monitor, frames_logical = pru.load_data(
+data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
     logfile=logfile,
     scan_number=scan,
     detector=detector,
@@ -228,7 +228,7 @@ if data.ndim == 3:
     rocking_curve = np.zeros(numz)
 
     z0, y0, x0 = tuple(
-        map(lambda x: int(np.rint(x)), pru.find_bragg(data, peak_method=peak_method))
+        map(lambda x: int(np.rint(x)), bu.find_bragg(data, peak_method=peak_method))
     )
 
     if x_bragg is None:  # Bragg peak position not defined by the user, use the max
@@ -291,7 +291,7 @@ if data.ndim == 3:
     data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
     title = f"data.sum(axis=0)   peak method={peak_method}\n"
 else:  # 2D
-    _, y0, x0 = pru.find_bragg(data, peak_method=peak_method)
+    _, y0, x0 = bu.find_bragg(data, peak_method=peak_method)
     peak_int = int(data[y0, x0])
     print(
         f"Bragg peak (indices in the eventually binned ROI) at (y, x): {y0}, {x0},"
