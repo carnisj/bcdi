@@ -201,8 +201,9 @@ for index, item in enumerate(scans):
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=debug
         )
-        phase = util.wrap(phase, start_angle=-extent_phase / 2,
-                          range_angle=extent_phase)
+        phase = util.wrap(
+            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+        )
         phase = phase - phase[zcom, ycom, xcom]
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=debug
@@ -223,8 +224,9 @@ for index, item in enumerate(scans):
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=False
         )
-        phase = util.wrap(phase, start_angle=-extent_phase / 2,
-                          range_angle=extent_phase)
+        phase = util.wrap(
+            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+        )
         phase = phase - phase[zcom, ycom, xcom]
         phase, extent_phase = pu.unwrap(
             amp * np.exp(1j * phase), support_threshold=0.05, debugging=False

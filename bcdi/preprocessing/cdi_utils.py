@@ -385,108 +385,6 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
     return data, mask, detector_angle, frames_logical
 
 
-def ewald_curvature_saxs(cdi_angle, detector, setup, anticlockwise=True):
-    """
-    Correct the data for the curvature of Ewald sphere.
-
-    Based on the CXI detector geometry convention: Laboratory frame: z downstream,
-    y vertical up, x outboard. Detector axes: Y vertical and X horizontal (detector Y
-    is vertical down at out-of-plane angle=0, detector X is opposite to x at inplane
-    angle=0)
-
-    :param cdi_angle: 1D array of measurement angles in degrees
-    :param detector: an instance of the class Detector
-    :param setup: an instance of the class Setup
-    :param anticlockwise: True if the rotation is anticlockwise
-    :return: qx, qz, qy values in the laboratory frame
-     (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
-     nb_pixel_y * nb_angles
-    """
-    wavelength = setup.wavelength * 1e9  # convert to nm
-    kin = np.asarray(setup.beam_direction)  # (1, 0 , 0) by default
-    directbeam_y = (setup.direct_beam[0] - detector.roi[0]) / detector.binning[
-        1
-    ]  # vertical
-    directbeam_x = (setup.direct_beam[1] - detector.roi[2]) / detector.binning[
-        2
-    ]  # horizontal
-    nbz = len(cdi_angle)
-    nby = int((detector.roi[1] - detector.roi[0]) / detector.binning[1])
-    nbx = int((detector.roi[3] - detector.roi[2]) / detector.binning[2])
-    pixelsize_x = (
-        detector.pixelsize_x * 1e9
-    )  # in nm, pixel size in the horizontal direction
-    pixelsize_y = (
-        detector.pixelsize_y * 1e9
-    )  # in nm, pixel size in the horizontal direction
-    distance = setup.distance * 1e9  # in nm
-    qz = np.zeros((nbz, nby, nbx))
-    qy = np.zeros((nbz, nby, nbx))
-    qx = np.zeros((nbz, nby, nbx))
-
-    # calculate q values of the detector frame for each angular position and stack them
-    for idx, item in enumerate(cdi_angle):
-        angle = item * np.pi / 180
-        if not anticlockwise:
-            rotation_matrix = np.array(
-                [
-                    [np.cos(angle), 0, -np.sin(angle)],
-                    [0, 1, 0],
-                    [np.sin(angle), 0, np.cos(angle)],
-                ]
-            )
-        else:
-            rotation_matrix = np.array(
-                [
-                    [np.cos(angle), 0, np.sin(angle)],
-                    [0, 1, 0],
-                    [-np.sin(angle), 0, np.cos(angle)],
-                ]
-            )
-
-        myy, myx = np.meshgrid(
-            np.linspace(-directbeam_y, -directbeam_y + nby, num=nby, endpoint=False),
-            np.linspace(-directbeam_x, -directbeam_x + nbx, num=nbx, endpoint=False),
-            indexing="ij",
-        )
-
-        two_theta = np.arctan(myx * pixelsize_x / distance)
-        alpha_f = np.arctan(
-            np.divide(
-                myy * pixelsize_y,
-                np.sqrt(distance ** 2 + np.power(myx * pixelsize_x, 2)),
-            )
-        )
-
-        qlab0 = (
-            2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - kin[0])
-        )  # along z* downstream
-        qlab1 = (
-            2 * np.pi / wavelength * (np.sin(alpha_f) - kin[1])
-        )  # along y* vertical up
-        qlab2 = (
-            2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta) - kin[2])
-        )  # along x* outboard
-
-        qx[idx, :, :] = (
-            rotation_matrix[0, 0] * qlab0
-            + rotation_matrix[0, 1] * qlab1
-            + rotation_matrix[0, 2] * qlab2
-        )
-        qz[idx, :, :] = (
-            rotation_matrix[1, 0] * qlab0
-            + rotation_matrix[1, 1] * qlab1
-            + rotation_matrix[1, 2] * qlab2
-        )
-        qy[idx, :, :] = (
-            rotation_matrix[2, 0] * qlab0
-            + rotation_matrix[2, 1] * qlab1
-            + rotation_matrix[2, 2] * qlab2
-        )
-
-    return qx, qz, qy
-
-
 def grid_cdi(
     data,
     mask,
@@ -557,7 +455,7 @@ def grid_cdi(
     print("\nData shape after check_cdi_angle and before regridding:", nbz, nby, nbx)
     print("\nAngle range:", cdi_angle.min(), cdi_angle.max())
 
-    (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_tomo(
+    (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_cdi(
         arrays=(data, mask),
         fill_value=fill_value,
         correct_curvature=correct_curvature,
@@ -572,6 +470,9 @@ def grid_cdi(
     interp_mask[np.isnan(interp_data)] = 1
     interp_data[np.isnan(interp_data)] = 0
     interp_mask[np.isnan(interp_mask)] = 1
+    # set the mask as an array of integers, 0 or 1
+    interp_mask[np.nonzero(interp_mask)] = 1
+    interp_mask = interp_mask.astype(int)
 
     # apply the mask to the data
     interp_data[np.nonzero(interp_mask)] = 0

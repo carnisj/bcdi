@@ -857,17 +857,17 @@ class Diffractometer(ABC):
         return monitor
 
     def load_check_dataset(
-            self,
-            logfile,
-            scan_number,
-            detector,
-            setup,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
+        self,
+        logfile,
+        scan_number,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
     ):
         """
         Load data, apply filters and concatenate it for phasing.
@@ -936,10 +936,7 @@ class Diffractometer(ABC):
 
             # check for empty frames (no beam)
             data, mask3d, monitor, frames_logical = check_empty_frames(
-                data=data,
-                mask=mask3d,
-                monitor=monitor,
-                frames_logical=frames_logical
+                data=data, mask=mask3d, monitor=monitor, frames_logical=frames_logical
             )
 
             # intensity normalization
@@ -1212,6 +1209,7 @@ class Diffractometer34ID(Diffractometer):
     - detector: delta (inplane), gamma).
 
     """
+
     sample_rotations = ["y+", "x+"]
     detector_rotations = ["y+", "x-"]
 
@@ -1316,6 +1314,7 @@ class DiffractometerCRISTAL(Diffractometer):
     - detector: gamma, delta.
 
     """
+
     sample_rotations = ["x-", "y+"]
     detector_rotations = ["y+", "x-"]
 
@@ -1759,6 +1758,7 @@ class DiffractometerID01(Diffractometer):
     - detector: nu,del.
 
     """
+
     sample_rotations = ["y-", "x-", "y-"]
     detector_rotations = ["y-", "x-"]
 
@@ -2105,6 +2105,7 @@ class DiffractometerNANOMAX(Diffractometer):
     - detector: gamma,delta.
 
     """
+
     sample_rotations = ["x-", "y-"]
     detector_rotations = ["y-", "x-"]
 
@@ -2355,6 +2356,7 @@ class DiffractometerP10(Diffractometer):
     - detector: gamma, delta.
 
     """
+
     sample_rotations = ["y+", "x-", "z+", "y-"]
     detector_rotations = ["y+", "x-"]
 
@@ -2730,6 +2732,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
     - sample: phi (names hprz or sprz at the beamline)
 
     """
+
     sample_rotations = ["y+"]
     detector_rotations = []
 
@@ -2834,6 +2837,7 @@ class DiffractometerSIXS(Diffractometer):
     - detector: beta, gamma, del.
 
     """
+
     sample_rotations = ["x-", "y+"]
     detector_rotations = ["x-", "y+", "x-"]
 

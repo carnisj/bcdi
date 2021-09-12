@@ -1521,9 +1521,7 @@ def primes(number):
     :param number: the integer to be decomposed
     :return: the list of prime dividers of number
     """
-    valid.valid_item(
-        number, allowed_types=int, min_excluded=0, name="number"
-    )
+    valid.valid_item(number, allowed_types=int, min_excluded=0, name="number")
     list_primes = [1]
     i = 2
     while i * i <= number:

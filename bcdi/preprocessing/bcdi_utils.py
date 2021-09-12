@@ -1070,9 +1070,7 @@ def grid_bcdi_xrayutil(
         name="kwargs",
     )
     follow_bragg = kwargs.get("follow_bragg", False)
-    valid.valid_item(
-        follow_bragg, allowed_types=bool, name="follow_bragg"
-    )
+    valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
     numz, numy, numx = data.shape
     print(
@@ -1164,8 +1162,10 @@ def grid_bcdi_xrayutil(
     )
 
     numz, numy, numx = interp_data.shape
-    plot_comment = (f"_{numz}_{numy}_{numx}"
-                    f"_{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png")
+    plot_comment = (
+        f"_{numz}_{numy}_{numx}"
+        f"_{final_binning[0]}_{final_binning[1]}_{final_binning[2]}.png"
+    )
 
     max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(
