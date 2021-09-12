@@ -1,3 +1,9 @@
+Version 0.1.6
+-------------
+
+* Write unit tests for ``experiment.detector.py``, now coverage is > 99% for this
+  module
+
 * move forward CDI gridding function to Setup
 
 * implement DiffractometerP10SAXS and BeamlineP10SAXS classes for forward CDI
