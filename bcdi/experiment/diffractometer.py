@@ -986,6 +986,13 @@ class Diffractometer(ABC):
                     debugging=debugging,
                 )
 
+            ##########################################################################
+            # check for negative pixels, it can happen when subtracting a background #
+            ##########################################################################
+            print((data < 0).sum(), " negative data points masked")
+            mask3d[data < 0] = 1
+            data[data < 0] = 0
+
         return data, mask3d, monitor, frames_logical.astype(int)
 
     @abstractmethod
