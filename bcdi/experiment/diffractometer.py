@@ -2802,24 +2802,23 @@ class DiffractometerP10SAXS(DiffractometerP10):
             index_phi = None
             phi = []
 
-            fio = open(logfile, "r")
-            fio_lines = fio.readlines()
-            for line in fio_lines:
-                this_line = line.strip()
-                words = this_line.split()
+            with open(logfile, "r") as fio:
+                fio_lines = fio.readlines()
+                for line in fio_lines:
+                    this_line = line.strip()
+                    words = this_line.split()
 
-                if "Col" in words and ("sprz" in words or "hprz" in words):
-                    # sprz or hprz (SAXS) scanned
-                    # template = ' Col 0 sprz DOUBLE\n'
-                    index_phi = int(words[1]) - 1  # python index starts at 0
-                    print(words, "  Index Phi=", index_phi)
-                if index_phi is not None and util.is_numeric(
-                    words[0]
-                ):  # we are reading data and index_phi is defined
-                    phi.append(float(words[index_phi]))
+                    if "Col" in words and ("sprz" in words or "hprz" in words):
+                        # sprz or hprz (SAXS) scanned
+                        # template = ' Col 0 sprz DOUBLE\n'
+                        index_phi = int(words[1]) - 1  # python index starts at 0
+                        print(words, "  Index Phi=", index_phi)
+                    if index_phi is not None and util.is_numeric(
+                        words[0]
+                    ):  # we are reading data and index_phi is defined
+                        phi.append(float(words[index_phi]))
 
             phi = np.asarray(phi, dtype=float)
-            fio.close()
         else:
             phi = setup.custom_motors["phi"]
         return phi, setup.energy
