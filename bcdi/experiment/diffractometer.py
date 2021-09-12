@@ -2702,7 +2702,9 @@ class DiffractometerP10(Diffractometer):
                     device_values.append(float(words[index_device]))
 
         if index_device is None:
-            print(f"No device {device_name} in the logfile")
+            print(f"no device {device_name} in the logfile")
+        else:
+            print("found!")
         return np.asarray(device_values)
 
     def read_monitor(self, logfile, **kwargs):
