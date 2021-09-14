@@ -239,7 +239,7 @@ class Setup:
         else:
             valid.valid_container(
                 value,
-                container_types=(tuple, list),
+                container_types=(tuple, list, np.ndarray),
                 min_length=1,
                 item_types=int,
                 allow_none=True,
