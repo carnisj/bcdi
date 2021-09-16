@@ -23,6 +23,7 @@ detectors are:
 """
 
 from abc import ABC, abstractmethod
+import numpy
 import numpy as np
 from numbers import Real, Integral
 import os
@@ -876,7 +877,7 @@ class Dummy(Detector):
             name="custom_pixelsize",
         )
         self.custom_pixelnumber = kwargs.get("custom_pixelnumber")
-        if isinstance(self.custom_pixelnumber, np.ndarray):
+        if isinstance(self.custom_pixelnumber, numpy.ndarray):
             self.custom_pixelnumber = list(self.custom_pixelnumber)
         valid.valid_container(
             self.custom_pixelnumber,
