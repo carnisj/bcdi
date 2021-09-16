@@ -2973,7 +2973,7 @@ class DiffractometerSIXS(Diffractometer):
 
         :return: (beta, mu, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile=logfile"]
+        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             mu = logfile.mu[:]  # scanned
             delta = logfile.delta[0]  # not scanned
