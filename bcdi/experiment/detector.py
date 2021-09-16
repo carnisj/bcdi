@@ -876,9 +876,11 @@ class Dummy(Detector):
             name="custom_pixelsize",
         )
         self.custom_pixelnumber = kwargs.get("custom_pixelnumber")
+        if isinstance(self.custom_pixelnumber, np.ndarray):
+            self.custom_pixelnumber = list(self.custom_pixelnumber)
         valid.valid_container(
             self.custom_pixelnumber,
-            container_types=(list, tuple, np.ndarray),
+            container_types=(list, tuple),
             length=2,
             item_types=Integral,
             min_excluded=0,
