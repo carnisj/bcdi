@@ -24,7 +24,7 @@ detectors are:
 
 from abc import ABC, abstractmethod
 import numpy as np
-from numbers import Real
+from numbers import Real, Integral
 import os
 import pathlib
 
@@ -880,7 +880,7 @@ class Dummy(Detector):
             self.custom_pixelnumber,
             container_types=(list, tuple, np.ndarray),
             length=2,
-            item_types=int,
+            item_types=Integral,
             min_excluded=0,
             allow_none=True,
             name="custom_pixelnumber",
