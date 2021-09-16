@@ -79,6 +79,7 @@ pygments_style = "sphinx"
 todo_include_todos = False
 
 autodoc_mock_imports = [
+    "numpy,"
     "scipy",
     "skimage",
     "matplotlib",
