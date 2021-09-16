@@ -237,11 +237,13 @@ class Setup:
         if not self._custom_scan:
             self._custom_images = None
         else:
+            if isinstance(value, np.ndarray):
+                value = list(value)
             valid.valid_container(
                 value,
-                container_types=(tuple, list, np.ndarray),
+                container_types=(tuple, list),
                 min_length=1,
-                item_types=int,
+                item_types=Integral,
                 allow_none=True,
                 name="Setup.custom_images",
             )
