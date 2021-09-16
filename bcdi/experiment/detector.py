@@ -900,7 +900,7 @@ class Dummy(Detector):
             val is not None for val in self.custom_pixelnumber
         ):
             return self.custom_pixelnumber
-        print(f"Defaulting the pixel size to {516, 516}")
+        print(f"Defaulting the pixel number to {516, 516}")
         return 516, 516
 
     @property
