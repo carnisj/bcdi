@@ -1,24 +1,28 @@
+* Solve issues with numpy when building the documentation (enable *Use system packages*
+  in ReadTheDocs advanced settings)
+
 Version 0.1.6
 -------------
 
 * Write unit tests for ``experiment.detector.py``, now coverage is > 99% for this
   module
 
-* move forward CDI gridding function to Setup
+* move forward CDI gridding function to ``Setup``
 
-* implement DiffractometerP10SAXS and BeamlineP10SAXS classes for forward CDI
+* implement ``DiffractometerP10SAXS`` and ``BeamlineP10SAXS`` classes for forward CDI
   experiments at P10
 
 * split the module ``preprocessing_utils`` in two modules, ``bcdi_utils`` and
   ``cdi_utils``
 
-* Move generic functions from ``preprocessing_utils`` to `utilities`
+* Move generic functions from ``preprocessing_utils`` to ``utilities``
 
-* Create new validations functions valid_ndarray and valid_1d_array, implement the
-  corresponding unit tests.
+* Create new validations functions ``valid_ndarray`` and ``valid_1d_array``, implement
+  the corresponding unit tests.
 
-* Refactor: rename preprocessing_utils.regrid to calc_qvalues_xrutils and move it to
-  Setup. Put all the beamline dependent code in the corresponding Beamline child class.
+* Refactor: rename ``preprocessing_utils.regrid`` to ``calc_qvalues_xrutils`` and move
+  it to ``Setup``. Put all the beamline dependent code in the corresponding ``Beamline``
+  child class.
 
 Version 0.1.5
 -------------

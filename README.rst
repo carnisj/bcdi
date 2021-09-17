@@ -102,14 +102,6 @@ In such situation, the workaround is to create instead a virtual environment usi
 
 Please send feedback in `GitHub <https://github.com/carnisj/>`_.
 
-Changelog
-=========
-
-.. include:: ../HISTORY.rst
-  :end-before: Version 0.1.0
-
-See the full  :doc:`Changelog<changelog>`
-
 Citation & Bibliography
 =======================
 
@@ -127,6 +119,11 @@ Documentation
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
+Changelog
+=========
+
+.. include:: HISTORY.rst
+  :end-before: Version 0.1.5
 
 BCDI.algorithms: psf and image deconvolution algorithms
 =======================================================

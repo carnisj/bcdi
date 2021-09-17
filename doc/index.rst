@@ -12,7 +12,9 @@ Welcome to BCDI's documentation!
     
 .. include:: ../README.rst
    :end-before: BCDI.algorithms
-   
+
+See the full  :doc:`Changelog<HISTORY>`
+
 Command-line scripts
 ====================
 
