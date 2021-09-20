@@ -154,7 +154,10 @@ setup(
         "pillow",
     ],
     extras_require={
-        "doc": ["sphinx"],
+        "doc": [
+            "sphinx",
+            "sphinxcontrib-mermaid",
+        ],
         "dev": [
             "black",
             "coverage",
