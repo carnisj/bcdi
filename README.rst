@@ -58,6 +58,9 @@ BCDI can be used as a python library with the following main modules:
 
 9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
+The most important module is :mod:`bcdi.experiment`, which contains all setup-related
+implementation.
+
 Acknowledgment and third party packages
 =======================================
 
@@ -146,6 +149,44 @@ Description
 -----------
 
 This module provides classes and methods for the definition of the experimental setup.
+The following classes are implemented:
+
+ * Beamline and corresponding child classes (one per supported beamline)
+ * Detector and corresponding child classes (one per supported detector)
+ * Diffractometer and corresponding child classes (one per supported beamline)
+ * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
+ * Setup
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Setup{
+      +str beamline
+  }
+    class Beamline{
+      +str name
+  }
+    class Diffractometer{
+      +tuple sample_offsets
+  }
+    class Detector{
+      +str name
+  }
+    class RotationMatrix{
+      +str circle
+      +float angle
+  }
+    Setup *-- Beamline : create_beamline()
+    Setup *-- Diffractometer : create_diffractometer()
+    Setup o-- Detector : create_detector()
+    Diffractometer o-- RotationMatrix
+
+In scripts, the initial step is to declare a detector instance and a setup instance with
+the related parameters (see the class documentation). The beamline and the
+diffractometer are not meant to be instantiated directly, this is done internally in
+Setup.
+
 The geometry of the following beamlines is implemented:
 
  * ID01 (ESRF)
@@ -154,6 +195,38 @@ The geometry of the following beamlines is implemented:
  * SIXS (SOLEIL)
  * NANOMAX (MAX IV)
  * 34ID-C (APS): only for postprocessing
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Beamline{
+      +str name
+  }
+    ABC <|-- Beamline
+    Beamline <|-- BeamlineID01
+    Beamline <|-- BeamlineSIXS
+    Beamline <|-- Beamline34ID
+    Beamline <|-- BeamlineP10
+    Beamline <|-- BeamlineP10SAXS
+    Beamline <|-- BeamlineCRISTAL
+    Beamline <|-- BeamlineNANOMAX
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Diffractometer{
+      +tuple sample_offsets
+  }
+    ABC <|-- Diffractometer
+    Diffractometer <|-- DiffractometerID01
+    Diffractometer <|-- DiffractometerSIXS
+    Diffractometer <|-- Diffractometer34ID
+    Diffractometer <|-- DiffractometerP10
+    Diffractometer <|-- DiffractometerP10SAXS
+    Diffractometer <|-- DiffractometerCRISTAL
+    Diffractometer <|-- DiffractometerNANOMAX
 
 The following detectors are implemented:
 
@@ -164,19 +237,20 @@ The following detectors are implemented:
  * Eiger4M
  * Dummy (user-defined pixel size and pixel number)
 
-The following classes are implemented:
+.. mermaid::
+  :align: center
 
- * Beamline and corresponding child classes (one per supported beamline)
- * Detector and corresponding child classes (one per supported detector)
- * Diffractometer and corresponding child classes (one per supported beamline)
- * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
- * Setup
-
-In scripts, the initial step is to declare a detector instance and a setup instance with
-the related parameters (see the class documentation). The beamline and the
-diffractometer are not meant to be instantiated directly, this is done internally in
-Setup.
-
+  classDiagram
+    class Detector{
+      +str name : detector_name
+  }
+    ABC <|-- Detector
+    Detector <|-- Maxipix
+    Detector <|-- Eiger2M
+    Detector <|-- Eiger4M
+    Detector <|-- Timepix
+    Detector <|-- Merlin
+    Detector <|-- Dummy
 
 .. bcdi.experiment end
 
