@@ -18,6 +18,9 @@ See the full  :doc:`Changelog<HISTORY>`
 Command-line scripts
 ====================
 
+Some sample scripts are provided with the package. However, the authors make no warranty
+as to the correctness or accuracy of the analysis provided.
+
 Documentation of the scripts included in BCDI.
 
 .. toctree::
