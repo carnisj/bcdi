@@ -17,35 +17,38 @@ The silent capture Anonymous google doc is [here](https://docs.google.com/docume
 * define the future for the bcdi package
 
 ## Schedule overview
-The first day will be a primer for GIT, how to interact and communicate through the repository efficiently and why this is important
+The first day will be a primer for GIT, how to interact and communicate through the repository efficiently and why this is important.
+
+EUROPEAN TIME (09:00-12:00) - (14:00-18:00) - (21:00-24:00)  
+
+The core time (14:00-18:00) is consistent across half the world, optimal coverage for participants already interested.
+
+I intend to host the meeting continuously so in principle anyone can drop in and meet people etc etc. The two other time slots will be drop in clinics, where ideally 1 or more people are available for problem solving.
+
+
+Should the primer be the day before or the data after the package is really introduced?
 
 ## 20211004 (Day 1) Primer
 
-Morning:
+1 hours of tutorial  JC  (how to use github/how to communicate with github and discord)
 
-1-2 hours of tutorial    (how to use github/how to communicate with github and discord)
+1 hour of ask us anything  + coffee break           
 
-1 hour of ask us anything             
+1 hours of tutorial    (jupyter tips and tricks / other / dealing with the data deluge)
 
-Afternoon:
-
-1-2 hours of tutorial  (jupyter tips and tricks / other / dealing with the data deluge)
-
-1 hour of ask us anything     
+1 hour of ask us anything   + coffee break   
 
 have a git helpdesk - 3 people to go directly to in order to get help with git.
 
-data analysis reproducibility/ transparency and progress
-
 ## 20211005 (Day 2)
 
-who and what?
+who and what?  data analysis reproducibility/ transparency and progress
 
-Steven Leake - why we are here and how this is going to work.
+`14:00 - 14:15` Steven Leake - why we are here and how this is going to work.
 
-Jerome Carnis - history - overview of the package
+`14:20 - 14:50` Jerome Carnis - history - overview of the package
 
-maybe worth having a few talks about other packages available and their functionality.
+`15:00 - 15:30` Ross Harder - Cohere package
 
 tutorials /examples on the basic functionality for each submodule
 
