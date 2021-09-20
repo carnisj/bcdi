@@ -9,7 +9,7 @@
 
 """RotationMatrix class."""
 import numpy as np
-from numbers import Number, Real
+from numbers import Real
 
 from bcdi.utils import validation as valid
 
