@@ -6,9 +6,11 @@
 :mod:`bcdi.algorithms`: Image and PSF deconvolution using Richardson-Lucy algorithm
 ===================================================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.algorithms section
-   :end-before: bcdi.algorithms end
+Description
+-----------
+
+This module includes routines using Richardson-Lucy deconvolution algorithm and blind
+deconvolution, that can be applied to a 3D dataset.
 
 API Reference
 -------------

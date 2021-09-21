@@ -6,9 +6,11 @@
 :mod:`bcdi.utils`: various utilities for DFT registration and subpixel shift, data loading and fitting, validating parameters
 =============================================================================================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.utils section
-   :end-before: bcdi.utils end
+Description
+-----------
+
+Various non-specific utilities for i/o, fitting curves, image registration. The module
+validation contains all validation functions that are used throughout the code.
 
 API Reference
 -------------

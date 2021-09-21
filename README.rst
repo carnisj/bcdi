@@ -1,5 +1,11 @@
 .. image:: https://readthedocs.org/projects/bcdi/badge/?version=latest
+   :target: https://bcdi.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+.. image:: https://img.shields.io/github/workflow/status/carnisj/bcdi/python-package-3.9?logo=GitHub
+   :alt: GitHub Workflow Status
 .. image:: https://deepsource.io/gh/carnisj/bcdi.svg/?label=active+issues&show_trend=true&token=N3Z0cklmQrG8kzZOVwGJhLd9
+.. image:: https://img.shields.io/pypi/pyversions/bcdi?logo=PyPI&logoColor=%23FFFF00
+   :alt: PyPI - Python Version
 
 BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
 ==============================================================================================
@@ -26,6 +32,9 @@ BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 
 * creating figures for publication using templates
 
+Considering that most parts of the analysis pipeline are actually beamline-independent,
+we tried to reuse a much as possible code, and leverage inheritance when it comes to
+facility or beamline-dependent details.
 
 BCDI as a python toolkit
 ========================
@@ -54,12 +63,13 @@ BCDI can be used as a python library with the following main modules:
    detector gaps etc... In forward CDI geometry, calculation of the Bragg peak
    positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
-8) :mod:`bcdi.utils`: data loading, fitting functions ...
+8) :mod:`bcdi.utils`: data loading, fitting functions, validation functions ...
 
 9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
-The most important module is :mod:`bcdi.experiment`, which contains all setup-related
-implementation.
+The central module is :mod:`bcdi.experiment`, which contains all setup-related
+implementation. This is the place where to look at if you want to add support for a new
+beamline or detector.
 
 Acknowledgment and third party packages
 =======================================
@@ -121,250 +131,3 @@ Documentation
 =============
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
-
-Changelog
-=========
-
-.. include:: HISTORY.rst
-  :end-before: Version 0.1.5
-
-BCDI.algorithms: psf and image deconvolution algorithms
-=======================================================
-
-.. bcdi.algorithms section
-
-Description
------------
-
-This module includes routines using Richardson-Lucy deconvolution algorithm.
-
-.. bcdi.algorithms end
-
-BCDI.experiment: class and methods defining the experimental setup
-==================================================================
-
-.. bcdi.experiment section
-
-Description
------------
-
-This module provides classes and methods for the definition of the experimental setup.
-The following classes are implemented:
-
- * Beamline and corresponding child classes (one per supported beamline)
- * Detector and corresponding child classes (one per supported detector)
- * Diffractometer and corresponding child classes (one per supported beamline)
- * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
- * Setup
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Setup{
-      +str beamline
-  }
-    class Beamline{
-      +str name
-  }
-    class Diffractometer{
-      +tuple sample_offsets
-  }
-    class Detector{
-      +str name
-  }
-    class RotationMatrix{
-      +str circle
-      +float angle
-  }
-    Setup *-- Beamline : create_beamline()
-    Setup *-- Diffractometer : create_diffractometer()
-    Setup o-- Detector : create_detector()
-    Diffractometer o-- RotationMatrix
-
-In scripts, the initial step is to declare a detector instance and a setup instance with
-the related parameters (see the class documentation). The beamline and the
-diffractometer are not meant to be instantiated directly, this is done internally in
-Setup.
-
-The geometry of the following beamlines is implemented:
-
- * ID01 (ESRF)
- * P10 (PETRA III): 6-circle and USAXS setups
- * CRISTAL (SOLEIL)
- * SIXS (SOLEIL)
- * NANOMAX (MAX IV)
- * 34ID-C (APS): only for postprocessing
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Beamline{
-      +str name
-  }
-    ABC <|-- Beamline
-    Beamline <|-- BeamlineID01
-    Beamline <|-- BeamlineSIXS
-    Beamline <|-- Beamline34ID
-    Beamline <|-- BeamlineP10
-    Beamline <|-- BeamlineP10SAXS
-    Beamline <|-- BeamlineCRISTAL
-    Beamline <|-- BeamlineNANOMAX
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Diffractometer{
-      +tuple sample_offsets
-  }
-    ABC <|-- Diffractometer
-    Diffractometer <|-- DiffractometerID01
-    Diffractometer <|-- DiffractometerSIXS
-    Diffractometer <|-- Diffractometer34ID
-    Diffractometer <|-- DiffractometerP10
-    Diffractometer <|-- DiffractometerP10SAXS
-    Diffractometer <|-- DiffractometerCRISTAL
-    Diffractometer <|-- DiffractometerNANOMAX
-
-The following detectors are implemented:
-
- * Maxipix
- * Timepix
- * Merlin
- * Eiger2M
- * Eiger4M
- * Dummy (user-defined pixel size and pixel number)
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Detector{
-      +str name : detector_name
-  }
-    ABC <|-- Detector
-    Detector <|-- Maxipix
-    Detector <|-- Eiger2M
-    Detector <|-- Eiger4M
-    Detector <|-- Timepix
-    Detector <|-- Merlin
-    Detector <|-- Dummy
-
-.. bcdi.experiment end
-
-BCDI.facet_recognition: automatic facet detection in BCDI 3D reconstructions
-============================================================================
-
-.. bcdi.facet_recognition section
-
-Description
------------
-
-This module provides tools for plotting the stereographic projection of a diffraction
-peak or an object. There is also a script for facet detection on a reconstructed
-object, and for calculating statistics on facet strain. After meshing the object,
-facets are found using a density estimation of mesh triangles normals, followed by
-,watershed segmentation.
-See Carnis et al. Small 17, 2007702 (2021)
-https://doi.org/10.1002/smll.202007702
-
-.. bcdi.facet_recognition end
-
-BCDI.graph: plotting utilities
-==============================
-
-.. bcdi.graph section
-
-Description
------------
-
-This module provides methods to plot 2D and 3D data using templates, and to save it
-as a .vti file.
-
-.. bcdi.graph end
-
-BCDI.preprocessing: preprocessing utilities on the diffraction data before phasing
-==================================================================================
-
-.. bcdi.preprocessing section
-
-Description
------------
-
-This module provides methods used for pre-processing phased data. For example (but
-not limited to): centering, hotpixels removal, filtering, masking...
-
-.. bcdi.preprocessing end
-
-BCDI.postprocessing: postprocessing utilities on the complex object after phasing
-=================================================================================
-
-.. bcdi.postprocessing section
-
-Description
------------
-
-This module provides methods used for post-processing phased data. For example (but
-not limited to): phase offset and ramp removal, centering, cropping, padding,
-aligning reconstructions, filtering...
-
-.. bcdi.postprocessing end
-
-BCDI.publication: utilities to make formatted figure for publication
-====================================================================
-
-.. bcdi.publication section
-
-Description
------------
-
-This module provides scripts with templates for figures that can be used in
-presentations.
-
-.. bcdi.publication end
-
-BCDI.simulation: simulation of diffraction patterns
-===================================================
-
-.. bcdi.simulation section
-
-Description
------------
-
-In Bragg geometry, calculation of the diffraction intensity based on FFT or
-kinematical sum. It can include a displacement field, noise, detector gaps etc...
-In forward CDI geometry, calculation of the Bragg peak positions in 3D for a
-mesocrystal, knowing the unit cell and unit cell parameter. It can be used to fit
-experimental data.
-See Carnis et al. Scientific Reports 9, 17357 (2019)
-https://doi.org/10.1038/s41598-019-53774-2
-
-.. bcdi.simulation end
-
-BCDI.utils: various utilities for data analysis
-===============================================
-
-.. bcdi.utils section
-
-Description
------------
-
-Various non-specific utilities for i/o, fitting, array registration, parameter
-validation...
-
-.. bcdi.utils end
-
-BCDI.xcca: X-ray cross-correlation analysis
-===========================================
-
-.. bcdi.xcca section
-
-Description
------------
-
-This module provides methods to calculate the angular cross-correlation function for
-a 3D reciprocal space dataset.
-
-.. bcdi.xcca end

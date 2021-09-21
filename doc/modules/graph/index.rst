@@ -6,9 +6,11 @@
 :mod:`bcdi.graph`: Templates for plotting and saving data
 =========================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.graph section
-   :end-before: bcdi.graph end
+Description
+-----------
+
+This module provides methods to plot 2D and 3D data using templates, and to save it
+as a .vti file.
 
 API Reference
 -------------

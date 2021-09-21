@@ -11,7 +11,12 @@ Welcome to BCDI's documentation!
    :caption: Contents:
     
 .. include:: ../README.rst
-   :end-before: BCDI.algorithms
+
+Changelog
+=========
+
+.. include:: HISTORY.rst
+  :end-before: Version 0.1.5
 
 See the full  :doc:`Changelog<HISTORY>`
 
