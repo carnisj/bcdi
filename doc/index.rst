@@ -3,8 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to BCDI's documentation!
-================================
+.. |bcdi icon| image:: ../diffract.png
+  :width: 50
+  :alt: Nice diffraction pattern
+
+|bcdi icon| Welcome to BCDI's documentation!
+============================================
 
 .. toctree::
    :maxdepth: 2

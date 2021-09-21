@@ -33,7 +33,7 @@ BCDI stands for *Bragg coherent X-ray diffraction imaging*. It can be used for:
 * creating figures for publication using templates
 
 Considering that most parts of the analysis pipeline are actually beamline-independent,
-we tried to reuse a much as possible code, and leverage inheritance when it comes to
+we tried to reuse as much as possible code, and leverage inheritance when it comes to
 facility or beamline-dependent details.
 
 BCDI as a python toolkit
