@@ -6,9 +6,11 @@
 :mod:`bcdi.xcca`: X-ray cross-correlation analysis
 ==================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.xcca section
-   :end-before: bcdi.xcca end
+Description
+-----------
+
+This module provides methods to calculate the angular cross-correlation function for
+a 3D reciprocal space dataset measured in forward CDI geometry.
 
 API Reference
 -------------
