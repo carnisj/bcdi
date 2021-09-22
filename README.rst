@@ -105,6 +105,7 @@ Download & Installation
 =======================
 
 BCDI is available from:
+
  * Python Package Index: ``pip install bcdi``
  * `Most updated version on GitHub <https://github.com/carnisj/>`_
  * upgrade your version with the latest changes from GitHub:
