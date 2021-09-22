@@ -8,18 +8,36 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Beamline-related classes.
+Implementation of beamline-related classes.
 
-These classes are not meant to be instantiated directly but via a Setup instance.
-The available beamlines are:
+The class methods manage the initialization of the file system and the calculations
+related to reciprocal space transformation. Generic method are implemented in the
+abstract base class Beamline, and beamline-dependent methods need to be implemented in
+each child class (they are decoracted by @abstractmethod in the base class, they are
+marked using @ in the following diagram). These classes are not meant to be instantiated
+directly but via a Setup instance.
 
-- BeamlineID01
-- BeamlineSIXS
-- Beamline34ID
-- BeamlineP10
-- BeamlineP10SAXS
-- BeamlineCRISTAL
-- BeamlineNANOMAX
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Beamline{
+      +str name
+      create_logfile(@)
+      detector_hor(@)
+      detector_ver(@)
+      init_paths(@)
+      process_positions(@)
+      transformation_matrix(@)
+      exit_wavevector()
+      find_inplane()
+      find_outofplane()
+      init_qconversion()
+      inplane_coeff()
+      outofplane_coeff()
+      process_tilt()
+  }
+    ABC <|-- Beamline
 
 """
 from abc import ABC, abstractmethod
