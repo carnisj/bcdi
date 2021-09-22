@@ -11,11 +11,12 @@
 Implementation of beamline-related classes.
 
 The class methods manage the initialization of the file system and the calculations
-related to reciprocal space transformation. Generic method are implemented in the
-abstract base class Beamline, and beamline-dependent methods need to be implemented in
-each child class (they are decoracted by @abstractmethod in the base class, they are
-marked using @ in the following diagram). These classes are not meant to be instantiated
-directly but via a Setup instance.
+related to reciprocal or direct space transformation (interpolation in an orthonormal
+grid). Generic method are implemented in the abstract base class Beamline, and
+beamline-dependent methods need to be implemented in each child class (they are
+decorated by @abstractmethod in the base class; they are indicated using @ in the
+following diagram). These classes are not meant to be instantiated directly but via a
+Setup instance.
 
 .. mermaid::
   :align: center
