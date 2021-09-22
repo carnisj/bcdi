@@ -6,6 +6,8 @@
 .. image:: https://deepsource.io/gh/carnisj/bcdi.svg/?label=active+issues&show_trend=true&token=N3Z0cklmQrG8kzZOVwGJhLd9
 .. image:: https://img.shields.io/pypi/pyversions/bcdi?logo=PyPI&logoColor=%23FFFF00
    :alt: PyPI - Python Version
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3257616.svg
+   :target: https://doi.org/10.5281/zenodo.3257616
 
 BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data
 ==============================================================================================
