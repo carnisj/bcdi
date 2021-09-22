@@ -20,5 +20,6 @@ pycodestyle
 pydocstyle
 pyfakefs
 sphinx
+sphinxcontrib-mermaid
 twine
 wheel

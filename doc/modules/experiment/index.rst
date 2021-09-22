@@ -57,9 +57,37 @@ The geometry of the following beamlines is implemented:
  * NANOMAX (MAX IV)
  * 34ID-C (APS): only for postprocessing
 
-.. autoclasstree:: bcdi.experiment.beamline
+.. mermaid::
+  :align: center
 
-.. autoclasstree:: bcdi.experiment.diffractometer
+  classDiagram
+    class Beamline{
+      +str name
+  }
+    ABC <|-- Beamline
+    Beamline <|-- BeamlineID01
+    Beamline <|-- BeamlineSIXS
+    Beamline <|-- Beamline34ID
+    Beamline <|-- BeamlineP10
+    BeamlineP10 <|-- BeamlineP10SAXS
+    Beamline <|-- BeamlineCRISTAL
+    Beamline <|-- BeamlineNANOMAX
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Diffractometer{
+      +tuple sample_offsets
+  }
+    ABC <|-- Diffractometer
+    Diffractometer <|-- DiffractometerID01
+    Diffractometer <|-- DiffractometerSIXS
+    Diffractometer <|-- Diffractometer34ID
+    Diffractometer <|-- DiffractometerP10
+    DiffractometerP10 <|-- DiffractometerP10SAXS
+    Diffractometer <|-- DiffractometerCRISTAL
+    Diffractometer <|-- DiffractometerNANOMAX
 
 The following detectors are implemented:
 
@@ -70,7 +98,20 @@ The following detectors are implemented:
  * Eiger4M
  * Dummy (user-defined pixel size and pixel number)
 
-.. autoclasstree:: bcdi.experiment.detector
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Detector{
+      +str name : detector_name
+  }
+    ABC <|-- Detector
+    Detector <|-- Maxipix
+    Detector <|-- Eiger2M
+    Detector <|-- Eiger4M
+    Detector <|-- Timepix
+    Detector <|-- Merlin
+    Detector <|-- Dummy
 
 API Reference
 -------------

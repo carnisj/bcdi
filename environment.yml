@@ -31,3 +31,4 @@ dependencies:
   - wheel
   - pip:
     - hdf5plugin
+    - sphinxcontrib-mermaid
