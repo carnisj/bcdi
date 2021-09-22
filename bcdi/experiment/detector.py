@@ -8,17 +8,50 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Detector classes.
+Implementation of the detector classes.
 
-These classes handles the detector config used for data acquisition. The available
-detectors are:
+These classes handle the detector-dependent paths and data filenames, on top of the
+detector-dependent properties (e.g., number and size of the pixels, gaps between
+tiles...). Generic methods are implemented in the abstract base class Detector, and
+detector-dependent properties need to be implemented in each child class (they are
+decoracted by @abstractmethod in the base class, they are indicated using @ in the
+following diagram).
 
-- Maxipix
-- Eiger2M
-- Eiger4M
-- Timepix
-- Merlin
-- Dummy
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Detector{
+      +str name
+      +tuple binning
+      +str datadir
+      +int nb_pixel_x
+      +int nb_pixel_y
+      +float pixelsize_x
+      +float pixelsize_y
+      +dict params
+      +tuple preprocessing_binning
+      +tuple roi
+      +str rootdir
+      +str sample_name
+      +str savedir
+      +str scandir
+      +tuple sum_roi
+      +str template_file
+      +str template_imagefile
+      unbinned_pixel_number(@)
+      unbinned_pixel_size(@)
+      _background_subtraction()
+      _flatfield_correction()
+      _hotpixels_correction()
+      _linearity_correction()
+      _mask_gaps()
+      _saturation_correction()
+      counter()
+      linearity_func()
+      mask_detector()
+  }
+    ABC <|-- Detector
 
 """
 
