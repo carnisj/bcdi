@@ -8,18 +8,47 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Beamline-related diffractometer classes.
+Beamline-dependent diffractometer classes.
 
-These classes are not meant to be instantiated directly but via a Setup instance.
-The available diffractometers are:
+These classes follow the same structure as beamline classes. It would have been
+possible to put all the beamline-dependent code in a single child class per beamline,
+but the class would have been huge and more difficult to maintain. The class methods
+manage the extraction of motors/counters position, data loading (which can be thought
+just as another counter), data preprocessing (normalization by monitor, flatfield,
+hotpixels removal, background subtraction), and the rotation of the sample so that all
+sample circles are at 0 degrees. Generic method are implemented in the abstract base
+class Diffractometer, and beamline-dependent methods need to be implemented in each
+child class (they are decoracted by @abstractmethod in the base class, they are
+indicated using @ in the following diagram). These classes are not meant to be
+instantiated directly but via a Setup instance.
 
-- DiffractometerID01
-- DiffractometerSIXS
-- Diffractometer34ID
-- DiffractometerP10
-- DiffractometerP10SAXS
-- DiffractometerCRISTAL
-- DiffractometerNANOMAX
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Diffractometer{
+      +tuple sample_offsets
+      +tuple sample_circles
+      +tuple detector_circles
+      goniometer_values(@)
+      load_data(@)
+      motor_positions(@)
+      read_device(@)
+      read_monitor(@)
+      add_circle()
+      flatten_sample()
+      get_circles()
+      get_rocking_circle()
+      init_data_mask()
+      init_monitor()
+      load_check_dataset()
+      load_frame()
+      remove_circle()
+      rotation_matrix()
+      select_frames()
+      valid_name()
+  }
+    ABC <|-- Diffractometer
 
 """
 
