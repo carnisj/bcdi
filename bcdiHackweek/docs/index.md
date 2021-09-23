@@ -26,12 +26,14 @@ The core time (14:00-18:00) is consistent across half the world, optimal coverag
 I intend to host the meeting continuously so in principle anyone can drop in and meet people etc etc. The two other time slots will be drop in clinics, where ideally 1 or more people are available for problem solving.
 
 
-Should the primer be the day before or the data after the package is really introduced?
+Should the primer be the day before or the day after the package is really introduced?
 
 ## 20211004 (Day 1) Primer
 
-1 hours of tutorial  JC  (how to use github/how to communicate with github and discord)
-
+1 hours of tutorial  JC
+ - git/GitHub basics + communication (GitHub and discord)
+ - workflow for an effective collaboration: branches, doit, pull requests
+ 
 1 hour of ask us anything  + coffee break           
 
 1 hours of tutorial    (jupyter tips and tricks / other / dealing with the data deluge)
@@ -72,7 +74,7 @@ open discussion what do you like / don't like / what is not clear/ what is missi
 
 output file hdf5 etc etc cxi databank talk. Zenodo for repo consistency when  publishing - could be brought up in the publication section
 
-need for unit tests
+need for more unit tests
 
 ## 20211006 (Day 3)
 
