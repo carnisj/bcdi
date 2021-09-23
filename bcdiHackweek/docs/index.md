@@ -36,7 +36,7 @@ Should the primer be the day before or the day after the package is really intro
  
 1 hour of ask us anything  + coffee break           
 
-1 hours of tutorial    (jupyter tips and tricks / other / dealing with the data deluge)
+1 hours of tutorial    (setting up a virtual environment / jupyter tips and tricks / other / dealing with the data deluge)
 
 1 hour of ask us anything   + coffee break   
 
