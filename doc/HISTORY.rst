@@ -1,3 +1,8 @@
+Future
+------
+
+* add class diagrams in the documentation using sphinxcontrib-mermaid
+
 * Solve issues with numpy when building the documentation (enable *Use system packages*
   in ReadTheDocs advanced settings)
 
