@@ -7,7 +7,13 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-"""Setup class that defines the experimental geometry."""
+"""
+Setup class that defines the experimental geometry.
+
+You can think of it as the public interface for the Beamline and Diffractometer child
+classes. A script would call a method from Setup, which would then retrieve the required
+beamline-dependent information from the child classes.
+"""
 from collections.abc import Sequence
 import datetime
 import gc
