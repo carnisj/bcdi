@@ -45,12 +45,12 @@ BCDI can be used as a python library with the following main modules:
 
 1) :mod:`bcdi.algorithms`: PSF and image deconvolution using Richardson-Lucy algorithm
 
-2) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a
+2) :mod:`bcdi.experiment`: definition of the experimental geometry
+   (beamline, setup, detector, diffractometer...).
+
+3) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a
    reconstructed crystal. Automatic detection of reconstructed facets and statistics on
    facet strain.
-
-3) :mod:`bcdi.experiment`: definition of the experimental geometry
-   (beamline, setup, detector, diffractometer...).
 
 4) :mod:`bcdi.graph` : generation of plots using predefined templates.
 
