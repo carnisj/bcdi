@@ -10,20 +10,17 @@ from setuptools import setup, find_packages
 from os import path
 from io import open
 
+from bcdi import __version__
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with open(path.join(here, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
-# get the version
-with open("bcdi/__init__.py", "r") as version_file:
-    version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
-
-
 setup(
     name="bcdi",
-    version=version,
+    version=__version__,
     packages=find_packages(),
     include_package_data=True,
     # package_data={'bcdi/preprocessing': ['bcdi/preprocessing/alias_dict.txt']},
