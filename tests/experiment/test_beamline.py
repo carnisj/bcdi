@@ -316,7 +316,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         ) = self.beamline.init_paths(**params)
         self.assertEqual(
             homedir,
-            self.root_dir + self.sample_name + "{:06d}".format(self.scan_number) + "/"
+            self.root_dir + self.sample_name + "{:06d}".format(self.scan_number) + "/",
         )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, "")
@@ -396,11 +396,12 @@ class TestBeamlineP10(unittest.TestCase):
         ) = self.beamline.init_paths(**params)
         self.assertEqual(
             homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/"
+            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
         )
         self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(specfile, self.sample_name +
-                         "_{:05d}".format(self.scan_number))
+        self.assertEqual(
+            specfile, self.sample_name + "_{:05d}".format(self.scan_number)
+        )
         self.assertEqual(template_imagefile, "S_00001_master.h5")
 
     def test_init_qconversion(self):
@@ -555,8 +556,7 @@ class TestBeamline34ID(unittest.TestCase):
             template_imagefile,
         ) = self.beamline.init_paths(**params)
         self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + str(self.scan_number) + "/"
+            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
         )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, "")
