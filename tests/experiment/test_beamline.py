@@ -343,6 +343,87 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
 
 
+class TestBeamlineP10(unittest.TestCase):
+    """Tests related to P10 beamline instantiation."""
+
+    def setUp(self):
+        self.conversion_table = labframe_to_xrayutil
+        self.root_dir = "D:/data/P10/"
+        self.sample_name = "S"
+        self.scan_number = 1
+        self.template_imagefile = "_master.h5"
+        self.specfile_name = ""
+        self.beamline = create_beamline("P10")
+        self.diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
+        self.beam_direction = np.array([1, 0, 0])
+        self.offset_inplane = 1
+
+    def test_detector_hor(self):
+        self.assertTrue(self.beamline.detector_hor == "x-")
+
+    def test_detector_ver(self):
+        self.assertTrue(self.beamline.detector_ver == "y-")
+
+    def test_exit_wavevector(self):
+        params = {
+            "diffractometer": self.diffractometer,
+            "inplane_angle": 0.0,
+            "outofplane_angle": 90.0,
+            "wavelength": 2 * np.pi,
+        }
+        self.assertTrue(
+            np.allclose(
+                self.beamline.exit_wavevector(**params),
+                np.array([0.0, 1.0, 0.0]),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+    def test_init_paths(self):
+        params = {
+            "root_folder": self.root_dir,
+            "sample_name": self.sample_name,
+            "scan_number": self.scan_number,
+            "specfile_name": self.specfile_name,
+            "template_imagefile": self.template_imagefile,
+        }
+        (
+            homedir,
+            default_dirname,
+            specfile,
+            template_imagefile,
+        ) = self.beamline.init_paths(**params)
+        self.assertEqual(
+            homedir,
+            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/"
+        )
+        self.assertEqual(default_dirname, "e4m/")
+        self.assertEqual(specfile, self.sample_name +
+                         "_{:05d}".format(self.scan_number))
+        self.assertEqual(template_imagefile, "S_00001_master.h5")
+
+    def test_init_qconversion(self):
+        _, offsets = self.beamline.init_qconversion(
+            conversion_table=self.conversion_table,
+            beam_direction=self.beam_direction,
+            offset_inplane=self.offset_inplane,
+            diffractometer=self.diffractometer,
+        )
+        nb_circles = len(self.diffractometer.sample_circles) + len(
+            self.diffractometer.detector_circles
+        )
+        print(offsets)
+        self.assertEqual(len(offsets), nb_circles)
+        self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
+
+    def test_inplane_coeff(self):
+        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+
+    def test_outofplane_coeff(self):
+        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+
+
 class TestBeamlineSIXS2019(unittest.TestCase):
     """Tests related to CRISTAL beamline instantiation."""
 
