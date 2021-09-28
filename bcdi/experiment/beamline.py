@@ -708,6 +708,7 @@ class BeamlineCRISTAL(Beamline):
                 grazing_angle,
                 container_types=(tuple, list),
                 item_types=Real,
+                min_length=1,
                 name="grazing_angle"
             )
             if verbose:
@@ -970,6 +971,15 @@ class BeamlineID01(Beamline):
             )
 
         if rocking_angle == "outofplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                min_length=1,
+                name="grazing_angle"
+            )
             if verbose:
                 print(
                     f"rocking angle is eta, mu={grazing_angle[0] * 180 / np.pi:.3f} deg"
@@ -1020,6 +1030,13 @@ class BeamlineID01(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                min_length=2,
+                name="grazing_angle"
+            )
             if verbose:
                 print(
                     f"rocking angle is phi,"
@@ -1078,6 +1095,9 @@ class BeamlineID01(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
