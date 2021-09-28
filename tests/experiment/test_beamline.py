@@ -183,7 +183,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
@@ -380,7 +379,6 @@ class TestBeamlineID01(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
@@ -577,7 +575,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
@@ -659,7 +656,6 @@ class TestBeamlineP10(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
 
@@ -738,7 +734,6 @@ class TestBeamlineSIXS(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
@@ -817,7 +812,6 @@ class TestBeamline34ID(unittest.TestCase):
         nb_circles = len(self.diffractometer.sample_circles) + len(
             self.diffractometer.detector_circles
         )
-        print(offsets)
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
