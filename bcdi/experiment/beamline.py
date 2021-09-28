@@ -709,7 +709,7 @@ class BeamlineCRISTAL(Beamline):
                 container_types=(tuple, list),
                 item_types=Real,
                 length=1,
-                name="grazing_angle"
+                name="grazing_angle",
             )
             if verbose:
                 print(
@@ -972,7 +972,7 @@ class BeamlineID01(Beamline):
             container_types=(tuple, list),
             item_types=Real,
             min_length=1,
-            name="grazing_angle"
+            name="grazing_angle",
         )
         if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
             raise NotImplementedError(
