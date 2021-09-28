@@ -702,6 +702,8 @@ class BeamlineCRISTAL(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
             valid.valid_container(
                 grazing_angle,
                 container_types=(tuple, list),
