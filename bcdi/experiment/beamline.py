@@ -708,7 +708,7 @@ class BeamlineCRISTAL(Beamline):
                 grazing_angle,
                 container_types=(tuple, list),
                 item_types=Real,
-                min_length=1,
+                length=1,
                 name="grazing_angle"
             )
             if verbose:
@@ -965,21 +965,21 @@ class BeamlineID01(Beamline):
         if verbose:
             print("using ESRF ID01 PSIC geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            min_length=1,
+            name="grazing_angle"
+        )
         if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
             raise NotImplementedError(
                 "Non-zero mu not implemented " "for the transformation matrices at ID01"
             )
 
         if rocking_angle == "outofplane":
-            if isinstance(grazing_angle, Real):
-                grazing_angle = (grazing_angle,)
-            valid.valid_container(
-                grazing_angle,
-                container_types=(tuple, list),
-                item_types=Real,
-                min_length=1,
-                name="grazing_angle"
-            )
             if verbose:
                 print(
                     f"rocking angle is eta, mu={grazing_angle[0] * 180 / np.pi:.3f} deg"
@@ -1030,13 +1030,8 @@ class BeamlineID01(Beamline):
             )
 
         elif rocking_angle == "inplane":
-            valid.valid_container(
-                grazing_angle,
-                container_types=(tuple, list),
-                item_types=Real,
-                min_length=2,
-                name="grazing_angle"
-            )
+            if len(grazing_angle) != 2:
+                raise ValueError("grazing_angle should be of length 2")
             if verbose:
                 print(
                     f"rocking angle is phi,"
