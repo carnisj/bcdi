@@ -1274,111 +1274,6 @@ class Diffractometer(ABC):
             )
 
 
-class Diffractometer34ID(Diffractometer):
-    """
-    Define 34ID goniometer: 2 sample circles + 2 detector circles.
-
-    The laboratory frame uses the CXI convention (z downstream, y vertical up,
-    x outboard).
-
-    - sample: theta (inplane), phi (out of plane)
-    - detector: delta (inplane), gamma).
-
-    """
-
-    sample_rotations = ["y+", "x+"]
-    detector_rotations = ["y+", "x-"]
-
-    def __init__(self, sample_offsets):
-        super().__init__(
-            sample_circles=self.sample_rotations,
-            detector_circles=self.detector_rotations,
-            sample_offsets=sample_offsets,
-        )
-
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
-        """
-        Retrieve goniometer motor positions for a BCDI rocking scan.
-
-        :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer
-           to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
-        """
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
-        # load the motor positions
-        theta, phi, delta, gamma, _ = self.motor_positions(setup=setup)
-
-        # define the circles of interest for BCDI
-        if setup.rocking_angle == "inplane":
-            grazing = None  # phi is above theta at 34ID
-            tilt, inplane, outofplane = (
-                theta,
-                delta,
-                gamma,
-            )  # theta is the rotation around the vertical axis
-        elif setup.rocking_angle == "outofplane":
-            grazing = (theta,)
-            tilt, inplane, outofplane = (
-                phi,
-                delta,
-                gamma,
-            )  # phi is the incident angle at 34ID
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-        # 34ID-C goniometer, 2S+2D (sample: theta (inplane),
-        # phi (out of plane)   detector: delta (inplane), gamma)
-        sample_angles = (theta, phi)
-        detector_angles = (delta, gamma)
-
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
-
-    def load_data(self, **kwargs):
-        """Load 34ID-C data including detector/background corrections."""
-        raise NotImplementedError("'read_device' not implemented for 34ID-C")
-
-    def motor_positions(self, setup, **kwargs):
-        """
-        Load the scan data and extract motor positions.
-
-        :param setup: an instance of the class Setup
-        :return: (theta, phi, delta, gamma, energy) values
-        """
-        if not setup.custom_scan:
-            raise NotImplementedError("Only custom_scan implemented for 34ID")
-        theta = setup.custom_motors["theta"]
-        phi = setup.custom_motors["phi"]
-        gamma = setup.custom_motors["gamma"]
-        delta = setup.custom_motors["delta"]
-        return theta, phi, delta, gamma, setup.energy
-
-    @staticmethod
-    def read_device(**kwargs):
-        """Extract the device positions/values during the scan at 34ID-C beamline."""
-        raise NotImplementedError("'read_device' not implemented for 34ID-C")
-
-    @staticmethod
-    def read_monitor(**kwargs):
-        """Load the default monitor for a dataset measured at 34ID-C."""
-        raise NotImplementedError("'read_monitor' not implemented for 34ID-C")
-
-
 class DiffractometerCRISTAL(Diffractometer):
     """
     Define CRISTAL goniometer: 2 sample circles + 2 detector circles.
@@ -3060,3 +2955,108 @@ class DiffractometerSIXS(Diffractometer):
         if len(monitor) == 0:  # the alias dictionnary was probably not provided
             monitor = self.read_device(logfile=logfile, device_name="intensity")
         return monitor
+
+
+class Diffractometer34ID(Diffractometer):
+    """
+    Define 34ID goniometer: 2 sample circles + 2 detector circles.
+
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+
+    - sample: theta (inplane), phi (out of plane)
+    - detector: delta (inplane), gamma).
+
+    """
+
+    sample_rotations = ["y+", "x+"]
+    detector_rotations = ["y+", "x-"]
+
+    def __init__(self, sample_offsets):
+        super().__init__(
+            sample_circles=self.sample_rotations,
+            detector_circles=self.detector_rotations,
+            sample_offsets=sample_offsets,
+        )
+
+    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :return: a tuple of angular values in degrees, depending on stage_name:
+
+         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
+           angle, outofplane detector angle). The grazing incidence angles are the
+           positions of circles below the rocking circle.
+         - 'sample': tuple of angular values for the sample circles, from the most outer
+           to the most inner circle
+         - 'detector': tuple of angular values for the detector circles, from the most
+           outer to the most inner circle
+
+        """
+        # check some parameter
+        if stage_name not in {"bcdi", "sample", "detector"}:
+            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
+
+        # load the motor positions
+        theta, phi, delta, gamma, _ = self.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "inplane":
+            grazing = None  # phi is above theta at 34ID
+            tilt, inplane, outofplane = (
+                theta,
+                delta,
+                gamma,
+            )  # theta is the rotation around the vertical axis
+        elif setup.rocking_angle == "outofplane":
+            grazing = (theta,)
+            tilt, inplane, outofplane = (
+                phi,
+                delta,
+                gamma,
+            )  # phi is the incident angle at 34ID
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # 34ID-C goniometer, 2S+2D (sample: theta (inplane),
+        # phi (out of plane)   detector: delta (inplane), gamma)
+        sample_angles = (theta, phi)
+        detector_angles = (delta, gamma)
+
+        if stage_name == "sample":
+            return sample_angles
+        if stage_name == "detector":
+            return detector_angles
+        return tilt, grazing, inplane, outofplane
+
+    def load_data(self, **kwargs):
+        """Load 34ID-C data including detector/background corrections."""
+        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+
+    def motor_positions(self, setup, **kwargs):
+        """
+        Load the scan data and extract motor positions.
+
+        :param setup: an instance of the class Setup
+        :return: (theta, phi, delta, gamma, energy) values
+        """
+        if not setup.custom_scan:
+            raise NotImplementedError("Only custom_scan implemented for 34ID")
+        theta = setup.custom_motors["theta"]
+        phi = setup.custom_motors["phi"]
+        gamma = setup.custom_motors["gamma"]
+        delta = setup.custom_motors["delta"]
+        return theta, phi, delta, gamma, setup.energy
+
+    @staticmethod
+    def read_device(**kwargs):
+        """Extract the device positions/values during the scan at 34ID-C beamline."""
+        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+
+    @staticmethod
+    def read_monitor(**kwargs):
+        """Load the default monitor for a dataset measured at 34ID-C."""
+        raise NotImplementedError("'read_monitor' not implemented for 34ID-C")
