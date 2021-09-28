@@ -628,7 +628,7 @@ class BeamlineCRISTAL(Beamline):
         :param grazing_angle: angle or list of angles of the sample circles which are
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
-        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param rocking_angle: "outofplane" or "inplane"
         :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
@@ -702,6 +702,12 @@ class BeamlineCRISTAL(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                name="grazing_angle"
+            )
             if verbose:
                 print(
                     "rocking angle is phi,"
@@ -760,6 +766,9 @@ class BeamlineCRISTAL(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
