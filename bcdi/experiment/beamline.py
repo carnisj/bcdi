@@ -2196,6 +2196,16 @@ class BeamlineSIXS(Beamline):
         if verbose:
             print("using SIXS geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            length=1,
+            name="grazing_angle",
+        )
+
         if rocking_angle == "inplane":
             if verbose:
                 print(
@@ -2280,10 +2290,9 @@ class BeamlineSIXS(Beamline):
                     - 1
                 )
             )
+
         else:
-            raise NotImplementedError(
-                "out of plane rocking curve not implemented for SIXS"
-            )
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
