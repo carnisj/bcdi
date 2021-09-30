@@ -2523,6 +2523,15 @@ class Beamline34ID(Beamline):
             )
 
         elif rocking_angle == "outofplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                length=1,
+                name="grazing_angle",
+            )
             if verbose:
                 print(
                     "rocking angle is phi,"
@@ -2577,5 +2586,8 @@ class Beamline34ID(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
