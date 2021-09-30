@@ -1596,6 +1596,16 @@ class BeamlineP10(Beamline):
         if verbose:
             print("using PETRAIII P10 geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            min_length=1,
+            name="grazing_angle",
+        )
+
         if rocking_angle == "outofplane":
             if verbose:
                 print(
@@ -1657,6 +1667,8 @@ class BeamlineP10(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if len(grazing_angle) != 3:
+                raise ValueError("grazing_angle should be of length 3")
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError(
                     "Non-zero mu not implemented for inplane rocking curve at P10"
@@ -1738,6 +1750,9 @@ class BeamlineP10(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
