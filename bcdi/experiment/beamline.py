@@ -628,7 +628,7 @@ class BeamlineCRISTAL(Beamline):
         :param grazing_angle: angle or list of angles of the sample circles which are
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
-        :param rocking_angle: "outofplane", "inplane" or "energy"
+        :param rocking_angle: "outofplane" or "inplane"
         :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
@@ -702,6 +702,15 @@ class BeamlineCRISTAL(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                length=1,
+                name="grazing_angle",
+            )
             if verbose:
                 print(
                     "rocking angle is phi,"
@@ -760,6 +769,9 @@ class BeamlineCRISTAL(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
@@ -953,6 +965,15 @@ class BeamlineID01(Beamline):
         if verbose:
             print("using ESRF ID01 PSIC geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            min_length=1,
+            name="grazing_angle",
+        )
         if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
             raise NotImplementedError(
                 "Non-zero mu not implemented " "for the transformation matrices at ID01"
@@ -1009,6 +1030,8 @@ class BeamlineID01(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if len(grazing_angle) != 2:
+                raise ValueError("grazing_angle should be of length 2")
             if verbose:
                 print(
                     f"rocking angle is phi,"
@@ -1067,6 +1090,9 @@ class BeamlineID01(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
@@ -1311,6 +1337,15 @@ class BeamlineNANOMAX(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                length=1,
+                name="grazing_angle",
+            )
             if verbose:
                 print(
                     "rocking angle is phi,"
@@ -1369,6 +1404,9 @@ class BeamlineNANOMAX(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
@@ -1558,6 +1596,16 @@ class BeamlineP10(Beamline):
         if verbose:
             print("using PETRAIII P10 geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            min_length=1,
+            name="grazing_angle",
+        )
+
         if rocking_angle == "outofplane":
             if verbose:
                 print(
@@ -1619,6 +1667,8 @@ class BeamlineP10(Beamline):
             )
 
         elif rocking_angle == "inplane":
+            if len(grazing_angle) != 3:
+                raise ValueError("grazing_angle should be of length 3")
             if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
                 raise NotImplementedError(
                     "Non-zero mu not implemented for inplane rocking curve at P10"
@@ -1700,6 +1750,9 @@ class BeamlineP10(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
@@ -2143,6 +2196,16 @@ class BeamlineSIXS(Beamline):
         if verbose:
             print("using SIXS geometry")
 
+        if isinstance(grazing_angle, Real):
+            grazing_angle = (grazing_angle,)
+        valid.valid_container(
+            grazing_angle,
+            container_types=(tuple, list),
+            item_types=Real,
+            length=1,
+            name="grazing_angle",
+        )
+
         if rocking_angle == "inplane":
             if verbose:
                 print(
@@ -2227,10 +2290,9 @@ class BeamlineSIXS(Beamline):
                     - 1
                 )
             )
+
         else:
-            raise NotImplementedError(
-                "out of plane rocking curve not implemented for SIXS"
-            )
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
 
@@ -2461,6 +2523,15 @@ class Beamline34ID(Beamline):
             )
 
         elif rocking_angle == "outofplane":
+            if isinstance(grazing_angle, Real):
+                grazing_angle = (grazing_angle,)
+            valid.valid_container(
+                grazing_angle,
+                container_types=(tuple, list),
+                item_types=Real,
+                length=1,
+                name="grazing_angle",
+            )
             if verbose:
                 print(
                     "rocking angle is phi,"
@@ -2515,5 +2586,8 @@ class Beamline34ID(Beamline):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
+
+        else:
+            raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset

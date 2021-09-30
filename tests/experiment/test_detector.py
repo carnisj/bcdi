@@ -79,7 +79,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
         self.valid_path = "/gpfs/bcdi/data"
         os.makedirs(self.valid_path)
-        print(os.path.isdir(self.valid_path))
         self.det = Maxipix("Maxipix")
 
     def test_create_detector_from_abc(self):
