@@ -9,9 +9,9 @@
 Description
 -----------
 
-This module provides methods used for post-processing phased data. For example (but
-not limited to): phase offset and ramp removal, centering, cropping, padding,
-aligning reconstructions, filtering...
+This module provides methods used for post-processing data after phase retrieval.
+For example (but not limited to): phase offset and ramp removal, centering, 
+cropping, padding, aligning reconstructions, filtering...
 
 API Reference
 -------------
