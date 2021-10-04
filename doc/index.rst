@@ -20,7 +20,7 @@ Changelog
 =========
 
 .. include:: HISTORY.rst
-  :end-before: Version 0.1.5
+  :end-before: Version 0.1.5 
 
 See the full  :doc:`Changelog<HISTORY>`
 
