@@ -44,13 +44,9 @@ have a git helpdesk - 3 people to go directly to in order to get help with git.
 
 ## 20211005 (Day 2)
 
-who and what?  data analysis reproducibility/ transparency and progress
+bcdi project overview
 
-`14:00 - 14:15` Steven Leake - why we are here and how this is going to work.
-
-`14:20 - 14:50` Jerome Carnis - history - overview of the package
-
-`15:00 - 15:30` Ross Harder - Cohere package
+cohere package overview
 
 tutorials /examples on the basic functionality for each submodule
 
