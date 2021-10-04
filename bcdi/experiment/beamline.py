@@ -850,7 +850,7 @@ class BeamlineID01(Beamline):
 
         """
         homedir = root_folder + "/" #+ sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
+        default_dirname = ""
         return homedir, default_dirname, specfile_name, template_imagefile
 
     def process_positions(
