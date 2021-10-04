@@ -1,0 +1,34 @@
+name: bcdi
+channels:
+  - defaults
+  - anaconda
+  - menpo
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - scipy
+  - scikit-image
+  - matplotlib
+  - h5py
+  - traits
+  - vtk
+  - importlib_resources
+  - xrayutilities
+  - fabio
+  - silx
+  - lmfit
+  - moviepy
+  - pillow
+  - black
+  - coverage
+  - doit
+  - pycodestyle
+  - pydocstyle
+  - pyfakefs
+  - sphinx
+  - twine
+  - wheel
+  - pip:
+    - hdf5plugin
+    - sphinxcontrib-mermaid

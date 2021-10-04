@@ -3,16 +3,27 @@
 .. toctree::
    :maxdepth: 2
 
-:mod:`bcdi.preprocessing`: Preparation of BCDI data for phasing
-===============================================================
+:mod:`bcdi.preprocessing`: Preprocessing of (B)CDI data before phase retrieval
+==============================================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.preprocessing section
-   :end-before: bcdi.preprocessing end
+Description
+-----------
+
+This module provides generic methods used for pre-processing data before phase
+retrieval. For example (but not limited to): centering, hotpixels removal, filtering,
+masking...
 
 API Reference
 -------------
 
-.. automodule:: bcdi.preprocessing.preprocessing_utils
+bcdi_utils
+^^^^^^^^^^
+
+.. automodule:: bcdi.preprocessing.bcdi_utils
    :members:
 
+cdi_utils
+^^^^^^^^^
+
+.. automodule:: bcdi.preprocessing.cdi_utils
+   :members:

@@ -6,12 +6,18 @@
 :mod:`bcdi.postprocessing`: Post-processing of phased data
 ==========================================================
 
-.. include:: ../../../README.rst
-   :start-after: bcdi.postprocessing section
-   :end-before: bcdi.postprocessing end
+Description
+-----------
+
+This module provides methods used for post-processing phased data. For example (but
+not limited to): phase offset and ramp removal, centering, cropping, padding,
+aligning reconstructions, filtering...
 
 API Reference
 -------------
+
+postprocessing_utils
+^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bcdi.postprocessing.postprocessing_utils
    :members:

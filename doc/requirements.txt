@@ -1,0 +1,3 @@
+# doc/requirements.txt
+sphinx==4.2.0
+sphinxcontrib-mermaid==0.7.1
