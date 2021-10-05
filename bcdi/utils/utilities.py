@@ -897,7 +897,7 @@ def in_range(point, extent):
     return False
 
 
-def is_numeric(string):
+def is_float(string):
     """
     Return True is the string represents a number.
 
