@@ -904,6 +904,8 @@ def is_float(string):
     :param string: the string to be checked
     :return: True of False
     """
+    if not isinstance(string, str):
+        raise TypeError("the input should be a string")
     try:
         float(string)
         return True
