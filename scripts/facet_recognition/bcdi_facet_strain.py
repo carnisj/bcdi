@@ -37,17 +37,14 @@ Output: a log file with strain statistics by plane, a VTK file for 3D visualizat
 detected planes.
 """
 
-scan = 1585  # spec scan number
-datadir = "C:/Users/carnisj/Documents/data/david/S" + str(scan) + "/"
+scan = 11  # spec scan number
+datadir = "C:/Users/Jerome/Documents/data/dataset_ID01/S" + str(scan) + "/pynxraw"
 support_threshold = 0.35  # threshold for support determination
-voxel_size = [
-    11.4,
-    10.4,
-    11.3,
-]  # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-upsampling_factor = 2  # integer, factor for upsampling the reconstruction
+voxel_size = [3.0, 3.0, 3.0]
+# tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
+upsampling_factor = 1  # integer, factor for upsampling the reconstruction
 # in order to have a smoother surface
-savedir = datadir
+savedir = "C:/Users/Jerome/Documents/data/dataset_ID01/S" + str(scan) + "/test/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
 projection_axis = 1  # the projection will be performed on the equatorial plane
 # perpendicular to that axis (0, 1 or 2)
@@ -56,40 +53,34 @@ smoothing_iterations = 5  # number of iterations in Taubin smoothing,
 # bugs if smoothing_iterations larger than 10
 smooth_lamda = 0.33  # lambda parameter in Taubin smoothing
 smooth_mu = 0.34  # mu parameter in Taubin smoothing
-radius_normals = (
-    0.1  # radius of integration for the calculation of the density of normals
-)
+radius_normals = 0.1
+# radius of integration for the calculation of the density of normals
 projection_method = "stereographic"  # 'stereographic' or 'equirectangular'
 peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
-max_distance_plane = (
-    0.75  # in pixels, maximum allowed distance to the facet plane of a voxel
-)
-edges_coord = (
-    360  # coordination threshold for isolating edges, 360 seems to work reasonably well
-)
+max_distance_plane = 0.75
+# in pixels, maximum allowed distance to the facet plane of a voxel
+edges_coord = 360
+# coordination threshold for isolating edges, 360 seems to work reasonably well
 corners_coord = 310  # coordination threshold for isolating corners,
 # 310 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
-threshold_south = -2500  # background threshold in the stereographic projection
+threshold_south = -1500  # background threshold in the stereographic projection
 # from South of the density of normals
-threshold_north = (
-    -500
-)  # background threshold in the stereographic projection from North
+threshold_north = -1500
+# background threshold in the stereographic projection from North
 # of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection
 # (should be larger than 90)
-stereo_scale = (
-    "linear"  # 'linear' or 'log', scale of the colorbar in the stereographic plot
-)
+stereo_scale = "linear"
+# 'linear' or 'log', scale of the colorbar in the stereographic plot
 ##########################################################
 # parameters only used in the equirectangular projection #
 ##########################################################
 bw_method = 0.03  # bandwidth in the gaussian kernel density estimation
-kde_threshold = (
-    -0.2
-)  # threshold for defining the background in the density estimation of normals
+kde_threshold = -0.2
+# threshold for defining the background in the density estimation of normals
 ##################################################
 # define crystallographic planes of interest for #
 # the stereographic projection (cubic lattice)   #
@@ -206,7 +197,7 @@ if upsampling_factor > 1:
 #####################################################################
 # Use marching cubes to obtain the surface mesh of these ellipsoids #
 #####################################################################
-vertices_old, faces, _, _ = measure.marching_cubes_lewiner(
+vertices_old, faces, _, _ = measure.marching_cubes(
     amp, level=support_threshold, allow_degenerate=False, step_size=1
 )
 # vertices_old is a list of 3d coordinates of all vertices points
