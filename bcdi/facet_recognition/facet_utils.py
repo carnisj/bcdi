@@ -1651,7 +1651,7 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
     :param debugging: True to see plots
     :return: the upsampled array
     """
-    valid.valid_ndarray(array, ndim={2, 3})
+    valid.valid_ndarray(array, ndim=(2, 3))
     ndim = array.ndim
 
     valid.valid_item(
