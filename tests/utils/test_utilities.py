@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 import unittest
 import bcdi.utils.utilities as util
 
@@ -65,6 +66,37 @@ class TestInRange(unittest.TestCase):
 
     def test_inrange_larger_edge_x(self):
         self.assertTrue(util.in_range(point=(0, 0, 119), extent=self.extent))
+
+
+class TestIsFloat(unittest.TestCase):
+    """
+    Tests on the function utilities.is_float.
+
+    def is_float(string)
+    """
+
+    def test_string_float(self):
+        self.assertTrue(util.is_float("12.0"))
+
+    def test_string_int(self):
+        self.assertTrue(util.is_float("12"))
+
+    def test_string_complex(self):
+        self.assertFalse(util.is_float("12 + 1j"))
+
+    def test_string_none(self):
+        self.assertFalse(util.is_float("None"))
+
+    def test_string_not_numeric(self):
+        self.assertFalse(util.is_float("abc"))
+
+    def test_none(self):
+        with self.assertRaises(TypeError):
+            util.is_float(None)
+
+    def test_array(self):
+        with self.assertRaises(TypeError):
+            util.is_float(np.ones(3))
 
 
 if __name__ == "__main__":
