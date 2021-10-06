@@ -6,7 +6,7 @@
 #   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-#		  input from Marie-Ingrid Richard, mrichard@esrf.fr
+# 		  input from Marie-Ingrid Richard, mrichard@esrf.fr
 
 from math import tan, pi
 import os
@@ -21,14 +21,14 @@ At two eta angles, perform a piy-scan of the particle.
 """
 
 
-piy_array = [72.026,70.826] # in um
-eta_array = [24.63, 25.03] # in degrees
+piy_array = [72.026, 70.826]  # in um
+eta_array = [24.63, 25.03]  # in degrees
 
-piz = (piy_array[1] - piy_array[0]) * np.tan(eta_array[0] * pi / 180) \
- * np.tan(eta_array[1] * pi / 180) / (np.tan(eta_array[1] * pi / 180) \
- - np.tan(eta_array[0] * pi / 180))
-piy = piz / np.tan((eta_array[0] + eta_array[1])* pi / 180 / 2.0)
-print(f"Move relatively piz by %.2f, piy by %.2f"%(piz, piy))
-
-
-
+piz = (
+    (piy_array[1] - piy_array[0])
+    * np.tan(eta_array[0] * pi / 180)
+    * np.tan(eta_array[1] * pi / 180)
+    / (np.tan(eta_array[1] * pi / 180) - np.tan(eta_array[0] * pi / 180))
+)
+piy = piz / np.tan((eta_array[0] + eta_array[1]) * pi / 180 / 2.0)
+print(f"Move relatively piz by %.2f, piy by %.2f" % (piz, piy))
