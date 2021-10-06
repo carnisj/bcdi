@@ -77,9 +77,8 @@ frames_pattern = None
 # parameters used in masking #
 ##############################
 flag_interact = True  # True to interact with plots, False to close it automatically
-background_plot = (
-    "0.5"  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-)
+background_plot = "0.5"
+# in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
 #########################################################
@@ -218,7 +217,7 @@ fill_value_mask = 0  # 0 (not masked) or 1 (masked).
 # imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (1, 0, 0)
 # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (0, 0, 90, 0,)
+sample_offsets = (0, 0, 0,)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
