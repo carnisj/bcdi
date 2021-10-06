@@ -75,31 +75,31 @@ class RotationMatrix:
         angle = self.angle * np.pi / 180  # convert from degrees to radians
 
         if self.circle[1] == "+":
-            rot_dir = 1
+            rotation_direction = 1
         else:  # '-'
-            rot_dir = -1
+            rotation_direction = -1
 
         if self.circle[0] == "x":
             matrix = np.array(
                 [
                     [1, 0, 0],
-                    [0, np.cos(angle), -rot_dir * np.sin(angle)],
-                    [0, rot_dir * np.sin(angle), np.cos(angle)],
+                    [0, np.cos(angle), -rotation_direction * np.sin(angle)],
+                    [0, rotation_direction * np.sin(angle), np.cos(angle)],
                 ]
             )
         elif self.circle[0] == "y":
             matrix = np.array(
                 [
-                    [np.cos(angle), 0, rot_dir * np.sin(angle)],
+                    [np.cos(angle), 0, rotation_direction * np.sin(angle)],
                     [0, 1, 0],
-                    [-rot_dir * np.sin(angle), 0, np.cos(angle)],
+                    [-rotation_direction * np.sin(angle), 0, np.cos(angle)],
                 ]
             )
         elif self.circle[0] == "z":
             matrix = np.array(
                 [
-                    [np.cos(angle), -rot_dir * np.sin(angle), 0],
-                    [rot_dir * np.sin(angle), np.cos(angle), 0],
+                    [np.cos(angle), -rotation_direction * np.sin(angle), 0],
+                    [rotation_direction * np.sin(angle), np.cos(angle), 0],
                     [0, 0, 1],
                 ]
             )
