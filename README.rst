@@ -132,7 +132,7 @@ See http://cecill.info/licences/Licence_CeCILL-B_V1-en.html
 Citation & Bibliography
 =======================
 
-If you use BCDI for scientific work, please consider including a citation using the
+If you use this package for scientific work, please consider including a citation using the
 following DOI: 10.5281/zenodo.3257616
 
 This package contributed to the following peer-reviewed publications:
