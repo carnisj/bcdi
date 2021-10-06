@@ -18,6 +18,9 @@ class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.
 
+    The laboratory frame uses the CXI convention (z downstream, y vertical up,
+    x outboard).
+    
     :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter
      represents the rotation axis. + for a counter-clockwise rotation, - for a
      clockwise rotation.
@@ -25,14 +28,8 @@ class RotationMatrix:
      rotation matrix
     """
 
-    valid_circles = {
-        "x+",
-        "x-",
-        "y+",
-        "y-",
-        "z+",
-        "z-",
-    }  # + counter-clockwise, - clockwise
+    valid_circles = {"x+", "x-", "y+", "y-", "z+", "z-"}  
+    # + counter-clockwise, - clockwise
 
     def __init__(self, circle, angle):
         self.angle = angle
