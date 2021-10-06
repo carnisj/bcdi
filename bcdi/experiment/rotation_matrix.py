@@ -18,8 +18,7 @@ class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.
 
-    The laboratory frame uses the CXI convention (z downstream, y vertical up,
-    x outboard).
+    This considers a right-handed orthonormal frame (x, y, z).
 
     :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter
      represents the rotation axis. + for a counter-clockwise rotation, - for a
