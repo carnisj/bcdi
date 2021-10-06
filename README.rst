@@ -118,6 +118,17 @@ In such situation, the workaround is to create instead a virtual environment usi
 
 Please send feedback in `GitHub <https://github.com/carnisj/bcdi/issues>`_.
 
+Documentation
+=============
+
+The documentation is available at: https://bcdi.readthedocs.io/en/latest/
+
+License
+=======
+The BCDI library is distributed with a CeCILL-B license
+(an open-source license similar to the FreeBSD one).
+See http://cecill.info/licences/Licence_CeCILL-B_V1-en.html
+
 Citation & Bibliography
 =======================
 
@@ -161,14 +172,3 @@ This package contributed to the following peer-reviewed publications:
 * S. Fernández, et al. In situ structural evolution of single particle model catalysts
   under ambient pressure reaction conditions. Nanoscale 11, 331-338 (2019).
   DOI: 10.1039/c8nr08414a
-
-License
-=======
-The BCDI library is distributed with a CeCILL-B license
-(an open-source license similar to the FreeBSD one).
-See http://cecill.info/licences/Licence_CeCILL-B_V1-en.html
-
-Documentation
-=============
-
-The documentation is available at: https://bcdi.readthedocs.io/en/latest/
