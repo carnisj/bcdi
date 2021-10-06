@@ -5,8 +5,7 @@
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
-#         Jerome Carnis, carnis_jerome@yahoo.fr
-# 		  input from Marie-Ingrid Richard, mrichard@esrf.fr
+#         Marie-Ingrid Richard, mrichard@esrf.fr
 
 from math import tan, pi
 import os
