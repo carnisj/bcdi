@@ -16,7 +16,7 @@ import sys
 helptext = """
 Calculate the vertical correction and correction along the beam to apply to a
 nanocrystal to move it at the center of rotation along the beam direction.
-At two eta angles, perform a piy-scan of the particle. 
+At two eta angles, perform a piy-scan of the particle.
 """
 
 
