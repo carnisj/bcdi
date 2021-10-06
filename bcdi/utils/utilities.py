@@ -897,13 +897,15 @@ def in_range(point, extent):
     return False
 
 
-def is_numeric(string):
+def is_float(string):
     """
     Return True is the string represents a number.
 
     :param string: the string to be checked
     :return: True of False
     """
+    if not isinstance(string, str):
+        raise TypeError("the input should be a string")
     try:
         float(string)
         return True

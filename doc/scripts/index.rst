@@ -112,22 +112,6 @@ bcdi_scan_movie.py
    :end-before: """
    :language: rst
 
-bcdi_view_ccf.py
-^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/graph/bcdi_view_ccf.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_view_ccf_map.py
-^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/graph/bcdi_view_ccf_map.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 bcdi_view_mesh.py
 ^^^^^^^^^^^^^^^^^
 
@@ -575,6 +559,22 @@ bcdi_save_to_mat.py
 
 XCCA
 ----
+
+bcdi_view_ccf.py
+^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../scripts/xcca/bcdi_view_ccf.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_view_ccf_map.py
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../scripts/xcca/bcdi_view_ccf_map.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
 
 bcdi_xcca_3D_map_polar.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^
