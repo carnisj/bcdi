@@ -118,14 +118,10 @@ medfilt_order = 7  # for custom median filter,
 # parameters used when reloading processed data #
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
-reload_orthogonal = (
-    False  # True if the reloaded data is already intepolated in an orthonormal frame
-)
-preprocessing_binning = (
-    1,
-    1,
-    1,
-)  # binning factors in each dimension of the binned data to be reloaded
+reload_orthogonal = False
+# True if the reloaded data is already intepolated in an orthonormal frame
+preprocessing_binning = (1, 1, 1)
+# binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
 ##################
@@ -133,9 +129,8 @@ save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_npz = True  # True to save the processed data in npz format
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
-save_asint = (
-    False  # if True, the result will be saved as an array of integers (save space)
-)
+save_asint = False
+# if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
 ######################################
@@ -184,7 +179,7 @@ x_bragg = 1577  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg = 833  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector = [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
+roi_detector = None # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
