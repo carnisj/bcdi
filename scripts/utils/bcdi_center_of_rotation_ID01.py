@@ -30,4 +30,5 @@ piz = (
     / (np.tan(eta_array[1] * pi / 180) - np.tan(eta_array[0] * pi / 180))
 )
 piy = piz / np.tan((eta_array[0] + eta_array[1]) * pi / 180 / 2.0)
-print(f"Move relatively piz by %.2f, piy by %.2f" % (piz, piy))
+print(f"Move relatively piz by {piz:.2f} um, piy by {piy:.2f} um")
+
