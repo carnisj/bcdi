@@ -6,18 +6,16 @@
 #       authors:
 #         Steven Leake, steven.leake@esrf.fr
 #         makePoly commands adapted from Ross Harder scripts decades old
-"""Make a 3D polygon."""
-
+"""Make a 3D polygon. The concept is to be able to build a support from a set of
+defined planes these planes can be positioned based on physical size (nm) if
+known or eventually made into a fancy tool with a 3D view of the support versus
+the data so you can match fringes. It may also be interesting to consider how to
+make 3D supports from other characterisation methods (SEM etc...).
+"""
 import numpy as np
 import h5py as h5
 import sys
 
-"""The concept is to be able to build a support from a set of defined planes these
-planes can be positioned based on physical size (nm) if known or eventually made
-into a fancy tool with a 3D view of the support versus the data so you can match
-fringes. It may also be interesting to consider how to make 3D supports from
-other characterisation methods (SEM etc...).
-"""
 
 
 def AddPolyCen(array, center, planes):
@@ -47,7 +45,6 @@ def AddPolyCen(array, center, planes):
 
     return ((array >= len(planes)) * 1).astype(array.dtype)
 
-
 def MakePoly(dims, planes):
     """
 
@@ -58,7 +55,6 @@ def MakePoly(dims, planes):
 
     """
     return make_poly(dims, planes)
-
 
 def make_poly(dims, planes):
     """
@@ -75,7 +71,6 @@ def make_poly(dims, planes):
         cen.append(dim / 2)
     return AddPolyCen(array, cen, planes)
 
-
 def MakePolyCen(dims, center, planes):
     """
 
@@ -90,7 +85,7 @@ def MakePolyCen(dims, center, planes):
     return AddPolyCen(array, center, planes)
 
 
-class supportMaker:
+class supportMaker():
     """
 
     A masking class for support creation.
@@ -249,7 +244,6 @@ def generatePlanesCuboid(x, y, z):
     )
     return planes, planesDist
 
-
 def generatePlanesTetrahedra(x):
     """Make a tetrahedra of dimension x."""
     planes = np.array(
@@ -270,8 +264,7 @@ def generatePlanesTetrahedra(x):
     )
     return planes, planesDist
 
-
-def generatePlanesPrism(x, y):
+def generatePlanesPrism(x,y):
     """Make a Prism of thickness x, y is somewhat arbitrary."""
     planes = np.array(
         [
@@ -292,7 +285,6 @@ def generatePlanesPrism(x, y):
         ]
     )
     return planes, planesDist
-
 
 def rot_planes(planes, rot):
     """

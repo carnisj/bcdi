@@ -16,20 +16,20 @@ import numpy as np
 import h5py as h5
 
 
-def rot_planes(planes, rot):
+def rot_planes(arrayPlanes, rot):
     """
     Rotate planes with some rotation matrix.
     something is wrong here if I import this it doesnt work
     """
     # should probably move to the rotation matrix module
-    print(planes)
-    rp = [np.dot(rot, v) for v in planes]
+    print(arrayPlanes)
+    rp = [np.dot(rot, v) for v in arrayPlanes]
 
     npl = []
-    [npl.append(p.tolist()) for p in rp]
-    planes = np.array(npl)
-    print(planes)
-    return planes
+    npl1 = [npl.append(p.tolist()) for p in rp]
+    arrayPlanes = np.array(npl1)
+    print(arrayPlanes)
+    return arrayPlanes
 
 
 shape = "cuboid"
@@ -102,7 +102,7 @@ with h5.File("support.h5", "a") as outf:
 
 
 def makePoly_example():
-    """example of makePoly."""
+    """Example of makePoly."""
     data = sM.MakePoly((64, 64, 64), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)))
     outf1 = h5.File("test.h5", "w")
     outf1["poly"] = data
