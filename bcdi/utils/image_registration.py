@@ -6,10 +6,12 @@
 # J.Carnis 27/04/2018
 """Functions related to the registration and alignement of two arrays."""
 
+from collections.abc import Sequence
 from numbers import Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
+from typing import Union
 
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -329,8 +331,13 @@ def dftups(
     return np.dot(np.dot(kernel_row, array), kernel_column)
 
 
-def get_shift(reference_array, shifted_array, shift_method="modulus",
-              precision=1000, support_threshold=None, verbose=True):
+def get_shift(
+        reference_array: np.ndarray,
+        shifted_array: np.ndarray,
+        shift_method: str = "modulus",
+        precision: int = 1000,
+        support_threshold: Union[None, float] = None,
+        verbose: bool = True) -> Sequence[float]:
     """
     Calculate the shift between two arrays.
 
@@ -395,7 +402,10 @@ def get_shift(reference_array, shifted_array, shift_method="modulus",
     return shifts
 
 
-def shift_array(array, shifts, interpolation_method='subpixel'):
+def shift_array(
+        array: np.ndarray,
+        shifts: Sequence[float],
+        interpolation_method: str = 'subpixel') -> np.ndarray:
     """
     Shift array using the defined method given the offsets.
 
