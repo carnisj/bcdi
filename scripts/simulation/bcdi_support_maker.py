@@ -16,6 +16,22 @@ import numpy as np
 import h5py as h5
 
 
+def rot_planes(planes, rot):
+    """
+    Rotate planes with some rotation matrix.
+    something is wrong here if I import this it doesnt work
+    """
+    # should probably move to the rotation matrix module
+    print(planes)
+    rp = [np.dot(rot, v) for v in planes]
+
+    npl = []
+    [npl.append(p.tolist()) for p in rp]
+    planes = np.array(npl)
+    print(planes)
+    return planes
+
+
 shape = "cuboid"
 if shape == "cuboid":
     planes, planesDist = sM.generatePlanesCuboid(800, 800, 100)
@@ -26,7 +42,7 @@ if shape == "tetrahedra":
 
 # equilateral prism
 if shape == "prism":
-    planes, planesDist = sM.generatePlanesPrism(x, y)
+    planes, planesDist = sM.generatePlanesPrism(50, 150)
 
 # convert planes dist to nm
 planesDist *= 1e-9
@@ -39,8 +55,10 @@ Rx = R(xaxis, alpha).get_matrix()
 Ry = R(yaxis, beta).get_matrix()
 Rz = R(zaxis, gamma).get_matrix()
 
-planes1 = sM.rot_planes(planes, Rz)
-planes2 = sM.rot_planes(planes1, Ry)
+print(planes, planesDist)
+
+planes1 = rot_planes(planes, Rz)
+planes2 = rot_planes(planes1, Ry)
 
 # load an npz data array here
 rawdata = np.zeros((64, 64, 64))
@@ -76,22 +94,23 @@ np.savez("support.npz", support)
 
 with h5.File("support.h5", "a") as outf:
     outf["poly"] = support
-    data1 = fft.fftn(support)
+    rdata = fft.fftn(support)
     # outf['poly_fft'] = abs(data1)
-    outf["poly_fft_shift"] = abs(fft.fftshift(data1))
+    outf["poly_fft_shift"] = abs(fft.fftshift(rdata))
     # can be useufl to compare to rawdata
     outf["rawdata"] = rawdata
 
 
 def makePoly_example():
-    data = MakePoly((64, 64, 64), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)))
-    outf = h5.File("test.h5", "w")
-    outf["poly"] = data
+    """example of makePoly."""
+    data = sM.MakePoly((64, 64, 64), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)))
+    outf1 = h5.File("test.h5", "w")
+    outf1["poly"] = data
 
-    data = MakePolyCen(
+    data = sM.MakePolyCen(
         (64, 64, 64), (10, 10, 10), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
     )
-    data = MakePolyCen(
+    data = sM.MakePolyCen(
         (64, 64, 64),
         (10, 10, 10),
         ((10.1, 0, 0), (0, 10, 0), (0, 0, 10), (-10, 0, 0), (0, -10, 0), (0, 0, -10)),

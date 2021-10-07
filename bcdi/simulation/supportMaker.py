@@ -12,8 +12,7 @@ import numpy as np
 import h5py as h5
 import sys
 
-"""
-The concept is to be able to build a support from a set of defined planes these
+"""The concept is to be able to build a support from a set of defined planes these
 planes can be positioned based on physical size (nm) if known or eventually made
 into a fancy tool with a 3D view of the support versus the data so you can match
 fringes. It may also be interesting to consider how to make 3D supports from
@@ -296,11 +295,14 @@ def generatePlanesPrism(x, y):
 
 
 def rot_planes(planes, rot):
-    """Rotate planes with some rotation matrix."""
+    """
+    Rotate planes with some rotation matrix.
+
+    something is wrong here if I import this it doesnt work
+    """
     # should probably move to the rotation matrix module
     print(planes)
     rp = [np.dot(rot, v) for v in planes]
-
     npl = []
     npl = [npl.append(p.tolist()) for p in rp]
     planes = np.array(npl)
