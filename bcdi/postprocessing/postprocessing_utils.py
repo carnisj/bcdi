@@ -66,8 +66,8 @@ def align_arrays(
         ndim=3,
         fix_shape=False
     )
-    if shift_method not in {"raw", "modulus", "support"}:
-        raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
+    if shift_method not in {"raw", "modulus", "support", "skip"}:
+        raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
     if interpolation_method not in {"subpixel", "rgi", "roll"}:
         raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
     if shifted_array.shape != reference_array.shape:
@@ -87,7 +87,7 @@ def align_arrays(
         ##############################################
         # calculate the shift between the two arrays #
         ##############################################
-        shiftz, shifty, shiftx = util.get_shift_between_arrays(
+        shifts = reg.get_shift(
             reference_array=reference_array,
             shifted_array=shifted_array,
             shift_method=shift_method,
@@ -99,44 +99,16 @@ def align_arrays(
         #######################
         # align shifted_obj #
         #######################
-        if interpolation_method == 'subpixel':
-            # align obj using subpixel shift, keep the complex output
-            new_obj = reg.subpixel_shift(shifted_array, shiftz, shifty, shiftx)
-        elif interpolation_method == "rgi":
-            # re-sample data on a new grid based on COM shift of support
-            nbz, nby, nbx = shifted_array.shape
-            old_z = np.arange(-nbz // 2, nbz // 2)
-            old_y = np.arange(-nby // 2, nby // 2)
-            old_x = np.arange(-nbx // 2, nbx // 2)
-            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-            new_z = myz + shiftz
-            new_y = myy + shifty
-            new_x = myx + shiftx
-            del myx, myy, myz
-            rgi = RegularGridInterpolator(
-                (old_z, old_y, old_x),
-                shifted_array,
-                method="linear",
-                bounds_error=False,
-                fill_value=0,
-            )
-            new_obj = rgi(
-                np.concatenate(
-                    (
-                        new_z.reshape((1, new_z.size)),
-                        new_y.reshape((1, new_z.size)),
-                        new_x.reshape((1, new_z.size)),
-                    )
-                ).transpose()
-            )
-            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(shifted_array.dtype)
-        else:  # "roll"
-            new_obj = np.roll(shifted_array, (shiftz, shifty, shiftx), axis=(0, 1, 2))
+        aligned_array = reg.shift_array(
+            array=shifted_array,
+            shifts=shifts,
+            interpolation_method=interpolation_method
+        )
 
     else:  # 'skip'
         if verbose:
             print("Skipping alignment")
-        new_obj = shifted_array
+        aligned_array = shifted_array
 
     ###########################
     # print and optional plot #
@@ -146,7 +118,7 @@ def align_arrays(
             "Pearson correlation coefficient = {0:.3f}".format(
                 pearsonr(
                     np.ndarray.flatten(abs(reference_array)),
-                    np.ndarray.flatten(abs(new_obj))
+                    np.ndarray.flatten(abs(aligned_array))
                 )[0]
             )
         )
@@ -154,8 +126,8 @@ def align_arrays(
         gu.multislices_plot(
             abs(reference_array), sum_frames=True, title="Reference object"
         )
-        gu.multislices_plot(abs(new_obj), sum_frames=True, title="Aligned object")
-    return new_obj
+        gu.multislices_plot(abs(aligned_array), sum_frames=True, title="Aligned object")
+    return aligned_array
 
 
 def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
