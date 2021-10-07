@@ -30,10 +30,12 @@ from ..utils import validation as valid
 
 def align_obj(
     reference_obj,
-    obj,
-    method="modulus",
+    shifted_obj,
+    shift_method="modulus",
+    interpolation_method="subpixel",
     support_threshold=None,
     precision=1000,
+    verbose=True,
     debugging=False,
 ):
     """
@@ -42,60 +44,116 @@ def align_obj(
     The shift between arrays can be determined either using the modulus of the arrays
     or a support created from it using a threshold.
 
-    :param reference_obj: 3D array, reference complex object
-    :param obj: 3D array, complex density to average with
-    :param method: 'modulus', 'support' or 'skip'. Object to use for the determination
-     of the shift. If 'support', the parameter 'support_threshold' must also be
-     provided since the binary support is defined by thresholding the normalized
-     modulus.
+    :param reference_obj: 3D array, reference object
+    :param shifted_obj: 3D array to be aligned, same shape as reference_obj
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
     :param support_threshold: all points where the normalized modulus is larger than
      this value will be set to 1 in the support.
     :param precision: precision for the DFT registration in 1/pixel
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param verbose: boolean, True to print comments
+    :param debugging: boolean, set to True to see plots
     :return: the aligned array
     """
-    valid.valid_ndarray(arrays=(obj, reference_obj), ndim=3, fix_shape=False)
-    if obj.shape != reference_obj.shape:
-        print(
-            "reference_obj and obj do not have the same shape\n",
-            reference_obj.shape,
-            obj.shape,
-            "crop/pad obj",
-        )
-        obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
+    # check some parameters
+    valid.valid_ndarray(arrays=(shifted_obj, reference_obj), ndim=3, fix_shape=False)
+    if shift_method not in {"raw", "modulus", "support"}:
+        raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    if shifted_obj.shape != reference_obj.shape:
+        if verbose:
+            print(
+                "reference_obj and obj do not have the same shape\n",
+                reference_obj.shape,
+                shifted_obj.shape,
+                "crop/pad obj",
+            )
+        shifted_obj = util.crop_pad(array=shifted_obj, output_shape=reference_obj.shape)
 
-    # calculate the shift between the two arrays
-    if method != "skip":
-        if method == 'modulus':
+    ##############################################
+    # calculate the shift between the two arrays #
+    ##############################################
+    if shift_method != "skip":
+        if shift_method == "raw":
+            ref = reference_obj
+            obj = shifted_obj
+            threshold = None
+        elif shift_method == 'modulus':
+            ref = abs(reference_obj)
+            obj = abs(shifted_obj)
             threshold = None
         else:  # "support"
+            ref = abs(reference_obj)
+            obj = abs(shifted_obj)
             threshold = support_threshold
+
         shiftz, shifty, shiftx = util.get_shift_between_arrays(
-            reference_array=abs(reference_obj),
-            shifted_array=abs(obj),
-            method='dft',
+            reference_array=ref,
+            shifted_array=obj,
             support_threshold=threshold,
-            precision=precision
+            precision=precision,
+            verbose=verbose
         )
-        print(
-            "Shift calculated from dft registration: "
-            f"({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f}) pixels"
-        )
-        # align obj using subpixel shift, keep the complex output
-        new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
+
+        #######################
+        # align shifted_obj #
+        #######################
+        if interpolation_method == 'subpixel':
+            # align obj using subpixel shift, keep the complex output
+            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
+        elif interpolation_method == "rgi":
+            # re-sample data on a new grid based on COM shift of support
+            nbz, nby, nbx = shifted_obj.shape
+            old_z = np.arange(-nbz // 2, nbz // 2)
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+            new_z = myz + shiftz
+            new_y = myy + shifty
+            new_x = myx + shiftx
+            del myx, myy, myz
+            rgi = RegularGridInterpolator(
+                (old_z, old_y, old_x),
+                shifted_obj,
+                method="linear",
+                bounds_error=False,
+                fill_value=0,
+            )
+            new_obj = rgi(
+                np.concatenate(
+                    (
+                        new_z.reshape((1, new_z.size)),
+                        new_y.reshape((1, new_z.size)),
+                        new_x.reshape((1, new_z.size)),
+                    )
+                ).transpose()
+            )
+            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(shifted_obj.dtype)
+        else:  # "roll"
+            new_obj = np.roll(shifted_obj, (shiftz, shifty, shiftx), axis=(0, 1, 2))
 
     else:  # 'skip'
-        print("Skipping alignment")
-        new_obj = obj
+        if verbose:
+            print("Skipping alignment")
+        new_obj = shifted_obj
 
-    print(
-        "Pearson correlation coefficient = {0:.3f}".format(
-            pearsonr(
-                np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(new_obj))
-            )[0]
+    ###########################
+    # print and optional plot #
+    ###########################
+    if verbose:
+        print(
+            "Pearson correlation coefficient = {0:.3f}".format(
+                pearsonr(
+                    np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(new_obj))
+                )[0]
+            )
         )
-    )
     if debugging:
         gu.multislices_plot(
             abs(reference_obj), sum_frames=True, title="Reference object"
