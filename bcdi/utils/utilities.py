@@ -19,6 +19,7 @@ from numbers import Real, Integral
 import numpy as np
 import os
 from scipy.interpolate import interp1d, RegularGridInterpolator
+from scipy.ndimage.measurements import center_of_mass
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
@@ -764,6 +765,55 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
         )
 
     return window
+
+
+def get_shift_arrays_com(reference_array, shifted_array, support_threshold=None,
+                         verbose=True):
+    """
+    Calculate the offset between two arrays, from the position of their center of mass.
+
+    The center of mass position is calculated on the modulus of the arrays
+
+    :param reference_array: numpy ndarray
+    :param shifted_array: numpy ndarray of the same shape as reference_array
+    :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
+     will be used to define a support. The center of mass will be calculated for that
+     support instead of the modulus.
+    :param verbose: True to print comment
+    :return: list of offsets, of length equal to the number of dimensions of the arrays
+    """
+    # check input parameters
+    valid.valid_ndarray(
+        arrays=(reference_array, shifted_array), fix_shape=True,
+        name="get_shift_arrays_com"
+    )
+    valid.valid_item(support_threshold,
+                     allowed_types=Real,
+                     min_included=0,
+                     max_included=1,
+                     allow_none=True,
+                     name="support_threshold"
+                     )
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+    # calculate the offset of the center of mass of the arrays
+    if support_threshold is not None:
+        myref_support = np.zeros(reference_array.shape)
+        myref_support[abs(reference_array) > support_threshold * abs(reference_array).max()] = 1
+        my_support = np.zeros(shifted_array.shape)
+        my_support[abs(shifted_array) > support_threshold * abs(shifted_array).max()] = 1
+        reference_com = center_of_mass(abs(myref_support))
+        shifted_com = center_of_mass(abs(my_support))
+    else:
+        reference_com = center_of_mass(abs(reference_array))
+        shifted_com = center_of_mass(abs(shifted_array))
+
+    offsets = [reference_com[idx] - shifted_com[idx] for idx, _ in enumerate(reference_com)]
+    if verbose:
+        print(
+            "center of mass offset with the reference object: "
+            f"({offsets}) pixels"
+        )
+    return offsets
 
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
