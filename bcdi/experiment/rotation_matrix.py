@@ -18,6 +18,8 @@ class RotationMatrix:
     """
     Class defining a rotation matrix given the rotation axis and the angle.
 
+    This considers a right-handed orthonormal frame (x, y, z).
+
     :param circle: circle in {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. The letter
      represents the rotation axis. + for a counter-clockwise rotation, - for a
      clockwise rotation.
@@ -25,14 +27,8 @@ class RotationMatrix:
      rotation matrix
     """
 
-    valid_circles = {
-        "x+",
-        "x-",
-        "y+",
-        "y-",
-        "z+",
-        "z-",
-    }  # + counter-clockwise, - clockwise
+    valid_circles = {"x+", "x-", "y+", "y-", "z+", "z-"}
+    # + counter-clockwise, - clockwise
 
     def __init__(self, circle, angle):
         self.angle = angle
@@ -78,31 +74,31 @@ class RotationMatrix:
         angle = self.angle * np.pi / 180  # convert from degrees to radians
 
         if self.circle[1] == "+":
-            rot_dir = 1
+            rotation_direction = 1
         else:  # '-'
-            rot_dir = -1
+            rotation_direction = -1
 
         if self.circle[0] == "x":
             matrix = np.array(
                 [
                     [1, 0, 0],
-                    [0, np.cos(angle), -rot_dir * np.sin(angle)],
-                    [0, rot_dir * np.sin(angle), np.cos(angle)],
+                    [0, np.cos(angle), -rotation_direction * np.sin(angle)],
+                    [0, rotation_direction * np.sin(angle), np.cos(angle)],
                 ]
             )
         elif self.circle[0] == "y":
             matrix = np.array(
                 [
-                    [np.cos(angle), 0, rot_dir * np.sin(angle)],
+                    [np.cos(angle), 0, rotation_direction * np.sin(angle)],
                     [0, 1, 0],
-                    [-rot_dir * np.sin(angle), 0, np.cos(angle)],
+                    [-rotation_direction * np.sin(angle), 0, np.cos(angle)],
                 ]
             )
         elif self.circle[0] == "z":
             matrix = np.array(
                 [
-                    [np.cos(angle), -rot_dir * np.sin(angle), 0],
-                    [rot_dir * np.sin(angle), np.cos(angle), 0],
+                    [np.cos(angle), -rotation_direction * np.sin(angle), 0],
+                    [rotation_direction * np.sin(angle), np.cos(angle), 0],
                     [0, 0, 1],
                 ]
             )
