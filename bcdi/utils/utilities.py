@@ -25,6 +25,7 @@ from scipy.special import erf
 from scipy.stats import multivariate_normal
 
 from ..graph import graph_utils as gu
+from ..utils import image_registration as reg
 from ..utils import validation as valid
 
 
@@ -767,20 +768,26 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     return window
 
 
-def get_shift_arrays_com(reference_array, shifted_array, support_threshold=None,
-                         verbose=True):
+def get_shift_between_arrays(reference_array, shifted_array, method, precision=1000,
+                             support_threshold=None, verbose=True):
     """
-    Calculate the offset between two arrays, from the position of their center of mass.
+    Calculate the shift between two arrays.
 
-    The center of mass position is calculated on the modulus of the arrays
+    The shift is calculated either from the position of their center of mass or using
+    dft registration. If a threshold for creating a support is not provided, the center
+    of mass position is calculated on the modulus of the arrays while DFT registration
+    is performed on the arrays themselves. If a threshold is provided, shifts are
+    calculated using supports instead.
 
     :param reference_array: numpy ndarray
     :param shifted_array: numpy ndarray of the same shape as reference_array
+    :param method: 'dft' for dft registration, 'com' for center of mass
+    :param precision: precision for the DFT registration in 1/pixel
     :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
      will be used to define a support. The center of mass will be calculated for that
      support instead of the modulus.
     :param verbose: True to print comment
-    :return: list of offsets, of length equal to the number of dimensions of the arrays
+    :return: list of shifts, of length equal to the number of dimensions of the arrays
     """
     # check input parameters
     valid.valid_ndarray(
@@ -795,25 +802,41 @@ def get_shift_arrays_com(reference_array, shifted_array, support_threshold=None,
                      name="support_threshold"
                      )
     valid.valid_item(verbose, allowed_types=bool, name="verbose")
-    # calculate the offset of the center of mass of the arrays
-    if support_threshold is not None:
-        myref_support = np.zeros(reference_array.shape)
-        myref_support[abs(reference_array) > support_threshold * abs(reference_array).max()] = 1
-        my_support = np.zeros(shifted_array.shape)
-        my_support[abs(shifted_array) > support_threshold * abs(shifted_array).max()] = 1
-        reference_com = center_of_mass(abs(myref_support))
-        shifted_com = center_of_mass(abs(my_support))
-    else:
-        reference_com = center_of_mass(abs(reference_array))
-        shifted_com = center_of_mass(abs(shifted_array))
+    if method not in {'dft', 'com'}:
+        raise ValueError("method should be either 'dft' or 'com'")
 
-    offsets = [reference_com[idx] - shifted_com[idx] for idx, _ in enumerate(reference_com)]
+    # define the objects that will be used for the shift calculation
+    if support_threshold is not None:
+        ref_support = np.zeros(reference_array.shape)
+        ref_support[abs(reference_array) > support_threshold * abs(reference_array).max()] = 1
+        support = np.zeros(shifted_array.shape)
+        support[abs(shifted_array) > support_threshold * abs(shifted_array).max()] = 1
+        reference_obj = ref_support
+        shifted_obj = support
+    elif method == 'dft':  # work directly on the (eventually complex) arrays
+        reference_obj = reference_array
+        shifted_obj = shifted_array
+    else:  # "com", works on the modulus of the arrays
+        reference_obj = abs(reference_array)
+        shifted_obj = abs(shifted_array)
+
+    # calculate the shift between the two arrays
+    if method == 'com':
+        reference_com = center_of_mass(reference_obj)
+        shifted_com = center_of_mass(shifted_obj)
+        shifts = [reference_com[idx] - shifted_com[idx] for idx, _ in
+                   enumerate(reference_com)]
+    else:  # 'dft'
+        shifts = reg.getimageregistration(
+            reference_obj, shifted_obj, precision=precision
+        )
+
     if verbose:
         print(
             "center of mass offset with the reference object: "
-            f"({offsets}) pixels"
+            f"({shifts}) pixels"
         )
-    return offsets
+    return shifts
 
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
