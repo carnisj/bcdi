@@ -768,8 +768,8 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     return window
 
 
-def get_shift_between_arrays(reference_array, shifted_array, precision=1000,
-                             support_threshold=None, verbose=True):
+def get_shift_between_arrays(reference_array, shifted_array, shift_method="modulus",
+                             precision=1000, support_threshold=None, verbose=True):
     """
     Calculate the shift between two arrays.
 
@@ -780,6 +780,10 @@ def get_shift_between_arrays(reference_array, shifted_array, precision=1000,
 
     :param reference_array: numpy ndarray
     :param shifted_array: numpy ndarray of the same shape as reference_array
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
     :param precision: precision for the DFT registration in 1/pixel
     :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
      will be used to define a support. The center of mass will be calculated for that
@@ -787,7 +791,9 @@ def get_shift_between_arrays(reference_array, shifted_array, precision=1000,
     :param verbose: True to print comment
     :return: list of shifts, of length equal to the number of dimensions of the arrays
     """
-    # check input parameters
+    ##########################
+    # check input parameters #
+    ##########################
     valid.valid_ndarray(
         arrays=(reference_array, shifted_array), fix_shape=True,
         name="get_shift_arrays_com"
@@ -801,19 +807,28 @@ def get_shift_between_arrays(reference_array, shifted_array, precision=1000,
                      )
     valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
-    # define the objects that will be used for the shift calculation
-    if support_threshold is not None:
+    ##########################################################################
+    # define the objects that will be used for the calculation of the shift  #
+    ##########################################################################
+    if shift_method == "raw":
+        reference_obj = reference_array
+        shifted_obj = shifted_array
+    elif shift_method == 'modulus':
+        reference_obj = abs(reference_array)
+        shifted_obj = abs(shifted_array)
+    else:  # "support"
+        # TODO create a function for making supports based on a sequence of arrays
         ref_support = np.zeros(reference_array.shape)
         ref_support[abs(reference_array)>support_threshold*abs(reference_array).max()]=1
         support = np.zeros(shifted_array.shape)
         support[abs(shifted_array) > support_threshold * abs(shifted_array).max()] = 1
+
         reference_obj = ref_support
         shifted_obj = support
-    else:  # work directly on the (eventually complex) arrays
-        reference_obj = reference_array
-        shifted_obj = shifted_array
 
-    # calculate the shift between the two arrays
+    ##############################################
+    # calculate the shift between the two arrays #
+    ##############################################
     shifts = reg.getimageregistration(
         reference_obj, shifted_obj, precision=precision
     )
