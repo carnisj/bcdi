@@ -114,7 +114,7 @@ for idx in range(1, nbfiles):
     obj = pu.align_obj(
         reference_obj=obj0,
         obj=obj,
-        method=alignment_method,
+        shift_method=alignment_method,
         support_threshold=support_threshold,
         debugging=debug,
     )
