@@ -28,9 +28,9 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 
 
-def align_obj(
-    reference_obj,
-    shifted_obj,
+def align_arrays(
+    reference_array,
+    shifted_array,
     shift_method="modulus",
     interpolation_method="subpixel",
     support_threshold=None,
@@ -44,8 +44,8 @@ def align_obj(
     The shift between arrays can be determined either using the modulus of the arrays
     or a support created from it using a threshold.
 
-    :param reference_obj: 3D array, reference object
-    :param shifted_obj: 3D array to be aligned, same shape as reference_obj
+    :param reference_array: 3D array, reference object
+    :param shifted_array: 3D array to be aligned, same shape as reference_obj
     :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
      determination of the shift. If 'raw', it uses the raw, eventually complex array.
      if 'modulus', it uses the modulus of the array. If 'support', it uses a support
@@ -61,36 +61,36 @@ def align_obj(
     :return: the aligned array
     """
     # check some parameters
-    valid.valid_ndarray(arrays=(shifted_obj, reference_obj), ndim=3, fix_shape=False)
+    valid.valid_ndarray(arrays=(shifted_array, reference_array), ndim=3, fix_shape=False)
     if shift_method not in {"raw", "modulus", "support"}:
         raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
     if interpolation_method not in {"subpixel", "rgi", "roll"}:
         raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
-    if shifted_obj.shape != reference_obj.shape:
+    if shifted_array.shape != reference_array.shape:
         if verbose:
             print(
                 "reference_obj and obj do not have the same shape\n",
-                reference_obj.shape,
-                shifted_obj.shape,
+                reference_array.shape,
+                shifted_array.shape,
                 "crop/pad obj",
             )
-        shifted_obj = util.crop_pad(array=shifted_obj, output_shape=reference_obj.shape)
+        shifted_obj = util.crop_pad(array=shifted_array, output_shape=reference_array.shape)
 
     ##############################################
     # calculate the shift between the two arrays #
     ##############################################
     if shift_method != "skip":
         if shift_method == "raw":
-            ref = reference_obj
-            obj = shifted_obj
+            ref = reference_array
+            obj = shifted_array
             threshold = None
         elif shift_method == 'modulus':
-            ref = abs(reference_obj)
-            obj = abs(shifted_obj)
+            ref = abs(reference_array)
+            obj = abs(shifted_array)
             threshold = None
         else:  # "support"
-            ref = abs(reference_obj)
-            obj = abs(shifted_obj)
+            ref = abs(reference_array)
+            obj = abs(shifted_array)
             threshold = support_threshold
 
         shiftz, shifty, shiftx = util.get_shift_between_arrays(
@@ -109,7 +109,7 @@ def align_obj(
             new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
         elif interpolation_method == "rgi":
             # re-sample data on a new grid based on COM shift of support
-            nbz, nby, nbx = shifted_obj.shape
+            nbz, nby, nbx = shifted_array.shape
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
             old_x = np.arange(-nbx // 2, nbx // 2)
@@ -120,7 +120,7 @@ def align_obj(
             del myx, myy, myz
             rgi = RegularGridInterpolator(
                 (old_z, old_y, old_x),
-                shifted_obj,
+                shifted_array,
                 method="linear",
                 bounds_error=False,
                 fill_value=0,
@@ -134,14 +134,14 @@ def align_obj(
                     )
                 ).transpose()
             )
-            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(shifted_obj.dtype)
+            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(shifted_array.dtype)
         else:  # "roll"
-            new_obj = np.roll(shifted_obj, (shiftz, shifty, shiftx), axis=(0, 1, 2))
+            new_obj = np.roll(shifted_array, (shiftz, shifty, shiftx), axis=(0, 1, 2))
 
     else:  # 'skip'
         if verbose:
             print("Skipping alignment")
-        new_obj = shifted_obj
+        new_obj = shifted_array
 
     ###########################
     # print and optional plot #
@@ -150,13 +150,13 @@ def align_obj(
         print(
             "Pearson correlation coefficient = {0:.3f}".format(
                 pearsonr(
-                    np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(new_obj))
+                    np.ndarray.flatten(abs(reference_array)), np.ndarray.flatten(abs(new_obj))
                 )[0]
             )
         )
     if debugging:
         gu.multislices_plot(
-            abs(reference_obj), sum_frames=True, title="Reference object"
+            abs(reference_array), sum_frames=True, title="Reference object"
         )
         gu.multislices_plot(abs(new_obj), sum_frames=True, title="Aligned object")
     return new_obj
