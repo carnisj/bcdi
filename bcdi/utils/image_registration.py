@@ -4,10 +4,15 @@
 # Updated by Steven Leake 30/07/2014
 # Changed variable names to make it clearer and put it in CXI convention (z y x)
 # J.Carnis 27/04/2018
-"""Functions related to DFT registration."""
+"""Functions related to the registration and alignement of two arrays."""
+
+from numbers import Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
-import gc
+from scipy.interpolate import RegularGridInterpolator
+
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 
 def getimageregistration(array1, array2, precision=10):
@@ -324,6 +329,135 @@ def dftups(
     return np.dot(np.dot(kernel_row, array), kernel_column)
 
 
+def get_shift(reference_array, shifted_array, shift_method="modulus",
+              precision=1000, support_threshold=None, verbose=True):
+    """
+    Calculate the shift between two arrays.
+
+    The shift is calculated using dft registration. If a threshold for creating a
+    support is not provided, DFT registration is performed on the arrays themselves.
+    If a threshold is provided, shifts are calculated using the support created by
+    thresholding the modulus of the arrays.
+
+    :param reference_array: numpy ndarray
+    :param shifted_array: numpy ndarray of the same shape as reference_array
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param precision: precision for the DFT registration in 1/pixel
+    :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
+     will be used to define a support. The center of mass will be calculated for that
+     support instead of the modulus.
+    :param verbose: True to print comment
+    :return: list of shifts, of length equal to the number of dimensions of the arrays
+    """
+    ##########################
+    # check input parameters #
+    ##########################
+    valid.valid_ndarray(
+        arrays=(reference_array, shifted_array), fix_shape=True,
+        name="get_shift_arrays_com"
+    )
+    valid.valid_item(support_threshold,
+                     allowed_types=Real,
+                     min_included=0,
+                     max_included=1,
+                     allow_none=True,
+                     name="support_threshold"
+                     )
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+
+    ##########################################################################
+    # define the objects that will be used for the calculation of the shift  #
+    ##########################################################################
+    if shift_method == "raw":
+        reference_obj = reference_array
+        shifted_obj = shifted_array
+    elif shift_method == 'modulus':
+        reference_obj = abs(reference_array)
+        shifted_obj = abs(shifted_array)
+    else:  # "support"
+        reference_obj, shifted_obj = util.make_support(
+            arrays=(reference_array, shifted_array),
+            support_threshold=support_threshold
+        )
+
+    ##############################################
+    # calculate the shift between the two arrays #
+    ##############################################
+    shifts = getimageregistration(
+        reference_obj, shifted_obj, precision=precision
+    )
+
+    if verbose:
+        print(f"shifts with the reference object: {shifts} pixels")
+    return shifts
+
+
+def shift_array(array, shifts, interpolation_method='subpixel'):
+    """
+    Shift array using the defined method given the offsets.
+
+    :param array: a numpy ndarray
+    :param shifts: tuple of floats, shifts of the array in each dimension
+    :param interpolation_method: 'raw', 'modulus', 'support'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by thresholding the modulus of the array.
+    :return: the shifted array
+    """
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_ndarray(array, name="array")
+    valid.valid_container(
+        shifts,
+        container_types=(tuple, list),
+        item_types=Real,
+        name="shifts"
+    )
+
+    ###################
+    # shift the array #
+    ###################
+    if interpolation_method == 'subpixel':
+        # align obj using subpixel shift, keep the complex output
+        shifted_array = subpixel_shift(array, *shifts)
+    elif interpolation_method == "rgi":
+        # re-sample data on a new grid based on COM shift of support
+        nbz, nby, nbx = array.shape
+        old_z = np.arange(-nbz // 2, nbz // 2)
+        old_y = np.arange(-nby // 2, nby // 2)
+        old_x = np.arange(-nbx // 2, nbx // 2)
+        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+        new_z = myz + shifts[0]
+        new_y = myy + shifts[1]
+        new_x = myx + shifts[2]
+        del myx, myy, myz
+        rgi = RegularGridInterpolator(
+            (old_z, old_y, old_x),
+            array,
+            method="linear",
+            bounds_error=False,
+            fill_value=0,
+        )
+        shifted_array = rgi(
+            np.concatenate(
+                (
+                    new_z.reshape((1, new_z.size)),
+                    new_y.reshape((1, new_z.size)),
+                    new_x.reshape((1, new_z.size)),
+                )
+            ).transpose()
+        )
+        shifted_array = shifted_array.reshape((nbz, nby, nbx)).astype(array.dtype)
+    else:  # "roll"
+        shifted_array = np.roll(array, shifts, axis=(0, 1, 2))
+
+    return shifted_array
+
+
 def subpixel_shift(array, z_shift, y_shift, x_shift=0):
     """
     Shift array by the shift values.
@@ -339,8 +473,6 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
     if len(array.shape) == 3:
         numz, numy, numx = array.shape
         buf2ft = fftn(array)
-        del array
-        gc.collect()
         temp_z = ifftshift(
             np.arange(-np.fix(numz / 2), np.ceil(numz / 2))
         )  # python does not include the end point
@@ -357,8 +489,6 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
             * np.pi
             * (z_shift * myz / numz + y_shift * myy / numy + x_shift * myx / numx)
         )
-        del buf2ft, myz, myy, myx
-        gc.collect()
         shifted_array = ifftn(greg)
     else:
         buf2ft = fftn(array)
@@ -375,40 +505,3 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
         )
         shifted_array = ifftn(greg)
     return shifted_array
-
-
-# uncomment below to test the code
-
-# if __name__ == "__main__":
-#     import matplotlib.pyplot as plt
-#     from scipy.ndimage.interpolation import shift
-#
-#     img1 = np.zeros((64, 64, 64), dtype="Float64")
-#     img1[32-10:32+10, 32-10:32+10, 32-10:32+10] = 1
-#     img1 = img1[:, :, 32]
-#     img2 = img1.copy()
-#     img2 = shift(img2, (-5, 3))
-#     shiftz, shifty = getimageregistration(img1, img2, precision=1000)
-#     print(shiftz, shifty)
-#     shifted_img2 = subpixel_shift(img2, shiftz, shifty)
-#
-#     fig = plt.figure()
-#     plt.subplot(2, 3, 1)
-#     plt.imshow(abs(img1))
-#     plt.title('original image amp')
-#     plt.subplot(2, 3, 2)
-#     plt.imshow(abs(img2))
-#     plt.title('shifted image amp')
-#     plt.subplot(2, 3, 3)
-#     plt.imshow(abs(shifted_img2))
-#     plt.title('registered image amp')
-#     plt.subplot(2, 3, 4)
-#     plt.imshow(np.angle(img1))
-#     plt.title('original image phase')
-#     plt.subplot(2, 3, 5)
-#     plt.imshow(np.angle(img2))
-#     plt.title('shifted image phase')
-#     plt.subplot(2, 3, 6)
-#     plt.imshow(np.angle(shifted_img2))
-#     plt.title('registered image phase')
-#     plt.show()

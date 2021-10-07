@@ -25,7 +25,6 @@ from scipy.special import erf
 from scipy.stats import multivariate_normal
 
 from ..graph import graph_utils as gu
-from ..utils import image_registration as reg
 from ..utils import validation as valid
 
 
@@ -766,73 +765,6 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
         )
 
     return window
-
-
-def get_shift_between_arrays(reference_array, shifted_array, shift_method="modulus",
-                             precision=1000, support_threshold=None, verbose=True):
-    """
-    Calculate the shift between two arrays.
-
-    The shift is calculated using dft registration. If a threshold for creating a
-    support is not provided, DFT registration is performed on the arrays themselves.
-    If a threshold is provided, shifts are calculated using the support created by
-    thresholding the modulus of the arrays.
-
-    :param reference_array: numpy ndarray
-    :param shifted_array: numpy ndarray of the same shape as reference_array
-    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
-     determination of the shift. If 'raw', it uses the raw, eventually complex array.
-     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
-     created by threshold the modulus of the array.
-    :param precision: precision for the DFT registration in 1/pixel
-    :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
-     will be used to define a support. The center of mass will be calculated for that
-     support instead of the modulus.
-    :param verbose: True to print comment
-    :return: list of shifts, of length equal to the number of dimensions of the arrays
-    """
-    ##########################
-    # check input parameters #
-    ##########################
-    valid.valid_ndarray(
-        arrays=(reference_array, shifted_array), fix_shape=True,
-        name="get_shift_arrays_com"
-    )
-    valid.valid_item(support_threshold,
-                     allowed_types=Real,
-                     min_included=0,
-                     max_included=1,
-                     allow_none=True,
-                     name="support_threshold"
-                     )
-    valid.valid_item(verbose, allowed_types=bool, name="verbose")
-
-    ##########################################################################
-    # define the objects that will be used for the calculation of the shift  #
-    ##########################################################################
-    if shift_method == "raw":
-        reference_obj = reference_array
-        shifted_obj = shifted_array
-    elif shift_method == 'modulus':
-        reference_obj = abs(reference_array)
-        shifted_obj = abs(shifted_array)
-    else:  # "support"
-        # TODO create a function for making supports based on a sequence of arrays
-        reference_obj, shifted_obj = make_support(
-            arrays=(reference_array, shifted_array),
-            support_threshold=support_threshold
-        )
-
-    ##############################################
-    # calculate the shift between the two arrays #
-    ##############################################
-    shifts = reg.getimageregistration(
-        reference_obj, shifted_obj, precision=precision
-    )
-
-    if verbose:
-        print(f"shifts with the reference object: {shifts} pixels")
-    return shifts
 
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
