@@ -113,7 +113,7 @@ for idx in range(1, nbfiles):
     obj = util.crop_pad(array=obj, output_shape=obj0.shape)
     obj = pu.align_obj(
         reference_obj=obj0,
-        obj=obj,
+        shifted_obj=obj,
         shift_method=alignment_method,
         support_threshold=support_threshold,
         debugging=debug,
