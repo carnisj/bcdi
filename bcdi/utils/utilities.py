@@ -9,6 +9,7 @@
 """Functions related to data loading, encoding, fitting, data manipulation."""
 
 from collections import OrderedDict
+from collections.abc import Sequence
 import ctypes
 from functools import reduce
 import gc
@@ -19,7 +20,6 @@ from numbers import Real, Integral
 import numpy as np
 import os
 from scipy.interpolate import interp1d, RegularGridInterpolator
-from scipy.ndimage.measurements import center_of_mass
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
@@ -818,13 +818,10 @@ def get_shift_between_arrays(reference_array, shifted_array, shift_method="modul
         shifted_obj = abs(shifted_array)
     else:  # "support"
         # TODO create a function for making supports based on a sequence of arrays
-        ref_support = np.zeros(reference_array.shape)
-        ref_support[abs(reference_array)>support_threshold*abs(reference_array).max()]=1
-        support = np.zeros(shifted_array.shape)
-        support[abs(shifted_array) > support_threshold * abs(shifted_array).max()] = 1
-
-        reference_obj = ref_support
-        shifted_obj = support
+        reference_obj, shifted_obj = make_support(
+            arrays=(reference_array, shifted_array),
+            support_threshold=support_threshold
+        )
 
     ##############################################
     # calculate the shift between the two arrays #
@@ -1261,6 +1258,42 @@ def lorentzian(x_axis, amp, cen, sig):
     :return: the Lorentzian line shape at x_axis
     """
     return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
+
+
+def make_support(arrays: Sequence[np.ndarray], support_threshold: float) -> Sequence[np.ndarray]:
+    """
+    Create a support for each provided array, using a threshold on its modulus.
+
+    :param arrays: a sequence of numpy ndarrays
+    :param support_threshold: a float in [0, 1], normalized threshold that will be
+     applied to the modulus of each array
+    :return: a tuple of numpy ndarrays, supports corresponding to each input array
+    """
+    # check some parameters
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_container(arrays,
+                          container_types=(tuple, list),
+                          item_types=np.ndarray,
+                          name="arrays")
+    valid.valid_item(
+        support_threshold,
+        allowed_types=float,
+        min_included=0,
+        max_included=1,
+        name="support_threshold"
+    )
+
+    # create the supports
+    supports = []
+    for idx, array in enumerate(arrays):
+        support = np.zeros(array.shape)
+        support[abs(array) > support_threshold * abs(array)] = 1
+        supports.append(support)
+
+    if len(arrays) == 1:  # return an array to avoid having to unpack it every time
+        supports = supports[0]
+    return supports
 
 
 def mean_filter(
