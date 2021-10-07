@@ -118,11 +118,10 @@ In such situation, the workaround is to create instead a virtual environment usi
 
 Please send feedback in `GitHub <https://github.com/carnisj/bcdi/issues>`_.
 
-Citation & Bibliography
-=======================
+Documentation
+=============
 
-If you use BCDI for scientific work, please consider including a citation
-(DOI: 10.5281/zenodo.3257616).
+The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
 License
 =======
@@ -130,7 +129,46 @@ The BCDI library is distributed with a CeCILL-B license
 (an open-source license similar to the FreeBSD one).
 See http://cecill.info/licences/Licence_CeCILL-B_V1-en.html
 
-Documentation
-=============
+Citation & Bibliography
+=======================
 
-The documentation is available at: https://bcdi.readthedocs.io/en/latest/
+If you use this package for scientific work, please consider including a citation using the
+following DOI: 10.5281/zenodo.3257616
+
+This package contributed to the following peer-reviewed publications:
+
+* Y. Y. Kim, et al. Single Alloy Nanoparticle X-Ray Imaging during a Catalytic Reaction.
+  Science Advances 7 (2021). DOI: 10.1126/sciadv.abh0757
+
+* J. Carnis, et al. Facet-dependent strain determination in electrochemically
+  synthetized platinum model catalytic nanoparticles. Small 2007702 (2021).
+  DOI: 10.1002/smll.202007702
+  Data available at CXIDB ID182: https://www.cxidb.org/id-182.html
+
+* J. Carnis, et al. Twinning/detwinning in an individual platinum nanocrystal during
+  catalytic CO oxidation. Nature Communications 12 (1), 1-10 (2021).
+  DOI: 10.1038/s41467-021-25625-0
+
+* J. Carnis, et al. Structural Study of a Self-Assembled Gold Mesocrystal Grain by
+  Coherent X-ray Diffraction Imaging. Nanoscale 13, 10425-10435 (2021).
+  DOI: 10.1039/D1NR01806J
+  Data available at CXIDB ID183:  https://www.cxidb.org/id-183.html
+
+* N. Li, et al. Mapping Inversion Domain Boundaries Along Single GaN Wires with Bragg
+  Coherent X-ray Imaging. ACS Nano 14, 10305–10312 (2020). DOI: 10.1021/acsnano.0c03775
+
+* N. Li, et al. Continu-ous scanning for Bragg coherent X ray imaging.
+  Sci. Rep. 10, 12760 (2020). DOI: 10.1038/s41598-020-69678-5
+
+* J. Carnis, et al. Towards a quantitative determination of strain in Bragg Coherent
+  X-ray Diffraction Imaging: artefacts and sign convention in reconstructions.
+  Scientific reports 9, 17357 (2019). DOI: 10.1038/s41598-019-53774-2
+
+* G. Niu, et al. Advanced coherent X-ray diffraction and electron microscopy of
+  individual InP nanocrystals on Si nanotips for III-V on Si electronics and
+  optoelectronics. Phys. Rev. Applied 11, 064046 (2019).
+  DOI: 10.1103/PhysRevApplied.11.064046
+
+* S. Fernández, et al. In situ structural evolution of single particle model catalysts
+  under ambient pressure reaction conditions. Nanoscale 11, 331-338 (2019).
+  DOI: 10.1039/c8nr08414a
