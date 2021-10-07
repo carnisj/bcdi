@@ -12,7 +12,7 @@ import numpy as np
 import h5py as h5
 import sys
 
-helptext = """
+"""
 The concept is to be able to build a support from a set of defined planes these
 planes can be positioned based on physical size (nm) if known or eventually made
 into a fancy tool with a 3D view of the support versus the data so you can match
@@ -20,17 +20,15 @@ fringes. It may also be interesting to consider how to make 3D supports from
 other characterisation methods (SEM etc...).
 """
 
-####################################################################
-
 
 def AddPolyCen(array, center, planes):
     """
 
     Make the polygon.
 
-    :param : array = input array
-    :param : center = origin of polygon
-    :param : planes = array of planes
+    :param array:  input array
+    :param center: origin of polygon
+    :param planes: array of planes
 
     """
     dims = array.shape
@@ -51,27 +49,25 @@ def AddPolyCen(array, center, planes):
     return ((array >= len(planes)) * 1).astype(array.dtype)
 
 
-####################################################################
 def MakePoly(dims, planes):
     """
 
     Make a polygon.
 
-    :param : dims = dimensions of array in pixels
-    :param : planes = array of planes
+    :param dims: dimensions of array in pixels
+    :param planes: array of planes
 
     """
     return make_poly(dims, planes)
 
 
-####################################################################
 def make_poly(dims, planes):
     """
 
     Make a polygon.
 
-    :param : dims = dimensions of array in pixels
-    :param : planes = array of planes
+    :param dims: dimensions of array in pixels
+    :param planes: array of planes
 
     """
     cen = []
@@ -81,15 +77,14 @@ def make_poly(dims, planes):
     return AddPolyCen(array, cen, planes)
 
 
-####################################################################
 def MakePolyCen(dims, center, planes):
     """
 
     Make the polygon.
 
-    :param : array = input array
-    :param : center = origin of polygon
-    :param : planes = array of planes
+    :param array: input array
+    :param center: origin of polygon
+    :param planes: array of planes
 
     """
     array = np.zeros(dims)
@@ -101,15 +96,15 @@ class supportMaker:
 
     A masking class for support creation.
 
-    :param : rawdata
-    :param : x-ray wavelength
-    :param : detector_distance - sample to detector (m)
-    :param : detector_pixel_size - 2D (m)
-    :param : ang_step (degrees)
-    :param : braggAng (degrees)
-    :param : planes = array of planes [x,y,z]
-    :param : planesDist = array of plane distance to origin (m)
-    :param : voxel_size = set the voxel size to some arbitrary size,
+    :param rawdata: raw experimental data
+    :param wavelength: x-ray wavelength
+    :param detector_distance: sample to detector (m)
+    :param detector_pixel_size: detector pixel size - 2D (m)
+    :param ang_step: angular step (degrees)
+    :param braggAng: bragg angle (degrees)
+    :param planes: array of planes np.array([x,y,z])
+    :param planesDist: array of plane distance to origin (m)
+    :param voxel_size: set the voxel size to some arbitrary size,
              np.array([x,y,z]) (m)
 
     """
@@ -126,7 +121,6 @@ class supportMaker:
         planesDist=None,
         voxel_size=None,
     ):
-        """Init supportMaker."""
         # set all parameters
 
         self.rawdata = rawdata
@@ -257,158 +251,58 @@ def generatePlanesCuboid(x, y, z):
     return planes, planesDist
 
 
-if __name__ == "__main__":
-    # cuboid
-    if 0:
-        planes, planesDist = generatePlanesCuboid(800, 800, 100)
-
-    # tetrahedra
-    if 0:
-        planes = np.array(
-            [
-                [1, 1, 1],
-                [-1, 1, -1],
-                [1, -1, -1],
-                [-1, -1, 1],
-            ]
-        )
-        planesDist = np.array(
-            [
-                [300],
-                [300],
-                [300],
-                [300],
-            ]
-        )
-
-    # equilateral prism
-    if 0:
-        planes = np.array(
-            [
-                [-1, np.sqrt(3) / 2.0, 0],
-                [1, np.sqrt(3) / 2.0, 0],
-                [0, -1, 0],
-                [0, 0, 1],
-                [0, 0, -1],
-            ]
-        )
-        planesDist = np.array(
-            [
-                [150],
-                [150],
-                [150],
-                [50],
-                [50],
-            ]
-        )
-
-    if 1:
-        planes, planesDist = generatePlanesCuboid(800, 800, 100)
-        planesDist *= 1e-9
-
-    from bcdi.experiment.rotation_matrix import RotationMatrix as R
-
-    alpha, beta, gamma = 5, 45, 45
-    origin, xaxis, yaxis, zaxis = [0, 0, 0], "x+", "y+", "z+"
-    Rx = R(xaxis, alpha).get_matrix()
-    Ry = R(yaxis, beta).get_matrix()
-    Rz = R(zaxis, gamma).get_matrix()
-
-    def rot_planes(planes, rot):
-        """Rotate planes with some rotation matrix."""
-        # tfs.concatenate_matrices(Rx,Ry,Rz)
-        print(planes)
-        rp = [np.dot(rot, v) for v in planes]
-
-        npl = []
-        npl = [npl.append(p.tolist()) for p in rp]
-        planes = np.array(npl)
-        print(planes)
-        return planes
-
-    planes1 = rot_planes(planes, Rz)
-    planes2 = rot_planes(planes1, Ry)
-
-    # rawdata = np.zeros((64,64,64))
-    # error on filename 2x3x10 binning
-    rawdata = np.load("mask_bin3x3x10x1_sum_croppedraw.npz")["arr_0"]
-    print(rawdata.shape)
-    wavelength = 12.39842 / 10.2 * 1e-10
-    detector_distance = 2.9
-    detector_pixel_size = [10 * 55e-6, 3 * 55e-6]
-    ang_step = 0.004 * 2
-    braggAng = 9
-    supportMaker = supportMaker(
-        rawdata,
-        wavelength,
-        detector_distance,
-        detector_pixel_size,
-        ang_step,
-        braggAng,
-        planes2,
-        planesDist,
-        voxel_size=np.array([10, 10, 10]) * 1e-9,
+def generatePlanesTetrahedra(x):
+    """Make a tetrahedra of dimension x."""
+    planes = np.array(
+        [
+            [1, 1, 1],
+            [-1, 1, -1],
+            [1, -1, -1],
+            [-1, -1, 1],
+        ]
     )
+    planesDist = np.array(
+        [
+            [x],
+            [x],
+            [x],
+            [x],
+        ]
+    )
+    return planes, planesDist
 
-    support = supportMaker.get_support()
 
-    if 0:
-        # lazy rotation
-        import scipy.fftpack as fft
-        from scipy.ndimage.interpolation import rotate
+def generatePlanesPrism(x, y):
+    """Make a Prism of thickness x, y is somewhat arbitrary."""
+    planes = np.array(
+        [
+            [-1, np.sqrt(3) / 2.0, 0],
+            [1, np.sqrt(3) / 2.0, 0],
+            [0, -1, 0],
+            [0, 0, 1],
+            [0, 0, -1],
+        ]
+    )
+    planesDist = np.array(
+        [
+            [y],
+            [y],
+            [y],
+            [x],
+            [x],
+        ]
+    )
+    return planes, planesDist
 
-        support = supportMaker.get_support()
-        # rotate around z axis
-        support = rotate(support, 25, (2, 0), reshape=False)  # replace  Bragg angle*2
-        # rotate around y axis RH about y
-        # support = rotate(support,25,(1,0),reshape=False)  # replace  Bragg angle*2
-        # rotate around x axis
-        # support = rotate(support,25,(2,1),reshape=False)  # replace  Bragg angle*2
 
-        support[support >= 0.1] = 1
-        support[support < 0.1] = 0
+def rot_planes(planes, rot):
+    """Rotate planes with some rotation matrix."""
+    # should probably move to the rotation matrix module
+    print(planes)
+    rp = [np.dot(rot, v) for v in planes]
 
-    # save to npz
-    np.savez("support.npz", support)
-
-    # save 2hdf5
-    import scipy.fftpack as fft
-
-    with h5.File("support.h5", "a") as outf:
-        outf["poly"] = support
-        data1 = fft.fftn(support)
-        # outf['poly_fft'] = abs(data1)
-        outf["poly_fft_shift"] = abs(fft.fftshift(data1))
-        outf["rawdata"] = rawdata
-
-    if 0:
-        data = MakePoly(
-            (64, 64, 64), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
-        )
-        outf = h5.File("test12.h5", "w")
-        outf["poly"] = data
-
-        data = MakePolyCen(
-            (64, 64, 64),
-            (10, 10, 10),
-            ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)),
-        )
-        data = MakePolyCen(
-            (64, 64, 64),
-            (10, 10, 10),
-            (
-                (10.1, 0, 0),
-                (0, 10, 0),
-                (0, 0, 10),
-                (-10, 0, 0),
-                (0, -10, 0),
-                (0, 0, -10),
-            ),
-        )
-        outf["polycen"] = data
-        import scipy.fftpack as fft
-
-        data1 = fft.fftn(np.complex64(data))
-        outf["poly_fft"] = abs(data1)
-        outf["poly_fft_shift"] = abs(fft.fftshift(data1))
-        outf.close()
+    npl = []
+    npl = [npl.append(p.tolist()) for p in rp]
+    planes = np.array(npl)
+    print(planes)
+    return planes
