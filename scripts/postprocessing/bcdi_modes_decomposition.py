@@ -92,10 +92,12 @@ sum0 = amp0.sum()
 phase0 = np.angle(obj0)
 if alignment_method in ["modulus", "skip"]:
     piz0, piy0, pix0 = center_of_mass(amp0)
+    threshold = None
 else:  # 'support'
     support = np.zeros(amp0.shape)
     support[amp0 > support_threshold * amp0.max()] = 1
     piz0, piy0, pix0 = center_of_mass(support)
+    threshold = support_threshold
 
 piz0, piy0, pix0 = int(piz0), int(piy0), int(pix0)
 phase0 = (
@@ -115,7 +117,7 @@ for idx in range(1, nbfiles):
         reference_obj=obj0,
         obj=obj,
         method=alignment_method,
-        support_threshold=support_threshold,
+        support_threshold=threshold,
         debugging=debug,
     )
     amp = abs(obj)
