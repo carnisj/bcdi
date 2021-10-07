@@ -23,6 +23,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
+from typing import Union
 
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
@@ -1192,7 +1193,10 @@ def lorentzian(x_axis, amp, cen, sig):
     return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
 
 
-def make_support(arrays: Sequence[np.ndarray], support_threshold: float) -> Sequence[np.ndarray]:
+def make_support(
+        arrays: Union[np.ndarray, Sequence[np.ndarray]],
+        support_threshold: float
+) -> Union[np.ndarray, Sequence[np.ndarray]]:
     """
     Create a support for each provided array, using a threshold on its modulus.
 
