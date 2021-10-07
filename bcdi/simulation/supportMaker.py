@@ -259,61 +259,57 @@ def generatePlanesCuboid(x, y, z):
 
 if __name__ == "__main__":
     # cuboid
-    """
-    planes, planesDist = generatePlanesCuboid(800, 800, 100)
-    """
-    # tetrahedra
-    """
-    planes = np.array(
-        [
-            [1, 1, 1],
-            [-1, 1, -1],
-            [1, -1, -1],
-            [-1, -1, 1],
-        ]
-    )
-    planesDist = np.array(
-        [
-            [300],
-            [300],
-            [300],
-            [300],
-        ]
-    )
-    """
-    # equilateral prism
-    """
-    planes = np.array(
-        [
-            [-1, np.sqrt(3) / 2.0, 0],
-            [1, np.sqrt(3) / 2.0, 0],
-            [0, -1, 0],
-            [0, 0, 1],
-            [0, 0, -1],
-        ]
-    )
-    planesDist = np.array(
-        [
-            [150],
-            [150],
-            [150],
-            [50],
-            [50],
-        ]
-    )
-    """
-    planes, planesDist = generatePlanesCuboid(800, 800, 100)
-    planesDist = planesDist * 1e-9
+    if 0:
+        planes, planesDist = generatePlanesCuboid(800, 800, 100)
 
-    # import transformations as tfs
+    # tetrahedra
+    if 0:
+        planes = np.array(
+            [
+                [1, 1, 1],
+                [-1, 1, -1],
+                [1, -1, -1],
+                [-1, -1, 1],
+            ]
+        )
+        planesDist = np.array(
+            [
+                [300],
+                [300],
+                [300],
+                [300],
+            ]
+        )
+
+    # equilateral prism
+    if 0:
+        planes = np.array(
+            [
+                [-1, np.sqrt(3) / 2.0, 0],
+                [1, np.sqrt(3) / 2.0, 0],
+                [0, -1, 0],
+                [0, 0, 1],
+                [0, 0, -1],
+            ]
+        )
+        planesDist = np.array(
+            [
+                [150],
+                [150],
+                [150],
+                [50],
+                [50],
+            ]
+        )
+
+    if 1:
+        planes, planesDist = generatePlanesCuboid(800, 800, 100)
+        planesDist *= 1e-9
+
     from bcdi.experiment.rotation_matrix import RotationMatrix as R
 
     alpha, beta, gamma = 5, 45, 45
-    origin, xaxis, yaxis, zaxis = [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]
     origin, xaxis, yaxis, zaxis = [0, 0, 0], "x+", "y+", "z+"
-    # Rx = tfs.rotation_matrix(np.deg2rad(alpha), xaxis)[:3,:3]
-    # Ry = tfs.rotation_matrix(np.deg2rad(beta), yaxis)[:3,:3]
-    # Rz = tfs.rotation_matrix(np.deg2rad(gamma), zaxis)[:3,:3]
     Rx = R(xaxis, alpha).get_matrix()
     Ry = R(yaxis, beta).get_matrix()
     Rz = R(zaxis, gamma).get_matrix()
@@ -330,11 +326,8 @@ if __name__ == "__main__":
         print(planes)
         return planes
 
-    print("here:", planes)
-
-    planes = rot_planes(planes, Rz)
-    planes = rot_planes(planes, Ry)
-    print("here:", planes)
+    planes1 = rot_planes(planes, Rz)
+    planes2 = rot_planes(planes1, Ry)
 
     # rawdata = np.zeros((64,64,64))
     # error on filename 2x3x10 binning
@@ -352,31 +345,28 @@ if __name__ == "__main__":
         detector_pixel_size,
         ang_step,
         braggAng,
-        planes,
+        planes2,
         planesDist,
         voxel_size=np.array([10, 10, 10]) * 1e-9,
     )
 
     support = supportMaker.get_support()
 
-    """
-    # lazy rotation
-    import scipy.fftpack as fft
-    from scipy.ndimage.interpolation import rotate
+    if 0:
+        # lazy rotation
+        import scipy.fftpack as fft
+        from scipy.ndimage.interpolation import rotate
 
-    support = supportMaker.get_support()
-    #rotate around z axis
-    support = rotate(support,25,(2,0),reshape=False)  # replace  Bragg angle*2
-    #rotate around y axis RH about y
-    #support = rotate(support,25,(1,0),reshape=False)  # replace  Bragg angle*2
-    #rotate around x axis
-    #support = rotate(support,25,(2,1),reshape=False)  # replace  Bragg angle*2
+        support = supportMaker.get_support()
+        # rotate around z axis
+        support = rotate(support, 25, (2, 0), reshape=False)  # replace  Bragg angle*2
+        # rotate around y axis RH about y
+        # support = rotate(support,25,(1,0),reshape=False)  # replace  Bragg angle*2
+        # rotate around x axis
+        # support = rotate(support,25,(2,1),reshape=False)  # replace  Bragg angle*2
 
-
-    support[support>=0.1] = 1
-    support[support<0.1] = 0
-
-    """
+        support[support >= 0.1] = 1
+        support[support < 0.1] = 0
 
     # save to npz
     np.savez("support.npz", support)
@@ -391,19 +381,34 @@ if __name__ == "__main__":
         outf["poly_fft_shift"] = abs(fft.fftshift(data1))
         outf["rawdata"] = rawdata
 
-    """
-    data=MakePoly((64,64,64),((1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)))
-    outf=h5.File('test12.h5','w')
-    outf['poly']=data
+    if 0:
+        data = MakePoly(
+            (64, 64, 64), ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
+        )
+        outf = h5.File("test12.h5", "w")
+        outf["poly"] = data
 
-    data=MakePolyCen((64,64,64),(10,10,10),((1,1,1),
-                     (1,-1,-1), (-1,1,-1), (-1,-1,1)))
-    data=MakePolyCen((64,64,64),(10,10,10),((10.1,0,0),
-                     (0,10,0), (0,0,10), (-10,0,0), (0,-10,0), (0,0,-10)))
-    outf['polycen']=data
-    import scipy.fftpack as fft
-    data1=fft.fftn(np.complex64(data))
-    outf['poly_fft']=abs(data1)
-    outf['poly_fft_shift']=abs(fft.fftshift(data1))
-    outf.close()
-    """
+        data = MakePolyCen(
+            (64, 64, 64),
+            (10, 10, 10),
+            ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)),
+        )
+        data = MakePolyCen(
+            (64, 64, 64),
+            (10, 10, 10),
+            (
+                (10.1, 0, 0),
+                (0, 10, 0),
+                (0, 0, 10),
+                (-10, 0, 0),
+                (0, -10, 0),
+                (0, 0, -10),
+            ),
+        )
+        outf["polycen"] = data
+        import scipy.fftpack as fft
+
+        data1 = fft.fftn(np.complex64(data))
+        outf["poly_fft"] = abs(data1)
+        outf["poly_fft_shift"] = abs(fft.fftshift(data1))
+        outf.close()
