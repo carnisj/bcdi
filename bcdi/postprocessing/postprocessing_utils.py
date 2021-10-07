@@ -107,18 +107,9 @@ def align_arrays(
             print("Skipping alignment")
         aligned_array = shifted_array
 
-    ###########################
-    # print and optional plot #
-    ###########################
-    if verbose:
-        print(
-            "Pearson correlation coefficient = {0:.3f}".format(
-                pearsonr(
-                    np.ndarray.flatten(abs(reference_array)),
-                    np.ndarray.flatten(abs(aligned_array)),
-                )[0]
-            )
-        )
+    #################
+    # optional plot #
+    #################
     if debugging:
         gu.multislices_plot(
             abs(reference_array), sum_frames=True, title="Reference object"
@@ -306,8 +297,8 @@ def average_obj(
 
     :return: the average complex density
     """
+    # check some parameters
     valid.valid_ndarray(arrays=(obj, avg_obj, ref_obj), ndim=3)
-    # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={
@@ -325,6 +316,7 @@ def average_obj(
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
+    # al
     nbz, nby, nbx = obj.shape
     avg_flag = 0
     if avg_obj.sum() == 0:  # first iteration of the loop, no running average yet
@@ -342,52 +334,19 @@ def average_obj(
                 is_orthogonal=is_orthogonal,
             )
     else:
-        # get the shift between ref_obj and obj
-
-        if aligning_option == "com":
-            threshold = support_threshold
-        else:
-            threshold = None  # use the modulus for the dft registration
-
-        shiftz, shifty, shiftx = util.get_shift_between_arrays(
-            reference_array=abs(ref_obj),
-            shifted_array=abs(obj),
-            method=aligning_option,
-            support_threshold=threshold,
+        # align obj
+        new_obj = align_arrays(
+            reference_array=ref_obj,
+            shifted_array=obj,
+            shift_method="modulus",
+            interpolation_method=aligning_option,
+            support_threshold=support_threshold,
+            precision=1000,
+            verbose=True,
+            debugging=debugging,
         )
 
-        if aligning_option == "com":
-            # re-sample data on a new grid based on COM shift of support
-            old_z = np.arange(-nbz // 2, nbz // 2)
-            old_y = np.arange(-nby // 2, nby // 2)
-            old_x = np.arange(-nbx // 2, nbx // 2)
-            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-            new_z = myz + shiftz
-            new_y = myy + shifty
-            new_x = myx + shiftx
-            del myx, myy, myz
-            rgi = RegularGridInterpolator(
-                (old_z, old_y, old_x),
-                obj,
-                method="linear",
-                bounds_error=False,
-                fill_value=0,
-            )
-            new_obj = rgi(
-                np.concatenate(
-                    (
-                        new_z.reshape((1, new_z.size)),
-                        new_y.reshape((1, new_z.size)),
-                        new_x.reshape((1, new_z.size)),
-                    )
-                ).transpose()
-            )
-            new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
-        else:
-            # subpixel shift, keep the complex output
-            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
-
-        # renormalize
+        # renormalize new_obj
         new_obj = new_obj / abs(new_obj).max()
 
         # calculate the correlation between arrays and average them eventually
@@ -399,7 +358,7 @@ def average_obj(
                 f"pearson cross-correlation = {correlation} too low, "
                 "skip this reconstruction"
             )
-        else:
+        else:  # combine the arrays
             print(
                 f"pearson-correlation = {correlation}, ",
                 "average with this reconstruction",
