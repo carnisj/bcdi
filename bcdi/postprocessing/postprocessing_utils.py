@@ -304,7 +304,7 @@ def average_obj(
 
     nbz, nby, nbx = obj.shape
     avg_flag = 0
-    if avg_obj.sum() == 0:
+    if avg_obj.sum() == 0:  # first iteration of the loop, no running average yet
         avg_obj = ref_obj
         if debugging:
             gu.multislices_plot(
@@ -319,33 +319,29 @@ def average_obj(
                 is_orthogonal=is_orthogonal,
             )
     else:
-        myref_support = np.zeros((nbz, nby, nbx))
-        myref_support[abs(ref_obj) > support_threshold * abs(ref_obj).max()] = 1
-        my_support = np.zeros((nbz, nby, nbx))
-        my_support[abs(obj) > support_threshold * abs(obj).max()] = 1
-        avg_piz, avg_piy, avg_pix = center_of_mass(abs(myref_support))
-        piz, piy, pix = center_of_mass(abs(my_support))
-        offset_z = avg_piz - piz
-        offset_y = avg_piy - piy
-        offset_x = avg_pix - pix
-        print(
-            "center of mass offset with reference object: (",
-            str("{:.2f}".format(offset_z)),
-            ",",
-            str("{:.2f}".format(offset_y)),
-            ",",
-            str("{:.2f}".format(offset_x)),
-            ") pixels",
+        # get the shift between ref_obj and obj
+
+        if aligning_option == 'com':
+            threshold = support_threshold
+        else:
+            threshold = None  # use the modulus for the dft registration
+
+        shiftz, shifty, shiftx = util.get_shift_between_arrays(
+            reference_array=abs(ref_obj),
+            shifted_array=abs(obj),
+            method=aligning_option,
+            support_threshold=threshold,
         )
+
         if aligning_option == "com":
             # re-sample data on a new grid based on COM shift of support
             old_z = np.arange(-nbz // 2, nbz // 2)
             old_y = np.arange(-nby // 2, nby // 2)
             old_x = np.arange(-nbx // 2, nbx // 2)
             myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-            new_z = myz + offset_z
-            new_y = myy + offset_y
-            new_x = myx + offset_x
+            new_z = myz + shiftz
+            new_y = myy + shifty
+            new_x = myx + shiftx
             del myx, myy, myz
             rgi = RegularGridInterpolator(
                 (old_z, old_y, old_x),
@@ -365,24 +361,16 @@ def average_obj(
             )
             new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
         else:
-            # dft registration and subpixel shift
-            shiftz, shifty, shiftx = reg.getimageregistration(
-                abs(ref_obj), abs(obj), precision=1000
-            )
+            # subpixel shift, keep the complex output
             new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
-            # keep the complex output here
-            print(
-                "Shift calculated from dft registration: "
-                f"({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f}) pixels"
-            )
 
-        new_obj = new_obj / abs(new_obj).max()  # renormalize
+        # renormalize
+        new_obj = new_obj / abs(new_obj).max()
 
+        # calculate the correlation between arrays and average them eventually
         correlation = pearsonr(
-            np.ndarray.flatten(abs(ref_obj[np.nonzero(myref_support)])),
-            np.ndarray.flatten(abs(new_obj[np.nonzero(myref_support)])),
+            np.ndarray.flatten(abs(ref_obj)), np.ndarray.flatten(abs(new_obj))
         )[0]
-
         if correlation < correlation_threshold:
             print(
                 f"pearson cross-correlation = {correlation} too low, "
