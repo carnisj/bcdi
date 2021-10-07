@@ -96,7 +96,7 @@ def MakePolyCen(dims, center, planes):
     return AddPolyCen(array, center, planes)
 
 
-class supportMaker(object):
+class supportMaker:
     """
 
     A masking class for support creation.
@@ -126,6 +126,7 @@ class supportMaker(object):
         planesDist=None,
         voxel_size=None,
     ):
+        """Init supportMaker."""
         # set all parameters
 
         self.rawdata = rawdata
@@ -149,15 +150,17 @@ class supportMaker(object):
         self.support = MakePoly(self.support.shape, self.scaled_planes)
 
     def set_support(self, rawdata):
+        """Set the support to match rawdata dimensions."""
         self.support = np.zeros_like(rawdata)
 
     def set_voxel_size(self, voxel_size):
+        """Set the voxel size."""
         self.vox_size = voxel_size
 
     def set_planes(self, planes_list, plane_distance_origin_list):
-
+        """Set the planes."""
         if len(planes_list) != len(plane_distance_origin_list):
-            print("the number of planes does not match the number of distances")
+            print("the number of planes does not match the number of distances.")
             sys.exit()
 
         self.planes = np.array(planes_list)
@@ -187,16 +190,19 @@ class supportMaker(object):
     def get_support(
         self,
     ):
+        """Return the generated support."""
         return self.support
 
     def get_planes(
         self,
     ):
+        """Return planes array."""
         return self.planes
 
     def get_planesDist(
         self,
     ):
+        """Return planes distance from origin."""
         return self.planesDist
 
     def calc_voxel_size(
@@ -207,6 +213,7 @@ class supportMaker(object):
         ang_step=None,
         braggAng=None,
     ):
+        """Calculate the voxel size."""
         # use the experiment parameters to determine the voxel size
         ss = self.support.shape
 
@@ -250,29 +257,13 @@ def generatePlanesCuboid(x, y, z):
     return planes, planesDist
 
 
-"""
-data=MakePoly((64,64,64),((1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)))
-outf=h5.File('test12.h5','w')
-outf['poly']=data
-
-data=MakePolyCen((64,64,64),(10,10,10),((1,1,1),
-                 (1,-1,-1), (-1,1,-1), (-1,-1,1)))
-data=MakePolyCen((64,64,64),(10,10,10),((10.1,0,0),
-                 (0,10,0), (0,0,10), (-10,0,0), (0,-10,0), (0,0,-10)))
-outf['polycen']=data
-import scipy.fftpack as fft
-data1=fft.fftn(np.complex64(data))
-outf['poly_fft']=abs(data1)
-outf['poly_fft_shift']=abs(fft.fftshift(data1))
-outf.close()
-"""
-
 if __name__ == "__main__":
     # cuboid
+    """
     planes, planesDist = generatePlanesCuboid(800, 800, 100)
-
+    """
     # tetrahedra
-
+    """
     planes = np.array(
         [
             [1, 1, 1],
@@ -289,8 +280,9 @@ if __name__ == "__main__":
             [300],
         ]
     )
-
+    """
     # equilateral prism
+    """
     planes = np.array(
         [
             [-1, np.sqrt(3) / 2.0, 0],
@@ -309,7 +301,8 @@ if __name__ == "__main__":
             [50],
         ]
     )
-    # planes, planesDist= generatePlanesCuboid(800,800,100)
+    """
+    planes, planesDist = generatePlanesCuboid(800, 800, 100)
     planesDist = planesDist * 1e-9
 
     # import transformations as tfs
@@ -332,7 +325,7 @@ if __name__ == "__main__":
         rp = [np.dot(rot, v) for v in planes]
 
         npl = []
-        [npl.append(p.tolist()) for p in rp]
+        npl = [npl.append(p.tolist()) for p in rp]
         planes = np.array(npl)
         print(planes)
         return planes
@@ -397,3 +390,20 @@ if __name__ == "__main__":
         # outf['poly_fft'] = abs(data1)
         outf["poly_fft_shift"] = abs(fft.fftshift(data1))
         outf["rawdata"] = rawdata
+
+    """
+    data=MakePoly((64,64,64),((1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)))
+    outf=h5.File('test12.h5','w')
+    outf['poly']=data
+
+    data=MakePolyCen((64,64,64),(10,10,10),((1,1,1),
+                     (1,-1,-1), (-1,1,-1), (-1,-1,1)))
+    data=MakePolyCen((64,64,64),(10,10,10),((10.1,0,0),
+                     (0,10,0), (0,0,10), (-10,0,0), (0,-10,0), (0,0,-10)))
+    outf['polycen']=data
+    import scipy.fftpack as fft
+    data1=fft.fftn(np.complex64(data))
+    outf['poly_fft']=abs(data1)
+    outf['poly_fft_shift']=abs(fft.fftshift(data1))
+    outf.close()
+    """
