@@ -39,6 +39,9 @@ def align_obj(
     """
     Align two arrays using dft registration and subpixel shift.
 
+    The shift between arrays can be determined either using the modulus of the arrays
+    or a support created from it using a threshold.
+
     :param reference_obj: 3D array, reference complex object
     :param obj: 3D array, complex density to average with
     :param method: 'modulus', 'support' or 'skip'. Object to use for the determination
@@ -63,52 +66,31 @@ def align_obj(
         obj = util.crop_pad(array=obj, output_shape=reference_obj.shape)
 
     # calculate the shift between the two arrays
-    if method == "modulus":
-        shiftz, shifty, shiftx = reg.getimageregistration(
-            abs(reference_obj), abs(obj), precision=precision
+    if method != "skip":
+        if method == 'modulus':
+            threshold = None
+        else:  # "support"
+            threshold = support_threshold
+        shiftz, shifty, shiftx = util.get_shift_between_arrays(
+            reference_array=abs(reference_obj),
+            shifted_array=abs(obj),
+            method='dft',
+            support_threshold=threshold,
+            precision=precision
         )
-    elif method == "support":
-        ref_support = np.zeros(reference_obj.shape)
-        ref_support[
-            abs(reference_obj) > support_threshold * abs(reference_obj).max()
-        ] = 1
-        support = np.zeros(reference_obj.shape)
-        support[abs(obj) > support_threshold * abs(obj).max()] = 1
-        shiftz, shifty, shiftx = reg.getimageregistration(
-            ref_support, support, precision=precision
-        )
-        if debugging:
-            gu.multislices_plot(
-                abs(ref_support), sum_frames=False, title="Reference support"
-            )
-            gu.multislices_plot(
-                abs(support), sum_frames=False, title="Support before alignement"
-            )
-        del ref_support, support
-    else:  # 'skip'
-        print("\nSkipping alignment")
         print(
-            "\tPearson correlation coefficient = {0:.3f}".format(
-                pearsonr(
-                    np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(obj))
-                )[0]
-            )
+            "Shift calculated from dft registration: "
+            f"({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f}) pixels"
         )
-        return obj
+        # align obj using subpixel shift, keep the complex output
+        new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
 
-    # align obj using subpixel shift
-    new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)  # keep the complex output
+    else:  # 'skip'
+        print("Skipping alignment")
+        new_obj = obj
+
     print(
-        "\tShift calculated from dft registration: (",
-        str("{:.2f}".format(shiftz)),
-        ",",
-        str("{:.2f}".format(shifty)),
-        ",",
-        str("{:.2f}".format(shiftx)),
-        ") pixels",
-    )
-    print(
-        "\tPearson correlation coefficient = {0:.3f}".format(
+        "Pearson correlation coefficient = {0:.3f}".format(
             pearsonr(
                 np.ndarray.flatten(abs(reference_obj)), np.ndarray.flatten(abs(new_obj))
             )[0]
