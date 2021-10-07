@@ -332,12 +332,13 @@ def dftups(
 
 
 def get_shift(
-        reference_array: np.ndarray,
-        shifted_array: np.ndarray,
-        shift_method: str = "modulus",
-        precision: int = 1000,
-        support_threshold: Union[None, float] = None,
-        verbose: bool = True) -> Sequence[float]:
+    reference_array: np.ndarray,
+    shifted_array: np.ndarray,
+    shift_method: str = "modulus",
+    precision: int = 1000,
+    support_threshold: Union[None, float] = None,
+    verbose: bool = True,
+) -> Sequence[float]:
     """
     Calculate the shift between two arrays.
 
@@ -363,16 +364,18 @@ def get_shift(
     # check input parameters #
     ##########################
     valid.valid_ndarray(
-        arrays=(reference_array, shifted_array), fix_shape=True,
-        name="get_shift_arrays_com"
+        arrays=(reference_array, shifted_array),
+        fix_shape=True,
+        name="get_shift_arrays_com",
     )
-    valid.valid_item(support_threshold,
-                     allowed_types=Real,
-                     min_included=0,
-                     max_included=1,
-                     allow_none=True,
-                     name="support_threshold"
-                     )
+    valid.valid_item(
+        support_threshold,
+        allowed_types=Real,
+        min_included=0,
+        max_included=1,
+        allow_none=True,
+        name="support_threshold",
+    )
     valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
     ##########################################################################
@@ -381,21 +384,18 @@ def get_shift(
     if shift_method == "raw":
         reference_obj = reference_array
         shifted_obj = shifted_array
-    elif shift_method == 'modulus':
+    elif shift_method == "modulus":
         reference_obj = abs(reference_array)
         shifted_obj = abs(shifted_array)
     else:  # "support"
         reference_obj, shifted_obj = util.make_support(
-            arrays=(reference_array, shifted_array),
-            support_threshold=support_threshold
+            arrays=(reference_array, shifted_array), support_threshold=support_threshold
         )
 
     ##############################################
     # calculate the shift between the two arrays #
     ##############################################
-    shifts = getimageregistration(
-        reference_obj, shifted_obj, precision=precision
-    )
+    shifts = getimageregistration(reference_obj, shifted_obj, precision=precision)
 
     if verbose:
         print(f"shifts with the reference object: {shifts} pixels")
@@ -403,9 +403,8 @@ def get_shift(
 
 
 def shift_array(
-        array: np.ndarray,
-        shifts: Sequence[float],
-        interpolation_method: str = 'subpixel') -> np.ndarray:
+    array: np.ndarray, shifts: Sequence[float], interpolation_method: str = "subpixel"
+) -> np.ndarray:
     """
     Shift array using the defined method given the offsets.
 
@@ -422,16 +421,13 @@ def shift_array(
     #########################
     valid.valid_ndarray(array, name="array")
     valid.valid_container(
-        shifts,
-        container_types=(tuple, list),
-        item_types=Real,
-        name="shifts"
+        shifts, container_types=(tuple, list), item_types=Real, name="shifts"
     )
 
     ###################
     # shift the array #
     ###################
-    if interpolation_method == 'subpixel':
+    if interpolation_method == "subpixel":
         # align obj using subpixel shift, keep the complex output
         shifted_array = subpixel_shift(array, *shifts)
     elif interpolation_method == "rgi":

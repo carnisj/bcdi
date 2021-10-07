@@ -1194,8 +1194,7 @@ def lorentzian(x_axis, amp, cen, sig):
 
 
 def make_support(
-        arrays: Union[np.ndarray, Sequence[np.ndarray]],
-        support_threshold: float
+    arrays: Union[np.ndarray, Sequence[np.ndarray]], support_threshold: float
 ) -> Union[np.ndarray, Sequence[np.ndarray]]:
     """
     Create a support for each provided array, using a threshold on its modulus.
@@ -1208,16 +1207,15 @@ def make_support(
     # check some parameters
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
-    valid.valid_container(arrays,
-                          container_types=(tuple, list),
-                          item_types=np.ndarray,
-                          name="arrays")
+    valid.valid_container(
+        arrays, container_types=(tuple, list), item_types=np.ndarray, name="arrays"
+    )
     valid.valid_item(
         support_threshold,
         allowed_types=float,
         min_included=0,
         max_included=1,
-        name="support_threshold"
+        name="support_threshold",
     )
 
     # create the supports

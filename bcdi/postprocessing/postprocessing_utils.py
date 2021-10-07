@@ -62,9 +62,7 @@ def align_arrays(
     """
     # check some parameters
     valid.valid_ndarray(
-        arrays=(shifted_array, reference_array),
-        ndim=3,
-        fix_shape=False
+        arrays=(shifted_array, reference_array), ndim=3, fix_shape=False
     )
     if shift_method not in {"raw", "modulus", "support", "skip"}:
         raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
@@ -79,8 +77,7 @@ def align_arrays(
                 "crop/pad obj",
             )
         shifted_array = util.crop_pad(
-            array=shifted_array,
-            output_shape=reference_array.shape
+            array=shifted_array, output_shape=reference_array.shape
         )
 
     if shift_method != "skip":
@@ -93,7 +90,7 @@ def align_arrays(
             shift_method=shift_method,
             support_threshold=support_threshold,
             precision=precision,
-            verbose=verbose
+            verbose=verbose,
         )
 
         #######################
@@ -102,7 +99,7 @@ def align_arrays(
         aligned_array = reg.shift_array(
             array=shifted_array,
             shifts=shifts,
-            interpolation_method=interpolation_method
+            interpolation_method=interpolation_method,
         )
 
     else:  # 'skip'
@@ -118,7 +115,7 @@ def align_arrays(
             "Pearson correlation coefficient = {0:.3f}".format(
                 pearsonr(
                     np.ndarray.flatten(abs(reference_array)),
-                    np.ndarray.flatten(abs(aligned_array))
+                    np.ndarray.flatten(abs(aligned_array)),
                 )[0]
             )
         )
@@ -318,7 +315,7 @@ def average_obj(
             "width_y",
             "width_x",
             "reciprocal_space",
-            "is_orthogonal"
+            "is_orthogonal",
         },
         name="postprocessing_utils.average_obj",
     )
@@ -347,7 +344,7 @@ def average_obj(
     else:
         # get the shift between ref_obj and obj
 
-        if aligning_option == 'com':
+        if aligning_option == "com":
             threshold = support_threshold
         else:
             threshold = None  # use the modulus for the dft registration
