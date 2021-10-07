@@ -262,9 +262,6 @@ def average_obj(
     support_threshold=0.25,
     correlation_threshold=0.90,
     aligning_option="dft",
-    width_z=None,
-    width_y=None,
-    width_x=None,
     method="reciprocal_space",
     debugging=False,
     **kwargs,
@@ -272,28 +269,32 @@ def average_obj(
     """
     Average two reconstructions after aligning it.
 
-    Alignment is processed only if their cross-correlation is larger than the parameter
-    correlation_threshold.
+    This function can be used to average a series of arrays within a loop. Alignment is
+    performed using either DFT registration or the shift of the center of mass of the
+    array. Averaging is processed only if their Pearson cross-correlation after
+    alignment is larger than the correlation threshold.
 
-    :param avg_obj: 3D array, average complex density
-    :param ref_obj: 3D array, reference complex object
-    :param obj: 3D array, complex density to average with
-    :param support_threshold: for support definition
-    :param correlation_threshold: minimum correlation between two dataset to average
-     them
+    :param avg_obj: 3D array of complex numbers, current average
+    :param ref_obj: 3D array of complex numbers, used as a reference for the alignment
+    :param obj: 3D array of complex numbers, array to be aligned with the reference and
+     to be added to avg_obj
+    :param support_threshold: normalized threshold for the definition of the support. It
+     is applied on the modulus of the array
+    :param correlation_threshold: float in [0, 1], minimum correlation between two
+     dataset to average them
     :param aligning_option: 'com' for center of mass, 'dft' for dft registration and
      subpixel shift
-    :param width_z: size of the area to plot in z (axis 0), centered on the middle of
-     the initial array
-    :param width_y: size of the area to plot in y (axis 1), centered on the middle of
-     the initial array
-    :param width_x: size of the area to plot in x (axis 2), centered on the middle of
-     the initial array
     :param method: 'real_space' or 'reciprocal_space', in which space the average will
      be performed
-    :param debugging: set to True to see plots
-    :type debugging: bool
+    :param debugging: boolean, set to True to see plots
     :param kwargs:
+
+     - 'width_z': size of the area to plot in z (axis 0), centered on the middle of
+       the initial array
+     - 'width_y': size of the area to plot in y (axis 1), centered on the middle of
+       the initial array
+     - 'width_x': size of the area to plot in x (axis 2), centered on the middle of
+       the initial array
      - 'reciprocal_space': True if the object is in reciprocal space
      - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
        default plot labels.
@@ -304,9 +305,18 @@ def average_obj(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        allowed_kwargs={
+            "width_z",
+            "width_y",
+            "width_x",
+            "reciprocal_space",
+            "is_orthogonal"
+        },
         name="postprocessing_utils.average_obj",
     )
+    width_z = kwargs.get("width_z")
+    width_y = kwargs.get("width_y")
+    width_x = kwargs.get("width_x")
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
@@ -373,21 +383,15 @@ def average_obj(
             )
             new_obj = new_obj.reshape((nbz, nby, nbx)).astype(obj.dtype)
         else:
-            # dft registration and subpixel shift (see Matlab code)
+            # dft registration and subpixel shift
             shiftz, shifty, shiftx = reg.getimageregistration(
                 abs(ref_obj), abs(obj), precision=1000
             )
-            new_obj = reg.subpixel_shift(
-                obj, shiftz, shifty, shiftx
-            )  # keep the complex output here
+            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
+            # keep the complex output here
             print(
-                "Shift calculated from dft registration: (",
-                str("{:.2f}".format(shiftz)),
-                ",",
-                str("{:.2f}".format(shifty)),
-                ",",
-                str("{:.2f}".format(shiftx)),
-                ") pixels",
+                "Shift calculated from dft registration: "
+                f"({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f}) pixels"
             )
 
         new_obj = new_obj / abs(new_obj).max()  # renormalize
@@ -399,15 +403,13 @@ def average_obj(
 
         if correlation < correlation_threshold:
             print(
-                "pearson cross-correlation=",
-                correlation,
-                "too low, skip this reconstruction",
+                f"pearson cross-correlation = {correlation} too low, "
+                "skip this reconstruction"
             )
         else:
             print(
-                "pearson-correlation=",
-                correlation,
-                ", average with this reconstruction",
+                f"pearson-correlation = {correlation}, ",
+                "average with this reconstruction",
             )
 
             if debugging:
@@ -434,7 +436,7 @@ def average_obj(
             elif method == "reciprocal_space":
                 avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
             else:
-                raise ValueError('method should be "real_space" or "reciprocal_space"')
+                raise ValueError("method should be 'real_space' or 'reciprocal_space'")
             avg_flag = 1
 
         if debugging:
