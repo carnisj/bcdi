@@ -61,7 +61,7 @@ from numbers import Real, Integral
 import os
 import pathlib
 
-from bcdi.utils import validation as valid
+from ..utils import validation as valid
 
 
 def create_detector(name, **kwargs):
