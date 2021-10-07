@@ -61,7 +61,11 @@ def align_arrays(
     :return: the aligned array
     """
     # check some parameters
-    valid.valid_ndarray(arrays=(shifted_array, reference_array), ndim=3, fix_shape=False)
+    valid.valid_ndarray(
+        arrays=(shifted_array, reference_array),
+        ndim=3,
+        fix_shape=False
+    )
     if shift_method not in {"raw", "modulus", "support"}:
         raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
     if interpolation_method not in {"subpixel", "rgi", "roll"}:
@@ -74,29 +78,20 @@ def align_arrays(
                 shifted_array.shape,
                 "crop/pad obj",
             )
-        shifted_obj = util.crop_pad(array=shifted_array, output_shape=reference_array.shape)
+        shifted_array = util.crop_pad(
+            array=shifted_array,
+            output_shape=reference_array.shape
+        )
 
-    ##############################################
-    # calculate the shift between the two arrays #
-    ##############################################
     if shift_method != "skip":
-        if shift_method == "raw":
-            ref = reference_array
-            obj = shifted_array
-            threshold = None
-        elif shift_method == 'modulus':
-            ref = abs(reference_array)
-            obj = abs(shifted_array)
-            threshold = None
-        else:  # "support"
-            ref = abs(reference_array)
-            obj = abs(shifted_array)
-            threshold = support_threshold
-
+        ##############################################
+        # calculate the shift between the two arrays #
+        ##############################################
         shiftz, shifty, shiftx = util.get_shift_between_arrays(
-            reference_array=ref,
-            shifted_array=obj,
-            support_threshold=threshold,
+            reference_array=reference_array,
+            shifted_array=shifted_array,
+            shift_method=shift_method,
+            support_threshold=support_threshold,
             precision=precision,
             verbose=verbose
         )
@@ -106,7 +101,7 @@ def align_arrays(
         #######################
         if interpolation_method == 'subpixel':
             # align obj using subpixel shift, keep the complex output
-            new_obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
+            new_obj = reg.subpixel_shift(shifted_array, shiftz, shifty, shiftx)
         elif interpolation_method == "rgi":
             # re-sample data on a new grid based on COM shift of support
             nbz, nby, nbx = shifted_array.shape
@@ -150,7 +145,8 @@ def align_arrays(
         print(
             "Pearson correlation coefficient = {0:.3f}".format(
                 pearsonr(
-                    np.ndarray.flatten(abs(reference_array)), np.ndarray.flatten(abs(new_obj))
+                    np.ndarray.flatten(abs(reference_array)),
+                    np.ndarray.flatten(abs(new_obj))
                 )[0]
             )
         )
