@@ -1,5 +1,5 @@
-# getimageregistration and subpixel shift functions for aligning arrays
-# Original code from Xianhui Xiao APS Sector 2
+# getimageregistration, dftups, dft_registration and subpixel shift functions for
+# aligning arrays: original code from Xianhui Xiao APS Sector 2
 # Updated by Ross Harder
 # Updated by Steven Leake 30/07/2014
 # Changed variable names to make it clearer and put it in CXI convention (z y x)
