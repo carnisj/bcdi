@@ -113,7 +113,7 @@ BCDI is available from:
 * upgrade your version with the latest changes from GitHub:
   ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
 
-Not that there are issues with installing scikit-image within an Anaconda environment.
+Note that there are issues with installing scikit-image within an Anaconda environment.
 In such situation, the workaround is to create instead a virtual environment using pip.
 
 Please send feedback in `GitHub <https://github.com/carnisj/bcdi/issues>`_.
