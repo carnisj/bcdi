@@ -1915,42 +1915,49 @@ class DiffractometerID01(Diffractometer):
             labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
 
             try:
-                nu = motor_values[motor_names.index("nu")]  # positioner
+                _ = motor_values[motor_names.index("nu")]  # positioner
             except ValueError:
                 print("'nu' not in the list, trying 'Nu'")
-                nu = motor_values[motor_names.index("Nu")]  # positioner
+                _ = motor_values[motor_names.index("Nu")]  # positioner
                 print("Defaulting to old ID01 motor names")
                 old_names = True
 
             if old_names:
                 names_table = {"mu": "Mu", "eta": "Eta", "phi": "Phi", "nu": "Nu",
-                               "delta": "Delta"}
+                               "delta": "Delta", "energy": "Energy"}
             else:
                 names_table = {"mu": "mu", "eta": "eta", "phi": "phi", "nu": "nu",
-                               "delta": "del"}
+                               "delta": "del", "energy": "energy"}
 
-            if "del" in labels:
+            if names_table["mu"] in labels:
+                mu = labels_data[labels.index(names_table["mu"]), :]  # scanned
+            else:
+                mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
+
+            if names_table["eta"] in labels:
+                eta = labels_data[labels.index(names_table["eta"]), :]  # scanned
+            else:
+                eta = motor_values[motor_names.index(names_table["eta"])]  # positioner
+
+            if names_table["phi"] in labels:
+                phi = labels_data[labels.index(names_table["phi"]), :]  # scanned
+            else:
+                phi = motor_values[motor_names.index(names_table["phi"])]  # positioner
+
+            if names_table["delta"] in labels:
                 delta = labels_data[labels.index(names_table["delta"]), :]  # scanned
             else:  # positioner
                 delta = motor_values[motor_names.index(names_table["delta"])]
 
-            mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
+            if names_table["nu"] in labels:
+                nu = labels_data[labels.index(names_table["nu"]), :]  # scanned
+            else:  # positioner
+                nu = motor_values[motor_names.index(names_table["nu"])]
 
-            if setup.rocking_angle == "outofplane":
-                eta = labels_data[labels.index(names_table["eta"]), :]
-                phi = motor_values[motor_names.index(names_table["phi"])]
-            elif setup.rocking_angle == "inplane":
-                phi = labels_data[labels.index(names_table["phi"]), :]
-                eta = motor_values[motor_names.index(names_table["eta"])]
-            elif setup.rocking_angle == "energy":
-                raw_energy = labels_data[labels.index("energy"), :]  # in kev, scanned
-                phi = motor_values[motor_names.index(names_table["phi"])]  # positioner
-                eta = motor_values[motor_names.index(names_table["eta"])]  # positioner
+            if names_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+                # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
-            else:
-                raise ValueError(
-                    "Invalid rocking angle ", setup.rocking_angle, "for ID01"
-                )
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
