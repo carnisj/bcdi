@@ -56,7 +56,7 @@ def align_arrays(
     """
     # check some parameters
     valid.valid_ndarray(
-        arrays=(shifted_array, reference_array), ndim=3, fix_shape=False
+        arrays=(shifted_array, reference_array), ndim=(2, 3), fix_shape=False
     )
     if shift_method not in {"raw", "modulus", "support", "skip"}:
         raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
@@ -106,10 +106,18 @@ def align_arrays(
     # optional plot #
     #################
     if debugging:
-        gu.multislices_plot(
-            abs(reference_array), sum_frames=True, title="Reference object"
-        )
-        gu.multislices_plot(abs(aligned_array), sum_frames=True, title="Aligned object")
+        ndim = reference_array.ndim
+        if ndim == 3:
+            gu.multislices_plot(
+                abs(reference_array), sum_frames=True, title="Reference object"
+            )
+            gu.multislices_plot(
+                abs(aligned_array), sum_frames=True, title="Aligned object"
+            )
+        else:  # 2D case
+            gu.imshow_plot(abs(reference_array), title="Reference object")
+            gu.imshow_plot(abs(aligned_array), title="Aligned object")
+
     return aligned_array, shift
 
 
