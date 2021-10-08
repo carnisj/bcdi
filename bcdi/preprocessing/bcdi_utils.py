@@ -1093,25 +1093,6 @@ def grid_bcdi_xrayutil(
         follow_bragg=follow_bragg,
     )
 
-    # below is specific to ID01 energy scans
-    # where frames are duplicated for undulator gap change
-    if setup.beamline == "ID01" and setup.rocking_angle == "energy":
-        # frames need to be removed
-        tempdata = np.zeros(((frames_logical != 0).sum(), numy, numx))
-        offset_frame = 0
-        for idx in range(numz):
-            if frames_logical[idx] != 0:  # use frame
-                tempdata[idx - offset_frame, :, :] = data[idx, :, :]
-            else:  # average with the precedent frame
-                offset_frame = offset_frame + 1
-                tempdata[idx - offset_frame, :, :] = (
-                    tempdata[idx - offset_frame, :, :] + data[idx, :, :]
-                ) / 2
-        data = tempdata
-        mask = mask[
-            0 : data.shape[0], :, :
-        ]  # truncate the mask to have the correct size
-
     maxbins = []
     for dim in (qx, qy, qz):
         maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
