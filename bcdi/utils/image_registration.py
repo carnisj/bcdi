@@ -7,7 +7,7 @@
 """Functions related to the registration and alignement of two arrays."""
 
 from collections.abc import Sequence
-from numbers import Real
+from numbers import Complex, Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
@@ -87,9 +87,9 @@ def align_arrays(
             verbose=verbose,
         )
 
-        #######################
+        #####################
         # align shifted_obj #
-        #######################
+        #####################
         aligned_array = shift_array(
             array=shifted_array,
             shift=shift,
@@ -901,6 +901,14 @@ def shift_array(
     if interpolation_method == "subpixel":
         # align obj using subpixel shift, keep the complex output
         shifted_array = subpixel_shift(array, *shift)
+
+        ###################################################
+        # convert shifted_array to the original data type #
+        # subpixel_shift outputs a complex number         #
+        ###################################################
+        if not isinstance(array.flatten()[0], Complex):
+            shifted_array = abs(shifted_array)
+
     elif interpolation_method == "rgi":
         # re-sample data on a new grid based on COM shift of support
         shifted_array = interp_rgi_translation(array=array, shift=shift)
