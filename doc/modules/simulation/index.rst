@@ -26,3 +26,9 @@ simulation_utils
 
 .. automodule:: bcdi.simulation.simulation_utils
    :members:
+
+supportMaker
+^^^^^^^^^^^^
+
+.. automodule:: bcdi.simulation.supportMaker
+   :members:
