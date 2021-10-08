@@ -899,6 +899,53 @@ def in_range(point, extent):
     return False
 
 
+def shift_rgi(array, shift):
+    """
+    Interpolate the shifted array on new positions using a RegularGridInterpolator.
+
+    :param array: a 3D numpy array
+    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension
+    :return: the shifted array
+    """
+    # check some parameters
+    valid.valid_ndarray(array, ndim=3, name="array")
+    valid.valid_container(
+        shift,
+        container_types=(tuple, list),
+        item_types=float,
+        name="shift"
+    )
+
+    # calculate the new positions
+    nbz, nby, nbx = array.shape
+    old_z = np.arange(-nbz // 2, nbz // 2)
+    old_y = np.arange(-nby // 2, nby // 2)
+    old_x = np.arange(-nbx // 2, nbx // 2)
+    myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+    new_z = myz + shift[0]
+    new_y = myy + shift[1]
+    new_x = myx + shift[2]
+
+    # interpolate array
+    rgi = RegularGridInterpolator(
+        (old_z, old_y, old_x),
+        array,
+        method="linear",
+        bounds_error=False,
+        fill_value=0,
+    )
+    shifted_array = rgi(
+        np.concatenate(
+            (
+                new_z.reshape((1, new_z.size)),
+                new_y.reshape((1, new_z.size)),
+                new_x.reshape((1, new_z.size)),
+            )
+        ).transpose()
+    )
+    return shifted_array.reshape((nbz, nby, nbx)).astype(array.dtype)
+
+
 def is_float(string):
     """
     Return True is the string represents a number.
