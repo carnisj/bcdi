@@ -11,6 +11,7 @@ from numbers import Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
+from scipy.ndimage.measurements import center_of_mass
 from scipy.stats import pearsonr
 from typing import Union
 
@@ -107,6 +108,199 @@ def align_arrays(
         )
         gu.multislices_plot(abs(aligned_array), sum_frames=True, title="Aligned object")
     return aligned_array
+
+
+def align_diffpattern(
+    reference_data,
+    data,
+    mask=None,
+    method="registration",
+    combining_method="rgi",
+    return_shift=False,
+):
+    """
+    Align two diffraction patterns.
+
+    The alignement can be based either on the shift of the center of mass or on dft
+    registration.
+
+    :param reference_data: the first 3D or 2D diffraction intensity array which will
+     serve as a reference.
+    :param data: the 3D or 2D diffraction intensity array to align.
+    :param mask: the 3D or 2D mask corresponding to data
+    :param method: 'center_of_mass' or 'registration'. For 'registration',
+     see: Opt. Lett. 33, 156-158 (2008).
+    :param combining_method: 'rgi' for RegularGridInterpolator or 'subpixel' for
+     subpixel shift
+    :param return_shift: if True, will return the shifts as a tuple
+    :return:
+     - the shifted data
+     - the shifted mask
+     - if return_shift, returns a tuple containing the shifts
+    """
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_ndarray(arrays=(reference_data, data), ndim=(2, 3))
+    if method not in {"center_of_mass", "registration"}:
+        raise ValueError(f'Incorrect setting {method} for the parameter "method"')
+    if combining_method not in {"rgi", "subpixel"}:
+        raise ValueError(
+            f'Incorrect setting {combining_method} for the parameter "combining_method"'
+        )
+
+    ######################
+    # align the datasets #
+    ######################
+
+    ###########
+    # 3D case #
+    ###########
+    if data.ndim == 3:
+        nbz, nby, nbx = reference_data.shape
+        if method == "registration":
+            shiftz, shifty, shiftx = getimageregistration(
+                abs(reference_data), abs(data), precision=100
+            )
+        else:  # 'center_of_mass'
+            ref_piz, ref_piy, ref_pix = center_of_mass(abs(reference_data))
+            piz, piy, pix = center_of_mass(abs(data))
+            shiftz = ref_piz - piz
+            shifty = ref_piy - piy
+            shiftx = ref_pix - pix
+        print(f"Shifts (z, y, x) = ({shiftz:.2f}, {shifty:.2f}, {shiftx:.2f})")
+        if all(val == 0 for val in (shiftz, shifty, shiftx)):
+            if not return_shift:
+                return data, mask
+            return data, mask, (shiftz, shifty, shiftx)
+
+        if combining_method == "rgi":
+            # re-sample data on a new grid based on the shift
+            old_z = np.arange(-nbz // 2, nbz // 2)
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+            new_z = myz - shiftz
+            new_y = myy - shifty
+            new_x = myx - shiftx
+
+            rgi = RegularGridInterpolator(
+                (old_z, old_y, old_x),
+                data,
+                method="linear",
+                bounds_error=False,
+                fill_value=0,
+            )
+            data = rgi(
+                np.concatenate(
+                    (
+                        new_z.reshape((1, new_z.size)),
+                        new_y.reshape((1, new_z.size)),
+                        new_x.reshape((1, new_z.size)),
+                    )
+                ).transpose()
+            )
+            data = data.reshape((nbz, nby, nbx)).astype(reference_data.dtype)
+            if mask is not None:
+                rgi = RegularGridInterpolator(
+                    (old_z, old_y, old_x),
+                    mask,
+                    method="linear",
+                    bounds_error=False,
+                    fill_value=1,
+                )  # fill_value=1: mask voxels where data is not defined
+                mask = rgi(
+                    np.concatenate(
+                        (
+                            new_z.reshape((1, new_z.size)),
+                            new_y.reshape((1, new_z.size)),
+                            new_x.reshape((1, new_z.size)),
+                        )
+                    ).transpose()
+                )
+                mask = mask.reshape((nbz, nby, nbx)).astype(data.dtype)
+
+        else:  # 'subpixel'
+            data = abs(
+                subpixel_shift(data, shiftz, shifty, shiftx)
+            )  # data is a real number (intensity)
+            if mask is not None:
+                mask = abs(subpixel_shift(mask, shiftz, shifty, shiftx))
+
+        shift = shiftz, shifty, shiftx
+
+    ###########
+    # 2D case #
+    ###########
+    else:  # ndim = 2
+        nby, nbx = reference_data.shape
+        if method == "registration":
+            shifty, shiftx = getimageregistration(
+                abs(reference_data), abs(data), precision=100
+            )
+        else:  # 'center_of_mass'
+            ref_piy, ref_pix = center_of_mass(abs(reference_data))
+            piy, pix = center_of_mass(abs(data))
+            shifty = ref_piy - piy
+            shiftx = ref_pix - pix
+        print(f"Shifts (y, x) = ({shifty:.2f}, {shiftx:.2f})")
+        if all(val == 0 for val in (shifty, shiftx)):
+            if not return_shift:
+                return data, mask
+            return data, mask, (shifty, shiftx)
+
+        if combining_method == "rgi":
+            # re-sample data on a new grid based on the shift
+            old_y = np.arange(-nby // 2, nby // 2)
+            old_x = np.arange(-nbx // 2, nbx // 2)
+            myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
+            new_y = myy - shifty
+            new_x = myx - shiftx
+
+            rgi = RegularGridInterpolator(
+                (old_y, old_x), data, method="linear", bounds_error=False, fill_value=0
+            )
+            data = rgi(
+                np.concatenate(
+                    (new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))
+                ).transpose()
+            )
+            data = data.reshape((nby, nbx)).astype(reference_data.dtype)
+            if mask is not None:
+                rgi = RegularGridInterpolator(
+                    (old_y, old_x),
+                    mask,
+                    method="linear",
+                    bounds_error=False,
+                    fill_value=1,
+                )
+                # fill_value=1: mask voxels where data is not defined
+                mask = rgi(
+                    np.concatenate(
+                        (new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size)))
+                    ).transpose()
+                )
+                mask = mask.reshape((nby, nbx)).astype(data.dtype)
+        else:  # 'subpixel'
+            data = abs(
+                subpixel_shift(data, shifty, shiftx)
+            )  # data is a real number (intensity)
+            if mask is not None:
+                mask = abs(subpixel_shift(mask, shifty, shiftx))
+
+        shift = shifty, shiftx
+
+    ####################################
+    # filter the data and mask for nan #
+    ####################################
+    data, mask = util.remove_nan(data=data, mask=mask)
+
+    ###########################
+    # return aligned datasets #
+    ###########################
+    if not return_shift:
+        return data, mask
+    return data, mask, shift
 
 
 def average_arrays(
