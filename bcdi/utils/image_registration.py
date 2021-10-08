@@ -183,9 +183,9 @@ def align_diffpattern(
         debugging=debugging,
     )
 
-    #########################
-    # shift the optional mask
-    #########################
+    ##############################################
+    # shift the optional mask by the same amount #
+    ##############################################
     if mask is not None:
         mask = shift_array(
             array=mask,
