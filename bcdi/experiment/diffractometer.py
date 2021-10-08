@@ -1923,11 +1923,23 @@ class DiffractometerID01(Diffractometer):
                 old_names = True
 
             if old_names:
-                names_table = {"mu": "Mu", "eta": "Eta", "phi": "Phi", "nu": "Nu",
-                               "delta": "Delta", "energy": "Energy"}
+                names_table = {
+                    "mu": "Mu",
+                    "eta": "Eta",
+                    "phi": "Phi",
+                    "nu": "Nu",
+                    "delta": "Delta",
+                    "energy": "Energy",
+                }
             else:
-                names_table = {"mu": "mu", "eta": "eta", "phi": "phi", "nu": "nu",
-                               "delta": "del", "energy": "energy"}
+                names_table = {
+                    "mu": "mu",
+                    "eta": "eta",
+                    "phi": "phi",
+                    "nu": "nu",
+                    "delta": "del",
+                    "energy": "energy",
+                }
 
             if names_table["mu"] in labels:
                 mu = labels_data[labels.index(names_table["mu"]), :]  # scanned

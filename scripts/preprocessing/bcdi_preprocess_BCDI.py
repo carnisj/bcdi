@@ -179,7 +179,7 @@ x_bragg = 1577  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg = 833  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector = None # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
+roi_detector = None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
@@ -218,7 +218,7 @@ fill_value_mask = 0  # 0 (not masked) or 1 (masked).
 # imposed). The data is by default set to 0 outside of the defined range.
 beam_direction = (1, 0, 0)
 # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (0, 0, 0,)
+sample_offsets = None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
