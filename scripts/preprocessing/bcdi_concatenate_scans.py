@@ -19,9 +19,9 @@ import bcdi.utils.utilities as util
 helptext = """
 Average several BCDI or CDI scans after an optional alignement step, based on a
 threshold on their Pearson correlation coefficient. The alignment of diffraction
-patterns is based on the center of mass shift or dft registration, using Python regular
-grid interpolator or subpixel shift. Note thta there are many artefacts when using
-subpixel shift in reciprocal space.
+patterns can be realized using Python regular grid interpolator, subpixel shift or a
+simple roll of pixels. Note that there are many artefacts when interpolating in
+reciprocal space, rolling is the best option.
 """
 
 scans = np.arange(314, 322 + 1, 4)
