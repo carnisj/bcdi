@@ -50,7 +50,9 @@ def align_arrays(
     :param precision: precision for the DFT registration in 1/pixel
     :param verbose: boolean, True to print comments
     :param debugging: boolean, set to True to see plots
-    :return: the aligned array
+    :return:
+     - the aligned array
+     - the shift: tuple of floats
     """
     # check some parameters
     valid.valid_ndarray(
@@ -98,6 +100,7 @@ def align_arrays(
         if verbose:
             print("Skipping alignment")
         aligned_array = shifted_array
+        shift = (0,) * shifted_array.ndim
 
     #################
     # optional plot #
@@ -107,7 +110,7 @@ def align_arrays(
             abs(reference_array), sum_frames=True, title="Reference object"
         )
         gu.multislices_plot(abs(aligned_array), sum_frames=True, title="Aligned object")
-    return aligned_array
+    return aligned_array, shift
 
 
 def align_diffpattern(
@@ -397,7 +400,7 @@ def average_arrays(
     ###############################################
 
     # align obj
-    new_obj = align_arrays(
+    new_obj, _ = align_arrays(
         reference_array=ref_obj,
         shifted_array=obj,
         shift_method="modulus",
