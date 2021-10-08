@@ -66,10 +66,10 @@ correlation_threshold = 0.95
 # only scans having a correlation larger than this threshold will be combined
 reference_scan = 0
 # index in scans of the scan to be used as the reference for the correlation calculation
-combine_masks = True  # if True, the output mask is the combination of all masks.
-# If False, the reference mask is used
-# if a pixel is defined only in part of the dataset,
-# its value will be used with proper rescaling
+combine_masks = True  # if True, the output mask is the union of all masks.
+# If False, the reference mask is used.
+# If a pixel is defined only in part of the dataset, its value will be used with proper
+# rescaling
 is_orthogonal = False  # if True, it will look for the data in a folder named /pynx,
 # otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
