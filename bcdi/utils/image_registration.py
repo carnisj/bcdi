@@ -349,7 +349,7 @@ def get_shift(
 
     :param reference_array: numpy ndarray
     :param shifted_array: numpy ndarray of the same shape as reference_array
-    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+    :param shift_method: 'raw', 'modulus' or 'support'. Object to use for the
      determination of the shift. If 'raw', it uses the raw, eventually complex array.
      if 'modulus', it uses the modulus of the array. If 'support', it uses a support
      created by threshold the modulus of the array.
@@ -366,7 +366,15 @@ def get_shift(
     valid.valid_ndarray(
         arrays=(reference_array, shifted_array),
         fix_shape=True,
-        name="get_shift_arrays_com",
+        name="arrays",
+    )
+    if shift_method not in {"raw", "modulus", "support"}:
+        raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
+    valid.valid_item(
+        precision,
+        allowed_types=int,
+        min_included=1,
+        name="precision",
     )
     valid.valid_item(
         support_threshold,
