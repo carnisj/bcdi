@@ -258,7 +258,7 @@ def average_obj(
     support_threshold=0.25,
     correlation_threshold=0.90,
     aligning_option="dft",
-    method="reciprocal_space",
+    space="reciprocal_space",
     debugging=False,
     **kwargs,
 ):
@@ -280,7 +280,7 @@ def average_obj(
      dataset to average them
     :param aligning_option: 'com' for center of mass, 'dft' for dft registration and
      subpixel shift
-    :param method: 'real_space' or 'reciprocal_space', in which space the average will
+    :param space: 'direct_space' or 'reciprocal_space', in which space the average will
      be performed
     :param debugging: boolean, set to True to see plots
     :param kwargs:
@@ -291,7 +291,8 @@ def average_obj(
        the initial array
      - 'width_x': size of the area to plot in x (axis 2), centered on the middle of
        the initial array
-     - 'reciprocal_space': True if the object is in reciprocal space
+     - 'reciprocal_space': True if the object is in reciprocal space, it is used only
+       for defining labels in plots
      - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
        default plot labels.
 
@@ -299,6 +300,8 @@ def average_obj(
     """
     # check some parameters
     valid.valid_ndarray(arrays=(obj, avg_obj, ref_obj), ndim=3)
+    if space not in {"direct_space", "reciprocal_space"}:
+        raise ValueError("space should be 'direct_space' or 'reciprocal_space'")
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={
@@ -381,12 +384,10 @@ def average_obj(
                     size=20,
                 )
 
-            if method == "real_space":
+            if space == "direct_space":
                 avg_obj = avg_obj + new_obj
-            elif method == "reciprocal_space":
+            else:  # "reciprocal_space":
                 avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
-            else:
-                raise ValueError("method should be 'real_space' or 'reciprocal_space'")
             avg_flag = 1
 
         if debugging:

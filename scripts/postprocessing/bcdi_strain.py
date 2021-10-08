@@ -265,7 +265,7 @@ reference_temperature = (
 ##########################################################
 # parameters for averaging several reconstructed objects #
 ##########################################################
-avg_method = "reciprocal_space"  # 'real_space' or 'reciprocal_space'
+avg_space = "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
 avg_threshold = 0.90  # minimum correlation within reconstructed object for averaging
 ############################################
 # setup for phase averaging or apodization #
@@ -569,7 +569,7 @@ for counter, value in enumerate(sorted_obj):
         support_threshold=0.25,
         correlation_threshold=avg_threshold,
         aligning_option="dft",
-        method=avg_method,
+        space=avg_space,
         reciprocal_space=False,
         is_orthogonal=is_orthogonal,
         debugging=debug,
