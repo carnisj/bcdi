@@ -1987,22 +1987,24 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, scan_number, **kwargs):
+    def read_monitor(self, logfile, scan_number, actuators, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param logfile: the logfile created in Setup.create_logfile()
         :param scan_number: int, the scan number to load
+        :param actuators: dictionary defining the entries corresponding to actuators
+         in the spec file
         :return: the default monitor values
         """
-        monitor = self.read_device(
-            logfile=logfile, scan_number=scan_number, device_name="mon2"
-        )
-        if len(monitor) == 0:
+        monitor_name = actuators.get("monitor")
+        if monitor_name is None:
             monitor = self.read_device(
-                logfile=logfile,
-                scan_number=scan_number,
-                device_name="exp1",  # exp1 for old data at ID01
+                logfile=logfile, scan_number=scan_number, device_name="exp1"
+            )
+        else:
+            monitor = self.read_device(
+                logfile=logfile, scan_number=scan_number, device_name=monitor_name
             )
         return monitor
 
