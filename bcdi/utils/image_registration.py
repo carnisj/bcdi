@@ -452,7 +452,7 @@ def shift_array(
     return shifted_array
 
 
-def interp_rgi_translation(array, shift):
+def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndarray:
     """
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
 
