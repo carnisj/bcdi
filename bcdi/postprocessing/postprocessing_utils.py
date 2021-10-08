@@ -84,7 +84,7 @@ def align_arrays(
         ##############################################
         # calculate the shift between the two arrays #
         ##############################################
-        shifts = reg.get_shift(
+        shift = reg.get_shift(
             reference_array=reference_array,
             shifted_array=shifted_array,
             shift_method=shift_method,
@@ -98,7 +98,7 @@ def align_arrays(
         #######################
         aligned_array = reg.shift_array(
             array=shifted_array,
-            shifts=shifts,
+            shift=shift,
             interpolation_method=interpolation_method,
         )
 
@@ -316,8 +316,6 @@ def average_obj(
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
-    # al
-    nbz, nby, nbx = obj.shape
     avg_flag = 0
     if avg_obj.sum() == 0:  # first iteration of the loop, no running average yet
         avg_obj = ref_obj

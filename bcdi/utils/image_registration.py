@@ -403,21 +403,21 @@ def get_shift(
     ##############################################
     # calculate the shift between the two arrays #
     ##############################################
-    shifts = getimageregistration(reference_obj, shifted_obj, precision=precision)
+    shift = getimageregistration(reference_obj, shifted_obj, precision=precision)
 
     if verbose:
-        print(f"shifts with the reference object: {shifts} pixels")
-    return shifts
+        print(f"shifts with the reference object: {shift} pixels")
+    return shift
 
 
 def shift_array(
-    array: np.ndarray, shifts: Sequence[float], interpolation_method: str = "subpixel"
+    array: np.ndarray, shift: Sequence[float], interpolation_method: str = "subpixel"
 ) -> np.ndarray:
     """
     Shift array using the defined method given the offsets.
 
     :param array: a numpy ndarray
-    :param shifts: tuple of floats, shifts of the array in each dimension
+    :param shift: tuple of floats, shifts of the array in each dimension
     :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
      'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
      by an integral number (the shifts are rounded to the nearest integer)
@@ -429,7 +429,7 @@ def shift_array(
     #########################
     valid.valid_ndarray(array, ndim=3, name="array")
     valid.valid_container(
-        shifts, container_types=(tuple, list), item_types=Real, name="shifts"
+        shift, container_types=(tuple, list), item_types=Real, name="shifts"
     )
     if interpolation_method not in {"subpixel", "rgi", "roll"}:
         raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
@@ -439,7 +439,7 @@ def shift_array(
     ###################
     if interpolation_method == "subpixel":
         # align obj using subpixel shift, keep the complex output
-        shifted_array = subpixel_shift(array, *shifts)
+        shifted_array = subpixel_shift(array, *shift)
     elif interpolation_method == "rgi":
         # re-sample data on a new grid based on COM shift of support
         nbz, nby, nbx = array.shape
@@ -447,9 +447,9 @@ def shift_array(
         old_y = np.arange(-nby // 2, nby // 2)
         old_x = np.arange(-nbx // 2, nbx // 2)
         myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-        new_z = myz + shifts[0]
-        new_y = myy + shifts[1]
-        new_x = myx + shifts[2]
+        new_z = myz + shift[0]
+        new_y = myy + shift[1]
+        new_x = myx + shift[2]
         del myx, myy, myz
         rgi = RegularGridInterpolator(
             (old_z, old_y, old_x),
@@ -471,7 +471,7 @@ def shift_array(
     else:  # "roll"
         shifted_array = np.roll(
             array,
-            shift=list(map(lambda x : int(np.rint(x)), shifts)),
+            shift=list(map(lambda x : int(np.rint(x)), shift)),
             axis=(0, 1, 2)
         )
 
