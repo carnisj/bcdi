@@ -1,4 +1,4 @@
-# Functions for aligning arrays
+# getimageregistration and subpixel shift functions for aligning arrays
 # Original code from Xianhui Xiao APS Sector 2
 # Updated by Ross Harder
 # Updated by Steven Leake 30/07/2014
