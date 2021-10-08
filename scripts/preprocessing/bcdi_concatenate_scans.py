@@ -34,9 +34,9 @@ suffix = [
     "_norm_250_1100_900_1_1_1.npz"
 ]  # list of sample names (end of the filename template after 'pynx'),
 # it will be repeated to match the length of scans
-homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+root_folder = "C:/Users/Jerome/Documents/data/isosurface/"
 # parent folder of scans folders
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
+save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
 # path of the folder to save data
 shift_method = "raw"  # ' raw', 'modulus', 'support' or 'skip'
 # Object to use for the determination of the shift. If 'raw', it uses the raw,
@@ -139,7 +139,7 @@ samplename = (
 )
 print("Reference scan:", samplename)
 refdata = np.load(
-    homedir
+    root_folder
     + samplename
     + parent_folder
     + "S"
@@ -148,7 +148,7 @@ refdata = np.load(
     + suffix[reference_scan]
 )["data"]
 refmask = np.load(
-    homedir
+    root_folder
     + samplename
     + parent_folder
     + "S"
@@ -258,10 +258,10 @@ for idx, item in enumerate(scans):
     samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
     print("\n Opening ", samplename)
     data = np.load(
-        homedir + samplename + parent_folder + "S" + str(item) + "_pynx" + suffix[idx]
+        root_folder + samplename + parent_folder + f"S{item}_pynx" + suffix[idx]
     )["data"]
     mask = np.load(
-        homedir
+        root_folder
         + samplename
         + parent_folder
         + "S"
@@ -542,9 +542,9 @@ template = (
 )
 
 
-pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir + "combined_pynx" + template + ".npz", data=mean_data)
-np.savez_compressed(savedir + "combined_maskpynx" + template + ".npz", mask=summask)
+pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
+np.savez_compressed(save_dir + "combined_pynx" + template + ".npz", data=mean_data)
+np.savez_compressed(save_dir + "combined_maskpynx" + template + ".npz", mask=summask)
 print("\nSum of ", len(combined_list), "scans")
 
 ###################################
@@ -590,7 +590,7 @@ if plot_threshold != 0:
     )
 
 plt.pause(0.1)
-plt.savefig(savedir + "data" + template + ".png")
+plt.savefig(save_dir + "data" + template + ".png")
 
 fig, _, _ = gu.multislices_plot(
     mean_data,
@@ -618,7 +618,7 @@ if plot_threshold != 0:
     )
 
 plt.pause(0.1)
-plt.savefig(savedir + "data_slice" + template + ".png")
+plt.savefig(save_dir + "data_slice" + template + ".png")
 
 gu.multislices_plot(
     summask,
@@ -630,7 +630,7 @@ gu.multislices_plot(
     reciprocal_space=True,
     is_orthogonal=is_orthogonal,
 )
-plt.savefig(savedir + "mask" + template + ".png")
+plt.savefig(save_dir + "mask" + template + ".png")
 
 print("\nEnd of script")
 
