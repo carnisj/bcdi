@@ -26,6 +26,9 @@ reciprocal space, rolling is the best option.
 The script expects that datasets have already been stacked, for example using the script
 bcdi_preprocessing_BCDI. Relative to root_folder, the stacked data for scan S1 would be
 in /root_folder/S1/S1_pynx_suffix and the mask in /root_folder/S1/S1_maskpynx_suffix
+
+In this example, sample_name=["S"] and suffix=["_suffix"], but it could be different for
+each dataset (hence the use of a list).
 """
 
 scans = np.arange(314, 322 + 1, 4)
