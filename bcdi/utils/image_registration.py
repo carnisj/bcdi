@@ -442,40 +442,61 @@ def shift_array(
         shifted_array = subpixel_shift(array, *shift)
     elif interpolation_method == "rgi":
         # re-sample data on a new grid based on COM shift of support
-        nbz, nby, nbx = array.shape
-        old_z = np.arange(-nbz // 2, nbz // 2)
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-        new_z = myz + shift[0]
-        new_y = myy + shift[1]
-        new_x = myx + shift[2]
-        del myx, myy, myz
-        rgi = RegularGridInterpolator(
-            (old_z, old_y, old_x),
-            array,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        shifted_array = rgi(
-            np.concatenate(
-                (
-                    new_z.reshape((1, new_z.size)),
-                    new_y.reshape((1, new_z.size)),
-                    new_x.reshape((1, new_z.size)),
-                )
-            ).transpose()
-        )
-        shifted_array = shifted_array.reshape((nbz, nby, nbx)).astype(array.dtype)
+        shifted_array = interp_rgi_translation(array=array, shift=shift)
     else:  # "roll"
         shifted_array = np.roll(
             array,
             shift=list(map(lambda x : int(np.rint(x)), shift)),
             axis=(0, 1, 2)
         )
-
     return shifted_array
+
+
+def interp_rgi_translation(array, shift):
+    """
+    Interpolate the shifted array on new positions using a RegularGridInterpolator.
+
+    :param array: a 3D numpy array
+    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension
+    :return: the shifted array
+    """
+    # check some parameters
+    valid.valid_ndarray(array, ndim=3, name="array")
+    valid.valid_container(
+        shift,
+        container_types=(tuple, list),
+        item_types=float,
+        name="shift"
+    )
+
+    # calculate the new positions
+    nbz, nby, nbx = array.shape
+    old_z = np.arange(-nbz // 2, nbz // 2)
+    old_y = np.arange(-nby // 2, nby // 2)
+    old_x = np.arange(-nbx // 2, nbx // 2)
+    myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+    new_z = myz + shift[0]
+    new_y = myy + shift[1]
+    new_x = myx + shift[2]
+
+    # interpolate array
+    rgi = RegularGridInterpolator(
+        (old_z, old_y, old_x),
+        array,
+        method="linear",
+        bounds_error=False,
+        fill_value=0,
+    )
+    shifted_array = rgi(
+        np.concatenate(
+            (
+                new_z.reshape((1, new_z.size)),
+                new_y.reshape((1, new_z.size)),
+                new_x.reshape((1, new_z.size)),
+            )
+        ).transpose()
+    )
+    return shifted_array.reshape((nbz, nby, nbx)).astype(array.dtype)
 
 
 def subpixel_shift(array, z_shift, y_shift, x_shift=0):
