@@ -42,6 +42,7 @@ shift_method = "raw"  # ' raw', 'modulus', 'support' or 'skip'
 # Object to use for the determination of the shift. If 'raw', it uses the raw,
 # eventually complex array. if 'modulus', it uses the modulus of the array.
 # If 'support', it uses a support created by threshold the modulus of the array.
+# if 'skip', it skips the alignment.
 interpolation_method = "subpixel"  # 'rgi' for RegularGridInterpolator,
 # 'subpixel' for subpixel shift, 'roll' to shift voxels by an integral number
 # (the shifts are rounded to the nearest integer)
