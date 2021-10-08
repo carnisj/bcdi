@@ -22,6 +22,10 @@ threshold on their Pearson correlation coefficient. The alignment of diffraction
 patterns can be realized using Python regular grid interpolator, subpixel shift or a
 simple roll of pixels. Note that there are many artefacts when interpolating in
 reciprocal space, rolling is the best option.
+
+The script expects that datasets have already been stacked, for example using the script
+bcdi_preprocessing_BCDI. Relative to root_folder, the stacked data for scan S1 would be
+in /root_folder/S1/S1_pynx_suffix and the mask in /root_folder/S1/S1_maskpynx_suffix
 """
 
 scans = np.arange(314, 322 + 1, 4)
