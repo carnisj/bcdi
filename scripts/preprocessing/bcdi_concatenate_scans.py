@@ -24,37 +24,34 @@ grid interpolator or subpixel shift. Note thta there are many artefacts when usi
 subpixel shift in reciprocal space.
 """
 
-scans = np.arange(314, 374 + 1, 4)  # list or array of scan numbers
-# scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+scans = np.arange(314, 322 + 1, 4)
+# list or array of scan numbers
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
-sample_name = ["PtNP1"]  # list of sample names. If only one name is indicated,
+sample_name = ["PtNP1"]
+# list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scans
-suffix = [
-    "_norm_250_1100_900_1_1_1.npz"
-]  # list of sample names (end of the filename template after 'pynx'),
+suffix = ["_norm_250_1100_900_1_1_1.npz"]
+# list of sample names (end of the filename template after 'pynx'),
 # it will be repeated to match the length of scans
 root_folder = "C:/Users/Jerome/Documents/data/isosurface/"
 # parent folder of scans folders
-save_dir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
+save_dir = "C:/Users/Jerome/Documents/data/isosurface/test"
 # path of the folder to save data
 shift_method = "raw"  # ' raw', 'modulus', 'support' or 'skip'
 # Object to use for the determination of the shift. If 'raw', it uses the raw,
 # eventually complex array. if 'modulus', it uses the modulus of the array.
 # If 'support', it uses a support created by threshold the modulus of the array.
 # if 'skip', it skips the alignment.
-interpolation_method = "subpixel"  # 'rgi' for RegularGridInterpolator,
+interpolation_method = "roll"  # 'rgi' for RegularGridInterpolator,
 # 'subpixel' for subpixel shift, 'roll' to shift voxels by an integral number
 # (the shifts are rounded to the nearest integer)
 corr_roi = None
 # [420, 520, 660, 760, 600, 700]
 # region of interest where to calculate the correlation between scans.
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (
-    250,
-    1024,
-    800,
-)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (250, 1024, 800)
+# (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
 crop_center = None  # [z, y, x] pixels position in the original array
 # of the center of the cropped output
 # if None, it will be set to the center of the original array
@@ -65,9 +62,8 @@ boundaries = "crop"  # 'mask', 'crop' or 'skip'.
 partially_masked = "unmask"  # 'unmask' or 'mask'.
 # If 'unmask', partially masked pixels will be set to their mean value
 # and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
-correlation_threshold = (
-    0.95  # only scans having a correlation larger than this threshold will be combined
-)
+correlation_threshold = 0.95
+# only scans having a correlation larger than this threshold will be combined
 reference_scan = 0
 # index in scans of the scan to be used as the reference for the correlation calculation
 combine_masks = True  # if True, the output mask is the combination of all masks.
