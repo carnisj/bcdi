@@ -1936,12 +1936,12 @@ class DiffractometerID01(Diffractometer):
                                "delta": "Delta"}
             else:
                 names_table = {"mu": "mu", "eta": "eta", "phi": "phi", "nu": "nu",
-                               "delta": "delta"}
+                               "delta": "del"}
 
             if "del" in labels:
-                delta = labels_data[labels.index(names_table["del"]), :]  # scanned
+                delta = labels_data[labels.index(names_table["delta"]), :]  # scanned
             else:  # positioner
-                delta = motor_values[motor_names.index(names_table["del"])]
+                delta = motor_values[motor_names.index(names_table["delta"])]
 
             mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
 
