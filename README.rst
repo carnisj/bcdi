@@ -163,6 +163,10 @@ This package contributed to the following peer-reviewed publications:
 * J. Carnis, et al. Towards a quantitative determination of strain in Bragg Coherent
   X-ray Diffraction Imaging: artefacts and sign convention in reconstructions.
   Scientific reports 9, 17357 (2019). DOI: 10.1038/s41598-019-53774-2
+  
+* W. Hua, et al. Structural insights into the formation and voltage degradation of 
+  lithium- and manganese-rich layered oxides. Nat Commun 10, 5365 (2019). 
+  DOI: 10.1038/s41467-019-13240-z
 
 * G. Niu, et al. Advanced coherent X-ray diffraction and electron microscopy of
   individual InP nanocrystals on Si nanotips for III-V on Si electronics and
