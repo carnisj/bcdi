@@ -544,8 +544,7 @@ if align_pattern:
     phased_fft, _ = reg.align_diffpattern(
         reference_data=diff_pattern,
         data=phased_fft,
-        method="registration",
-        combining_method="subpixel",
+        interpolation_method="subpixel",
     )
 
 phased_fft[np.nonzero(mask)] = 0  # do not take mask voxels into account

@@ -488,8 +488,7 @@ if align_pattern:
     phased_fft, _ = reg.align_diffpattern(
         reference_data=slice_2D,
         data=phased_fft,
-        method="registration",
-        combining_method="subpixel",
+        interpolation_method="subpixel",
     )
 
 plt.figure()

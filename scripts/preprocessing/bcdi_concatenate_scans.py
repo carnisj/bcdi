@@ -38,11 +38,13 @@ homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
 # parent folder of scans folders
 savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
 # path of the folder to save data
-alignement_method = "registration"
-# method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
-combining_method = (
-    "subpixel"  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-)
+shift_method = "raw"  # ' raw', 'modulus', 'support' or 'skip'
+# Object to use for the determination of the shift. If 'raw', it uses the raw,
+# eventually complex array. if 'modulus', it uses the modulus of the array.
+# If 'support', it uses a support created by threshold the modulus of the array.
+interpolation_method = "subpixel"  # 'rgi' for RegularGridInterpolator,
+# 'subpixel' for subpixel shift, 'roll' to shift voxels by an integral number
+# (the shifts are rounded to the nearest integer)
 corr_roi = None
 # [420, 520, 660, 760, 600, 700]
 # region of interest where to calculate the correlation between scans.
@@ -195,7 +197,7 @@ if (
 
 # crop the data directly to output_shape if no alignment is required,
 # update corr_roi accordingly
-if alignement_method == "skip":
+if shift_method == "skip":
     refmask = util.crop_pad(
         array=refmask, output_shape=output_shape, crop_center=crop_center
     )
@@ -296,14 +298,13 @@ for idx, item in enumerate(scans):
     ##################
     # align datasets #
     ##################
-    if alignement_method != "skip":
+    if shift_method != "skip":
         data, mask, shifts = reg.align_diffpattern(
             reference_data=refdata,
             data=data,
             mask=mask,
-            method=alignement_method,
-            combining_method=combining_method,
-            return_shift=True,
+            shift_method=shift_method,
+            interpolation_method=interpolation_method,
         )
         shift_min = [min(shift_min[axis], shifts[axis]) for axis in range(3)]
         shift_max = [max(shift_max[axis], shifts[axis]) for axis in range(3)]
@@ -392,7 +393,7 @@ for idx, item in enumerate(scans):
 ###################################################################################
 # process boundaries, where some voxels can be undefined after aligning a dataset #
 ###################################################################################
-if alignement_method != "skip":
+if shift_method != "skip":
     shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
     # shift_min is the number of pixels to remove at the end along each axis
     shift_max = [int(np.ceil(shift_max[axis])) for axis in range(3)]
