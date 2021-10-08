@@ -24,7 +24,7 @@ import sys
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.bcdi_utils as bu
+import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 
 helptext = """
@@ -485,7 +485,7 @@ if debug:
 
 if align_pattern:
     # align the reconstruction with the initial diffraction data
-    phased_fft, _ = bu.align_diffpattern(
+    phased_fft, _ = reg.align_diffpattern(
         reference_data=slice_2D,
         data=phased_fft,
         method="registration",

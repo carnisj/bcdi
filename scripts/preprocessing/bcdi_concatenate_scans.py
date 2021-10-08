@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.preprocessing.bcdi_utils as bu
+import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 
 helptext = """
@@ -297,7 +297,7 @@ for idx, item in enumerate(scans):
     # align datasets #
     ##################
     if alignement_method != "skip":
-        data, mask, shifts = bu.align_diffpattern(
+        data, mask, shifts = reg.align_diffpattern(
             reference_data=refdata,
             data=data,
             mask=mask,
