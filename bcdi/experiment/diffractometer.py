@@ -1727,8 +1727,6 @@ class DiffractometerID01(Diffractometer):
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
-         - 'follow_bragg': boolean, True for energy scans where the detector position
-           is changed during the scan to follow the Bragg peak.
 
         :return: a tuple of angular values in degrees, depending on stage_name:
 
@@ -1744,8 +1742,6 @@ class DiffractometerID01(Diffractometer):
         # load kwargs
         logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
-        follow_bragg = kwargs.get("follow_bragg", False)
-        valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
         # check some parameter
         valid.valid_item(
@@ -1759,7 +1755,6 @@ class DiffractometerID01(Diffractometer):
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
 
         # define the circles of interest for BCDI
