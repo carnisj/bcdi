@@ -11,7 +11,6 @@ from numbers import Complex, Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
-from scipy.ndimage.measurements import center_of_mass
 from scipy.stats import pearsonr
 from typing import Union
 
