@@ -965,7 +965,15 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
     :param x_shift: shift in the third dimension
     :return: the shifted array
     """
-    if len(array.shape) == 3:
+    # check some parameters
+    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_item(z_shift, allowed_types=float, name="z_shift")
+    valid.valid_item(y_shift, allowed_types=float, name="y_shift")
+    valid.valid_item(x_shift, allowed_types=float, name="x_shift")
+
+    # shift the array
+    ndim = len(array.shape)
+    if ndim == 3:
         numz, numy, numx = array.shape
         buf2ft = fftn(array)
         temp_z = ifftshift(
@@ -985,7 +993,7 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
             * (z_shift * myz / numz + y_shift * myy / numy + x_shift * myx / numx)
         )
         shifted_array = ifftn(greg)
-    else:
+    else:  # 2D case
         buf2ft = fftn(array)
         numz, numy = array.shape
         temp_z = ifftshift(
