@@ -320,7 +320,11 @@ def average_obj(
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
     avg_flag = 0
-    if avg_obj.sum() == 0:  # first iteration of the loop, no running average yet
+
+    #######################################################
+    # first iteration of the loop, no running average yet #
+    #######################################################
+    if avg_obj.sum() == 0:
         avg_obj = ref_obj
         if debugging:
             gu.multislices_plot(
@@ -334,74 +338,80 @@ def average_obj(
                 reciprocal_space=reciprocal_space,
                 is_orthogonal=is_orthogonal,
             )
-    else:
-        # align obj
-        new_obj = align_arrays(
-            reference_array=ref_obj,
-            shifted_array=obj,
-            shift_method="modulus",
-            interpolation_method=aligning_option,
-            support_threshold=support_threshold,
-            precision=1000,
-            verbose=True,
-            debugging=debugging,
+        return avg_obj, avg_flag
+
+    ###############################################
+    # next iterations, update the running average #
+    ###############################################
+
+    # align obj
+    new_obj = align_arrays(
+        reference_array=ref_obj,
+        shifted_array=obj,
+        shift_method="modulus",
+        interpolation_method=aligning_option,
+        support_threshold=support_threshold,
+        precision=1000,
+        verbose=True,
+        debugging=debugging,
+    )
+
+    # renormalize new_obj
+    new_obj = new_obj / abs(new_obj).max()
+
+    # calculate the correlation between arrays and average them eventually
+    correlation = pearsonr(
+        np.ndarray.flatten(abs(ref_obj)), np.ndarray.flatten(abs(new_obj))
+    )[0]
+    if correlation < correlation_threshold:
+        print(
+            f"pearson cross-correlation = {correlation} too low, "
+            "skip this reconstruction"
+        )
+    else:  # combine the arrays
+        print(
+            f"pearson-correlation = {correlation}, ",
+            "average with this reconstruction",
         )
 
-        # renormalize new_obj
-        new_obj = new_obj / abs(new_obj).max()
-
-        # calculate the correlation between arrays and average them eventually
-        correlation = pearsonr(
-            np.ndarray.flatten(abs(ref_obj)), np.ndarray.flatten(abs(new_obj))
-        )[0]
-        if correlation < correlation_threshold:
-            print(
-                f"pearson cross-correlation = {correlation} too low, "
-                "skip this reconstruction"
-            )
-        else:  # combine the arrays
-            print(
-                f"pearson-correlation = {correlation}, ",
-                "average with this reconstruction",
-            )
-
-            if debugging:
-                myfig, _, _ = gu.multislices_plot(
-                    abs(new_obj),
-                    width_z=width_z,
-                    width_y=width_y,
-                    width_x=width_x,
-                    sum_frames=True,
-                    plot_colorbar=True,
-                    title="Aligned object",
-                    reciprocal_space=reciprocal_space,
-                    is_orthogonal=is_orthogonal,
-                )
-                myfig.text(
-                    0.60,
-                    0.30,
-                    "pearson-correlation = " + str("{:.4f}".format(correlation)),
-                    size=20,
-                )
-
-            if space == "direct_space":
-                avg_obj = avg_obj + new_obj
-            else:  # "reciprocal_space":
-                avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
-            avg_flag = 1
-
         if debugging:
-            gu.multislices_plot(
-                abs(avg_obj),
-                plot_colorbar=True,
+            myfig, _, _ = gu.multislices_plot(
+                abs(new_obj),
                 width_z=width_z,
                 width_y=width_y,
                 width_x=width_x,
                 sum_frames=True,
-                title="New averaged object",
+                plot_colorbar=True,
+                title="Aligned object",
                 reciprocal_space=reciprocal_space,
                 is_orthogonal=is_orthogonal,
             )
+            myfig.text(
+                0.60,
+                0.30,
+                "pearson-correlation = " + str("{:.4f}".format(correlation)),
+                size=20,
+            )
+
+        # update the average either in direct space or in reciprocal space
+        if space == "direct_space":
+            avg_obj = avg_obj + new_obj
+        else:  # "reciprocal_space":
+            avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
+        avg_flag = 1
+
+    if debugging:
+        gu.multislices_plot(
+            abs(avg_obj),
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            sum_frames=True,
+            title="New averaged object",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
 
     return avg_obj, avg_flag
 
