@@ -29,6 +29,7 @@ from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
+import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -562,7 +563,7 @@ for counter, value in enumerate(sorted_obj):
         print("This reconstruction will be used as reference.")
         ref_obj = obj
 
-    avg_obj, flag_avg = pu.average_obj(
+    avg_obj, flag_avg = reg.average_arrays(
         avg_obj=avg_obj,
         ref_obj=ref_obj,
         obj=obj,

@@ -11,10 +11,267 @@ from numbers import Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
+from scipy.stats import pearsonr
 from typing import Union
 
+from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
+
+
+def align_arrays(
+    reference_array,
+    shifted_array,
+    shift_method="modulus",
+    interpolation_method="subpixel",
+    support_threshold=None,
+    precision=1000,
+    verbose=True,
+    debugging=False,
+):
+    """
+    Align two arrays using dft registration and subpixel shift.
+
+    The shift between arrays can be determined either using the modulus of the arrays
+    or a support created from it using a threshold.
+
+    :param reference_array: 3D array, reference object
+    :param shifted_array: 3D array to be aligned, same shape as reference_obj
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
+    :param support_threshold: all points where the normalized modulus is larger than
+     this value will be set to 1 in the support.
+    :param precision: precision for the DFT registration in 1/pixel
+    :param verbose: boolean, True to print comments
+    :param debugging: boolean, set to True to see plots
+    :return: the aligned array
+    """
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(shifted_array, reference_array), ndim=3, fix_shape=False
+    )
+    if shift_method not in {"raw", "modulus", "support", "skip"}:
+        raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    if shifted_array.shape != reference_array.shape:
+        if verbose:
+            print(
+                "reference_obj and obj do not have the same shape\n",
+                reference_array.shape,
+                shifted_array.shape,
+                "crop/pad obj",
+            )
+        shifted_array = util.crop_pad(
+            array=shifted_array, output_shape=reference_array.shape
+        )
+
+    if shift_method != "skip":
+        ##############################################
+        # calculate the shift between the two arrays #
+        ##############################################
+        shift = get_shift(
+            reference_array=reference_array,
+            shifted_array=shifted_array,
+            shift_method=shift_method,
+            support_threshold=support_threshold,
+            precision=precision,
+            verbose=verbose,
+        )
+
+        #######################
+        # align shifted_obj #
+        #######################
+        aligned_array = shift_array(
+            array=shifted_array,
+            shift=shift,
+            interpolation_method=interpolation_method,
+        )
+
+    else:  # 'skip'
+        if verbose:
+            print("Skipping alignment")
+        aligned_array = shifted_array
+
+    #################
+    # optional plot #
+    #################
+    if debugging:
+        gu.multislices_plot(
+            abs(reference_array), sum_frames=True, title="Reference object"
+        )
+        gu.multislices_plot(abs(aligned_array), sum_frames=True, title="Aligned object")
+    return aligned_array
+
+
+def average_arrays(
+    avg_obj,
+    ref_obj,
+    obj,
+    support_threshold=0.25,
+    correlation_threshold=0.90,
+    aligning_option="dft",
+    space="reciprocal_space",
+    debugging=False,
+    **kwargs,
+):
+    """
+    Average two reconstructions after aligning it.
+
+    This function can be used to average a series of arrays within a loop. Alignment is
+    performed using either DFT registration or the shift of the center of mass of the
+    array. Averaging is processed only if their Pearson cross-correlation after
+    alignment is larger than the correlation threshold.
+
+    :param avg_obj: 3D array of complex numbers, current average
+    :param ref_obj: 3D array of complex numbers, used as a reference for the alignment
+    :param obj: 3D array of complex numbers, array to be aligned with the reference and
+     to be added to avg_obj
+    :param support_threshold: normalized threshold for the definition of the support. It
+     is applied on the modulus of the array
+    :param correlation_threshold: float in [0, 1], minimum correlation between two
+     dataset to average them
+    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and
+     subpixel shift
+    :param space: 'direct_space' or 'reciprocal_space', in which space the average will
+     be performed
+    :param debugging: boolean, set to True to see plots
+    :param kwargs:
+
+     - 'width_z': size of the area to plot in z (axis 0), centered on the middle of
+       the initial array
+     - 'width_y': size of the area to plot in y (axis 1), centered on the middle of
+       the initial array
+     - 'width_x': size of the area to plot in x (axis 2), centered on the middle of
+       the initial array
+     - 'reciprocal_space': True if the object is in reciprocal space, it is used only
+       for defining labels in plots
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
+       default plot labels.
+
+    :return: the average complex density
+    """
+    # check some parameters
+    valid.valid_ndarray(arrays=(obj, avg_obj, ref_obj), ndim=3)
+    if space not in {"direct_space", "reciprocal_space"}:
+        raise ValueError("space should be 'direct_space' or 'reciprocal_space'")
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={
+            "width_z",
+            "width_y",
+            "width_x",
+            "reciprocal_space",
+            "is_orthogonal",
+        },
+        name="postprocessing_utils.average_obj",
+    )
+    width_z = kwargs.get("width_z")
+    width_y = kwargs.get("width_y")
+    width_x = kwargs.get("width_x")
+    reciprocal_space = kwargs.get("reciprocal_space", False)
+    is_orthogonal = kwargs.get("is_orthogonal", False)
+
+    avg_flag = 0
+
+    #######################################################
+    # first iteration of the loop, no running average yet #
+    #######################################################
+    if avg_obj.sum() == 0:
+        avg_obj = ref_obj
+        if debugging:
+            gu.multislices_plot(
+                abs(avg_obj),
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                plot_colorbar=True,
+                sum_frames=True,
+                title="Reference object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
+        return avg_obj, avg_flag
+
+    ###############################################
+    # next iterations, update the running average #
+    ###############################################
+
+    # align obj
+    new_obj = align_arrays(
+        reference_array=ref_obj,
+        shifted_array=obj,
+        shift_method="modulus",
+        interpolation_method=aligning_option,
+        support_threshold=support_threshold,
+        precision=1000,
+        verbose=True,
+        debugging=debugging,
+    )
+
+    # renormalize new_obj
+    new_obj = new_obj / abs(new_obj).max()
+
+    # calculate the correlation between arrays and average them eventually
+    correlation = pearsonr(
+        np.ndarray.flatten(abs(ref_obj)), np.ndarray.flatten(abs(new_obj))
+    )[0]
+    if correlation < correlation_threshold:
+        print(
+            f"pearson cross-correlation = {correlation} too low, "
+            "skip this reconstruction"
+        )
+    else:  # combine the arrays
+        print(
+            f"pearson-correlation = {correlation}, ",
+            "average with this reconstruction",
+        )
+
+        if debugging:
+            myfig, _, _ = gu.multislices_plot(
+                abs(new_obj),
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                sum_frames=True,
+                plot_colorbar=True,
+                title="Aligned object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
+            myfig.text(
+                0.60,
+                0.30,
+                "pearson-correlation = " + str("{:.4f}".format(correlation)),
+                size=20,
+            )
+
+        # update the average either in direct space or in reciprocal space
+        if space == "direct_space":
+            avg_obj = avg_obj + new_obj
+        else:  # "reciprocal_space":
+            avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
+        avg_flag = 1
+
+    if debugging:
+        gu.multislices_plot(
+            abs(avg_obj),
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            sum_frames=True,
+            title="New averaged object",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
+
+    return avg_obj, avg_flag
 
 
 def getimageregistration(array1, array2, precision=10):
