@@ -155,8 +155,6 @@ custom_monitor = np.ones(51)
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
 specfile_name = "2021_04_10_093013_pt"
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or
@@ -621,7 +619,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 logfile=logfile,
                 scan_number=scan_nb,
                 setup=setup,
-                follow_bragg=follow_bragg,
             )
             setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
             # override detector motor positions if the corrected values
@@ -867,7 +864,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     setup=setup,
                     frames_logical=frames_logical,
                     hxrd=hxrd,
-                    follow_bragg=follow_bragg,
                     debugging=debug,
                 )
             else:  # 'linearization'
@@ -883,7 +879,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     align_q=align_q,
                     reference_axis=axis_to_array_xyz[ref_axis_q],
                     debugging=debug,
-                    follow_bragg=follow_bragg,
                     fill_value=(0, fill_value_mask),
                 )
             nz, ny, nx = data.shape

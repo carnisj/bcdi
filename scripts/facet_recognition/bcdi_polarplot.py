@@ -187,8 +187,6 @@ custom_motors = None
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 rocking_angle = "outofplane"  # "outofplane" or "inplane" or "energy"
-follow_bragg = False  # only for energy scans, set to True if the detector was
-# also scanned to follow the Bragg peak
 specfile_name = "psic_nano_20141204"
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
 # not used for CRISTAL and SIXS_2019
@@ -368,7 +366,6 @@ if not reconstructed_data:  # load reciprocal space data
         frames_logical=frames_logical,
         hxrd=hxrd,
         debugging=debug,
-        follow_bragg=follow_bragg,
     )
 
     nz, ny, nx = data.shape  # CXI convention: z downstream, y vertical up, x outboard

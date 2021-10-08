@@ -872,8 +872,6 @@ def grid_bcdi_labframe(
      orthonormal frame x y z
     :param debugging: set to True to see plots
     :param kwargs:
-     - 'follow_bragg': bool, True when for energy scans the detector was also scanned
-       to follow the Bragg peak
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
@@ -885,11 +883,9 @@ def grid_bcdi_labframe(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"follow_bragg", "fill_value", "reference_axis"},
+        allowed_kwargs={"fill_value", "reference_axis"},
         name="kwargs",
     )
-    follow_bragg = kwargs.get("follow_bragg", False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_container(
         fill_value,
@@ -1035,7 +1031,6 @@ def grid_bcdi_xrayutil(
     frames_logical,
     hxrd,
     debugging=False,
-    **kwargs,
 ):
     """
     Interpolate BCDI reciprocal space data using xrayutilities package.
@@ -1055,22 +1050,10 @@ def grid_bcdi_xrayutil(
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization
      of the dataset
     :param debugging: set to True to see plots
-    :param kwargs:
-     - follow_bragg (bool): True when for energy scans the detector was also scanned to
-       follow the Bragg peak
-
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-    # check and load kwargs
-    valid.valid_kwargs(
-        kwargs=kwargs,
-        allowed_kwargs={"follow_bragg"},
-        name="kwargs",
-    )
-    follow_bragg = kwargs.get("follow_bragg", False)
-    valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
     numz, numy, numx = data.shape
     print(
@@ -1090,7 +1073,6 @@ def grid_bcdi_xrayutil(
         nb_frames=numz,
         scan_number=scan_number,
         frames_logical=frames_logical,
-        follow_bragg=follow_bragg,
     )
 
     maxbins = []

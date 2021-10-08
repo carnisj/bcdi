@@ -71,8 +71,6 @@ actuators = {"rocking_angle": "actuator_1_1"}
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 rocking_angle = "inplane"  # "outofplane" or "inplane"
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
 specfile_name = ""
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
@@ -451,7 +449,6 @@ else:
         hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan,
-        follow_bragg=follow_bragg,
     )
 
 if debug:
