@@ -47,7 +47,7 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 'use_rawdata' option
 """
 
-scans = 33  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 86  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
@@ -140,6 +140,7 @@ beamline = "ID01"
 actuators = None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
+# or to define a monitor different from "exp1" at ID01
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 
@@ -156,7 +157,7 @@ rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outb
 
 follow_bragg = False  # only for energy scans, set to True if the detector
 # was also scanned to follow the Bragg peak
-specfile_name = "BCDI_2021_03_11_205927"
+specfile_name = "2021_04_10_093013_pt"
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or
 # None to use the one in the package folder
@@ -164,7 +165,7 @@ specfile_name = "BCDI_2021_03_11_205927"
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector = "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 linearity_func = None
 # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
 # 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
@@ -221,8 +222,8 @@ sample_offsets = (0, 0, 0,)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-sdd = 1.434  # in m, sample to detector distance in m
-energy = 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 1.03527  # in m, sample to detector distance in m
+energy = 13000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
