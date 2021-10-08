@@ -6,13 +6,12 @@
 # J.Carnis 27/04/2018
 """Functions related to the registration and alignement of two arrays."""
 
-from collections.abc import Sequence
 from numbers import Complex, Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import pearsonr
-from typing import Union
+from typing import Union, Sequence
 
 from ..graph import graph_utils as gu
 from ..utils import utilities as util

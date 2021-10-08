@@ -9,7 +9,6 @@
 """Functions related to data loading, encoding, fitting, data manipulation."""
 
 from collections import OrderedDict
-from collections.abc import Sequence
 import ctypes
 from functools import reduce
 import gc
@@ -23,8 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import Union
-
+from typing import Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
