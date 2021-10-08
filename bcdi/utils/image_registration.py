@@ -63,6 +63,9 @@ def align_arrays(
         raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
     if interpolation_method not in {"subpixel", "rgi", "roll"}:
         raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+    valid.valid_item(debugging, allowed_types=bool, name="debugging")
+
     if shifted_array.shape != reference_array.shape:
         if verbose:
             print(
@@ -125,7 +128,7 @@ def align_diffpattern(
     reference_data,
     data,
     mask=None,
-    shift_method='dft',
+    shift_method='raw',
     interpolation_method="roll",
     verbose=True,
     debugging=False,
@@ -157,11 +160,22 @@ def align_diffpattern(
     #########################
     # check some parameters #
     #########################
+    valid.valid_ndarray(
+        arrays=(reference_data, data), ndim=(2, 3), fix_shape=True
+    )
+    if mask is not None:
+        valid.valid_ndarray(arrays=mask, shape=data.shape)
+    if shift_method not in {"raw", "modulus", "support", "skip"}:
+        raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+    valid.valid_item(debugging, allowed_types=bool, name="debugging")
 
     ##################
     # align the data #
     ##################
-    shifted_data, shift = align_arrays(
+    data, shift = align_arrays(
         reference_array=reference_data,
         shifted_array=data,
         shift_method=shift_method,
@@ -174,7 +188,7 @@ def align_diffpattern(
     # shift the optional mask
     #########################
     if mask is not None:
-        shifted_mask = shift_array(
+        mask = shift_array(
             array=mask,
             shift=shift,
             interpolation_method=interpolation_method,
