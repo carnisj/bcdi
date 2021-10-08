@@ -418,19 +418,21 @@ def shift_array(
 
     :param array: a numpy ndarray
     :param shifts: tuple of floats, shifts of the array in each dimension
-    :param interpolation_method: 'raw', 'modulus', 'support'. Object to use for the
-     determination of the shift. If 'raw', it uses the raw, eventually complex array.
-     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
      created by thresholding the modulus of the array.
     :return: the shifted array
     """
     #########################
     # check some parameters #
     #########################
-    valid.valid_ndarray(array, name="array")
+    valid.valid_ndarray(array, ndim=3, name="array")
     valid.valid_container(
         shifts, container_types=(tuple, list), item_types=Real, name="shifts"
     )
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
 
     ###################
     # shift the array #
@@ -467,7 +469,11 @@ def shift_array(
         )
         shifted_array = shifted_array.reshape((nbz, nby, nbx)).astype(array.dtype)
     else:  # "roll"
-        shifted_array = np.roll(array, shifts, axis=(0, 1, 2))
+        shifted_array = np.roll(
+            array,
+            shift=list(map(lambda x : int(np.rint(x)), shifts)),
+            axis=(0, 1, 2)
+        )
 
     return shifted_array
 
