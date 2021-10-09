@@ -2865,8 +2865,8 @@ class DiffractometerSIXS(Diffractometer):
         Load data, apply filters and concatenate it for phasing at SIXS.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param setup: an instance of the class Setup
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
