@@ -50,6 +50,9 @@ instantiated directly but via a Setup instance.
   }
     ABC <|-- Diffractometer
 
+API Reference
+-------------
+
 """
 
 try:
