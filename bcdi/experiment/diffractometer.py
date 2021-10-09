@@ -439,11 +439,11 @@ class Diffractometer(ABC):
     valid_names = {"sample": "_sample_circles", "detector": "_detector_circles"}
 
     def __init__(
-            self,
-            sample_offsets,
-            sample_circles=(),
-            detector_circles=(),
-            **kwargs,
+        self,
+        sample_offsets,
+        sample_circles=(),
+        detector_circles=(),
+        **kwargs,
     ):
         self.sample_circles = sample_circles
         self.detector_circles = detector_circles
@@ -2300,7 +2300,7 @@ class DiffractometerP10(Diffractometer):
             sample_circles=self.sample_rotations,
             detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
-            default_offsets=self.default_offsets
+            default_offsets=self.default_offsets,
         )
 
     def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
