@@ -1034,27 +1034,41 @@ class Diffractometer(ABC):
         return data, mask3d, monitor, frames_logical.astype(int)
 
     @abstractmethod
-    def load_data(self, **kwargs):
+    def load_data(
+            self,
+            logfile,
+            detector,
+            setup,
+            flatfield=None,
+            hotpixels=None,
+            background=None,
+            normalize="skip",
+            bin_during_loading=False,
+            debugging=False,
+            **kwargs,
+    ):
         """
         Load data including detector/background corrections.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
 
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': the scan number to load
-          - 'detector': the detector object: Class experiment_utils.Detector()
-          - 'setup': an instance of the class Setup
+          - 'scan_number': the scan number to load (e.g. for ID01)
           - 'actuators': dictionary defining the entries corresponding to actuators
-          - 'flatfield': the 2D flatfield array
-          - 'hotpixels': the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-          - 'background': the 2D background array to subtract to the data
-          - 'normalize': 'monitor' to return the default monitor values, 'sum_roi' to
-            return a monitor based on the integrated intensity in the region of interest
-            defined by detector.sum_roi, 'skip' to do nothing
-          - 'bin_during_loading': only for P10. If True, the data will be binned in the
-            detector frame while loading. It saves a lot of memory for large detectors.
-          - 'debugging': set to True to see plots
+            (e.g. for CRISTAL)
 
         :return: in this order
 
@@ -1417,7 +1431,6 @@ class DiffractometerCRISTAL(Diffractometer):
     def load_data(
         self,
         logfile,
-        actuators,
         detector,
         setup,
         flatfield=None,
@@ -1435,7 +1448,6 @@ class DiffractometerCRISTAL(Diffractometer):
         and look for a dataset with compatible shape otherwise.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param actuators: dictionary defining the entries corresponding to actuators
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1447,13 +1459,20 @@ class DiffractometerCRISTAL(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :return:
+        :param kwargs:
+         - 'actuators': dictionary defining the entries corresponding to actuators
+         in the data file (at CRISTAL the location of data keeps changing)
 
+        :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
+        actuators = kwargs.get("actuators")
+        if actuators is None:
+            raise ValueError("'actuators' parameter required")
+
         # look for the detector entry (keep changing at CRISTAL)
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for CRISTAL")
@@ -1789,7 +1808,6 @@ class DiffractometerID01(Diffractometer):
     def load_data(
         self,
         logfile,
-        scan_number,
         detector,
         setup,
         flatfield=None,
@@ -1804,7 +1822,6 @@ class DiffractometerID01(Diffractometer):
         Load ID01 data, apply filters and concatenate it for phasing.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1816,13 +1833,19 @@ class DiffractometerID01(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :return:
+        :param kwargs
+         - 'scan_number': int, the scan number to load
 
+        :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
@@ -3055,9 +3078,36 @@ class Diffractometer34ID(Diffractometer):
             return detector_angles
         return tilt, grazing, inplane, outofplane
 
-    def load_data(self, **kwargs):
-        """Load 34ID-C data including detector/background corrections."""
-        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+    def load_data(
+            self,
+            logfile,
+            detector,
+            setup,
+            flatfield=None,
+            hotpixels=None,
+            background=None,
+            normalize="skip",
+            bin_during_loading=False,
+            debugging=False,
+            **kwargs,
+    ):
+        """
+        Load 34ID-C data including detector/background corrections.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
+        """
+        raise NotImplementedError("'load_data' not implemented for 34ID-C")
 
     def motor_positions(self, setup, **kwargs):
         """
