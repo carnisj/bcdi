@@ -1159,15 +1159,15 @@ class Diffractometer(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_monitor(**kwargs):
+    def read_monitor(logfile, **kwargs):
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
+        :param logfile: the logfile created in Setup.create_logfile()
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': int, number of the scan
+          - 'scan_number': int, number of the scan (e.g. for ID01)
           - 'actuators': dictionary defining the entries corresponding to actuators
             in the data file (at CRISTAL the location of data keeps changing)
           - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
@@ -1686,15 +1686,21 @@ class DiffractometerCRISTAL(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, actuators, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param actuators: dictionary defining the entries corresponding to actuators
+        :param kwargs:
+         - 'actuators': dictionary defining the entries corresponding to actuators
          in the data file (at CRISTAL the location of data keeps changing)
+
         :return: the default monitor values
         """
+        actuators = kwargs.get("actuators")
+        if actuators is None:
+            raise ValueError("'actuators' parameter required")
+
         monitor_name = actuators.get("monitor", "data_04")
         return self.read_device(logfile=logfile, device_name=monitor_name)
 
@@ -2012,14 +2018,20 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, scan_number, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: int, the scan number to load
+        :param kwargs
+         - 'scan_number': int, the scan number to load
+
         :return: the default monitor values
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
         monitor = self.read_device(
             logfile=logfile, scan_number=scan_number, device_name="mon2"
         )
@@ -2944,14 +2956,19 @@ class DiffractometerSIXS(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, beamline, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at SIXS.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param beamline: str, name of the beamline. E.g. "SIXS_2018"
+        :param kwargs:
+         - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
+
         :return: the default monitor values
         """
+        beamline = kwargs.get("beamline")
+        if beamline is None:
+            raise ValueError("'beamline' parameter required")
         if beamline == "SIXS_2018":
             return self.read_device(logfile=logfile, device_name="imon1")
         # SIXS_2019
@@ -3061,6 +3078,10 @@ class Diffractometer34ID(Diffractometer):
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
 
     @staticmethod
-    def read_monitor(**kwargs):
-        """Load the default monitor for a dataset measured at 34ID-C."""
+    def read_monitor(logfile, **kwargs):
+        """
+        Load the default monitor for a dataset measured at 34ID-C.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        """
         raise NotImplementedError("'read_monitor' not implemented for 34ID-C")
