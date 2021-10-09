@@ -118,6 +118,7 @@ class Beamline(ABC):
           - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
           - 'datadir': the data directory
           - 'template_imagefile': the template for data/image file names
+          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
 
         :return: logfile
         """
