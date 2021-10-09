@@ -2506,77 +2506,77 @@ class DiffractometerP10(Diffractometer):
         """
         logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            fio = open(logfile, "r")
-            index_om = None
-            index_phi = None
-            om = []
-            phi = []
-            chi = None
-            mu = None
-            gamma = None
-            delta = None
+            with open(logfile, "r") as fio:
+                index_om = None
+                index_phi = None
+                om = []
+                phi = []
+                chi = None
+                mu = None
+                gamma = None
+                delta = None
 
-            fio_lines = fio.readlines()
-            for line in fio_lines:
-                this_line = line.strip()
-                words = this_line.split()
+                fio_lines = fio.readlines()
+                for line in fio_lines:
+                    this_line = line.strip()
+                    words = this_line.split()
 
-                if (
-                    "Col" in words and "om" in words
-                ):  # om scanned, template = ' Col 0 om DOUBLE\n'
-                    index_om = int(words[1]) - 1  # python index starts at 0
-                if (
-                    "om" in words and "=" in words and setup.rocking_angle == "inplane"
-                ):  # om is a positioner
-                    om = float(words[2])
+                    if (
+                        "Col" in words and "om" in words
+                    ):  # om scanned, template = ' Col 0 om DOUBLE\n'
+                        index_om = int(words[1]) - 1  # python index starts at 0
+                    if (
+                        "om" in words and "=" in words and setup.rocking_angle == "inplane"
+                    ):  # om is a positioner
+                        om = float(words[2])
 
-                if (
-                    "Col" in words and "phi" in words
-                ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
-                    index_phi = int(words[1]) - 1  # python index starts at 0
-                if (
-                    "phi" in words
-                    and "=" in words
-                    and setup.rocking_angle == "outofplane"
-                ):  # phi is a positioner
-                    phi = float(words[2])
+                    if (
+                        "Col" in words and "phi" in words
+                    ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+                        index_phi = int(words[1]) - 1  # python index starts at 0
+                    if (
+                        "phi" in words
+                        and "=" in words
+                        and setup.rocking_angle == "outofplane"
+                    ):  # phi is a positioner
+                        phi = float(words[2])
 
-                if (
-                    "chi" in words and "=" in words
-                ):  # template for positioners: 'chi = 90.0\n'
-                    chi = float(words[2])
-                if (
-                    "del" in words and "=" in words
-                ):  # template for positioners: 'del = 30.05\n'
-                    delta = float(words[2])
-                if (
-                    "gam" in words and "=" in words
-                ):  # template for positioners: 'gam = 4.05\n'
-                    gamma = float(words[2])
-                if (
-                    "mu" in words and "=" in words
-                ):  # template for positioners: 'mu = 0.0\n'
-                    mu = float(words[2])
+                    if (
+                        "chi" in words and "=" in words
+                    ):  # template for positioners: 'chi = 90.0\n'
+                        chi = float(words[2])
+                    if (
+                        "del" in words and "=" in words
+                    ):  # template for positioners: 'del = 30.05\n'
+                        delta = float(words[2])
+                    if (
+                        "gam" in words and "=" in words
+                    ):  # template for positioners: 'gam = 4.05\n'
+                        gamma = float(words[2])
+                    if (
+                        "mu" in words and "=" in words
+                    ):  # template for positioners: 'mu = 0.0\n'
+                        mu = float(words[2])
 
-                if index_om is not None and util.is_float(words[0]):
-                    # reading data and index_om is defined (outofplane case)
-                    om.append(float(words[index_om]))
-                if index_phi is not None and util.is_float(words[0]):
-                    # reading data and index_phi is defined (inplane case)
-                    phi.append(float(words[index_phi]))
+                    if index_om is not None and util.is_float(words[0]):
+                        # reading data and index_om is defined (outofplane case)
+                        om.append(float(words[index_om]))
+                    if index_phi is not None and util.is_float(words[0]):
+                        # reading data and index_phi is defined (inplane case)
+                        phi.append(float(words[index_phi]))
 
-            if setup.rocking_angle == "outofplane":
-                om = np.asarray(om, dtype=float)
-            else:  # phi
-                phi = np.asarray(phi, dtype=float)
+                if setup.rocking_angle == "outofplane":
+                    om = np.asarray(om, dtype=float)
+                else:  # phi
+                    phi = np.asarray(phi, dtype=float)
 
-            fio.close()
+                fio.close()
 
-            # remove user-defined sample offsets (sample: mu, om, chi, phi)
-            mu = mu - self.sample_offsets[0]
-            om = om - self.sample_offsets[1]
-            chi = chi - self.sample_offsets[2]
-            phi = phi - self.sample_offsets[3]
+                # remove user-defined sample offsets (sample: mu, om, chi, phi)
+                mu = mu - self.sample_offsets[0]
+                om = om - self.sample_offsets[1]
+                chi = chi - self.sample_offsets[2]
+                phi = phi - self.sample_offsets[3]
 
         else:  # manually defined custom scan
             om = setup.custom_motors["om"]

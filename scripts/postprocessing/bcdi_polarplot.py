@@ -802,22 +802,22 @@ plt.savefig(homedir + "North pole" + comment + "_S" + str(scan) + ".png")
 ################################
 # save grid points in txt file #
 ################################
-fichier = open(homedir + "Poles" + comment + "_S" + str(scan) + ".dat", "w")
-# save metric coordinates in text file
-nb_points = stereo_proj.shape[0]
-for ii in range(nb_points):
-    fichier.write(
-        str(stereo_proj[ii, 0])
-        + "\t"
-        + str(stereo_proj[ii, 1])
-        + "\t"
-        + str(stereo_proj[ii, 2])
-        + "\t"
-        + str(stereo_proj[ii, 3])
-        + "\t"
-        + str(data_masked[ii])
-        + "\n"
-    )
-fichier.close()
+with open(homedir + "Poles" + comment + "_S" + str(scan) + ".dat", "w") as file:
+    # save metric coordinates in text file
+    nb_points = stereo_proj.shape[0]
+    for ii in range(nb_points):
+        file.write(
+            str(stereo_proj[ii, 0])
+            + "\t"
+            + str(stereo_proj[ii, 1])
+            + "\t"
+            + str(stereo_proj[ii, 2])
+            + "\t"
+            + str(stereo_proj[ii, 3])
+            + "\t"
+            + str(data_masked[ii])
+            + "\n"
+        )
+
 plt.ioff()
 plt.show()
