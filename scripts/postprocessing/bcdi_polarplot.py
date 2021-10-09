@@ -553,10 +553,10 @@ else:  # load a reconstructed real space object
     # interpolation artefacts
     obj = obj / abs(obj).max()
     obj[abs(obj) < threshold_amp] = 0
-    if not use_phase:  # phase is 0, obj is real
-        if binary_support:  # create a binary support
-            obj[np.nonzero(obj)] = 1
-            comment = comment + "_binary"
+    if not use_phase and binary_support:  # phase is 0, obj is real
+        # create a binary support
+        obj[np.nonzero(obj)] = 1
+        comment = comment + "_binary"
     if debug:
         gu.multislices_plot(
             abs(obj),
