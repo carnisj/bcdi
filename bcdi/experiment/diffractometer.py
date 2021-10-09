@@ -1035,17 +1035,17 @@ class Diffractometer(ABC):
 
     @abstractmethod
     def load_data(
-            self,
-            logfile,
-            detector,
-            setup,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs,
+        self,
+        logfile,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load data including detector/background corrections.
@@ -3085,17 +3085,17 @@ class Diffractometer34ID(Diffractometer):
         return tilt, grazing, inplane, outofplane
 
     def load_data(
-            self,
-            logfile,
-            detector,
-            setup,
-            flatfield=None,
-            hotpixels=None,
-            background=None,
-            normalize="skip",
-            bin_during_loading=False,
-            debugging=False,
-            **kwargs,
+        self,
+        logfile,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
     ):
         """
         Load 34ID-C data including detector/background corrections.
