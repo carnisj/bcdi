@@ -2851,8 +2851,8 @@ class DiffractometerSIXS(Diffractometer):
     def load_data(
         self,
         logfile,
-        setup,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
