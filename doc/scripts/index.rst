@@ -54,27 +54,6 @@ bcdi_ccd_calib_sixs.py
    :end-before: """
    :language: rst
 
-.. _facet:
-
-Facet recognition
------------------
-
-bcdi_facet_strain.py
-^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/facet_recognition/bcdi_facet_strain.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_polarplot.py
-^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/facet_recognition/bcdi_polarplot.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
 .. _graph:
 
 Graph
@@ -267,6 +246,14 @@ bcdi_correct_angles_detector.py
    :end-before: """
    :language: rst
 
+bcdi_facet_strain.py
+^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../scripts/facet_recognition/bcdi_facet_strain.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
 bcdi_line_profile.py
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -279,6 +266,14 @@ bcdi_modes_decomposition.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../scripts/postprocessing/bcdi_modes_decomposition.py
+   :start-after: helptext
+   :end-before: """
+   :language: rst
+
+bcdi_polarplot.py
+^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../scripts/facet_recognition/bcdi_polarplot.py
    :start-after: helptext
    :end-before: """
    :language: rst
