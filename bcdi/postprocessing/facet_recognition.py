@@ -398,15 +398,17 @@ def find_facet(
     shift_direction = 0
     while found_plane == 0:
         common_points = 0
+        nb_points = len(surf0)
+
         # shift indices
         plane_newindices0, plane_newindices1, plane_newindices2 = offset_plane(
             indices=refplane_indices,
             offset=nbloop * step_shift,
             plane_normal=plane_normal,
         )
-
-        for point in range(len(plane_newindices0)):
-            for point2 in range(len(surf0)):
+        nb_newpoints = len(plane_newindices0)
+        for point in range(nb_newpoints):
+            for point2 in range(nb_points):
                 if (
                     plane_newindices0[point] == surf0[point2]
                     and plane_newindices1[point] == surf1[point2]
@@ -416,8 +418,8 @@ def find_facet(
 
         if debugging:
             temp_coeff3 = plane_coeffs[3] - nbloop * step_shift
-            dist = np.zeros(len(surf0))
-            for point in range(len(surf0)):
+            dist = np.zeros(nb_points)
+            for point in range(nb_points):
                 dist[point] = (
                     plane_coeffs[0] * surf0[point]
                     + plane_coeffs[1] * surf1[point]
@@ -565,7 +567,8 @@ def find_neighbours(vertices, faces):
     """
     neighbors = [None] * vertices.shape[0]
 
-    for indx in range(faces.shape[0]):
+    nb_faces = faces.shape[0]
+    for indx in range(nb_faces):
         if neighbors[faces[indx, 0]] is None:
             neighbors[faces[indx, 0]] = [faces[indx, 1], faces[indx, 2]]
         else:
@@ -582,13 +585,12 @@ def find_neighbours(vertices, faces):
             neighbors[faces[indx, 2]].append(faces[indx, 0])
             neighbors[faces[indx, 2]].append(faces[indx, 1])
 
-    for indx in range(len(neighbors)):
-        temp_list = [
-            point for point in neighbors[indx] if point is not None
-        ]  # remove None values
-        neighbors[indx] = list(
-            set(temp_list)
-        )  # remove redundant indices in each sublist
+    for indx, neighbor in enumerate(neighbors):
+        # remove None values
+        temp_list = [point for point in neighbor if point is not None]
+
+        # remove redundant indices in each sublist
+        neighbors[indx] = list(set(temp_list))
 
     return neighbors
 
@@ -779,10 +781,10 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     )
 
     count_grad = 0
-    for idx in range(len(indices[0])):
-        if (
-            np.dot(plane_normal, gradients[idx]) < 0.75
-        ):  # 0.85 is too restrictive checked CH4760 S11 plane 1
+    nb_indices = len(indices[0])
+    for idx in range(nb_indices):
+        if np.dot(plane_normal, gradients[idx]) < 0.75:
+            # 0.85 is too restrictive checked CH4760 S11 plane 1
             plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
             count_grad += 1
 
@@ -846,9 +848,9 @@ def remove_duplicates(vertices, faces, debugging=False):
 
     # for each duplicated vertex, build the list of the corresponding identical vertices
     list_duplicated = []
-    for idx in range(len(duplicated_indices)):
+    for idx, value in enumerate(duplicated_indices):
         same_vertices = np.argwhere(
-            vertices == uniq_vertices[duplicated_indices[idx], :]
+            vertices == uniq_vertices[value, :]
         )
         # same_vertices is a ndarray of the form
         # [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
@@ -860,13 +862,11 @@ def remove_duplicates(vertices, faces, debugging=False):
     print(len(remove_vertices), "duplicated vertices removed")
 
     # remove duplicated_vertices in faces
-    for idx in range(len(list_duplicated)):
-        temp_array = list_duplicated[idx]
+    for idx, temp_array in enumerate(list_duplicated):
         for idy in range(1, len(temp_array)):
             duplicated_value = temp_array[idy]
-            faces[faces == duplicated_value] = temp_array[
-                0
-            ]  # temp_array[0] is the unique value, others are duplicates
+            faces[faces == duplicated_value] = temp_array[0]
+            # temp_array[0] is the unique value, others are duplicates
 
             # all indices above duplicated_value have to be decreased by 1
             # to keep the match with the number of vertices
@@ -1336,10 +1336,9 @@ def surface_gradient(points, support, width=2):
     if not isinstance(points, list):
         points = [points]
 
-    for idx in range(len(points)):
-        point = points[idx]
+    for idx, point in enumerate(points):
         # round the point to integer numbers
-        point = [int(np.rint(point[idx])) for idx in range(3)]
+        point = [int(np.rint(point)) for _ in range(3)]
 
         # calculate the gradient in a small window around point
         # (gradient will be nonzero on a single layer)
