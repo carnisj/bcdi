@@ -87,7 +87,7 @@ branch.
     yours):
     - `git checkout branchname`
     - `git rebase main`
-    - `git push`
+    - `git push --force-with-lease origin branchname`
 - [Submit a pull request][pr].
 - Wait for your pull request to be reviewed and merged.
   
@@ -96,7 +96,7 @@ upstream main:
  - `git fetch upstream`
  - `git checkout main`
  - `git rebase upstream/main`
- - `git push -f origin main`
+ - `git push --force-with-lease origin main`
 
 ## 6. Delete your feature branch and start over
 
