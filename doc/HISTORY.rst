@@ -1,7 +1,15 @@
 Future
 ------
 
-* add class diagrams in the documentation using sphinxcontrib-mermaid
+* Add the module ``simulation.supportMaker.py``, which allows to create a support using
+  polygons. Length can be defined either in pixels or in nanometers.
+
+* Merge the subpackage facet_recognition with postprocessing and rename the module
+  ``facet_utils.py`` to ``facet_recognition.py``
+
+* Add the list of publications relateed to the package in the documentation
+
+* Add class diagrams in the documentation using sphinxcontrib-mermaid
 
 * Solve issues with numpy when building the documentation (enable *Use system packages*
   in ReadTheDocs advanced settings)
