@@ -22,9 +22,9 @@ from matplotlib import pyplot as plt
 from matplotlib import patches
 import gc
 import sys
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap
