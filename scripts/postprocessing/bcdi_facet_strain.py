@@ -38,15 +38,15 @@ detected planes.
 """
 
 scan = 11  # spec scan number
-datadir = "C:/Users/Jerome/Documents/data/dataset_ID01/S" + str(scan) + "/pynxraw"
-support_threshold = 0.35  # threshold for support determination
-voxel_size = [3.0, 3.0, 3.0]
+datadir = "C:/Users/Jerome/Documents/data/dataset_facet_recognition/"
+support_threshold = 0.48  # threshold for support determination
+voxel_size = [3.63, 5.31, 2.62]
 # tuple of 3 numbers, voxel size of the real-space reconstruction in each dimension
-upsampling_factor = 1  # integer, factor for upsampling the reconstruction
+upsampling_factor = 2  # integer, factor for upsampling the reconstruction
 # in order to have a smoother surface
-savedir = "C:/Users/Jerome/Documents/data/dataset_ID01/S" + str(scan) + "/test/"
+savedir = datadir + "/test/"
 reflection = np.array([1, 1, 1])  # measured crystallographic reflection
-projection_axis = 1  # the projection will be performed on the equatorial plane
+projection_axis = 2  # the projection will be performed on the equatorial plane
 # perpendicular to that axis (0, 1 or 2)
 debug = False  # set to True to see all plots for debugging
 smoothing_iterations = 5  # number of iterations in Taubin smoothing,
@@ -59,16 +59,16 @@ projection_method = "stereographic"  # 'stereographic' or 'equirectangular'
 peak_min_distance = 10  # pixel separation between peaks in corner_peaks()
 max_distance_plane = 0.75
 # in pixels, maximum allowed distance to the facet plane of a voxel
-edges_coord = 360
+edges_coord = 350
 # coordination threshold for isolating edges, 360 seems to work reasonably well
-corners_coord = 310  # coordination threshold for isolating corners,
+corners_coord = 300  # coordination threshold for isolating corners,
 # 310 seems to work reasonably well
 ########################################################
 # parameters only used in the stereographic projection #
 ########################################################
-threshold_south = -1500  # background threshold in the stereographic projection
+threshold_south = -1400  # background threshold in the stereographic projection
 # from South of the density of normals
-threshold_north = -1500
+threshold_north = -1200
 # background threshold in the stereographic projection from North
 # of the density of normals
 max_angle = 95  # maximum angle in degree of the stereographic projection
