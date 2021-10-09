@@ -1,6 +1,9 @@
 Future
 ------
 
+* Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
+  become obsolete and is removed.
+
 * Add the module ``simulation.supportMaker.py``, which allows to create a support using
   polygons. Lengths can be defined either in pixels or in nanometers.
 
