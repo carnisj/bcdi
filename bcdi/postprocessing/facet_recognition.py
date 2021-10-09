@@ -261,9 +261,6 @@ def equirectangular_proj(
     plt.title("Equirectangular projection of the weighted point densities before KDE")
     plt.pause(0.1)
 
-    del intensity
-    gc.collect()
-
     # kernel density estimation
     kde = stats.gaussian_kde(long_lat.T, bw_method=bw_method)
     # input should be a 2D array with shape (# of dims, # of data)
@@ -1155,8 +1152,6 @@ def stereographic_proj(
                     + "\n"
                 )
         fichier.close()
-        del intensity
-        gc.collect()
 
     # inverse densities for watershed segmentation
     density_south = -1 * density_south
