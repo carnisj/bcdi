@@ -24,7 +24,7 @@ import gc
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.facet_recognition.facet_utils as fu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util

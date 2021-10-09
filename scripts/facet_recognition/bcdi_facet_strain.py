@@ -22,7 +22,7 @@ import logging
 import sys
 import gc
 import bcdi.graph.graph_utils as gu
-import bcdi.facet_recognition.facet_utils as fu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.postprocessing.postprocessing_utils as pu
 
