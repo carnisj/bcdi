@@ -1098,7 +1098,6 @@ class Setup:
             sample_name=sample_name,
             scan_number=scan_number,
             root_folder=root_folder,
-            save_dir=save_dir,
             specfile_name=specfile_name,
             template_imagefile=template_imagefile,
             data_dirname=data_dirname,
