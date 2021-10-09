@@ -849,9 +849,7 @@ def remove_duplicates(vertices, faces, debugging=False):
     # for each duplicated vertex, build the list of the corresponding identical vertices
     list_duplicated = []
     for idx, value in enumerate(duplicated_indices):
-        same_vertices = np.argwhere(
-            vertices == uniq_vertices[value, :]
-        )
+        same_vertices = np.argwhere(vertices == uniq_vertices[value, :])
         # same_vertices is a ndarray of the form
         # [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
         list_duplicated.append(list(same_vertices[::3, 0]))
