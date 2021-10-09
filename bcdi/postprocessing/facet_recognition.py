@@ -1333,7 +1333,7 @@ def surface_gradient(points, support, width=2):
 
     for _, point in enumerate(points):
         # round the point to integer numbers
-        point = [int(np.rint(point)) for _ in range(3)]
+        point = [int(np.rint(point[idx])) for idx in range(3)]
 
         # calculate the gradient in a small window around point
         # (gradient will be nonzero on a single layer)
