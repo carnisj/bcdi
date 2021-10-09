@@ -2525,7 +2525,9 @@ class DiffractometerP10(Diffractometer):
                     ):  # om scanned, template = ' Col 0 om DOUBLE\n'
                         index_om = int(words[1]) - 1  # python index starts at 0
                     if (
-                        "om" in words and "=" in words and setup.rocking_angle == "inplane"
+                        "om" in words
+                        and "=" in words
+                        and setup.rocking_angle == "inplane"
                     ):  # om is a positioner
                         om = float(words[2])
 
