@@ -2092,7 +2092,7 @@ class BeamlineSIXS(Beamline):
          (SIXS_2019).
         :param kwargs:
          - 'specfile_name': None or full path of the alias dictionnary (e.g.
-         root_folder+'alias_dict_2019.txt')
+           root_folder+'alias_dict_2019.txt')
 
         :return: a tuple of strings:
 

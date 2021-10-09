@@ -1461,7 +1461,7 @@ class DiffractometerCRISTAL(Diffractometer):
         :param debugging: set to True to see plots
         :param kwargs:
          - 'actuators': dictionary defining the entries corresponding to actuators
-         in the data file (at CRISTAL the location of data keeps changing)
+           in the data file (at CRISTAL the location of data keeps changing)
 
         :return:
          - the 3D data array in the detector frame
@@ -1712,7 +1712,7 @@ class DiffractometerCRISTAL(Diffractometer):
         :param logfile: the logfile created in Setup.create_logfile()
         :param kwargs:
          - 'actuators': dictionary defining the entries corresponding to actuators
-         in the data file (at CRISTAL the location of data keeps changing)
+           in the data file (at CRISTAL the location of data keeps changing)
 
         :return: the default monitor values
         """
@@ -1838,7 +1838,7 @@ class DiffractometerID01(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs
+        :param kwargs:
          - 'scan_number': int, the scan number to load
 
         :return:
@@ -2027,7 +2027,7 @@ class DiffractometerID01(Diffractometer):
 
         :param logfile: the logfile created in Setup.create_logfile()
         :param device_name: name of the device
-        :param kwargs
+        :param kwargs:
          - 'scan_number': int, the scan number to load
 
         :return: the positions/values of the device as a numpy 1D array
@@ -2052,7 +2052,7 @@ class DiffractometerID01(Diffractometer):
         Load the default monitor for a dataset measured at ID01.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs
+        :param kwargs:
          - 'scan_number': int, the scan number to load
 
         :return: the default monitor values

@@ -767,7 +767,7 @@ class Setup:
             filename=filename,
             datadir=self.detector.datadir,
             template_imagefile=self.detector.template_imagefile,
-            name=self.beamline
+            name=self.beamline,
         )
 
     def detector_frame(
