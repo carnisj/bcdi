@@ -581,684 +581,726 @@ gu.scatter_plot(
 ######################################
 # Initialize log files and .vti file #
 ######################################
-summary_file = open(
+with open(
     os.path.join(
         savedir, "S" + str(scan) + "_planes_iso" + str(support_threshold) + ".dat"
     ),
     "w",
-)
-summary_file.write(
-    "{0: <10}".format("Plane #")
-    + "\t"
-    + "{0: <10}".format("angle")
-    + "\t"
-    + "{0: <10}".format("points #")
-    + "\t"
-    + "{0: <10}".format("<strain>")
-    + "\t"
-    + "{0: <10}".format("std dev")
-    + "\t"
-    + "{0: <10}".format("A (x)")
-    + "\t"
-    + "{0: <10}".format("B (y)")
-    + "\t"
-    + "{0: <10}".format("C (z)")
-    + "\t"
-    + "D (Ax+By+CZ+D=0)"
-    + "\t"
-    "normal X" + "\t" + "normal Y" + "\t" + "normal Z" + "\n"
-)
-allpoints_file = open(
+) as summary_file, open(
     os.path.join(
         savedir, "S" + str(scan) + "_strain_iso" + str(support_threshold) + ".dat"
     ),
     "w",
-)
-allpoints_file.write(
-    "{0: <10}".format("Plane #")
-    + "\t"
-    + "{0: <10}".format("angle")
-    + "\t"
-    + "{0: <10}".format("strain")
-    + "\t"
-    + "{0: <10}".format("Z")
-    + "\t"
-    + "{0: <10}".format("Y")
-    + "\t"
-    + "{0: <10}".format("X")
-    + "\n"
-)
-
-# prepare amp for vti file
-amp_array = np.transpose(np.flip(amp, 2)).reshape(amp.size)  # VTK axis 2 is flipped
-amp_array = numpy_support.numpy_to_vtk(amp_array)
-image_data = vtk.vtkImageData()
-image_data.SetOrigin(0, 0, 0)
-image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
-image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
-pd = image_data.GetPointData()
-pd.SetScalars(amp_array)
-pd.GetArray(0).SetName("amp")
-
-# update vti file with edges
-edges_array = np.transpose((np.flip(edges, 2))).reshape(edges.size)
-edges_array = numpy_support.numpy_to_vtk(edges_array)
-pd.AddArray(edges_array)
-pd.GetArray(1).SetName("edges")
-pd.Update()
-
-index_vti = 2
-del amp, amp_array, edges_array
-gc.collect()
-#########################################################
-# save surface, edges and corners strain to the logfile #
-#########################################################
-fu.update_logfile(
-    support=surface,
-    strain_array=strain,
-    summary_file=summary_file,
-    allpoints_file=allpoints_file,
-    label="surface",
-)
-
-fu.update_logfile(
-    support=edges,
-    strain_array=strain,
-    summary_file=summary_file,
-    allpoints_file=allpoints_file,
-    label="edges",
-)
-
-fu.update_logfile(
-    support=corners,
-    strain_array=strain,
-    summary_file=summary_file,
-    allpoints_file=allpoints_file,
-    label="corners",
-)
-
-del corners
-gc.collect()
-
-#######################################################################################
-# Iterate over the planes to find the corresponding surface facet                     #
-# Effect of meshing/smoothing: the meshed support is smaller than the initial support #
-#######################################################################################
-summary_dict = {}
-for label in unique_labels:
-    print("\nPlane", label)
-    # raw fit including all points
-    plane = np.copy(all_planes)
-    plane[plane != label] = 0
-    plane[plane == label] = 1
-    if plane[plane == 1].sum() == 0:  # no points on the plane
-        print("Raw fit: no points for plane", label)
-        continue
-    ################################################################
-    # fit a plane to the voxels isolated by watershed segmentation #
-    ################################################################
-    # Why not using directly the centroid to find plane equation?
-    # Because it does not distinguish pixels coming from different but parallel facets
-    coeffs, plane_indices, errors, stop = fu.fit_plane(
-        plane=plane, label=label, debugging=debug
+) as allpoints_file:
+    summary_file.write(
+        "{0: <10}".format("Plane #")
+        + "\t"
+        + "{0: <10}".format("angle")
+        + "\t"
+        + "{0: <10}".format("points #")
+        + "\t"
+        + "{0: <10}".format("<strain>")
+        + "\t"
+        + "{0: <10}".format("std dev")
+        + "\t"
+        + "{0: <10}".format("A (x)")
+        + "\t"
+        + "{0: <10}".format("B (y)")
+        + "\t"
+        + "{0: <10}".format("C (z)")
+        + "\t"
+        + "D (Ax+By+CZ+D=0)"
+        + "\t"
+        "normal X" + "\t" + "normal Y" + "\t" + "normal Z" + "\n"
     )
-    if stop:
-        print("No points remaining after raw fit for plane", label)
-        continue
 
-    # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(
-        fit=coeffs,
-        indices=plane_indices,
-        plane_shape=plane.shape,
-        max_distance=max_distance_plane,
+    allpoints_file.write(
+        "{0: <10}".format("Plane #")
+        + "\t"
+        + "{0: <10}".format("angle")
+        + "\t"
+        + "{0: <10}".format("strain")
+        + "\t"
+        + "{0: <10}".format("Z")
+        + "\t"
+        + "{0: <10}".format("Y")
+        + "\t"
+        + "{0: <10}".format("X")
+        + "\n"
     )
-    grown_points = plane[plane == 1].sum().astype(int)
-    if stop:  # no points on the plane
-        print("Refined fit: no points for plane", label)
-        continue
-    print(
-        "Plane",
-        label,
-        ", ",
-        str(grown_points),
-        "points after checking distance to plane",
-    )
-    plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
 
-    # check that the plane normal is not flipped using
-    # the support gradient at the center of mass of the facet
-    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
-    mean_gradient = fu.surface_gradient(
-        (zcom_facet, ycom_facet, xcom_facet), support=support
-    )[0]
-    plane_normal = np.array(
-        [coeffs[0], coeffs[1], coeffs[2]]
-    )  # normal is [a, b, c] if ax+by+cz+d=0
-    plane_normal = plane_normal / np.linalg.norm(plane_normal)
-    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print("Flip normal direction plane", str(label))
-        plane_normal = -1 * plane_normal
-        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
+    # prepare amp for vti file
+    amp_array = np.transpose(np.flip(amp, 2)).reshape(amp.size)  # VTK axis 2 is flipped
+    amp_array = numpy_support.numpy_to_vtk(amp_array)
+    image_data = vtk.vtkImageData()
+    image_data.SetOrigin(0, 0, 0)
+    image_data.SetSpacing(voxel_size[0], voxel_size[1], voxel_size[2])
+    image_data.SetExtent(0, nz - 1, 0, ny - 1, 0, nx - 1)
+    pd = image_data.GetPointData()
+    pd.SetScalars(amp_array)
+    pd.GetArray(0).SetName("amp")
 
+    # update vti file with edges
+    edges_array = np.transpose((np.flip(edges, 2))).reshape(edges.size)
+    edges_array = numpy_support.numpy_to_vtk(edges_array)
+    pd.AddArray(edges_array)
+    pd.GetArray(1).SetName("edges")
+    pd.Update()
+
+    index_vti = 2
+    del amp, amp_array, edges_array
+    gc.collect()
     #########################################################
-    # Look for the surface: correct for the offset between  #
-    # the plane equation and the outer shell of the support #
+    # save surface, edges and corners strain to the logfile #
     #########################################################
-    # crop the support to a small ROI included in the plane box
-    surf0, surf1, surf2 = fu.surface_indices(
-        surface=surface, plane_indices=plane_indices, margin=3
-    )
-    if debug:
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane" + str(label) + " before shifting",
-        )
-
-    # find the direction in which the plane should be shifted to cross the surface
-    dist = np.zeros(len(surf0))
-    for point, _ in enumerate(surf0):
-        dist[point] = (
-            coeffs[0] * surf0[point]
-            + coeffs[1] * surf1[point]
-            + coeffs[2] * surf2[point]
-            + coeffs[3]
-        ) / np.linalg.norm(plane_normal)
-    mean_dist = dist.mean()
-    print(
-        "Mean distance of plane ",
-        label,
-        " to outer shell = " + str("{:.2f}".format(mean_dist)) + " pixels",
-    )
-
-    # offset the plane by mean_dist/2 and see if the plane is closer to
-    # the surface or went in the wrong direction
-    dist = np.zeros(len(surf0))
-    offset = mean_dist / 2
-
-    for point, _ in enumerate(surf0):
-        dist[point] = (
-            coeffs[0] * surf0[point]
-            + coeffs[1] * surf1[point]
-            + coeffs[2] * surf2[point]
-            + coeffs[3]
-            - offset
-        ) / np.linalg.norm(plane_normal)
-    new_dist = dist.mean()
-    print(
-        "<distance> of plane ",
-        label,
-        " to outer shell after offsetting by mean_distance/2 = "
-        + str("{:.2f}".format(new_dist))
-        + " pixels",
-    )
-    # these directions are for a mesh smaller than the support
-    step_shift = 0.5  # will scan with subpixel step through the crystal
-    # in order to not miss voxels
-    if mean_dist * new_dist < 0:  # crossed the support surface, correct direction
-        step_shift = np.sign(mean_dist) * step_shift
-    elif (
-        abs(new_dist) - abs(mean_dist) < 0
-    ):  # moving towards the surface, correct direction
-        step_shift = np.sign(mean_dist) * step_shift
-    else:  # moving away from the surface, wrong direction
-        step_shift = -1 * np.sign(mean_dist) * step_shift
-
-    ##############################################
-    # shift the fit plane along its normal until #
-    # the normal is crossed and go back one step #
-    ##############################################
-    total_offset = fu.find_facet(
-        refplane_indices=plane_indices,
-        surf_indices=(surf0, surf1, surf2),
-        original_shape=surface.shape,
-        step_shift=step_shift,
-        plane_label=label,
-        plane_coeffs=coeffs,
-        min_points=grown_points / 5,
-        debugging=debug,
-    )
-
-    # correct the offset of the fit plane to match the surface
-    coeffs = list(coeffs)
-    coeffs[3] = coeffs[3] - total_offset
-    # shift plane indices
-    plane_newindices0, plane_newindices1, plane_newindices2 = fu.offset_plane(
-        indices=plane_indices, offset=total_offset, plane_normal=plane_normal
-    )
-
-    plane = np.zeros(surface.shape)
-    plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
-
-    # use only pixels belonging to the outer shell of the support
-    plane = plane * surface
-
-    if debug:
-        # plot plane points overlaid with the support
-        plane_indices = np.nonzero(plane == 1)
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " after finding the surface\n"
-            + "Points number="
-            + str(len(plane_indices[0])),
-        )
-
-    if plane[plane == 1].sum() == 0:  # no point belongs to the support
-        print("Plane ", label, " , no point belongs to support")
-        continue
-
-    #################################
-    # grow the facet on the surface #
-    #################################
-    print("Growing the facet at the surface")
-    iterate = 0
-    while stop == 0:
-        previous_nb = plane[plane == 1].sum()
-        plane, stop = fu.grow_facet(
-            fit=coeffs,
-            plane=plane,
-            label=label,
-            support=support,
-            max_distance=1.5 * max_distance_plane,
-            debugging=debug,
-        )
-        # here the distance threshold is larger in order to reach
-        # voxels missed by the first plane fit when rounding vertices to integer.
-        # Anyway we intersect it with the surface therefore it can not go crazy.
-        plane_indices = np.nonzero(plane)
-        iterate = iterate + 1
-        plane = (
-            plane * surface
-        )  # use only pixels belonging to the outer shell of the support
-        if plane[plane == 1].sum() == previous_nb:
-            print("Growth: maximum size reached")
-            break
-        if iterate == 50:  # it is likely that we are stuck in an infinite loop
-            # after this number of iterations
-            print("Growth: maximum iteration number reached")
-            break
-    grown_points = plane[plane == 1].sum().astype(int)
-    print(
-        "Plane ",
-        label,
-        ", ",
-        str(grown_points),
-        "points after growing facet at the surface",
-    )
-
-    if debug:
-        plane_indices = np.nonzero(plane == 1)
-        surf0, surf1, surf2 = fu.surface_indices(
-            surface=surface, plane_indices=plane_indices, margin=3
-        )
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " after 1st growth at the surface\n iteration"
-            + str(iterate)
-            + "- Points number="
-            + str(len(plane_indices[0])),
-        )
-
-    ################################################################
-    # refine plane fit, now we are sure that we are at the surface #
-    ################################################################
-    coeffs, plane_indices, errors, stop = fu.fit_plane(
-        plane=plane, label=label, debugging=debug
-    )
-    if stop:
-        print("No points remaining after refined fit for plane", label)
-        continue
-
-    if debug:
-        surf0, surf1, surf2 = fu.surface_indices(
-            surface=surface, plane_indices=plane_indices, margin=3
-        )
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " after refined fit at surface\n iteration"
-            + str(iterate)
-            + "- Points number="
-            + str(len(plane_indices[0])),
-        )
-
-    # update plane by filtering out pixels too far from the fit plane
-    plane, stop = fu.distance_threshold(
-        fit=coeffs,
-        indices=plane_indices,
-        plane_shape=plane.shape,
-        max_distance=max_distance_plane,
-    )
-    if stop:  # no points on the plane
-        print("Refined fit: no points for plane", label)
-        continue
-    print(
-        "Plane", label, ", ", str(plane[plane == 1].sum()), "points after refined fit"
-    )
-    plane_indices = np.nonzero(plane)
-
-    if debug:
-        surf0, surf1, surf2 = fu.surface_indices(
-            surface=surface, plane_indices=plane_indices, margin=3
-        )
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " after distance threshold at surface\n"
-            + "Points number="
-            + str(len(plane_indices[0])),
-        )
-
-    # check that the plane normal is not flipped using the support gradient
-    # at the center of mass of the facet
-    zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
-    mean_gradient = fu.surface_gradient(
-        (zcom_facet, ycom_facet, xcom_facet), support=support
-    )[0]
-    plane_normal = np.array(
-        [coeffs[0], coeffs[1], coeffs[2]]
-    )  # normal is [a, b, c] if ax+by+cz+d=0
-    plane_normal = plane_normal / np.linalg.norm(plane_normal)
-    if np.dot(plane_normal, mean_gradient) < 0:  # normal is in the reverse direction
-        print("Flip normal direction plane", str(label))
-        plane_normal = -1 * plane_normal
-        coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
-
-    ############################################
-    # final growth of the facet on the surface #
-    ############################################
-    print("Final growth of the facet")
-    iterate = 0
-    while stop == 0:
-        previous_nb = plane[plane == 1].sum()
-        plane, stop = fu.grow_facet(
-            fit=coeffs,
-            plane=plane,
-            label=label,
-            support=support,
-            max_distance=1.5 * max_distance_plane,
-            debugging=debug,
-        )
-        plane = (
-            plane * surface
-        )  # use only pixels belonging to the outer shell of the support
-        iterate = iterate + 1
-        if plane[plane == 1].sum() == previous_nb:
-            print("Growth: maximum size reached")
-            break
-        if iterate == 50:  # it is likely that we are stuck in an infinite loop
-            # after this number of iterations
-            print("Growth: maximum iteration number reached")
-            break
-    grown_points = plane[plane == 1].sum().astype(int)
-    # plot plane points overlaid with the support
-    print(
-        "Plane ",
-        label,
-        ", ",
-        str(grown_points),
-        "points after the final growth of the facet",
-    )
-
-    if debug:
-        plane_indices = np.nonzero(plane)
-        surf0, surf1, surf2 = fu.surface_indices(
-            surface=surface, plane_indices=plane_indices, margin=3
-        )
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " final growth at the surface\nPoints number="
-            + str(len(plane_indices[0])),
-        )
-
-    #####################################
-    # remove point belonging to an edge #
-    #####################################
-    plane[np.nonzero(edges)] = 0
-    plane_indices = np.nonzero(plane)
-    if debug:
-        surf0, surf1, surf2 = fu.surface_indices(
-            surface=surface, plane_indices=plane_indices, margin=3
-        )
-        gu.scatter_plot_overlaid(
-            arrays=(
-                np.asarray(plane_indices).T,
-                np.concatenate(
-                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                    axis=1,
-                ),
-            ),
-            markersizes=(8, 2),
-            markercolors=("b", "r"),
-            labels=("axis 0", "axis 1", "axis 2"),
-            title="Plane"
-            + str(label)
-            + " after edge removal\nPoints number="
-            + str(len(plane_indices[0])),
-        )
-    print(
-        "Plane ", label, ", ", str(len(plane_indices[0])), "points after removing edges"
-    )
-
-    ##############################################################################
-    # calculate the angle between the plane normal and the measurement direction #
-    ##############################################################################
-    # correct plane_normal for the eventual anisotropic voxel size
-    plane_normal = np.array(
-        [
-            plane_normal[0] * 2 * np.pi / voxel_size[0],
-            plane_normal[1] * 2 * np.pi / voxel_size[1],
-            plane_normal[2] * 2 * np.pi / voxel_size[2],
-        ]
-    )
-    plane_normal = plane_normal / np.linalg.norm(plane_normal)
-
-    # check where is the measurement direction
-    if projection_axis == 0:  # q aligned along the 1st axis
-        ref_axis = np.array([1, 0, 0])
-    elif projection_axis == 1:  # q aligned along the 2nd axis
-        ref_axis = np.array([0, 1, 0])
-    elif projection_axis == 2:  # q aligned along the 3rd axis
-        ref_axis = np.array([0, 0, 1])
-    else:
-        print("projection_axis should be a basis axis of the reconstructed array")
-        sys.exit()
-
-    # calculate the angle of the plane normal to the measurement direction,
-    # which is aligned along projection_axis
-    angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
-    print(
-        f"Angle between plane {label} and "
-        f"the measurement direction = {angle_plane:.2f} degrees"
-    )
-    # update the dictionnary
-    summary_dict[label] = {
-        "angle_plane": angle_plane,
-        "plane_coeffs": coeffs,
-        "plane_normal": plane_normal,
-        "plane_indices": plane_indices,
-    }
-
-del support, all_planes
-gc.collect()
-
-#################################################
-# look for voxels attributed to multiple facets #
-#################################################
-# full_indices is a list a tuples, each tuple being a point (z, y, x)
-full_indices = [
-    list(
-        zip(
-            summary_dict[label]["plane_indices"][0],
-            summary_dict[label]["plane_indices"][1],
-            summary_dict[label]["plane_indices"][2],
-        )
-    )[point]
-    for label in summary_dict
-    for point in range(
-        len(
-            list(
-                zip(
-                    summary_dict[label]["plane_indices"][0],
-                    summary_dict[label]["plane_indices"][1],
-                    summary_dict[label]["plane_indices"][2],
-                )
-            )
-        )
-    )
-]
-# count the number of times each point appears in the list
-counter_dict = collections.Counter(full_indices)
-
-# creates the list of duplicated voxels, these will be set to the background later on
-duplicates = [key for key, value in counter_dict.items() if value > 1]
-
-# modify the structure of the list so that it can be directly
-# used for array indexing (like the output of np.nonzero)
-ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
-ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
-ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])
-duplicates = (ind_0, ind_1, ind_2)
-
-################################
-# update the log and VTK files #
-################################
-print("\nFiltering out voxels attributed to multiple facets")
-print(f"{len(duplicates[0])} points attributed to multiple facets will be removed")
-for label in summary_dict:
-    plane = np.zeros((nz, ny, nx), dtype=int)
-    plane[summary_dict[label]["plane_indices"]] = 1
-    number_before = (plane == 1).sum()
-    # remove voxels attributed to multiple facets
-    plane[duplicates] = 0
-    plane_indices = np.nonzero(plane)
-
-    nb_points = len(plane_indices[0])
-    if nb_points == 0:  # no point belongs to the support
-        print("Plane ", label, " , no point remaining after checking for duplicates")
-        continue
-    print(
-        "Plane ",
-        label,
-        " : {0} points before, {1} points after checking for duplicates".format(
-            number_before, nb_points
-        ),
-    )
-
-    surf0, surf1, surf2 = fu.surface_indices(
-        surface=surface, plane_indices=plane_indices, margin=3
-    )
-    gu.scatter_plot_overlaid(
-        arrays=(
-            np.asarray(plane_indices).T,
-            np.concatenate(
-                (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
-                axis=1,
-            ),
-        ),
-        markersizes=(8, 2),
-        markercolors=("b", "r"),
-        labels=("axis 0", "axis 1", "axis 2"),
-        title="Final plane"
-        + str(label)
-        + " after checking for duplicates\nPoints number="
-        + str(nb_points),
-    )
-
     fu.update_logfile(
-        support=plane,
+        support=surface,
         strain_array=strain,
         summary_file=summary_file,
         allpoints_file=allpoints_file,
-        label=label,
-        angle_plane=summary_dict[label]["angle_plane"],
-        plane_coeffs=summary_dict[label]["plane_coeffs"],
-        plane_normal=summary_dict[label]["plane_normal"],
+        label="surface",
     )
 
-    # update vti file
-    plane_array = np.transpose(np.flip(plane, 2)).reshape(
-        plane.size
-    )  # VTK axis 2 is flipped
-    plane_array = numpy_support.numpy_to_vtk(plane_array)
-    pd.AddArray(plane_array)
-    pd.GetArray(index_vti).SetName("plane_" + str(label))
-    pd.Update()
-    index_vti = index_vti + 1
+    fu.update_logfile(
+        support=edges,
+        strain_array=strain,
+        summary_file=summary_file,
+        allpoints_file=allpoints_file,
+        label="edges",
+    )
 
-##########################
-# update and close files #
-##########################
-summary_file.write(
-    "\n" + "Isosurface value" + "\t" "{0: <10}".format(str(support_threshold))
-)
-allpoints_file.write(
-    "\n" + "Isosurface value" + "\t" "{0: <10}".format(str(support_threshold))
-)
-summary_file.close()
-allpoints_file.close()
+    fu.update_logfile(
+        support=corners,
+        strain_array=strain,
+        summary_file=summary_file,
+        allpoints_file=allpoints_file,
+        label="corners",
+    )
+
+    del corners
+    gc.collect()
+
+    ###############################################################################
+    # Iterate over the planes to find the corresponding surface facet             #
+    # Effect of smoothing: the meshed support is smaller than the initial support #
+    ###############################################################################
+    summary_dict = {}
+    for label in unique_labels:
+        print("\nPlane", label)
+        # raw fit including all points
+        plane = np.copy(all_planes)
+        plane[plane != label] = 0
+        plane[plane == label] = 1
+        if plane[plane == 1].sum() == 0:  # no points on the plane
+            print("Raw fit: no points for plane", label)
+            continue
+        ################################################################
+        # fit a plane to the voxels isolated by watershed segmentation #
+        ################################################################
+        # Why not using directly the centroid to find plane equation?
+        # Because it does not distinguish pixels coming from
+        # different but parallel facets
+        coeffs, plane_indices, errors, stop = fu.fit_plane(
+            plane=plane, label=label, debugging=debug
+        )
+        if stop:
+            print("No points remaining after raw fit for plane", label)
+            continue
+
+        # update plane by filtering out pixels too far from the fit plane
+        plane, stop = fu.distance_threshold(
+            fit=coeffs,
+            indices=plane_indices,
+            plane_shape=plane.shape,
+            max_distance=max_distance_plane,
+        )
+        grown_points = plane[plane == 1].sum().astype(int)
+        if stop:  # no points on the plane
+            print("Refined fit: no points for plane", label)
+            continue
+        print(
+            "Plane",
+            label,
+            ", ",
+            str(grown_points),
+            "points after checking distance to plane",
+        )
+        plane_indices = np.nonzero(plane)  # plane_indices is a tuple of 3 arrays
+
+        # check that the plane normal is not flipped using
+        # the support gradient at the center of mass of the facet
+        zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+        mean_gradient = fu.surface_gradient(
+            (zcom_facet, ycom_facet, xcom_facet), support=support
+        )[0]
+        plane_normal = np.array(
+            [coeffs[0], coeffs[1], coeffs[2]]
+        )  # normal is [a, b, c] if ax+by+cz+d=0
+        plane_normal = plane_normal / np.linalg.norm(plane_normal)
+        if (
+            np.dot(plane_normal, mean_gradient) < 0
+        ):  # normal is in the reverse direction
+            print("Flip normal direction plane", str(label))
+            plane_normal = -1 * plane_normal
+            coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
+
+        #########################################################
+        # Look for the surface: correct for the offset between  #
+        # the plane equation and the outer shell of the support #
+        #########################################################
+        # crop the support to a small ROI included in the plane box
+        surf0, surf1, surf2 = fu.surface_indices(
+            surface=surface, plane_indices=plane_indices, margin=3
+        )
+        if debug:
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane" + str(label) + " before shifting",
+            )
+
+        # find the direction in which the plane should be shifted to cross the surface
+        dist = np.zeros(len(surf0))
+        for point, _ in enumerate(surf0):
+            dist[point] = (
+                coeffs[0] * surf0[point]
+                + coeffs[1] * surf1[point]
+                + coeffs[2] * surf2[point]
+                + coeffs[3]
+            ) / np.linalg.norm(plane_normal)
+        mean_dist = dist.mean()
+        print(
+            "Mean distance of plane ",
+            label,
+            " to outer shell = " + str("{:.2f}".format(mean_dist)) + " pixels",
+        )
+
+        # offset the plane by mean_dist/2 and see if the plane is closer to
+        # the surface or went in the wrong direction
+        dist = np.zeros(len(surf0))
+        offset = mean_dist / 2
+
+        for point, _ in enumerate(surf0):
+            dist[point] = (
+                coeffs[0] * surf0[point]
+                + coeffs[1] * surf1[point]
+                + coeffs[2] * surf2[point]
+                + coeffs[3]
+                - offset
+            ) / np.linalg.norm(plane_normal)
+        new_dist = dist.mean()
+        print(
+            "<distance> of plane ",
+            label,
+            " to outer shell after offsetting by mean_distance/2 = "
+            + str("{:.2f}".format(new_dist))
+            + " pixels",
+        )
+        # these directions are for a mesh smaller than the support
+        step_shift = 0.5  # will scan with subpixel step through the crystal
+        # in order to not miss voxels
+        if mean_dist * new_dist < 0:  # crossed the support surface, correct direction
+            step_shift = np.sign(mean_dist) * step_shift
+        elif (
+            abs(new_dist) - abs(mean_dist) < 0
+        ):  # moving towards the surface, correct direction
+            step_shift = np.sign(mean_dist) * step_shift
+        else:  # moving away from the surface, wrong direction
+            step_shift = -1 * np.sign(mean_dist) * step_shift
+
+        ##############################################
+        # shift the fit plane along its normal until #
+        # the normal is crossed and go back one step #
+        ##############################################
+        total_offset = fu.find_facet(
+            refplane_indices=plane_indices,
+            surf_indices=(surf0, surf1, surf2),
+            original_shape=surface.shape,
+            step_shift=step_shift,
+            plane_label=label,
+            plane_coeffs=coeffs,
+            min_points=grown_points / 5,
+            debugging=debug,
+        )
+
+        # correct the offset of the fit plane to match the surface
+        coeffs = list(coeffs)
+        coeffs[3] = coeffs[3] - total_offset
+        # shift plane indices
+        plane_newindices0, plane_newindices1, plane_newindices2 = fu.offset_plane(
+            indices=plane_indices, offset=total_offset, plane_normal=plane_normal
+        )
+
+        plane = np.zeros(surface.shape)
+        plane[plane_newindices0, plane_newindices1, plane_newindices2] = 1
+
+        # use only pixels belonging to the outer shell of the support
+        plane = plane * surface
+
+        if debug:
+            # plot plane points overlaid with the support
+            plane_indices = np.nonzero(plane == 1)
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " after finding the surface\n"
+                + "Points number="
+                + str(len(plane_indices[0])),
+            )
+
+        if plane[plane == 1].sum() == 0:  # no point belongs to the support
+            print("Plane ", label, " , no point belongs to support")
+            continue
+
+        #################################
+        # grow the facet on the surface #
+        #################################
+        print("Growing the facet at the surface")
+        iterate = 0
+        while stop == 0:
+            previous_nb = plane[plane == 1].sum()
+            plane, stop = fu.grow_facet(
+                fit=coeffs,
+                plane=plane,
+                label=label,
+                support=support,
+                max_distance=1.5 * max_distance_plane,
+                debugging=debug,
+            )
+            # here the distance threshold is larger in order to reach
+            # voxels missed by the first plane fit when rounding vertices to integer.
+            # Anyway we intersect it with the surface therefore it can not go crazy.
+            plane_indices = np.nonzero(plane)
+            iterate = iterate + 1
+            plane = (
+                plane * surface
+            )  # use only pixels belonging to the outer shell of the support
+            if plane[plane == 1].sum() == previous_nb:
+                print("Growth: maximum size reached")
+                break
+            if iterate == 50:  # it is likely that we are stuck in an infinite loop
+                # after this number of iterations
+                print("Growth: maximum iteration number reached")
+                break
+        grown_points = plane[plane == 1].sum().astype(int)
+        print(
+            "Plane ",
+            label,
+            ", ",
+            str(grown_points),
+            "points after growing facet at the surface",
+        )
+
+        if debug:
+            plane_indices = np.nonzero(plane == 1)
+            surf0, surf1, surf2 = fu.surface_indices(
+                surface=surface, plane_indices=plane_indices, margin=3
+            )
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " after 1st growth at the surface\n iteration"
+                + str(iterate)
+                + "- Points number="
+                + str(len(plane_indices[0])),
+            )
+
+        ################################################################
+        # refine plane fit, now we are sure that we are at the surface #
+        ################################################################
+        coeffs, plane_indices, errors, stop = fu.fit_plane(
+            plane=plane, label=label, debugging=debug
+        )
+        if stop:
+            print("No points remaining after refined fit for plane", label)
+            continue
+
+        if debug:
+            surf0, surf1, surf2 = fu.surface_indices(
+                surface=surface, plane_indices=plane_indices, margin=3
+            )
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " after refined fit at surface\n iteration"
+                + str(iterate)
+                + "- Points number="
+                + str(len(plane_indices[0])),
+            )
+
+        # update plane by filtering out pixels too far from the fit plane
+        plane, stop = fu.distance_threshold(
+            fit=coeffs,
+            indices=plane_indices,
+            plane_shape=plane.shape,
+            max_distance=max_distance_plane,
+        )
+        if stop:  # no points on the plane
+            print("Refined fit: no points for plane", label)
+            continue
+        print(
+            "Plane",
+            label,
+            ", ",
+            str(plane[plane == 1].sum()),
+            "points after refined fit",
+        )
+        plane_indices = np.nonzero(plane)
+
+        if debug:
+            surf0, surf1, surf2 = fu.surface_indices(
+                surface=surface, plane_indices=plane_indices, margin=3
+            )
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " after distance threshold at surface\n"
+                + "Points number="
+                + str(len(plane_indices[0])),
+            )
+
+        # check that the plane normal is not flipped using the support gradient
+        # at the center of mass of the facet
+        zcom_facet, ycom_facet, xcom_facet = center_of_mass(plane)
+        mean_gradient = fu.surface_gradient(
+            (zcom_facet, ycom_facet, xcom_facet), support=support
+        )[0]
+        plane_normal = np.array(
+            [coeffs[0], coeffs[1], coeffs[2]]
+        )  # normal is [a, b, c] if ax+by+cz+d=0
+        plane_normal = plane_normal / np.linalg.norm(plane_normal)
+        if (
+            np.dot(plane_normal, mean_gradient) < 0
+        ):  # normal is in the reverse direction
+            print("Flip normal direction plane", str(label))
+            plane_normal = -1 * plane_normal
+            coeffs = (-coeffs[0], -coeffs[1], -coeffs[2], -coeffs[3])
+
+        ############################################
+        # final growth of the facet on the surface #
+        ############################################
+        print("Final growth of the facet")
+        iterate = 0
+        while stop == 0:
+            previous_nb = plane[plane == 1].sum()
+            plane, stop = fu.grow_facet(
+                fit=coeffs,
+                plane=plane,
+                label=label,
+                support=support,
+                max_distance=1.5 * max_distance_plane,
+                debugging=debug,
+            )
+            plane = (
+                plane * surface
+            )  # use only pixels belonging to the outer shell of the support
+            iterate = iterate + 1
+            if plane[plane == 1].sum() == previous_nb:
+                print("Growth: maximum size reached")
+                break
+            if iterate == 50:  # it is likely that we are stuck in an infinite loop
+                # after this number of iterations
+                print("Growth: maximum iteration number reached")
+                break
+        grown_points = plane[plane == 1].sum().astype(int)
+        # plot plane points overlaid with the support
+        print(
+            "Plane ",
+            label,
+            ", ",
+            str(grown_points),
+            "points after the final growth of the facet",
+        )
+
+        if debug:
+            plane_indices = np.nonzero(plane)
+            surf0, surf1, surf2 = fu.surface_indices(
+                surface=surface, plane_indices=plane_indices, margin=3
+            )
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " final growth at the surface\nPoints number="
+                + str(len(plane_indices[0])),
+            )
+
+        #####################################
+        # remove point belonging to an edge #
+        #####################################
+        plane[np.nonzero(edges)] = 0
+        plane_indices = np.nonzero(plane)
+        if debug:
+            surf0, surf1, surf2 = fu.surface_indices(
+                surface=surface, plane_indices=plane_indices, margin=3
+            )
+            gu.scatter_plot_overlaid(
+                arrays=(
+                    np.asarray(plane_indices).T,
+                    np.concatenate(
+                        (
+                            surf0[:, np.newaxis],
+                            surf1[:, np.newaxis],
+                            surf2[:, np.newaxis],
+                        ),
+                        axis=1,
+                    ),
+                ),
+                markersizes=(8, 2),
+                markercolors=("b", "r"),
+                labels=("axis 0", "axis 1", "axis 2"),
+                title="Plane"
+                + str(label)
+                + " after edge removal\nPoints number="
+                + str(len(plane_indices[0])),
+            )
+        print(
+            "Plane ",
+            label,
+            ", ",
+            str(len(plane_indices[0])),
+            "points after removing edges",
+        )
+
+        ##############################################################################
+        # calculate the angle between the plane normal and the measurement direction #
+        ##############################################################################
+        # correct plane_normal for the eventual anisotropic voxel size
+        plane_normal = np.array(
+            [
+                plane_normal[0] * 2 * np.pi / voxel_size[0],
+                plane_normal[1] * 2 * np.pi / voxel_size[1],
+                plane_normal[2] * 2 * np.pi / voxel_size[2],
+            ]
+        )
+        plane_normal = plane_normal / np.linalg.norm(plane_normal)
+
+        # check where is the measurement direction
+        if projection_axis == 0:  # q aligned along the 1st axis
+            ref_axis = np.array([1, 0, 0])
+        elif projection_axis == 1:  # q aligned along the 2nd axis
+            ref_axis = np.array([0, 1, 0])
+        elif projection_axis == 2:  # q aligned along the 3rd axis
+            ref_axis = np.array([0, 0, 1])
+        else:
+            print("projection_axis should be a basis axis of the reconstructed array")
+            sys.exit()
+
+        # calculate the angle of the plane normal to the measurement direction,
+        # which is aligned along projection_axis
+        angle_plane = 180 / np.pi * np.arccos(np.dot(ref_axis, plane_normal))
+        print(
+            f"Angle between plane {label} and "
+            f"the measurement direction = {angle_plane:.2f} degrees"
+        )
+        # update the dictionnary
+        summary_dict[label] = {
+            "angle_plane": angle_plane,
+            "plane_coeffs": coeffs,
+            "plane_normal": plane_normal,
+            "plane_indices": plane_indices,
+        }
+
+    del support, all_planes
+    gc.collect()
+
+    #################################################
+    # look for voxels attributed to multiple facets #
+    #################################################
+    # full_indices is a list a tuples, each tuple being a point (z, y, x)
+    full_indices = [
+        list(
+            zip(
+                summary_dict[label]["plane_indices"][0],
+                summary_dict[label]["plane_indices"][1],
+                summary_dict[label]["plane_indices"][2],
+            )
+        )[point]
+        for label in summary_dict
+        for point in range(
+            len(
+                list(
+                    zip(
+                        summary_dict[label]["plane_indices"][0],
+                        summary_dict[label]["plane_indices"][1],
+                        summary_dict[label]["plane_indices"][2],
+                    )
+                )
+            )
+        )
+    ]
+    # count the number of times each point appears in the list
+    counter_dict = collections.Counter(full_indices)
+
+    # creates the list of duplicated voxels,
+    # these will be set to the background later on
+    duplicates = [key for key, value in counter_dict.items() if value > 1]
+
+    # modify the structure of the list so that it can be directly
+    # used for array indexing (like the output of np.nonzero)
+    ind_0 = np.asarray([duplicates[point][0] for point in range(len(duplicates))])
+    ind_1 = np.asarray([duplicates[point][1] for point in range(len(duplicates))])
+    ind_2 = np.asarray([duplicates[point][2] for point in range(len(duplicates))])
+    duplicates = (ind_0, ind_1, ind_2)
+
+    ################################
+    # update the log and VTK files #
+    ################################
+    print("\nFiltering out voxels attributed to multiple facets")
+    print(f"{len(duplicates[0])} points attributed to multiple facets will be removed")
+    for label in summary_dict:
+        plane = np.zeros((nz, ny, nx), dtype=int)
+        plane[summary_dict[label]["plane_indices"]] = 1
+        number_before = (plane == 1).sum()
+        # remove voxels attributed to multiple facets
+        plane[duplicates] = 0
+        plane_indices = np.nonzero(plane)
+
+        nb_points = len(plane_indices[0])
+        if nb_points == 0:  # no point belongs to the support
+            print(
+                "Plane ", label, " , no point remaining after checking for duplicates"
+            )
+            continue
+        print(
+            "Plane ",
+            label,
+            " : {0} points before, {1} points after checking for duplicates".format(
+                number_before, nb_points
+            ),
+        )
+
+        surf0, surf1, surf2 = fu.surface_indices(
+            surface=surface, plane_indices=plane_indices, margin=3
+        )
+        gu.scatter_plot_overlaid(
+            arrays=(
+                np.asarray(plane_indices).T,
+                np.concatenate(
+                    (surf0[:, np.newaxis], surf1[:, np.newaxis], surf2[:, np.newaxis]),
+                    axis=1,
+                ),
+            ),
+            markersizes=(8, 2),
+            markercolors=("b", "r"),
+            labels=("axis 0", "axis 1", "axis 2"),
+            title="Final plane"
+            + str(label)
+            + " after checking for duplicates\nPoints number="
+            + str(nb_points),
+        )
+
+        fu.update_logfile(
+            support=plane,
+            strain_array=strain,
+            summary_file=summary_file,
+            allpoints_file=allpoints_file,
+            label=label,
+            angle_plane=summary_dict[label]["angle_plane"],
+            plane_coeffs=summary_dict[label]["plane_coeffs"],
+            plane_normal=summary_dict[label]["plane_normal"],
+        )
+
+        # update vti file
+        plane_array = np.transpose(np.flip(plane, 2)).reshape(
+            plane.size
+        )  # VTK axis 2 is flipped
+        plane_array = numpy_support.numpy_to_vtk(plane_array)
+        pd.AddArray(plane_array)
+        pd.GetArray(index_vti).SetName("plane_" + str(label))
+        pd.Update()
+        index_vti = index_vti + 1
+
+    ################
+    # update files #
+    ################
+    summary_file.write(
+        "\n" + "Isosurface value" + "\t" "{0: <10}".format(str(support_threshold))
+    )
+    allpoints_file.write(
+        "\n" + "Isosurface value" + "\t" "{0: <10}".format(str(support_threshold))
+    )
 
 # export data to file
 writer = vtk.vtkXMLImageDataWriter()
