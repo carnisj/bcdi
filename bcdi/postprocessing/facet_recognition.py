@@ -1333,7 +1333,7 @@ def surface_gradient(points, support, width=2):
     if not isinstance(points, list):
         points = [points]
 
-    for idx, point in enumerate(points):
+    for _, point in enumerate(points):
         # round the point to integer numbers
         point = [int(np.rint(point)) for _ in range(3)]
 
