@@ -59,6 +59,8 @@ corr_roi = None
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
 output_shape = (250, 1024, 800)
 # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+apply_fft_constraint = True  # set to True to enforce the constraint on the FFT shape
+# for phase retrieval, output_shape may be overriden.
 crop_center = None  # [z, y, x] pixels position in the original array
 # of the center of the cropped output
 # if None, it will be set to the center of the original array
@@ -97,7 +99,12 @@ if type(output_shape) is tuple:
     output_shape = list(output_shape)
 if len(output_shape) != 3:
     raise ValueError("output_shape should be a list or tuple of three numbers")
-
+if apply_fft_constraint:
+    output_shape = util.smaller_primes(
+        output_shape,
+        maxprime=7,
+        required_dividers=(2,)
+        )
 if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
