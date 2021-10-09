@@ -423,7 +423,7 @@ class Diffractometer(ABC):
      'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
     :param kwargs:
      - 'default_offsets': tuple, default sample offsets of the diffractometer. It needs
-       to be implemented as a class parameter in the child class if necessary. See an
+       to be implemented as a class attribute in the child class if necessary. See an
        example in DiffractometerP10
 
     """
