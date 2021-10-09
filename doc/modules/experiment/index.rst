@@ -6,9 +6,6 @@
 :mod:`bcdi.experiment`: Description of the experimental setup
 =============================================================
 
-Description
------------
-
 This module provides classes and methods for the definition of the experimental setup.
 The following classes are implemented:
 
@@ -57,6 +54,18 @@ The geometry of the following beamlines is implemented:
  * NANOMAX (MAX IV)
  * 34ID-C (APS): only for postprocessing
 
+The following detectors are implemented:
+
+ * Maxipix
+ * Timepix
+ * Merlin
+ * Eiger2M
+ * Eiger4M
+ * Dummy (user-defined pixel size and pixel number)
+
+beamline
+^^^^^^^^
+
 .. mermaid::
   :align: center
 
@@ -73,30 +82,15 @@ The geometry of the following beamlines is implemented:
     Beamline <|-- BeamlineCRISTAL
     Beamline <|-- BeamlineNANOMAX
 
-.. mermaid::
-  :align: center
 
-  classDiagram
-    class Diffractometer{
-      +tuple sample_offsets
-  }
-    ABC <|-- Diffractometer
-    Diffractometer <|-- DiffractometerID01
-    Diffractometer <|-- DiffractometerSIXS
-    Diffractometer <|-- Diffractometer34ID
-    Diffractometer <|-- DiffractometerP10
-    DiffractometerP10 <|-- DiffractometerP10SAXS
-    Diffractometer <|-- DiffractometerCRISTAL
-    Diffractometer <|-- DiffractometerNANOMAX
+API Reference
+-------------
 
-The following detectors are implemented:
+.. automodule:: bcdi.experiment.beamline
+   :members:
 
- * Maxipix
- * Timepix
- * Merlin
- * Eiger2M
- * Eiger4M
- * Dummy (user-defined pixel size and pixel number)
+detector
+^^^^^^^^
 
 .. mermaid::
   :align: center
@@ -116,20 +110,30 @@ The following detectors are implemented:
 API Reference
 -------------
 
-beamline
-^^^^^^^^
-
-.. automodule:: bcdi.experiment.beamline
-   :members:
-
-detector
-^^^^^^^^
-
 .. automodule:: bcdi.experiment.detector
     :members:
 
 diffractometer
 ^^^^^^^^^^^^^^
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Diffractometer{
+      +tuple sample_offsets
+  }
+    ABC <|-- Diffractometer
+    Diffractometer <|-- DiffractometerID01
+    Diffractometer <|-- DiffractometerSIXS
+    Diffractometer <|-- Diffractometer34ID
+    Diffractometer <|-- DiffractometerP10
+    DiffractometerP10 <|-- DiffractometerP10SAXS
+    Diffractometer <|-- DiffractometerCRISTAL
+    Diffractometer <|-- DiffractometerNANOMAX
+
+API Reference
+-------------
 
 .. automodule:: bcdi.experiment.diffractometer
     :members:
@@ -137,11 +141,23 @@ diffractometer
 rotation_matrix
 ^^^^^^^^^^^^^^^
 
+This class is used to define 3D rotation matrices.
+
+API Reference
+-------------
+
 .. automodule:: bcdi.experiment.rotation_matrix
     :members:
 
 setup
 ^^^^^
+
+This class is the "manager" or public interface of the analysis workflow. Access to
+the instances of the child classes inheriting from Beamline, Diffractometer and Detector
+is realized through Setup.
+
+API Reference
+-------------
 
 .. automodule:: bcdi.experiment.setup
    :members:
