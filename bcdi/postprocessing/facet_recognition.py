@@ -1123,35 +1123,32 @@ def stereographic_proj(
         (u_grid, v_grid),
         method="linear",
     )  # N
-    density_south = (
-        density_south / density_south[density_south > 0].max() * 10000
-    )  # normalize for plotting
-    density_north = (
-        density_north / density_north[density_north > 0].max() * 10000
-    )  # normalize for plotting
+
+    # normalize for plotting
+    density_south = density_south / density_south[density_south > 0].max() * 10000
+    density_north = density_north / density_north[density_north > 0].max() * 10000
 
     if save_txt:
         # save metric coordinates in text file
         density_south[np.isnan(density_south)] = 0.0
         density_north[np.isnan(density_north)] = 0.0
-        fichier = open(savedir + "CDI_poles.dat", "w")
-        for ii in range(len(v_grid)):
-            for jj in range(len(u_grid)):
-                fichier.write(
-                    str(v_grid[ii, 0])
-                    + "\t"
-                    + str(u_grid[0, jj])
-                    + "\t"
-                    + str(density_south[ii, jj])
-                    + "\t"
-                    + str(v_grid[ii, 0])
-                    + "\t"
-                    + str(u_grid[0, jj])
-                    + "\t"
-                    + str(density_north[ii, jj])
-                    + "\n"
-                )
-        fichier.close()
+        with open(savedir + "CDI_poles.dat", "w") as file:
+            for ii in range(len(v_grid)):
+                for jj in range(len(u_grid)):
+                    file.write(
+                        str(v_grid[ii, 0])
+                        + "\t"
+                        + str(u_grid[0, jj])
+                        + "\t"
+                        + str(density_south[ii, jj])
+                        + "\t"
+                        + str(v_grid[ii, 0])
+                        + "\t"
+                        + str(u_grid[0, jj])
+                        + "\t"
+                        + str(density_north[ii, jj])
+                        + "\n"
+                    )
 
     # inverse densities for watershed segmentation
     density_south = -1 * density_south
