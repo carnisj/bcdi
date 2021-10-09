@@ -105,6 +105,8 @@ if apply_fft_constraint:
         maxprime=7,
         required_dividers=(2,)
         )
+    print("Checking that output_shape fits FFT shape requirements for phase retrieval, "
+          f"output_shape={output_shape}")
 if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
@@ -143,7 +145,7 @@ else:
 # load the reference scan #
 ###########################
 plt.ion()
-print(scans)
+print(f"Scan list: {scans}")
 samplename = (
     sample_name[reference_scan] + "_" + str("{:05d}").format(scans[reference_scan])
 )
