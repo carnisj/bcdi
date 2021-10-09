@@ -30,9 +30,6 @@ import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
-plt.switch_backend("Qt5Agg")
-# "Qt5Agg" or "Qt4Agg" depending on the version of Qt installer, bug with Tk
-
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
 filter the data.
@@ -50,12 +47,12 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 'use_rawdata' option
 """
 
-scans = 76  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 86  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
+root_folder = "C:/Users/Jerome/Documents/data/MIR_radial_scan/"
 # folder of the experiment, where all scans are stored
 save_dir = root_folder + "test/"  # images will be saved here, leave it to None
 # otherwise
@@ -64,12 +61,12 @@ data_dirname = None  # leave None to use the beamline default,
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/
 # depending on the setting of use_rawdata)
-sample_name = "B15_syn_S1_2"  # str or list of str of sample names
+sample_name = "S"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 2, 2)  # binning to apply to the data
+binning = (1, 3, 3)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 bin_during_loading = False  # True to bin during loading, require less memory
 frames_pattern = None
@@ -79,10 +76,9 @@ frames_pattern = None
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = False  # True to interact with plots, False to close it automatically
-background_plot = (
-    "0.5"  # in level of grey in [0,1], 0 being dark. For visual comfort during masking
-)
+flag_interact = True  # True to interact with plots, False to close it automatically
+background_plot = "0.5"
+# in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
 #########################################################
@@ -121,14 +117,10 @@ medfilt_order = 7  # for custom median filter,
 # parameters used when reloading processed data #
 #################################################
 reload_previous = False  # True to resume a previous masking (load data and mask)
-reload_orthogonal = (
-    False  # True if the reloaded data is already intepolated in an orthonormal frame
-)
-preprocessing_binning = (
-    1,
-    1,
-    1,
-)  # binning factors in each dimension of the binned data to be reloaded
+reload_orthogonal = False
+# True if the reloaded data is already intepolated in an orthonormal frame
+preprocessing_binning = (1, 1, 1)
+# binning factors in each dimension of the binned data to be reloaded
 ##################
 # saving options #
 ##################
@@ -136,20 +128,19 @@ save_rawdata = False  # save also the raw data when use_rawdata is False
 save_to_npz = True  # True to save the processed data in npz format
 save_to_mat = False  # True to save also in .mat format
 save_to_vti = False  # save the orthogonalized diffraction pattern to VTK file
-save_asint = (
-    False  # if True, the result will be saved as an array of integers (save space)
-)
+save_asint = False
+# if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = (
-    "P10"  # name of the beamline, used for data loading and normalization by monitor
-)
+beamline = "ID01"
+# name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
 # 'NANOMAX', '34ID'
 actuators = None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
+# or to define a monitor different from "exp1" at ID01
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = True  # specific to series measurement at P10
 
@@ -158,16 +149,13 @@ custom_scan = False  # set it to True for a stack of images acquired without sca
 # there is no spec/log file available
 custom_images = [3]  # np.arange(11353, 11453, 1)
 # list of image numbers for the custom_scan, None otherwise
-custom_monitor = np.ones(
-    51
-)  # monitor values for normalization for the custom_scan, None otherwise
+custom_monitor = np.ones(51)
+# monitor values for normalization for the custom_scan, None otherwise
 
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
-specfile_name = ""
+specfile_name = "2021_04_10_093013_pt"
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or
 # None to use the one in the package folder
@@ -175,10 +163,9 @@ specfile_name = ""
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-linearity_func = (
-    None  # lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
-)
+detector = "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+linearity_func = None
+# lambda array_1d: (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
 # 5.067e-11*array_1d**2 - 6.022e-07*array_1d + 0.889)) # MIR
 # np.divide(array_1d, (1-array_1d*1.3e-6))  # Sarah_1
 # (array_1d*(7.484e-22*array_1d**4 - 3.447e-16*array_1d**3 +
@@ -190,7 +177,7 @@ x_bragg = 1577  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg = 833  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector = [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
+roi_detector = None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
@@ -202,10 +189,9 @@ photon_filter = "loading"  # 'loading' or 'postprocessing',
 background_file = None  # root_folder + 'background.npz'  # non empty file path or None
 hotpixels_file = None  # root_folder + 'hotpixels_cristal.npz'
 # root_folder + 'mask_merlin.npy'  # non empty file path or None
-flatfield_file = (
-    None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-)
-template_imagefile = "_master.h5"
+flatfield_file = None
+# root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
+template_imagefile = "data_mpx4_%05d.edf.gz"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -222,27 +208,20 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels
 ################################################################################
 use_rawdata = False  # False for using data gridded in laboratory frame
 # True for using data in detector frame
-interp_method = "linearization"  # 'xrayutilities' or 'linearization'
+interp_method = "xrayutilities"  # 'xrayutilities' or 'linearization'
 fill_value_mask = 0  # 0 (not masked) or 1 (masked).
 # It will define how the pixels outside of the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
 # phase retrieval converges better if the pixels are not masked (0 intensity
 # imposed). The data is by default set to 0 outside of the defined range.
-beam_direction = (
-    1,
-    0,
-    0,
-)  # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets = (
-    0,
-    0,
-    90,
-    0,
-)  # tuple of offsets in degrees of the sample for each sample circle (outer first).
+beam_direction = (1, 0, 0)
+# beam direction in the laboratory frame (downstream, vertical up, outboard)
+sample_offsets = None
+# tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-sdd = 1.84  # in m, sample to detector distance in m
-energy = 8170  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 1.03527  # in m, sample to detector distance in m
+energy = 13000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -259,34 +238,26 @@ custom_motors = None
 # parameters when orthogonalizing the data before     #
 # phasing  using the linearized transformation matrix #
 ######################################################
-align_q = True  # used only when interp_method is 'linearization',
+align_q = False  # used only when interp_method is 'linearization',
 # if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q = "y"  # q will be aligned along that axis
-outofplane_angle = (
-    42.6093  # detector angle in deg (rotation around x outboard, typically delta),
-)
+outofplane_angle = 42.6093
+# detector angle in deg (rotation around x outboard, typically delta),
+
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle = (
-    -0.5783
-)  # detector angle in deg(rotation around y vertical up, typically gamma),
+inplane_angle = -0.5783
+# detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
 # parameters when orthogonalizing the data before phasing  using xrayutilities #
 ################################################################################
 # xrayutilities uses the xyz crystal frame: for incident angle = 0,
 # x is downstream, y outboard, and z vertical up
-sample_inplane = (
-    1,
-    0,
-    0,
-)
+sample_inplane = (1, 0, 0)
 # sample inplane reference direction along the beam at 0 angles in xrayutilities frame
-sample_outofplane = (
-    0,
-    0,
-    1,
-)  # surface normal of the sample at 0 angles in xrayutilities frame
+sample_outofplane = (0, 0, 1)
+# surface normal of the sample at 0 angles in xrayutilities frame
 offset_inplane = 0  # outer detector angle offset as determined by
 # xrayutilities area detector initialization
 cch1 = 208  # direct beam vertical position in the full unbinned detector for
@@ -648,7 +619,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 logfile=logfile,
                 scan_number=scan_nb,
                 setup=setup,
-                follow_bragg=follow_bragg,
             )
             setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
             # override detector motor positions if the corrected values
@@ -894,7 +864,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     setup=setup,
                     frames_logical=frames_logical,
                     hxrd=hxrd,
-                    follow_bragg=follow_bragg,
                     debugging=debug,
                 )
             else:  # 'linearization'
@@ -910,7 +879,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     align_q=align_q,
                     reference_axis=axis_to_array_xyz[ref_axis_q],
                     debugging=debug,
-                    follow_bragg=follow_bragg,
                     fill_value=(0, fill_value_mask),
                 )
             nz, ny, nx = data.shape

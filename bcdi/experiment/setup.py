@@ -65,8 +65,6 @@ class Setup:
        to the number of elements in custom_images.
      - 'custom_motors': list of motor values when the scan does no follow
        the beamline's usual directory format.
-     - 'follow_bragg':bool, True when the detector is also scanned during energy scans
-       to follow the Bragg peak
      - 'sample_inplane': sample inplane reference direction along the beam at
        0 angles in xrayutilities frame (x is downstream, y outboard, and z vertical
        up at zero incident angle).
@@ -125,7 +123,6 @@ class Setup:
                 "offset_inplane",
                 "actuators",
                 "is_series",
-                "follow_bragg",
             },
             name="Setup.__init__",
         )
@@ -140,7 +137,6 @@ class Setup:
         self.custom_monitor = kwargs.get("custom_monitor")  # list or tuple
         self.custom_motors = kwargs.get("custom_motors")  # dictionnary
         self.actuators = kwargs.get("actuators", {})  # list or tuple
-        self.follow_bragg = kwargs.get("follow_bragg", False)  # boolean
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
         self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
@@ -588,7 +584,6 @@ class Setup:
             "sample_offsets_deg": self.diffractometer.sample_offsets,
             "direct_beam_pixel": self.direct_beam,
             "filtered_data": self.filtered_data,
-            "follow_bragg": self.follow_bragg,
             "custom_scan": self.custom_scan,
             "custom_images": self.custom_images,
             "actuators": self.actuators,
@@ -670,7 +665,6 @@ class Setup:
             f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
             f"filtered_data={self.filtered_data},\n"
-            f"follow_bragg={self.follow_bragg}, "
             f"custom_scan={self.custom_scan}, "
             f"custom_images={self.custom_images},\n"
             f"custom_monitor={self.custom_monitor},\n"
@@ -697,8 +691,6 @@ class Setup:
            In case of cropping/padding the number of frames changes. A frame whose
            index is set to 1 means that it is used, 0 means not used, -1 means padded
            (added) frame
-         - 'follow_bragg': True when in energy scans the detector was also
-           scanned to follow the Bragg peak
 
         :return:
          - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal
@@ -710,11 +702,6 @@ class Setup:
 
         """
         # check some parameters
-        follow_bragg = kwargs.get("follow_bragg", False)
-        if not isinstance(follow_bragg, bool):
-            raise TypeError(
-                "follow_bragg should be a boolean, got " f"{type(follow_bragg)}"
-            )
         frames_logical = kwargs.get("frames_logical")
         valid.valid_1d_array(
             frames_logical,
@@ -736,7 +723,6 @@ class Setup:
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
-            follow_bragg=follow_bragg,
         )
 
         # calculate q values

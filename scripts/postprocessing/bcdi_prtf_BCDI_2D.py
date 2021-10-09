@@ -74,8 +74,6 @@ actuators = {}
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series = False  # specific to series measurement at P10
 rocking_angle = "outofplane"  # "outofplane" or "inplane"
-follow_bragg = False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
 specfile_name = "alignment"
 # .spec for ID01, .fio for P10, alias_dict.txt for SIXS_2018,
 # not used for CRISTAL and SIXS_2019
@@ -369,7 +367,6 @@ else:
         hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan,
-        follow_bragg=follow_bragg,
     )
 
 if debug:

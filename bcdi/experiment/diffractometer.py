@@ -1727,8 +1727,6 @@ class DiffractometerID01(Diffractometer):
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
-         - 'follow_bragg': boolean, True for energy scans where the detector position
-           is changed during the scan to follow the Bragg peak.
 
         :return: a tuple of angular values in degrees, depending on stage_name:
 
@@ -1744,8 +1742,6 @@ class DiffractometerID01(Diffractometer):
         # load kwargs
         logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
-        follow_bragg = kwargs.get("follow_bragg", False)
-        valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
         # check some parameter
         valid.valid_item(
@@ -1759,7 +1755,6 @@ class DiffractometerID01(Diffractometer):
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
 
         # define the circles of interest for BCDI
@@ -1897,20 +1892,18 @@ class DiffractometerID01(Diffractometer):
         """
         Load the scan data and extract motor positions.
 
+        Stages names for data previous to ?2017? start with a capital letter.
+
         :param setup: an instance of the class Setup
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
-         - 'follow_bragg': boolean, True for energy scans where the detector position
-           is changed during the scan to follow the Bragg peak.
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
         logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
-        follow_bragg = kwargs.get("follow_bragg", False)
-        valid.valid_item(follow_bragg, allowed_types=bool, name="follow_bragg")
 
         energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
         old_names = False
@@ -1922,57 +1915,61 @@ class DiffractometerID01(Diffractometer):
             labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
 
             try:
-                nu = motor_values[motor_names.index("nu")]  # positioner
+                _ = motor_values[motor_names.index("nu")]  # positioner
             except ValueError:
                 print("'nu' not in the list, trying 'Nu'")
-                nu = motor_values[motor_names.index("Nu")]  # positioner
+                _ = motor_values[motor_names.index("Nu")]  # positioner
                 print("Defaulting to old ID01 motor names")
                 old_names = True
 
-            if not old_names:
-                mu = motor_values[motor_names.index("mu")]  # positioner
+            if old_names:
+                names_table = {
+                    "mu": "Mu",
+                    "eta": "Eta",
+                    "phi": "Phi",
+                    "nu": "Nu",
+                    "delta": "Delta",
+                    "energy": "Energy",
+                }
             else:
-                mu = motor_values[motor_names.index("Mu")]  # positioner
+                names_table = {
+                    "mu": "mu",
+                    "eta": "eta",
+                    "phi": "phi",
+                    "nu": "nu",
+                    "delta": "del",
+                    "energy": "energy",
+                }
 
-            if follow_bragg:
-                if not old_names:
-                    delta = labels_data[labels.index("del"), :]  # scanned
-                else:
-                    delta = labels_data[labels.index("Delta"), :]  # scanned
+            if names_table["mu"] in labels:
+                mu = labels_data[labels.index(names_table["mu"]), :]  # scanned
             else:
-                if not old_names:
-                    delta = motor_values[motor_names.index("del")]  # positioner
-                else:
-                    delta = motor_values[motor_names.index("Delta")]  # positioner
+                mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
 
-            if setup.rocking_angle == "outofplane":
-                if not old_names:
-                    eta = labels_data[labels.index("eta"), :]
-                    phi = motor_values[motor_names.index("phi")]
-                else:
-                    eta = labels_data[labels.index("Eta"), :]
-                    phi = motor_values[motor_names.index("Phi")]
-            elif setup.rocking_angle == "inplane":
-                if not old_names:
-                    phi = labels_data[labels.index("phi"), :]
-                    eta = motor_values[motor_names.index("eta")]
-                else:
-                    phi = labels_data[labels.index("Phi"), :]
-                    eta = motor_values[motor_names.index("Eta")]
-            elif setup.rocking_angle == "energy":
-                raw_energy = labels_data[labels.index("energy"), :]  # in kev, scanned
-                if not old_names:
-                    phi = motor_values[motor_names.index("phi")]  # positioner
-                    eta = motor_values[motor_names.index("eta")]  # positioner
-                else:
-                    phi = motor_values[motor_names.index("Phi")]  # positioner
-                    eta = motor_values[motor_names.index("Eta")]  # positioner
+            if names_table["eta"] in labels:
+                eta = labels_data[labels.index(names_table["eta"]), :]  # scanned
+            else:
+                eta = motor_values[motor_names.index(names_table["eta"])]  # positioner
+
+            if names_table["phi"] in labels:
+                phi = labels_data[labels.index(names_table["phi"]), :]  # scanned
+            else:
+                phi = motor_values[motor_names.index(names_table["phi"])]  # positioner
+
+            if names_table["delta"] in labels:
+                delta = labels_data[labels.index(names_table["delta"]), :]  # scanned
+            else:  # positioner
+                delta = motor_values[motor_names.index(names_table["delta"])]
+
+            if names_table["nu"] in labels:
+                nu = labels_data[labels.index(names_table["nu"]), :]  # scanned
+            else:  # positioner
+                nu = motor_values[motor_names.index(names_table["nu"])]
+
+            if names_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+                # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
-
-            else:
-                raise ValueError(
-                    "Invalid rocking angle ", setup.rocking_angle, "for ID01"
-                )
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
@@ -2009,22 +2006,24 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, scan_number, **kwargs):
+    def read_monitor(self, logfile, scan_number, actuators, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param logfile: the logfile created in Setup.create_logfile()
         :param scan_number: int, the scan number to load
+        :param actuators: dictionary defining the entries corresponding to actuators
+         in the spec file
         :return: the default monitor values
         """
-        monitor = self.read_device(
-            logfile=logfile, scan_number=scan_number, device_name="mon2"
-        )
-        if len(monitor) == 0:
+        monitor_name = actuators.get("monitor")
+        if monitor_name is None:
             monitor = self.read_device(
-                logfile=logfile,
-                scan_number=scan_number,
-                device_name="exp1",  # exp1 for old data at ID01
+                logfile=logfile, scan_number=scan_number, device_name="exp1"
+            )
+        else:
+            monitor = self.read_device(
+                logfile=logfile, scan_number=scan_number, device_name=monitor_name
             )
         return monitor
 

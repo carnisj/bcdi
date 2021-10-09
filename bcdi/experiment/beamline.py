@@ -359,9 +359,7 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def process_positions(
-        setup, logfile, nb_frames, scan_number, frames_logical=None, follow_bragg=False
-    ):
+    def process_positions(setup, logfile, nb_frames, scan_number, frames_logical=None):
         """
         Load and crop/pad motor positions depending on the current number of frames.
 
@@ -376,9 +374,6 @@ class Beamline(ABC):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
-
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
 
@@ -543,7 +538,6 @@ class BeamlineCRISTAL(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at CRISTAL.
@@ -559,15 +553,12 @@ class BeamlineCRISTAL(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -860,7 +851,6 @@ class BeamlineID01(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at ID01.
@@ -876,15 +866,12 @@ class BeamlineID01(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mu, eta, phi, nu, delta, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1176,7 +1163,6 @@ class BeamlineNANOMAX(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at NANOMAX.
@@ -1192,15 +1178,12 @@ class BeamlineNANOMAX(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         theta, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -1488,7 +1471,6 @@ class BeamlineP10(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at P10.
@@ -1504,15 +1486,12 @@ class BeamlineP10(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         mu, om, chi, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -2100,7 +2079,6 @@ class BeamlineSIXS(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at SIXS.
@@ -2116,15 +2094,12 @@ class BeamlineSIXS(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         beta, mu, gamma, delta, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
@@ -2363,7 +2338,6 @@ class Beamline34ID(Beamline):
         nb_frames,
         scan_number,
         frames_logical=None,
-        follow_bragg=False,
     ):
         """
         Load and crop/pad motor positions depending on the number of frames at 34ID-C.
@@ -2379,15 +2353,12 @@ class Beamline34ID(Beamline):
          In case of cropping/padding the number of frames changes. A frame whose
          index is set to 1 means that it is used, 0 means not used, -1 means padded
          (added) frame
-        :param follow_bragg: True when in energy scans the detector was also scanned
-         to follow the Bragg peak
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
         theta, phi, delta, gamma, energy = setup.diffractometer.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
-            follow_bragg=follow_bragg,
         )
         # first, remove the motor positions corresponding to deleted frames during data
         # loading (frames_logical = 0)
