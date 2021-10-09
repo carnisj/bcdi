@@ -8,7 +8,6 @@ API Reference:
 
    algorithms/index.rst
    experiment/index.rst
-   facet_recognition/index.rst
    graph/index.rst
    postprocessing/index.rst
    preprocessing/index.rst
