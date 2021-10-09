@@ -66,6 +66,8 @@ The following detectors are implemented:
 beamline
 ^^^^^^^^
 
+General organization of the module:
+
 .. mermaid::
   :align: center
 
@@ -82,15 +84,13 @@ beamline
     Beamline <|-- BeamlineCRISTAL
     Beamline <|-- BeamlineNANOMAX
 
-
-API Reference
--------------
-
 .. automodule:: bcdi.experiment.beamline
    :members:
 
 detector
 ^^^^^^^^
+
+General organization of the module:
 
 .. mermaid::
   :align: center
@@ -107,14 +107,13 @@ detector
     Detector <|-- Merlin
     Detector <|-- Dummy
 
-API Reference
--------------
-
 .. automodule:: bcdi.experiment.detector
     :members:
 
 diffractometer
 ^^^^^^^^^^^^^^
+
+General organization of the module:
 
 .. mermaid::
   :align: center
@@ -131,9 +130,6 @@ diffractometer
     DiffractometerP10 <|-- DiffractometerP10SAXS
     Diffractometer <|-- DiffractometerCRISTAL
     Diffractometer <|-- DiffractometerNANOMAX
-
-API Reference
--------------
 
 .. automodule:: bcdi.experiment.diffractometer
     :members:

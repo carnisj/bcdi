@@ -40,6 +40,9 @@ Setup instance.
   }
     ABC <|-- Beamline
 
+API Reference
+-------------
+
 """
 from abc import ABC, abstractmethod
 import h5py
