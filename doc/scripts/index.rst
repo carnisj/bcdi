@@ -249,7 +249,7 @@ bcdi_correct_angles_detector.py
 bcdi_facet_strain.py
 ^^^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../scripts/facet_recognition/bcdi_facet_strain.py
+.. literalinclude:: ../../scripts/postprocessing/bcdi_facet_strain.py
    :start-after: helptext
    :end-before: """
    :language: rst
@@ -273,7 +273,7 @@ bcdi_modes_decomposition.py
 bcdi_polarplot.py
 ^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../scripts/facet_recognition/bcdi_polarplot.py
+.. literalinclude:: ../../scripts/postprocessing/bcdi_polarplot.py
    :start-after: helptext
    :end-before: """
    :language: rst
