@@ -1157,16 +1157,16 @@ class Diffractometer(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_device(**kwargs):
+    def read_device(logfile, device_name, **kwargs):
         """
         Extract the device positions/values during a scan.
 
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': int, number of the scan
-          - 'device_name': str, name of the device
+          - 'scan_number': int, number of the scan (e.g. for ID01)
 
         :return: the positions/values of the device as a numpy 1D array
         """
@@ -2021,15 +2021,21 @@ class DiffractometerID01(Diffractometer):
         return mu, eta, phi, nu, delta, energy
 
     @staticmethod
-    def read_device(logfile, scan_number, device_name, **kwargs):
+    def read_device(logfile, device_name, **kwargs):
         """
         Extract the device positions/values during the scan at ID01 beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: number of the scan
         :param device_name: name of the device
+        :param kwargs
+         - 'scan_number': int, the scan number to load
+
         :return: the positions/values of the device as a numpy 1D array
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
         labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
         labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
@@ -3123,8 +3129,13 @@ class Diffractometer34ID(Diffractometer):
         return theta, phi, delta, gamma, setup.energy
 
     @staticmethod
-    def read_device(**kwargs):
-        """Extract the device positions/values during the scan at 34ID-C beamline."""
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at 34ID-C beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        """
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
 
     @staticmethod
