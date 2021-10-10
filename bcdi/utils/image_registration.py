@@ -616,8 +616,8 @@ def getimageregistration(array1, array2, precision=10):
     :param array1: the reference array
     :param array2: the array to register
     :param precision: subpixel precision of the registration. Images will be
-     registered to within 1/precision of a pixel.
-    :return: the list of shifts that needs to be applied to array2 in order to align it
+     registered to within 1/precision of a pixel
+    :return: the list of shifts that need to be applied to array2 in order to align it
      with array1 (no need to flip signs)
     """
     if array1.shape != array2.shape:
@@ -697,7 +697,9 @@ def get_shift(
      will be used to define a support. The center of mass will be calculated for that
      support instead of the modulus.
     :param verbose: True to print comment
-    :return: list of shifts, of length equal to the number of dimensions of the arrays
+    :return: list of shifts, of length equal to the number of dimensions of the arrays.
+     These are shifts that need to be applied to shifted_array in order to align it
+     with reference_array (no need to flip signs)
     """
     ##########################
     # check input parameters #
