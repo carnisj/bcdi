@@ -854,7 +854,7 @@ def shift_array(
     #########################
     # check some parameters #
     #########################
-    valid.valid_ndarray(array, ndim=3, name="array")
+    valid.valid_ndarray(array, ndim=(2, 3) , name="array")
     valid.valid_container(
         shift, container_types=(tuple, list), item_types=Real, name="shifts"
     )
@@ -887,7 +887,7 @@ def shift_array(
     return shifted_array
 
 
-def subpixel_shift(array, z_shift, y_shift, x_shift=0):
+def subpixel_shift(array, z_shift, y_shift, x_shift=None):
     """
     Shift array by the shift values.
 
@@ -903,7 +903,7 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
     valid.valid_ndarray(array, ndim=(2, 3), name="array")
     valid.valid_item(z_shift, allowed_types=float, name="z_shift")
     valid.valid_item(y_shift, allowed_types=float, name="y_shift")
-    valid.valid_item(x_shift, allowed_types=float, name="x_shift")
+    valid.valid_item(x_shift, allowed_types=float, allow_none=True, name="x_shift")
 
     # shift the array
     ndim = len(array.shape)
