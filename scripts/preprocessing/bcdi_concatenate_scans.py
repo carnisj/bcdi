@@ -102,7 +102,7 @@ if len(output_shape) != 3:
 if apply_fft_constraint:
     output_shape = util.smaller_primes(output_shape, maxprime=7, required_dividers=(2,))
     print(
-        "Checking that output_shape fits FFT shape requirements for phase retrieval, "
+        "\nChecking that output_shape fits FFT shape requirements for phase retrieval, "
         f"output_shape={output_shape}"
     )
 if isinstance(sample_name, (tuple, list)):
@@ -266,7 +266,7 @@ for idx, item in enumerate(scans):
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
     samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
-    print("\n Opening ", samplename)
+    print(f'\n{"#" * len(samplename)}\n' + samplename + "\n" + f'{"#" * len(samplename)}')
     data = np.load(
         root_folder + samplename + parent_folder + f"S{item}_pynx" + suffix[idx]
     )["data"]
