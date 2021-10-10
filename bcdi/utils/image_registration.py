@@ -816,8 +816,8 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
         old_y = np.arange(-nby // 2, nby // 2)
         old_x = np.arange(-nbx // 2, nbx // 2)
         myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
-        new_y = myy + shift[0]
-        new_x = myx + shift[1]
+        new_y = myy - shift[0]
+        new_x = myx - shift[1]
 
         # interpolate array
         rgi = RegularGridInterpolator(
