@@ -1218,7 +1218,7 @@ def make_support(
 
     # create the supports
     supports = []
-    for idx, array in enumerate(arrays):
+    for _, array in enumerate(arrays):
         support = np.zeros(array.shape)
         support[abs(array) > support_threshold * abs(array)] = 1
         supports.append(support)
