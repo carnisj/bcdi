@@ -1,6 +1,9 @@
 Future
 ------
 
+* move all functions related to dataset alignment in the module
+  ``utils.image_registration.py`` and create generic functions
+
 * add class diagrams in the documentation using sphinxcontrib-mermaid
 
 * Solve issues with numpy when building the documentation (enable *Use system packages*
