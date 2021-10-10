@@ -376,7 +376,8 @@ def getimageregistration(array1, array2, precision=10):
     :param array2: the array to register
     :param precision: subpixel precision of the registration. Images will be
      registered to within 1/precision of a pixel.
-    :return: the list of shifts
+    :return: the list of shifts that needs to be applied to array2 in order to align it
+     with array1 (no need to flip signs)
     """
     if array1.shape != array2.shape:
         raise ValueError("Arrays should have the same shape")
