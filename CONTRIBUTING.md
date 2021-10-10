@@ -54,8 +54,9 @@ branch.
 
 - Be sure that you are on your main branch: `git checkout main`
 - Fetch the most recent changes from remotes: `git fetch --all`
-- Merge the upstream changes into your own project: `git merge upstream/main` 
-- Push the changes to your fork on GitHub: `git push origin main`
+- Merge the upstream changes into your own project: `git rebase upstream/main` 
+- Push the changes to your fork on GitHub: `git push origin main` (if git complains
+  use the option `--force-with-lease`)
 
 ## 4. Work on your new feature and create a pull request
 
