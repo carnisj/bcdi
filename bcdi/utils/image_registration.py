@@ -368,80 +368,6 @@ def average_arrays(
     return avg_obj, avg_flag
 
 
-def getimageregistration(array1, array2, precision=10):
-    """
-    Calculate the registration (shift) between two arrays.
-
-    :param array1: the reference array
-    :param array2: the array to register
-    :param precision: subpixel precision of the registration. Images will be
-     registered to within 1/precision of a pixel.
-    :return: the list of shifts that needs to be applied to array2 in order to align it
-     with array1 (no need to flip signs)
-    """
-    if array1.shape != array2.shape:
-        raise ValueError("Arrays should have the same shape")
-    # 3D arrays
-    if len(array1.shape) == 3:
-        abs_array1 = np.abs(array1)
-        abs_array2 = np.abs(array2)
-        # compress array (sum) in each dimension, i.e. a bunch of 2D arrays
-        ft_array1_0 = fftn(
-            fftshift(np.sum(abs_array1, 0))
-        )  # need fftshift for wrap around
-        ft_array2_0 = fftn(fftshift(np.sum(abs_array2, 0)))
-        ft_array1_1 = fftn(fftshift(np.sum(abs_array1, 1)))
-        ft_array2_1 = fftn(fftshift(np.sum(abs_array2, 1)))
-        ft_array1_2 = fftn(fftshift(np.sum(abs_array1, 2)))
-        ft_array2_2 = fftn(fftshift(np.sum(abs_array2, 2)))
-
-        # calculate shift in each dimension, i.e. 2 estimates of shift
-        result = dft_registration(ft_array1_2, ft_array2_2, ups_factor=precision)
-        (
-            shiftx1,
-            shifty1,
-        ) = result[2:4]
-        result = dft_registration(ft_array1_1, ft_array2_1, ups_factor=precision)
-        (
-            shiftx2,
-            shiftz1,
-        ) = result[2:4]
-        result = dft_registration(ft_array1_0, ft_array2_0, ups_factor=precision)
-        (
-            shifty2,
-            shiftz2,
-        ) = result[2:4]
-
-        # average them
-        xshift = (shiftx1 + shiftx2) / 2
-        yshift = (shifty1 + shifty2) / 2
-        zshift = (shiftz1 + shiftz2) / 2
-        shift_list = xshift, yshift, zshift
-
-    # 2D arrays
-    elif len(array1.shape) == 2:
-        ft_array1 = fftn(array1)
-        ft_array2 = fftn(array2)
-        result = dft_registration(ft_array1, ft_array2, ups_factor=precision)
-        shift_list = tuple(result[2:])
-    else:
-        shift_list = None
-    return shift_list
-
-
-def index_max(mydata):
-    """Look for the data max and location."""
-    myamp = np.abs(mydata)
-    myamp_max = myamp.max()
-    idx = np.unravel_index(myamp.argmax(), mydata.shape)
-    return myamp_max, idx
-
-
-def index_max1(mydata):
-    """Look for the data maximum locations."""
-    return np.where(mydata == mydata.max())
-
-
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
     """
     Efficient subpixel image registration by cross-correlation.
@@ -683,6 +609,67 @@ def dftups(
     return np.dot(np.dot(kernel_row, array), kernel_column)
 
 
+def getimageregistration(array1, array2, precision=10):
+    """
+    Calculate the registration (shift) between two arrays.
+
+    :param array1: the reference array
+    :param array2: the array to register
+    :param precision: subpixel precision of the registration. Images will be
+     registered to within 1/precision of a pixel.
+    :return: the list of shifts that needs to be applied to array2 in order to align it
+     with array1 (no need to flip signs)
+    """
+    if array1.shape != array2.shape:
+        raise ValueError("Arrays should have the same shape")
+    # 3D arrays
+    if len(array1.shape) == 3:
+        abs_array1 = np.abs(array1)
+        abs_array2 = np.abs(array2)
+        # compress array (sum) in each dimension, i.e. a bunch of 2D arrays
+        ft_array1_0 = fftn(
+            fftshift(np.sum(abs_array1, 0))
+        )  # need fftshift for wrap around
+        ft_array2_0 = fftn(fftshift(np.sum(abs_array2, 0)))
+        ft_array1_1 = fftn(fftshift(np.sum(abs_array1, 1)))
+        ft_array2_1 = fftn(fftshift(np.sum(abs_array2, 1)))
+        ft_array1_2 = fftn(fftshift(np.sum(abs_array1, 2)))
+        ft_array2_2 = fftn(fftshift(np.sum(abs_array2, 2)))
+
+        # calculate shift in each dimension, i.e. 2 estimates of shift
+        result = dft_registration(ft_array1_2, ft_array2_2, ups_factor=precision)
+        (
+            shiftx1,
+            shifty1,
+        ) = result[2:4]
+        result = dft_registration(ft_array1_1, ft_array2_1, ups_factor=precision)
+        (
+            shiftx2,
+            shiftz1,
+        ) = result[2:4]
+        result = dft_registration(ft_array1_0, ft_array2_0, ups_factor=precision)
+        (
+            shifty2,
+            shiftz2,
+        ) = result[2:4]
+
+        # average them
+        xshift = (shiftx1 + shiftx2) / 2
+        yshift = (shifty1 + shifty2) / 2
+        zshift = (shiftz1 + shiftz2) / 2
+        shift_list = xshift, yshift, zshift
+
+    # 2D arrays
+    elif len(array1.shape) == 2:
+        ft_array1 = fftn(array1)
+        ft_array2 = fftn(array2)
+        result = dft_registration(ft_array1, ft_array2, ups_factor=precision)
+        shift_list = tuple(result[2:])
+    else:
+        shift_list = None
+    return shift_list
+
+
 def get_shift(
     reference_array: np.ndarray,
     shifted_array: np.ndarray,
@@ -760,6 +747,19 @@ def get_shift(
     if verbose:
         print(f"shifts with the reference object: {shift} pixels")
     return shift
+
+
+def index_max(mydata):
+    """Look for the data max and location."""
+    myamp = np.abs(mydata)
+    myamp_max = myamp.max()
+    idx = np.unravel_index(myamp.argmax(), mydata.shape)
+    return myamp_max, idx
+
+
+def index_max1(mydata):
+    """Look for the data maximum locations."""
+    return np.where(mydata == mydata.max())
 
 
 def shift_array(
