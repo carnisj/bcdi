@@ -268,6 +268,84 @@ class TestGetShift3D(unittest.TestCase):
             )
 
 
+class TestInterpRgiTranslation2D(unittest.TestCase):
+    """
+    Tests on the function image_registration.interp_rgi_translation for 2D arrays.
+
+    def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndarray
+    """
+
+    def setUp(self):
+        # executed before each test
+        reference_array = np.zeros((5, 5), dtype=complex)
+        reference_array[1:4, 1:4] = 1 + 1j
+        self.reference_array = reference_array
+        shifted_array = np.zeros((5, 5), dtype=complex)
+        shifted_array[2:, 2:] = 1 + 1j
+        self.shifted_array = shifted_array
+        self.shifts = (-1.0, -1.0)
+
+    def test_output_dtype(self):
+        aligned_array = reg.interp_rgi_translation(
+            array=self.shifted_array,
+            shift=self.shifts,
+        )
+        self.assertEqual(aligned_array.dtype, self.shifted_array.dtype)
+
+    def test_method_rgi(self):
+        aligned_array = reg.interp_rgi_translation(
+            array=self.shifted_array,
+            shift=self.shifts,
+        )
+        self.assertTrue(
+            np.allclose(
+                self.reference_array,
+                aligned_array,
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+
+class TestInterpRgiTranslation3D(unittest.TestCase):
+    """
+    Tests on the function image_registration.interp_rgi_translation for 3D arrays.
+
+    def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndarray
+    """
+
+    def setUp(self):
+        # executed before each test
+        reference_array = np.zeros((5, 5, 5), dtype=complex)
+        reference_array[1:4, 1:4, 1:4] = 1 + 1j
+        self.reference_array = reference_array
+        shifted_array = np.zeros((5, 5, 5), dtype=complex)
+        shifted_array[2:, 2:, 0:3] = 1 + 1j
+        self.shifted_array = shifted_array
+        self.shifts = (-1.0, -1.0, 1.0)
+
+    def test_output_dtype(self):
+        aligned_array = reg.interp_rgi_translation(
+            array=self.shifted_array,
+            shift=self.shifts,
+        )
+        self.assertEqual(aligned_array.dtype, self.shifted_array.dtype)
+
+    def test_method_rgi(self):
+        aligned_array = reg.interp_rgi_translation(
+            array=self.shifted_array,
+            shift=self.shifts,
+        )
+        self.assertTrue(
+            np.allclose(
+                self.reference_array,
+                aligned_array,
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+
 class TestShiftArray2D(unittest.TestCase):
     """
     Tests on the function image_registration.shift_array for 2D arrays.
