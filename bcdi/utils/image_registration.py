@@ -769,7 +769,8 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
 
     :param array: a 3D numpy array
-    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension
+    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+     need to be applied to array
     :return: the shifted array
     """
     # check some parameters
@@ -788,9 +789,9 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
         old_y = np.arange(-nby // 2, nby // 2)
         old_x = np.arange(-nbx // 2, nbx // 2)
         myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-        new_z = myz + shift[0]
-        new_y = myy + shift[1]
-        new_x = myx + shift[2]
+        new_z = myz - shift[0]
+        new_y = myy - shift[1]
+        new_x = myx - shift[2]
 
         # interpolate array
         rgi = RegularGridInterpolator(
