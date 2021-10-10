@@ -92,7 +92,7 @@ branch.
 - [Submit a pull request][pr].
 - Wait for your pull request to be reviewed and merged.
   
-\* If you committed to your main branch, you may consider first rebasing it on the 
+\* If you committed to your main branch, you need first to rebase it on the 
 upstream main: 
  - `git fetch upstream`
  - `git checkout main`
