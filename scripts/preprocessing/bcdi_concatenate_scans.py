@@ -100,13 +100,11 @@ if type(output_shape) is tuple:
 if len(output_shape) != 3:
     raise ValueError("output_shape should be a list or tuple of three numbers")
 if apply_fft_constraint:
-    output_shape = util.smaller_primes(
-        output_shape,
-        maxprime=7,
-        required_dividers=(2,)
-        )
-    print("Checking that output_shape fits FFT shape requirements for phase retrieval, "
-          f"output_shape={output_shape}")
+    output_shape = util.smaller_primes(output_shape, maxprime=7, required_dividers=(2,))
+    print(
+        "Checking that output_shape fits FFT shape requirements for phase retrieval, "
+        f"output_shape={output_shape}"
+    )
 if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]

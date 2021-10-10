@@ -126,7 +126,7 @@ def align_diffpattern(
     reference_data,
     data,
     mask=None,
-    shift_method='raw',
+    shift_method="raw",
     interpolation_method="roll",
     verbose=True,
     debugging=False,
@@ -158,9 +158,7 @@ def align_diffpattern(
     #########################
     # check some parameters #
     #########################
-    valid.valid_ndarray(
-        arrays=(reference_data, data), ndim=(2, 3), fix_shape=True
-    )
+    valid.valid_ndarray(arrays=(reference_data, data), ndim=(2, 3), fix_shape=True)
     if mask is not None:
         valid.valid_ndarray(arrays=mask, shape=data.shape)
     if shift_method not in {"raw", "modulus", "support", "skip"}:
@@ -776,10 +774,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     # check some parameters
     valid.valid_ndarray(array, ndim=(2, 3), name="array")
     valid.valid_container(
-        shift,
-        container_types=(tuple, list),
-        item_types=float,
-        name="shift"
+        shift, container_types=(tuple, list), item_types=float, name="shift"
     )
 
     if array.ndim == 3:
@@ -855,7 +850,7 @@ def shift_array(
     #########################
     # check some parameters #
     #########################
-    valid.valid_ndarray(array, ndim=(2, 3) , name="array")
+    valid.valid_ndarray(array, ndim=(2, 3), name="array")
     valid.valid_container(
         shift, container_types=(tuple, list), item_types=Real, name="shifts"
     )
@@ -882,8 +877,8 @@ def shift_array(
     else:  # "roll"
         shifted_array = np.roll(
             array,
-            shift=list(map(lambda x : int(np.rint(x)), shift)),
-            axis=tuple(range((len(shift))))
+            shift=list(map(lambda x: int(np.rint(x)), shift)),
+            axis=tuple(range((len(shift)))),
         )
     return shifted_array
 

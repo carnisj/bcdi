@@ -37,7 +37,7 @@ class TestGetShift(unittest.TestCase):
         reference_array = np.zeros((5, 5), dtype=complex)
         reference_array[1:4, 1:4] = 1 + 1j
         shifted_array = np.zeros((5, 5), dtype=complex)
-        shifted_array[2:, 2:] = 1+1j
+        shifted_array[2:, 2:] = 1 + 1j
         self.reference_array = reference_array
         self.shifted_array = shifted_array
 
@@ -76,7 +76,7 @@ class TestGetShift(unittest.TestCase):
             reference_array=self.reference_array,
             shifted_array=self.shifted_array,
             shift_method="support",
-            support_threshold=0.5
+            support_threshold=0.5,
         )
         self.assertTrue(
             np.allclose(
@@ -100,7 +100,7 @@ class TestGetShift(unittest.TestCase):
             reg.get_shift(
                 reference_array=self.reference_array,
                 shifted_array=self.shifted_array,
-                precision=2.3
+                precision=2.3,
             )
 
     def test_precision_null(self):
@@ -108,7 +108,7 @@ class TestGetShift(unittest.TestCase):
             reg.get_shift(
                 reference_array=self.reference_array,
                 shifted_array=self.shifted_array,
-                precision=0
+                precision=0,
             )
 
     def test_precision_None(self):
@@ -116,15 +116,15 @@ class TestGetShift(unittest.TestCase):
             reg.get_shift(
                 reference_array=self.reference_array,
                 shifted_array=self.shifted_array,
-                precision=None
+                precision=None,
             )
 
     def test_precision_min_allowed(self):
         shifts = reg.get_shift(
-                reference_array=self.reference_array,
-                shifted_array=self.shifted_array,
-                precision=1
-            )
+            reference_array=self.reference_array,
+            shifted_array=self.shifted_array,
+            precision=1,
+        )
         self.assertTrue(
             np.allclose(
                 np.asarray(shifts),
@@ -139,7 +139,7 @@ class TestGetShift(unittest.TestCase):
             reg.get_shift(
                 reference_array=self.reference_array,
                 shifted_array=self.shifted_array,
-                shift_method="wrong"
+                shift_method="wrong",
             )
 
 
@@ -157,12 +157,11 @@ class TestShiftArray(unittest.TestCase):
         reference_array = np.zeros((5, 5), dtype=complex)
         reference_array[1:4, 1:4] = 1 + 1j
         shifted_array = np.zeros((5, 5), dtype=complex)
-        shifted_array[2:, 2:] = 1+1j
+        shifted_array[2:, 2:] = 1 + 1j
         self.reference_array = reference_array
         self.shifted_array = shifted_array
         self.shifts = reg.get_shift(
-                reference_array=self.reference_array,
-                shifted_array=self.shifted_array
+            reference_array=self.reference_array, shifted_array=self.shifted_array
         )
 
     def test_output_dtype(self):
