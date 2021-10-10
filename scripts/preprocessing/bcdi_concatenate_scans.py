@@ -266,7 +266,9 @@ for idx, item in enumerate(scans):
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
     samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
-    print(f'\n{"#" * len(samplename)}\n' + samplename + "\n" + f'{"#" * len(samplename)}')
+    print(
+        f'\n{"#" * len(samplename)}\n' + samplename + "\n" + f'{"#" * len(samplename)}'
+    )
     data = np.load(
         root_folder + samplename + parent_folder + f"S{item}_pynx" + suffix[idx]
     )["data"]
