@@ -165,6 +165,14 @@ class TestShiftArray(unittest.TestCase):
                 shifted_array=self.shifted_array
         )
 
+    def test_output_dtype(self):
+        aligned_array = reg.shift_array(
+            array=self.shifted_array,
+            shift=self.shifts,
+            interpolation_method="subpixel",
+        )
+        self.assertEqual(aligned_array.dtype, self.shifted_array.dtype)
+
     def test_method_subpixel(self):
         aligned_array = reg.shift_array(
             array=self.shifted_array,
