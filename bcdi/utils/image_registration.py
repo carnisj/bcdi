@@ -764,56 +764,6 @@ def index_max1(mydata):
     return np.where(mydata == mydata.max())
 
 
-def shift_array(
-    array: np.ndarray, shift: Sequence[float], interpolation_method: str = "subpixel"
-) -> np.ndarray:
-    """
-    Shift array using the defined method given the offsets.
-
-    :param array: a numpy ndarray
-    :param shift: tuple of floats, shifts of the array in each dimension
-    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
-     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
-     by an integral number (the shifts are rounded to the nearest integer)
-     created by thresholding the modulus of the array.
-    :return: the shifted array
-    """
-    #########################
-    # check some parameters #
-    #########################
-    valid.valid_ndarray(array, ndim=3, name="array")
-    valid.valid_container(
-        shift, container_types=(tuple, list), item_types=Real, name="shifts"
-    )
-    if interpolation_method not in {"subpixel", "rgi", "roll"}:
-        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
-
-    ###################
-    # shift the array #
-    ###################
-    if interpolation_method == "subpixel":
-        # align obj using subpixel shift, keep the complex output
-        shifted_array = subpixel_shift(array, *shift)
-
-        ###################################################
-        # convert shifted_array to the original data type #
-        # subpixel_shift outputs a complex number         #
-        ###################################################
-        if not isinstance(array.flatten()[0], Complex):
-            shifted_array = abs(shifted_array)
-
-    elif interpolation_method == "rgi":
-        # re-sample data on a new grid based on COM shift of support
-        shifted_array = interp_rgi_translation(array=array, shift=shift)
-    else:  # "roll"
-        shifted_array = np.roll(
-            array,
-            shift=list(map(lambda x : int(np.rint(x)), shift)),
-            axis=tuple(range((len(shift))))
-        )
-    return shifted_array
-
-
 def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndarray:
     """
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
@@ -885,6 +835,56 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
             ).transpose()
         )
     return shifted_array.reshape(array.shape).astype(array.dtype)
+
+
+def shift_array(
+    array: np.ndarray, shift: Sequence[float], interpolation_method: str = "subpixel"
+) -> np.ndarray:
+    """
+    Shift array using the defined method given the offsets.
+
+    :param array: a numpy ndarray
+    :param shift: tuple of floats, shifts of the array in each dimension
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
+     created by thresholding the modulus of the array.
+    :return: the shifted array
+    """
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_ndarray(array, ndim=3, name="array")
+    valid.valid_container(
+        shift, container_types=(tuple, list), item_types=Real, name="shifts"
+    )
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+
+    ###################
+    # shift the array #
+    ###################
+    if interpolation_method == "subpixel":
+        # align obj using subpixel shift, keep the complex output
+        shifted_array = subpixel_shift(array, *shift)
+
+        ###################################################
+        # convert shifted_array to the original data type #
+        # subpixel_shift outputs a complex number         #
+        ###################################################
+        if not isinstance(array.flatten()[0], Complex):
+            shifted_array = abs(shifted_array)
+
+    elif interpolation_method == "rgi":
+        # re-sample data on a new grid based on COM shift of support
+        shifted_array = interp_rgi_translation(array=array, shift=shift)
+    else:  # "roll"
+        shifted_array = np.roll(
+            array,
+            shift=list(map(lambda x : int(np.rint(x)), shift)),
+            axis=tuple(range((len(shift))))
+        )
+    return shifted_array
 
 
 def subpixel_shift(array, z_shift, y_shift, x_shift=0):
