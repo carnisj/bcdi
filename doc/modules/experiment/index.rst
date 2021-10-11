@@ -6,9 +6,6 @@
 :mod:`bcdi.experiment`: Description of the experimental setup
 =============================================================
 
-Description
------------
-
 This module provides classes and methods for the definition of the experimental setup.
 The following classes are implemented:
 
@@ -57,6 +54,20 @@ The geometry of the following beamlines is implemented:
  * NANOMAX (MAX IV)
  * 34ID-C (APS): only for postprocessing
 
+The following detectors are implemented:
+
+ * Maxipix
+ * Timepix
+ * Merlin
+ * Eiger2M
+ * Eiger4M
+ * Dummy (user-defined pixel size and pixel number)
+
+beamline
+^^^^^^^^
+
+General organization of the module:
+
 .. mermaid::
   :align: center
 
@@ -72,6 +83,37 @@ The geometry of the following beamlines is implemented:
     BeamlineP10 <|-- BeamlineP10SAXS
     Beamline <|-- BeamlineCRISTAL
     Beamline <|-- BeamlineNANOMAX
+
+.. automodule:: bcdi.experiment.beamline
+   :members:
+
+detector
+^^^^^^^^
+
+General organization of the module:
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Detector{
+      +str name : detector_name
+  }
+    ABC <|-- Detector
+    Detector <|-- Maxipix
+    Detector <|-- Eiger2M
+    Detector <|-- Eiger4M
+    Detector <|-- Timepix
+    Detector <|-- Merlin
+    Detector <|-- Dummy
+
+.. automodule:: bcdi.experiment.detector
+    :members:
+
+diffractometer
+^^^^^^^^^^^^^^
+
+General organization of the module:
 
 .. mermaid::
   :align: center
@@ -89,59 +131,29 @@ The geometry of the following beamlines is implemented:
     Diffractometer <|-- DiffractometerCRISTAL
     Diffractometer <|-- DiffractometerNANOMAX
 
-The following detectors are implemented:
-
- * Maxipix
- * Timepix
- * Merlin
- * Eiger2M
- * Eiger4M
- * Dummy (user-defined pixel size and pixel number)
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Detector{
-      +str name : detector_name
-  }
-    ABC <|-- Detector
-    Detector <|-- Maxipix
-    Detector <|-- Eiger2M
-    Detector <|-- Eiger4M
-    Detector <|-- Timepix
-    Detector <|-- Merlin
-    Detector <|-- Dummy
-
-API Reference
--------------
-
-beamline
-^^^^^^^^
-
-.. automodule:: bcdi.experiment.beamline
-   :members:
-
-detector
-^^^^^^^^
-
-.. automodule:: bcdi.experiment.detector
-    :members:
-
-diffractometer
-^^^^^^^^^^^^^^
-
 .. automodule:: bcdi.experiment.diffractometer
     :members:
 
 rotation_matrix
 ^^^^^^^^^^^^^^^
 
+This class is used to define 3D rotation matrices.
+
+API Reference
+-------------
+
 .. automodule:: bcdi.experiment.rotation_matrix
     :members:
 
 setup
 ^^^^^
+
+This class is the "manager" or public interface of the analysis workflow. Access to
+the instances of the child classes inheriting from Beamline, Diffractometer and Detector
+is realized through Setup.
+
+API Reference
+-------------
 
 .. automodule:: bcdi.experiment.setup
    :members:

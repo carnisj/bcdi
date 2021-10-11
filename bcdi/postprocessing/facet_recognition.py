@@ -22,9 +22,9 @@ from matplotlib import pyplot as plt
 from matplotlib import patches
 import gc
 import sys
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 colormap = gu.Colormap()
 default_cmap = colormap.cmap
@@ -261,9 +261,6 @@ def equirectangular_proj(
     plt.title("Equirectangular projection of the weighted point densities before KDE")
     plt.pause(0.1)
 
-    del intensity
-    gc.collect()
-
     # kernel density estimation
     kde = stats.gaussian_kde(long_lat.T, bw_method=bw_method)
     # input should be a 2D array with shape (# of dims, # of data)
@@ -401,15 +398,17 @@ def find_facet(
     shift_direction = 0
     while found_plane == 0:
         common_points = 0
+        nb_points = len(surf0)
+
         # shift indices
         plane_newindices0, plane_newindices1, plane_newindices2 = offset_plane(
             indices=refplane_indices,
             offset=nbloop * step_shift,
             plane_normal=plane_normal,
         )
-
-        for point in range(len(plane_newindices0)):
-            for point2 in range(len(surf0)):
+        nb_newpoints = len(plane_newindices0)
+        for point in range(nb_newpoints):
+            for point2 in range(nb_points):
                 if (
                     plane_newindices0[point] == surf0[point2]
                     and plane_newindices1[point] == surf1[point2]
@@ -419,8 +418,8 @@ def find_facet(
 
         if debugging:
             temp_coeff3 = plane_coeffs[3] - nbloop * step_shift
-            dist = np.zeros(len(surf0))
-            for point in range(len(surf0)):
+            dist = np.zeros(nb_points)
+            for point in range(nb_points):
                 dist[point] = (
                     plane_coeffs[0] * surf0[point]
                     + plane_coeffs[1] * surf1[point]
@@ -568,7 +567,8 @@ def find_neighbours(vertices, faces):
     """
     neighbors = [None] * vertices.shape[0]
 
-    for indx in range(faces.shape[0]):
+    nb_faces = faces.shape[0]
+    for indx in range(nb_faces):
         if neighbors[faces[indx, 0]] is None:
             neighbors[faces[indx, 0]] = [faces[indx, 1], faces[indx, 2]]
         else:
@@ -585,13 +585,12 @@ def find_neighbours(vertices, faces):
             neighbors[faces[indx, 2]].append(faces[indx, 0])
             neighbors[faces[indx, 2]].append(faces[indx, 1])
 
-    for indx in range(len(neighbors)):
-        temp_list = [
-            point for point in neighbors[indx] if point is not None
-        ]  # remove None values
-        neighbors[indx] = list(
-            set(temp_list)
-        )  # remove redundant indices in each sublist
+    for indx, neighbor in enumerate(neighbors):
+        # remove None values
+        temp_list = [point for point in neighbor if point is not None]
+
+        # remove redundant indices in each sublist
+        neighbors[indx] = list(set(temp_list))
 
     return neighbors
 
@@ -782,10 +781,10 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
     )
 
     count_grad = 0
-    for idx in range(len(indices[0])):
-        if (
-            np.dot(plane_normal, gradients[idx]) < 0.75
-        ):  # 0.85 is too restrictive checked CH4760 S11 plane 1
+    nb_indices = len(indices[0])
+    for idx in range(nb_indices):
+        if np.dot(plane_normal, gradients[idx]) < 0.75:
+            # 0.85 is too restrictive checked CH4760 S11 plane 1
             plane[indices[0][idx], indices[1][idx], indices[2][idx]] = 0
             count_grad += 1
 
@@ -849,10 +848,8 @@ def remove_duplicates(vertices, faces, debugging=False):
 
     # for each duplicated vertex, build the list of the corresponding identical vertices
     list_duplicated = []
-    for idx in range(len(duplicated_indices)):
-        same_vertices = np.argwhere(
-            vertices == uniq_vertices[duplicated_indices[idx], :]
-        )
+    for idx, value in enumerate(duplicated_indices):
+        same_vertices = np.argwhere(vertices == uniq_vertices[value, :])
         # same_vertices is a ndarray of the form
         # [[ind0, 0], [ind0, 1], [ind0, 2], [ind1, 0], [ind1, 1], [ind1, 2],...]
         list_duplicated.append(list(same_vertices[::3, 0]))
@@ -863,13 +860,11 @@ def remove_duplicates(vertices, faces, debugging=False):
     print(len(remove_vertices), "duplicated vertices removed")
 
     # remove duplicated_vertices in faces
-    for idx in range(len(list_duplicated)):
-        temp_array = list_duplicated[idx]
+    for idx, temp_array in enumerate(list_duplicated):
         for idy in range(1, len(temp_array)):
             duplicated_value = temp_array[idy]
-            faces[faces == duplicated_value] = temp_array[
-                0
-            ]  # temp_array[0] is the unique value, others are duplicates
+            faces[faces == duplicated_value] = temp_array[0]
+            # temp_array[0] is the unique value, others are duplicates
 
             # all indices above duplicated_value have to be decreased by 1
             # to keep the match with the number of vertices
@@ -1126,37 +1121,32 @@ def stereographic_proj(
         (u_grid, v_grid),
         method="linear",
     )  # N
-    density_south = (
-        density_south / density_south[density_south > 0].max() * 10000
-    )  # normalize for plotting
-    density_north = (
-        density_north / density_north[density_north > 0].max() * 10000
-    )  # normalize for plotting
+
+    # normalize for plotting
+    density_south = density_south / density_south[density_south > 0].max() * 10000
+    density_north = density_north / density_north[density_north > 0].max() * 10000
 
     if save_txt:
         # save metric coordinates in text file
         density_south[np.isnan(density_south)] = 0.0
         density_north[np.isnan(density_north)] = 0.0
-        fichier = open(savedir + "CDI_poles.dat", "w")
-        for ii in range(len(v_grid)):
-            for jj in range(len(u_grid)):
-                fichier.write(
-                    str(v_grid[ii, 0])
-                    + "\t"
-                    + str(u_grid[0, jj])
-                    + "\t"
-                    + str(density_south[ii, jj])
-                    + "\t"
-                    + str(v_grid[ii, 0])
-                    + "\t"
-                    + str(u_grid[0, jj])
-                    + "\t"
-                    + str(density_north[ii, jj])
-                    + "\n"
-                )
-        fichier.close()
-        del intensity
-        gc.collect()
+        with open(savedir + "CDI_poles.dat", "w") as file:
+            for ii in range(len(v_grid)):
+                for jj in range(len(u_grid)):
+                    file.write(
+                        str(v_grid[ii, 0])
+                        + "\t"
+                        + str(u_grid[0, jj])
+                        + "\t"
+                        + str(density_south[ii, jj])
+                        + "\t"
+                        + str(v_grid[ii, 0])
+                        + "\t"
+                        + str(u_grid[0, jj])
+                        + "\t"
+                        + str(density_north[ii, jj])
+                        + "\n"
+                    )
 
     # inverse densities for watershed segmentation
     density_south = -1 * density_south
@@ -1341,8 +1331,7 @@ def surface_gradient(points, support, width=2):
     if not isinstance(points, list):
         points = [points]
 
-    for idx in range(len(points)):
-        point = points[idx]
+    for _, point in enumerate(points):
         # round the point to integer numbers
         point = [int(np.rint(point[idx])) for idx in range(3)]
 

@@ -6,8 +6,8 @@
 :mod:`bcdi.simulation`: calculation of the diffraction intensity based on FFT or kinematical sum
 ================================================================================================
 
-Description
------------
+simulation_utils
+^^^^^^^^^^^^^^^^
 
 In Bragg geometry, calculation of the diffraction intensity based on FFT or
 kinematical sum. It can include a displacement field, noise, detector gaps etc...
@@ -21,14 +21,17 @@ experimental data.
 API Reference
 -------------
 
-simulation_utils
-^^^^^^^^^^^^^^^^
-
 .. automodule:: bcdi.simulation.simulation_utils
    :members:
 
 supportMaker
 ^^^^^^^^^^^^
+
+This module provides tools to create a simple support using polygons. It is possible
+to define distances in pixels or nanometers.
+
+API Reference
+-------------
 
 .. automodule:: bcdi.simulation.supportMaker
    :members:

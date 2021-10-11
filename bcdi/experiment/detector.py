@@ -53,6 +53,9 @@ following diagram).
   }
     ABC <|-- Detector
 
+API Reference
+-------------
+
 """
 
 from abc import ABC, abstractmethod

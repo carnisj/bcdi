@@ -24,7 +24,7 @@ import gc
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.facet_recognition.facet_utils as fu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
@@ -550,10 +550,10 @@ else:  # load a reconstructed real space object
     # interpolation artefacts
     obj = obj / abs(obj).max()
     obj[abs(obj) < threshold_amp] = 0
-    if not use_phase:  # phase is 0, obj is real
-        if binary_support:  # create a binary support
-            obj[np.nonzero(obj)] = 1
-            comment = comment + "_binary"
+    if not use_phase and binary_support:  # phase is 0, obj is real
+        # create a binary support
+        obj[np.nonzero(obj)] = 1
+        comment = comment + "_binary"
     if debug:
         gu.multislices_plot(
             abs(obj),
@@ -799,22 +799,22 @@ plt.savefig(homedir + "North pole" + comment + "_S" + str(scan) + ".png")
 ################################
 # save grid points in txt file #
 ################################
-fichier = open(homedir + "Poles" + comment + "_S" + str(scan) + ".dat", "w")
-# save metric coordinates in text file
-nb_points = stereo_proj.shape[0]
-for ii in range(nb_points):
-    fichier.write(
-        str(stereo_proj[ii, 0])
-        + "\t"
-        + str(stereo_proj[ii, 1])
-        + "\t"
-        + str(stereo_proj[ii, 2])
-        + "\t"
-        + str(stereo_proj[ii, 3])
-        + "\t"
-        + str(data_masked[ii])
-        + "\n"
-    )
-fichier.close()
+with open(homedir + "Poles" + comment + "_S" + str(scan) + ".dat", "w") as file:
+    # save metric coordinates in text file
+    nb_points = stereo_proj.shape[0]
+    for ii in range(nb_points):
+        file.write(
+            str(stereo_proj[ii, 0])
+            + "\t"
+            + str(stereo_proj[ii, 1])
+            + "\t"
+            + str(stereo_proj[ii, 2])
+            + "\t"
+            + str(stereo_proj[ii, 3])
+            + "\t"
+            + str(data_masked[ii])
+            + "\n"
+        )
+
 plt.ioff()
 plt.show()

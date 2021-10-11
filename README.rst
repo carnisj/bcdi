@@ -48,26 +48,25 @@ BCDI can be used as a python library with the following main modules:
 2) :mod:`bcdi.experiment`: definition of the experimental geometry
    (beamline, setup, detector, diffractometer...).
 
-3) :mod:`bcdi.facet_recognition`: Stereographic projection of a diffraction peak or a
+3) :mod:`bcdi.graph` : generation of plots using predefined templates.
+
+4) :mod:`bcdi.postprocessing`: methods for post-processing the complex output
+   of a phasing algorithm. Stereographic projection of a diffraction peak or a
    reconstructed crystal. Automatic detection of reconstructed facets and statistics on
    facet strain.
 
-4) :mod:`bcdi.graph` : generation of plots using predefined templates.
-
-5) :mod:`bcdi.postprocessing`: methods for post-processing the complex output
-   of a phasing algorithm.
-
-6) :mod:`bcdi.preprocessing`: methods for pre-processing the diffraction
+5) :mod:`bcdi.preprocessing`: methods for pre-processing the diffraction
    intensity in Bragg CDI or forward CDI geometry.
 
-7) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity
+6) :mod:`bcdi.simulation`: in BCDI geometry, calculation of the diffraction intensity
    based on FFT or kinematical sum. It can include a displacement field, noise,
    detector gaps etc... In forward CDI geometry, calculation of the Bragg peak
    positions in 3D for a mesocrystal, knowing the unit cell and unit cell parameter.
 
-8) :mod:`bcdi.utils`: data loading, fitting functions, validation functions ...
+7) :mod:`bcdi.utils`: generic functions about data loading, fitting functions, cropping/
+   padding, image registration, validation functions ...
 
-9) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
+8) :mod:`bcdi.xcca`: X-ray cross-correlation analysis related methods
 
 The central module is :mod:`bcdi.experiment`, which contains all setup-related
 implementation. This is the place where to look at if you want to add support for a new

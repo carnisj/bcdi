@@ -50,6 +50,9 @@ instantiated directly but via a Setup instance.
   }
     ABC <|-- Diffractometer
 
+API Reference
+-------------
+
 """
 
 try:
@@ -1031,27 +1034,41 @@ class Diffractometer(ABC):
         return data, mask3d, monitor, frames_logical.astype(int)
 
     @abstractmethod
-    def load_data(self, **kwargs):
+    def load_data(
+        self,
+        logfile,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
+    ):
         """
         Load data including detector/background corrections.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
 
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': the scan number to load
-          - 'detector': the detector object: Class experiment_utils.Detector()
-          - 'setup': an instance of the class Setup
+          - 'scan_number': the scan number to load (e.g. for ID01)
           - 'actuators': dictionary defining the entries corresponding to actuators
-          - 'flatfield': the 2D flatfield array
-          - 'hotpixels': the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
-          - 'background': the 2D background array to subtract to the data
-          - 'normalize': 'monitor' to return the default monitor values, 'sum_roi' to
-            return a monitor based on the integrated intensity in the region of interest
-            defined by detector.sum_roi, 'skip' to do nothing
-          - 'bin_during_loading': only for P10. If True, the data will be binned in the
-            detector frame while loading. It saves a lot of memory for large detectors.
-          - 'debugging': set to True to see plots
+            (e.g. for CRISTAL)
 
         :return: in this order
 
@@ -1140,31 +1157,31 @@ class Diffractometer(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_device(**kwargs):
+    def read_device(logfile, device_name, **kwargs):
         """
         Extract the device positions/values during a scan.
 
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': int, number of the scan
-          - 'device_name': str, name of the device
+          - 'scan_number': int, number of the scan (e.g. for ID01)
 
         :return: the positions/values of the device as a numpy 1D array
         """
 
     @staticmethod
     @abstractmethod
-    def read_monitor(**kwargs):
+    def read_monitor(logfile, **kwargs):
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
+        :param logfile: the logfile created in Setup.create_logfile()
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
-          - 'logfile': the logfile created in Setup.create_logfile()
-          - 'scan_number': int, number of the scan
+          - 'scan_number': int, number of the scan (e.g. for ID01)
           - 'actuators': dictionary defining the entries corresponding to actuators
             in the data file (at CRISTAL the location of data keeps changing)
           - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
@@ -1414,7 +1431,6 @@ class DiffractometerCRISTAL(Diffractometer):
     def load_data(
         self,
         logfile,
-        actuators,
         detector,
         setup,
         flatfield=None,
@@ -1432,7 +1448,6 @@ class DiffractometerCRISTAL(Diffractometer):
         and look for a dataset with compatible shape otherwise.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param actuators: dictionary defining the entries corresponding to actuators
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1444,13 +1459,20 @@ class DiffractometerCRISTAL(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :return:
+        :param kwargs:
+         - 'actuators': dictionary defining the entries corresponding to actuators
+           in the data file (at CRISTAL the location of data keeps changing)
 
+        :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
+        actuators = kwargs.get("actuators")
+        if actuators is None:
+            raise ValueError("'actuators' parameter required")
+
         # look for the detector entry (keep changing at CRISTAL)
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for CRISTAL")
@@ -1683,15 +1705,21 @@ class DiffractometerCRISTAL(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, actuators, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param actuators: dictionary defining the entries corresponding to actuators
-         in the data file (at CRISTAL the location of data keeps changing)
+        :param kwargs:
+         - 'actuators': dictionary defining the entries corresponding to actuators
+           in the data file (at CRISTAL the location of data keeps changing)
+
         :return: the default monitor values
         """
+        actuators = kwargs.get("actuators")
+        if actuators is None:
+            raise ValueError("'actuators' parameter required")
+
         monitor_name = actuators.get("monitor", "data_04")
         return self.read_device(logfile=logfile, device_name=monitor_name)
 
@@ -1780,7 +1808,6 @@ class DiffractometerID01(Diffractometer):
     def load_data(
         self,
         logfile,
-        scan_number,
         detector,
         setup,
         flatfield=None,
@@ -1795,7 +1822,6 @@ class DiffractometerID01(Diffractometer):
         Load ID01 data, apply filters and concatenate it for phasing.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1807,13 +1833,19 @@ class DiffractometerID01(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :return:
+        :param kwargs:
+         - 'scan_number': int, the scan number to load
 
+        :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
@@ -1986,15 +2018,21 @@ class DiffractometerID01(Diffractometer):
         return mu, eta, phi, nu, delta, energy
 
     @staticmethod
-    def read_device(logfile, scan_number, device_name, **kwargs):
+    def read_device(logfile, device_name, **kwargs):
         """
         Extract the device positions/values during the scan at ID01 beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: number of the scan
         :param device_name: name of the device
+        :param kwargs:
+         - 'scan_number': int, the scan number to load
+
         :return: the positions/values of the device as a numpy 1D array
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
         labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
         labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
@@ -2006,16 +2044,25 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, scan_number, actuators, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param scan_number: int, the scan number to load
-        :param actuators: dictionary defining the entries corresponding to actuators
-         in the spec file
+        :param kwargs:
+         - 'scan_number': int, the scan number to load
+         - 'actuators': dictionary defining the entries corresponding to actuators
+           in the spec file
+
         :return: the default monitor values
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        actuators = kwargs.get("actuators")
+        if actuators is None:
+            raise ValueError("'actuators' parameter required")
+
         monitor_name = actuators.get("monitor")
         if monitor_name is None:
             monitor = self.read_device(
@@ -2502,77 +2549,79 @@ class DiffractometerP10(Diffractometer):
         """
         logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            fio = open(logfile, "r")
-            index_om = None
-            index_phi = None
-            om = []
-            phi = []
-            chi = None
-            mu = None
-            gamma = None
-            delta = None
+            with open(logfile, "r") as fio:
+                index_om = None
+                index_phi = None
+                om = []
+                phi = []
+                chi = None
+                mu = None
+                gamma = None
+                delta = None
 
-            fio_lines = fio.readlines()
-            for line in fio_lines:
-                this_line = line.strip()
-                words = this_line.split()
+                fio_lines = fio.readlines()
+                for line in fio_lines:
+                    this_line = line.strip()
+                    words = this_line.split()
 
-                if (
-                    "Col" in words and "om" in words
-                ):  # om scanned, template = ' Col 0 om DOUBLE\n'
-                    index_om = int(words[1]) - 1  # python index starts at 0
-                if (
-                    "om" in words and "=" in words and setup.rocking_angle == "inplane"
-                ):  # om is a positioner
-                    om = float(words[2])
+                    if (
+                        "Col" in words and "om" in words
+                    ):  # om scanned, template = ' Col 0 om DOUBLE\n'
+                        index_om = int(words[1]) - 1  # python index starts at 0
+                    if (
+                        "om" in words
+                        and "=" in words
+                        and setup.rocking_angle == "inplane"
+                    ):  # om is a positioner
+                        om = float(words[2])
 
-                if (
-                    "Col" in words and "phi" in words
-                ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
-                    index_phi = int(words[1]) - 1  # python index starts at 0
-                if (
-                    "phi" in words
-                    and "=" in words
-                    and setup.rocking_angle == "outofplane"
-                ):  # phi is a positioner
-                    phi = float(words[2])
+                    if (
+                        "Col" in words and "phi" in words
+                    ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+                        index_phi = int(words[1]) - 1  # python index starts at 0
+                    if (
+                        "phi" in words
+                        and "=" in words
+                        and setup.rocking_angle == "outofplane"
+                    ):  # phi is a positioner
+                        phi = float(words[2])
 
-                if (
-                    "chi" in words and "=" in words
-                ):  # template for positioners: 'chi = 90.0\n'
-                    chi = float(words[2])
-                if (
-                    "del" in words and "=" in words
-                ):  # template for positioners: 'del = 30.05\n'
-                    delta = float(words[2])
-                if (
-                    "gam" in words and "=" in words
-                ):  # template for positioners: 'gam = 4.05\n'
-                    gamma = float(words[2])
-                if (
-                    "mu" in words and "=" in words
-                ):  # template for positioners: 'mu = 0.0\n'
-                    mu = float(words[2])
+                    if (
+                        "chi" in words and "=" in words
+                    ):  # template for positioners: 'chi = 90.0\n'
+                        chi = float(words[2])
+                    if (
+                        "del" in words and "=" in words
+                    ):  # template for positioners: 'del = 30.05\n'
+                        delta = float(words[2])
+                    if (
+                        "gam" in words and "=" in words
+                    ):  # template for positioners: 'gam = 4.05\n'
+                        gamma = float(words[2])
+                    if (
+                        "mu" in words and "=" in words
+                    ):  # template for positioners: 'mu = 0.0\n'
+                        mu = float(words[2])
 
-                if index_om is not None and util.is_float(words[0]):
-                    # reading data and index_om is defined (outofplane case)
-                    om.append(float(words[index_om]))
-                if index_phi is not None and util.is_float(words[0]):
-                    # reading data and index_phi is defined (inplane case)
-                    phi.append(float(words[index_phi]))
+                    if index_om is not None and util.is_float(words[0]):
+                        # reading data and index_om is defined (outofplane case)
+                        om.append(float(words[index_om]))
+                    if index_phi is not None and util.is_float(words[0]):
+                        # reading data and index_phi is defined (inplane case)
+                        phi.append(float(words[index_phi]))
 
-            if setup.rocking_angle == "outofplane":
-                om = np.asarray(om, dtype=float)
-            else:  # phi
-                phi = np.asarray(phi, dtype=float)
+                if setup.rocking_angle == "outofplane":
+                    om = np.asarray(om, dtype=float)
+                else:  # phi
+                    phi = np.asarray(phi, dtype=float)
 
-            fio.close()
+                fio.close()
 
-            # remove user-defined sample offsets (sample: mu, om, chi, phi)
-            mu = mu - self.sample_offsets[0]
-            om = om - self.sample_offsets[1]
-            chi = chi - self.sample_offsets[2]
-            phi = phi - self.sample_offsets[3]
+                # remove user-defined sample offsets (sample: mu, om, chi, phi)
+                mu = mu - self.sample_offsets[0]
+                om = om - self.sample_offsets[1]
+                chi = chi - self.sample_offsets[2]
+                phi = phi - self.sample_offsets[3]
 
         else:  # manually defined custom scan
             om = setup.custom_motors["om"]
@@ -2802,8 +2851,8 @@ class DiffractometerSIXS(Diffractometer):
     def load_data(
         self,
         logfile,
-        setup,
         detector,
+        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -2816,8 +2865,8 @@ class DiffractometerSIXS(Diffractometer):
         Load data, apply filters and concatenate it for phasing at SIXS.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param setup: an instance of the class Setup
         :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
         :param background: the 2D background array to subtract to the data
@@ -2938,14 +2987,19 @@ class DiffractometerSIXS(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, beamline, **kwargs):
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at SIXS.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param beamline: str, name of the beamline. E.g. "SIXS_2018"
+        :param kwargs:
+         - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
+
         :return: the default monitor values
         """
+        beamline = kwargs.get("beamline")
+        if beamline is None:
+            raise ValueError("'beamline' parameter required")
         if beamline == "SIXS_2018":
             return self.read_device(logfile=logfile, device_name="imon1")
         # SIXS_2019
@@ -3030,9 +3084,36 @@ class Diffractometer34ID(Diffractometer):
             return detector_angles
         return tilt, grazing, inplane, outofplane
 
-    def load_data(self, **kwargs):
-        """Load 34ID-C data including detector/background corrections."""
-        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+    def load_data(
+        self,
+        logfile,
+        detector,
+        setup,
+        flatfield=None,
+        hotpixels=None,
+        background=None,
+        normalize="skip",
+        bin_during_loading=False,
+        debugging=False,
+        **kwargs,
+    ):
+        """
+        Load 34ID-C data including detector/background corrections.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param detector: an instance of the class Detector
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
+        """
+        raise NotImplementedError("'load_data' not implemented for 34ID-C")
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -3050,11 +3131,20 @@ class Diffractometer34ID(Diffractometer):
         return theta, phi, delta, gamma, setup.energy
 
     @staticmethod
-    def read_device(**kwargs):
-        """Extract the device positions/values during the scan at 34ID-C beamline."""
+    def read_device(logfile, device_name, **kwargs):
+        """
+        Extract the device positions/values during the scan at 34ID-C beamline.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        :param device_name: name of the device
+        """
         raise NotImplementedError("'read_device' not implemented for 34ID-C")
 
     @staticmethod
-    def read_monitor(**kwargs):
-        """Load the default monitor for a dataset measured at 34ID-C."""
+    def read_monitor(logfile, **kwargs):
+        """
+        Load the default monitor for a dataset measured at 34ID-C.
+
+        :param logfile: the logfile created in Setup.create_logfile()
+        """
         raise NotImplementedError("'read_monitor' not implemented for 34ID-C")

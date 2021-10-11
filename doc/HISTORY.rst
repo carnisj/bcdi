@@ -1,7 +1,18 @@
 Future
 ------
 
-* add class diagrams in the documentation using sphinxcontrib-mermaid
+* Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
+  become obsolete and is removed.
+
+* Add the module ``simulation.supportMaker.py``, which allows to create a support using
+  polygons. Lengths can be defined either in pixels or in nanometers.
+
+* Merge the subpackage facet_recognition into postprocessing and rename the module
+  ``facet_utils.py`` to ``facet_recognition.py``
+
+* Add the list of publications related to the package in the documentation
+
+* Add class diagrams in the documentation using sphinxcontrib-mermaid
 
 * Solve issues with numpy when building the documentation (enable *Use system packages*
   in ReadTheDocs advanced settings)
