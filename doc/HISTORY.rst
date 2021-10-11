@@ -1,6 +1,9 @@
 Future
 ------
 
+* Rename parameter data_dirname to data_dir for the function setup.init_paths. Now, the
+  user can provide directly the path to the data directory.
+
 * Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
   become obsolete and is removed.
 
