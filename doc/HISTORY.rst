@@ -1,6 +1,8 @@
 Future
 ------
 
+* Bug: correct the detector horizontal direction in Beamline34ID, it was flipped.
+
 * Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
   become obsolete and is removed.
 
