@@ -233,7 +233,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
-        data_dir=data_dir
+        data_dir=data_dir,
     )
 
     # override the saving directory, we want to save results at the same place

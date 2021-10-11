@@ -481,7 +481,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
-        data_dir=data_dir
+        data_dir=data_dir,
     )
 
     logfile = setup.create_logfile(
