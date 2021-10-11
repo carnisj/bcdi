@@ -31,10 +31,11 @@ Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 
 scan = 128
 root_folder = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+data_dir = None
+# leave None to use the beamline default. It will look for the data at this location
 sample_name = "PtNP1"  # string in front of the scan number in the folder name
-save_dir = (
-    root_folder + "dataset_1_newpsf/test/"
-)  # images will be saved here, leave it to None otherwise
+save_dir = root_folder + "dataset_1_newpsf/test/"
+# images will be saved here, leave it to None otherwise
 # (default to data directory's parent)
 save_mask = False  # set to True to save the mask
 debug = True  # True to see more plots
@@ -43,9 +44,8 @@ binning = (1, 1, 1)  # binning to apply to the data
 ###############################
 # beamline related parameters #
 ###############################
-beamline = (
-    "P10"  # name of the beamline, used for data loading and normalization by monitor
-)
+beamline = "P10"
+# name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', 'NANOMAX'
 actuators = None  # {'rocking_angle': 'actuator_1_3'}
 # Optional dictionary that can be used to define the entries corresponding to
@@ -55,9 +55,8 @@ actuators = None  # {'rocking_angle': 'actuator_1_3'}
 custom_scan = False  # True for a stack of images acquired without scan,
 # e.g. with ct in a macro (no info in spec file)
 custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
-custom_monitor = np.ones(
-    len(custom_images)
-)  # monitor values for normalization for the custom_scan
+custom_monitor = np.ones(len(custom_images))
+# monitor values for normalization for the custom_scan
 custom_motors = {
     "eta": np.linspace(16.989, 18.989, num=100, endpoint=False),
     "phi": 0,
@@ -94,9 +93,8 @@ roi_detector = [y_bragg - 200, y_bragg + 200, x_bragg - 200, x_bragg + 200]
 # leave None to use the full detector. Use with center_fft='skip'
 # if you want this exact size.
 peak_method = "max"  # Bragg peak determination: 'max', 'com' or 'maxcom'.
-normalize = (
-    "monitor"  # 'monitor' to return the default monitor values, 'skip' to do nothing
-)
+normalize = "monitor"
+# 'monitor' to return the default monitor values, 'skip' to do nothing
 high_threshold = 500000  # everything above will be considered as hotpixel
 hotpixels_file = ""  # root_folder + 'hotpixels_cristal.npz'
 # root_folder + 'merlin_mask_190222_14keV.h5'  #
@@ -185,6 +183,7 @@ setup.init_paths(
     verbose=True,
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
+    data_dir=data_dir
 )
 
 logfile = setup.create_logfile(

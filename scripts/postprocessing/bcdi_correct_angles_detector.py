@@ -35,6 +35,8 @@ Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
 scan = 76
 root_folder = "C:/Users/Jerome/Documents/data/dataset_P10/"
+data_dir = None
+# leave None to use the beamline default. It will look for the data at this location
 sample_name = "B15_syn_S1_2"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
@@ -172,6 +174,7 @@ setup.init_paths(
     save_dir=None,
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
+    data_dir=data_dir,
     verbose=True,
 )
 

@@ -35,6 +35,8 @@ scans = np.concatenate((scans, np.arange(1638, 1680 + 1, 3)))
 root_folder = "D:/data/P10_OER/data/"
 sample_name = "dewet2_2"  # list of sample names. If only one name is indicated,
 # it will be repeated to match the number of scans
+data_dir = None
+# leave None to use the beamline default. It will look for the data at this location
 save_dir = "D:/data/P10_OER/analysis/candidate_12/"
 # images will be saved here, leave it to None otherwise (default to root_folder)
 x_axis = [0.740 for _ in range(16)]
@@ -231,6 +233,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
+        data_dir=data_dir
     )
 
     # override the saving directory, we want to save results at the same place

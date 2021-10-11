@@ -47,26 +47,23 @@ output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on 
 'use_rawdata' option
 """
 
-scans = 86  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
+scans = 11  # np.arange(1401, 1419+1, 3)  # scan number or list of scan numbers
 # scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
 
-root_folder = "C:/Users/Jerome/Documents/data/MIR_radial_scan/"
+root_folder = "C:/Users/Jerome/Documents/data/dataset_ID01/"
 # folder of the experiment, where all scans are stored
 save_dir = root_folder + "test/"  # images will be saved here, leave it to None
 # otherwise
-data_dirname = None  # leave None to use the beamline default,
-# '' empty string when there is no subfolder
-# (data directly in the scan folder), or a non-empty string for the subfolder name
-# (default to scan_folder/pynx/ or scan_folder/pynxraw/
-# depending on the setting of use_rawdata)
+data_dir = root_folder + "ici/"
+# leave None to use the beamline default. It will look for the data at this location
 sample_name = "S"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = (1, 3, 3)  # binning to apply to the data
+binning = (1, 2, 2)  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 bin_during_loading = False  # True to bin during loading, require less memory
 frames_pattern = None
@@ -76,7 +73,7 @@ frames_pattern = None
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact = True  # True to interact with plots, False to close it automatically
+flag_interact = False  # True to interact with plots, False to close it automatically
 background_plot = "0.5"
 # in level of grey in [0,1], 0 being dark. For visual comfort during masking
 #########################################################
@@ -155,7 +152,7 @@ custom_monitor = np.ones(51)
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 
-specfile_name = "2021_04_10_093013_pt"
+specfile_name = "l5"
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or
 # None to use the one in the package folder
@@ -206,7 +203,7 @@ nb_pixel_y = None  # fix to declare a known detector but with less pixels
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata = False  # False for using data gridded in laboratory frame
+use_rawdata = True  # False for using data gridded in laboratory frame
 # True for using data in detector frame
 interp_method = "xrayutilities"  # 'xrayutilities' or 'linearization'
 fill_value_mask = 0  # 0 (not masked) or 1 (masked).
@@ -220,8 +217,8 @@ sample_offsets = None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-sdd = 1.03527  # in m, sample to detector distance in m
-energy = 13000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd = 0.50678  # in m, sample to detector distance in m
+energy = 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors = None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -591,7 +588,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     setup.init_paths(
         sample_name=sample_name[scan_idx - 1],
         scan_number=scan_nb,
-        data_dirname=data_dirname,
+        data_dir=data_dir,
         root_folder=root_folder,
         save_dir=save_dir,
         save_dirname=save_dirname,
