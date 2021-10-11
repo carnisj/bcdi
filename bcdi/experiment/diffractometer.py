@@ -424,6 +424,11 @@ class Diffractometer(ABC):
     :param detector_circles: list of detector circles from outer to inner
      (e.g. gamma delta), expressed using a valid pattern within {'x+', 'x-', 'y+',
      'y-', 'z+', 'z-'}. For example: ['y+', 'x-']
+    :param kwargs:
+     - 'default_offsets': tuple, default sample offsets of the diffractometer. It needs
+       to be implemented as a class attribute in the child class if necessary. See an
+       example in DiffractometerP10
+
     """
 
     valid_circles = {
@@ -436,9 +441,17 @@ class Diffractometer(ABC):
     }  # + counter-clockwise, - clockwise
     valid_names = {"sample": "_sample_circles", "detector": "_detector_circles"}
 
-    def __init__(self, sample_offsets, sample_circles=(), detector_circles=()):
+    def __init__(
+        self,
+        sample_offsets,
+        sample_circles=(),
+        detector_circles=(),
+        **kwargs,
+    ):
         self.sample_circles = sample_circles
         self.detector_circles = detector_circles
+        if sample_offsets is None:
+            sample_offsets = kwargs.get("default_offsets")
         self.sample_offsets = sample_offsets
 
     @property
@@ -2326,12 +2339,14 @@ class DiffractometerP10(Diffractometer):
 
     sample_rotations = ["y+", "x-", "z+", "y-"]
     detector_rotations = ["y+", "x-"]
+    default_offsets = (0, 0, 90, 0)
 
     def __init__(self, sample_offsets):
         super().__init__(
             sample_circles=self.sample_rotations,
             detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
+            default_offsets=self.default_offsets,
         )
 
     def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
