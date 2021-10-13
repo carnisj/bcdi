@@ -366,6 +366,36 @@ def average_arrays(
     return avg_obj, avg_flag
 
 
+def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarray:
+    """
+    Calculate the new voxels position depending on the shift.
+
+    :param old_positions: list
+    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+     need to be applied to array
+    :return: array
+    """
+    if len(old_positions) == 3:
+        myz, myy, myx = np.meshgrid(*old_positions, indexing="ij")
+        new_z = myz - shift[0]
+        new_y = myy - shift[1]
+        new_x = myx - shift[2]
+        new_positions = np.concatenate((
+            new_z.reshape((1, new_z.size)),
+            new_y.reshape((1, new_z.size)),
+            new_x.reshape((1, new_z.size))
+        ))
+    elif len(old_positions) == 2:
+        myy, myx = np.meshgrid(*old_positions, indexing="ij")
+        new_y = myy - shift[0]
+        new_x = myx - shift[1]
+        new_positions =np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size))))
+    else:
+        raise NotImplementedError("only 2D and 3D are supported")
+
+    return new_positions
+
+
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
     """
     Efficient subpixel image registration by cross-correlation.
@@ -777,59 +807,20 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
         shift, container_types=(tuple, list), item_types=float, name="shift"
     )
 
-    if array.ndim == 3:
-        # calculate the new positions
-        nbz, nby, nbx = array.shape
-        old_z = np.arange(-nbz // 2, nbz // 2)
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-        new_z = myz - shift[0]
-        new_y = myy - shift[1]
-        new_x = myx - shift[2]
+    # calculate the new positions
+    old_positions = [np.arange(-val//2, val//2) for val in array.shape]
+    new_positions = calc_new_positions(old_positions, shift)
 
-        # interpolate array
-        rgi = RegularGridInterpolator(
-            (old_z, old_y, old_x),
-            array,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        shifted_array = rgi(
-            np.concatenate(
-                (
-                    new_z.reshape((1, new_z.size)),
-                    new_y.reshape((1, new_z.size)),
-                    new_x.reshape((1, new_z.size)),
-                )
-            ).transpose()
-        )
-    else:  # 2D case
-        # calculate the new positions
-        nby, nbx = array.shape
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
-        new_y = myy - shift[0]
-        new_x = myx - shift[1]
+    # interpolate array #
+    rgi = RegularGridInterpolator(
+        old_positions,
+        array,
+        method="linear",
+        bounds_error=False,
+        fill_value=0,
+    )
+    shifted_array = rgi(new_positions.transpose())
 
-        # interpolate array
-        rgi = RegularGridInterpolator(
-            (old_y, old_x),
-            array,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        shifted_array = rgi(
-            np.concatenate(
-                (
-                    new_y.reshape((1, new_y.size)),
-                    new_x.reshape((1, new_y.size)),
-                )
-            ).transpose()
-        )
     return shifted_array.reshape(array.shape).astype(array.dtype)
 
 
