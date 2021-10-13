@@ -1,6 +1,9 @@
 Future
 ------
 
+* move all functions related to dataset alignment in the module
+  ``utils.image_registration.py`` and create generic functions
+  
 * Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
   become obsolete and is removed.
 

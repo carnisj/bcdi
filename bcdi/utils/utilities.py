@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-
+from typing import Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
@@ -1189,6 +1189,43 @@ def lorentzian(x_axis, amp, cen, sig):
     :return: the Lorentzian line shape at x_axis
     """
     return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
+
+
+def make_support(
+    arrays: Union[np.ndarray, Sequence[np.ndarray]], support_threshold: float
+) -> Union[np.ndarray, Sequence[np.ndarray]]:
+    """
+    Create a support for each provided array, using a threshold on its modulus.
+
+    :param arrays: a sequence of numpy ndarrays
+    :param support_threshold: a float in [0, 1], normalized threshold that will be
+     applied to the modulus of each array
+    :return: a tuple of numpy ndarrays, supports corresponding to each input array
+    """
+    # check some parameters
+    if isinstance(arrays, np.ndarray):
+        arrays = (arrays,)
+    valid.valid_container(
+        arrays, container_types=(tuple, list), item_types=np.ndarray, name="arrays"
+    )
+    valid.valid_item(
+        support_threshold,
+        allowed_types=float,
+        min_included=0,
+        max_included=1,
+        name="support_threshold",
+    )
+
+    # create the supports
+    supports = []
+    for _, array in enumerate(arrays):
+        support = np.zeros(array.shape)
+        support[abs(array) > support_threshold * abs(array)] = 1
+        supports.append(support)
+
+    if len(arrays) == 1:  # return an array to avoid having to unpack it every time
+        supports = supports[0]
+    return supports
 
 
 def mean_filter(

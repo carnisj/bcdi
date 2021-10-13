@@ -1,86 +1,369 @@
-# Functions for aligning arrays
-# Original code from Xianhui Xiao APS Sector 2
+# getimageregistration, dftups, dft_registration and subpixel shift functions for
+# aligning arrays: original code from Xianhui Xiao APS Sector 2
 # Updated by Ross Harder
 # Updated by Steven Leake 30/07/2014
 # Changed variable names to make it clearer and put it in CXI convention (z y x)
 # J.Carnis 27/04/2018
-"""Functions related to DFT registration."""
+"""Functions related to the registration and alignement of two arrays."""
+
+from numbers import Complex, Real
 import numpy as np
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
-import gc
+from scipy.interpolate import RegularGridInterpolator
+from scipy.stats import pearsonr
+from typing import Union, Sequence
+
+from ..graph import graph_utils as gu
+from ..utils import utilities as util
+from ..utils import validation as valid
 
 
-def getimageregistration(array1, array2, precision=10):
+def align_arrays(
+    reference_array,
+    shifted_array,
+    shift_method="modulus",
+    interpolation_method="subpixel",
+    support_threshold=None,
+    precision=1000,
+    verbose=True,
+    debugging=False,
+):
     """
-    Calculate the registration (shift) between two arrays.
+    Align two arrays using dft registration and subpixel shift.
 
-    :param array1: the reference array
-    :param array2: the array to register
-    :param precision: subpixel precision of the registration. Images will be
-     registered to within 1/precision of a pixel.
-    :return: the list of shifts
+    The shift between arrays can be determined either using the modulus of the arrays
+    or a support created from it using a threshold.
+
+    :param reference_array: 3D array, reference object
+    :param shifted_array: 3D array to be aligned, same shape as reference_obj
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
+    :param support_threshold: all points where the normalized modulus is larger than
+     this value will be set to 1 in the support.
+    :param precision: precision for the DFT registration in 1/pixel
+    :param verbose: boolean, True to print comments
+    :param debugging: boolean, set to True to see plots
+    :return:
+     - the aligned array
+     - the shift: tuple of floats
+
     """
-    if array1.shape != array2.shape:
-        raise ValueError("Arrays should have the same shape")
-    # 3D arrays
-    if len(array1.shape) == 3:
-        abs_array1 = np.abs(array1)
-        abs_array2 = np.abs(array2)
-        # compress array (sum) in each dimension, i.e. a bunch of 2D arrays
-        ft_array1_0 = fftn(
-            fftshift(np.sum(abs_array1, 0))
-        )  # need fftshift for wrap around
-        ft_array2_0 = fftn(fftshift(np.sum(abs_array2, 0)))
-        ft_array1_1 = fftn(fftshift(np.sum(abs_array1, 1)))
-        ft_array2_1 = fftn(fftshift(np.sum(abs_array2, 1)))
-        ft_array1_2 = fftn(fftshift(np.sum(abs_array1, 2)))
-        ft_array2_2 = fftn(fftshift(np.sum(abs_array2, 2)))
+    # check some parameters
+    valid.valid_ndarray(
+        arrays=(shifted_array, reference_array), ndim=(2, 3), fix_shape=False
+    )
+    if shift_method not in {"raw", "modulus", "support", "skip"}:
+        raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+    valid.valid_item(debugging, allowed_types=bool, name="debugging")
 
-        # calculate shift in each dimension, i.e. 2 estimates of shift
-        result = dft_registration(ft_array1_2, ft_array2_2, ups_factor=precision)
-        (
-            shiftx1,
-            shifty1,
-        ) = result[2:4]
-        result = dft_registration(ft_array1_1, ft_array2_1, ups_factor=precision)
-        (
-            shiftx2,
-            shiftz1,
-        ) = result[2:4]
-        result = dft_registration(ft_array1_0, ft_array2_0, ups_factor=precision)
-        (
-            shifty2,
-            shiftz2,
-        ) = result[2:4]
+    if shifted_array.shape != reference_array.shape:
+        if verbose:
+            print(
+                "reference_obj and obj do not have the same shape\n",
+                reference_array.shape,
+                shifted_array.shape,
+                "crop/pad obj",
+            )
+        shifted_array = util.crop_pad(
+            array=shifted_array, output_shape=reference_array.shape
+        )
 
-        # average them
-        xshift = (shiftx1 + shiftx2) / 2
-        yshift = (shifty1 + shifty2) / 2
-        zshift = (shiftz1 + shiftz2) / 2
-        shift_list = xshift, yshift, zshift
+    if shift_method != "skip":
+        ##############################################
+        # calculate the shift between the two arrays #
+        ##############################################
+        shift = get_shift(
+            reference_array=reference_array,
+            shifted_array=shifted_array,
+            shift_method=shift_method,
+            support_threshold=support_threshold,
+            precision=precision,
+            verbose=verbose,
+        )
 
-    # 2D arrays
-    elif len(array1.shape) == 2:
-        ft_array1 = fftn(array1)
-        ft_array2 = fftn(array2)
-        result = dft_registration(ft_array1, ft_array2, ups_factor=precision)
-        shift_list = tuple(result[2:])
-    else:
-        shift_list = None
-    return shift_list
+        #####################
+        # align shifted_obj #
+        #####################
+        aligned_array = shift_array(
+            array=shifted_array,
+            shift=shift,
+            interpolation_method=interpolation_method,
+        )
+
+    else:  # 'skip'
+        if verbose:
+            print("Skipping alignment")
+        aligned_array = shifted_array
+        shift = (0,) * shifted_array.ndim
+
+    #################
+    # optional plot #
+    #################
+    if debugging:
+        if reference_array.ndim == 3:
+            gu.multislices_plot(
+                abs(reference_array), sum_frames=True, title="Reference object"
+            )
+            gu.multislices_plot(
+                abs(aligned_array), sum_frames=True, title="Aligned object"
+            )
+        else:  # 2D case
+            gu.imshow_plot(abs(reference_array), title="Reference object")
+            gu.imshow_plot(abs(aligned_array), title="Aligned object")
+
+    return aligned_array, shift
 
 
-def index_max(mydata):
-    """Look for the data max and location."""
-    myamp = np.abs(mydata)
-    myamp_max = myamp.max()
-    idx = np.unravel_index(myamp.argmax(), mydata.shape)
-    return myamp_max, idx
+def align_diffpattern(
+    reference_data,
+    data,
+    mask=None,
+    shift_method="raw",
+    interpolation_method="roll",
+    verbose=True,
+    debugging=False,
+):
+    """
+    Align two diffraction patterns.
+
+    The alignement can be based either on the shift of the center of mass or on dft
+    registration.
+
+    :param reference_data: the first 3D or 2D diffraction intensity array which will
+     serve as a reference.
+    :param data: the 3D or 2D diffraction intensity array to align.
+    :param mask: the 3D or 2D mask corresponding to data
+    :param shift_method: 'raw', 'modulus', 'support' or 'skip'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param interpolation_method: 'rgi' for RegularGridInterpolator or 'subpixel' for
+     subpixel shift
+    :param verbose: boolean, True to print comments
+    :param debugging: boolean, set to True to see plots
+    :return:
+     - the shifted data
+     - the shifted mask
+     - if return_shift, returns a tuple containing the shifts
+
+    """
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_ndarray(arrays=(reference_data, data), ndim=(2, 3), fix_shape=True)
+    if mask is not None:
+        valid.valid_ndarray(arrays=mask, shape=data.shape)
+    if shift_method not in {"raw", "modulus", "support", "skip"}:
+        raise ValueError("shift_method should be 'raw', 'modulus', 'support' or 'skip'")
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+    valid.valid_item(debugging, allowed_types=bool, name="debugging")
+
+    ##################
+    # align the data #
+    ##################
+    data, shift = align_arrays(
+        reference_array=reference_data,
+        shifted_array=data,
+        shift_method=shift_method,
+        interpolation_method=interpolation_method,
+        verbose=verbose,
+        debugging=debugging,
+    )
+
+    ##############################################
+    # shift the optional mask by the same amount #
+    ##############################################
+    if mask is not None:
+        mask = shift_array(
+            array=mask,
+            shift=shift,
+            interpolation_method=interpolation_method,
+        )
+
+    ####################################
+    # filter the data and mask for nan #
+    ####################################
+    data, mask = util.remove_nan(data=data, mask=mask)
+
+    if mask is None:
+        return data, shift
+
+    return data, mask, shift
 
 
-def index_max1(mydata):
-    """Look for the data maximum locations."""
-    return np.where(mydata == mydata.max())
+def average_arrays(
+    avg_obj,
+    ref_obj,
+    obj,
+    support_threshold=0.25,
+    correlation_threshold=0.90,
+    aligning_option="dft",
+    space="reciprocal_space",
+    debugging=False,
+    **kwargs,
+):
+    """
+    Average two reconstructions after aligning it.
+
+    This function can be used to average a series of arrays within a loop. Alignment is
+    performed using either DFT registration or the shift of the center of mass of the
+    array. Averaging is processed only if their Pearson cross-correlation after
+    alignment is larger than the correlation threshold.
+
+    :param avg_obj: 3D array of complex numbers, current average
+    :param ref_obj: 3D array of complex numbers, used as a reference for the alignment
+    :param obj: 3D array of complex numbers, array to be aligned with the reference and
+     to be added to avg_obj
+    :param support_threshold: normalized threshold for the definition of the support. It
+     is applied on the modulus of the array
+    :param correlation_threshold: float in [0, 1], minimum correlation between two
+     dataset to average them
+    :param aligning_option: 'com' for center of mass, 'dft' for dft registration and
+     subpixel shift
+    :param space: 'direct_space' or 'reciprocal_space', in which space the average will
+     be performed
+    :param debugging: boolean, set to True to see plots
+    :param kwargs:
+
+     - 'width_z': size of the area to plot in z (axis 0), centered on the middle of
+       the initial array
+     - 'width_y': size of the area to plot in y (axis 1), centered on the middle of
+       the initial array
+     - 'width_x': size of the area to plot in x (axis 2), centered on the middle of
+       the initial array
+     - 'reciprocal_space': True if the object is in reciprocal space, it is used only
+       for defining labels in plots
+     - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
+       default plot labels.
+
+    :return: the average complex density
+    """
+    # check some parameters
+    valid.valid_ndarray(arrays=(obj, avg_obj, ref_obj), ndim=3)
+    if space not in {"direct_space", "reciprocal_space"}:
+        raise ValueError("space should be 'direct_space' or 'reciprocal_space'")
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={
+            "width_z",
+            "width_y",
+            "width_x",
+            "reciprocal_space",
+            "is_orthogonal",
+        },
+        name="postprocessing_utils.average_obj",
+    )
+    width_z = kwargs.get("width_z")
+    width_y = kwargs.get("width_y")
+    width_x = kwargs.get("width_x")
+    reciprocal_space = kwargs.get("reciprocal_space", False)
+    is_orthogonal = kwargs.get("is_orthogonal", False)
+
+    avg_flag = 0
+
+    #######################################################
+    # first iteration of the loop, no running average yet #
+    #######################################################
+    if avg_obj.sum() == 0:
+        avg_obj = ref_obj
+        if debugging:
+            gu.multislices_plot(
+                abs(avg_obj),
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                plot_colorbar=True,
+                sum_frames=True,
+                title="Reference object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
+        return avg_obj, avg_flag
+
+    ###############################################
+    # next iterations, update the running average #
+    ###############################################
+
+    # align obj
+    new_obj, _ = align_arrays(
+        reference_array=ref_obj,
+        shifted_array=obj,
+        shift_method="modulus",
+        interpolation_method=aligning_option,
+        support_threshold=support_threshold,
+        precision=1000,
+        verbose=True,
+        debugging=debugging,
+    )
+
+    # renormalize new_obj
+    new_obj = new_obj / abs(new_obj).max()
+
+    # calculate the correlation between arrays and average them eventually
+    correlation = pearsonr(
+        np.ndarray.flatten(abs(ref_obj)), np.ndarray.flatten(abs(new_obj))
+    )[0]
+    if correlation < correlation_threshold:
+        print(
+            f"pearson cross-correlation = {correlation} too low, "
+            "skip this reconstruction"
+        )
+    else:  # combine the arrays
+        print(
+            f"pearson-correlation = {correlation}, ",
+            "average with this reconstruction",
+        )
+
+        if debugging:
+            myfig, _, _ = gu.multislices_plot(
+                abs(new_obj),
+                width_z=width_z,
+                width_y=width_y,
+                width_x=width_x,
+                sum_frames=True,
+                plot_colorbar=True,
+                title="Aligned object",
+                reciprocal_space=reciprocal_space,
+                is_orthogonal=is_orthogonal,
+            )
+            myfig.text(
+                0.60,
+                0.30,
+                "pearson-correlation = " + str("{:.4f}".format(correlation)),
+                size=20,
+            )
+
+        # update the average either in direct space or in reciprocal space
+        if space == "direct_space":
+            avg_obj = avg_obj + new_obj
+        else:  # "reciprocal_space":
+            avg_obj = ifftn(fftn(avg_obj) + fftn(obj))
+        avg_flag = 1
+
+    if debugging:
+        gu.multislices_plot(
+            abs(avg_obj),
+            plot_colorbar=True,
+            width_z=width_z,
+            width_y=width_y,
+            width_x=width_x,
+            sum_frames=True,
+            title="New averaged object",
+            reciprocal_space=reciprocal_space,
+            is_orthogonal=is_orthogonal,
+        )
+
+    return avg_obj, avg_flag
 
 
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
@@ -324,7 +607,283 @@ def dftups(
     return np.dot(np.dot(kernel_row, array), kernel_column)
 
 
-def subpixel_shift(array, z_shift, y_shift, x_shift=0):
+def getimageregistration(array1, array2, precision=10):
+    """
+    Calculate the registration (shift) between two arrays.
+
+    :param array1: the reference array
+    :param array2: the array to register
+    :param precision: subpixel precision of the registration. Images will be
+     registered to within 1/precision of a pixel
+    :return: the list of shifts that need to be applied to array2 in order to align it
+     with array1 (no need to flip signs)
+    """
+    if array1.shape != array2.shape:
+        raise ValueError("Arrays should have the same shape")
+    # 3D arrays
+    if len(array1.shape) == 3:
+        abs_array1 = np.abs(array1)
+        abs_array2 = np.abs(array2)
+        # compress array (sum) in each dimension, i.e. a bunch of 2D arrays
+        ft_array1_0 = fftn(
+            fftshift(np.sum(abs_array1, 0))
+        )  # need fftshift for wrap around
+        ft_array2_0 = fftn(fftshift(np.sum(abs_array2, 0)))
+        ft_array1_1 = fftn(fftshift(np.sum(abs_array1, 1)))
+        ft_array2_1 = fftn(fftshift(np.sum(abs_array2, 1)))
+        ft_array1_2 = fftn(fftshift(np.sum(abs_array1, 2)))
+        ft_array2_2 = fftn(fftshift(np.sum(abs_array2, 2)))
+
+        # calculate shift in each dimension, i.e. 2 estimates of shift
+        result = dft_registration(ft_array1_2, ft_array2_2, ups_factor=precision)
+        (
+            shiftx1,
+            shifty1,
+        ) = result[2:4]
+        result = dft_registration(ft_array1_1, ft_array2_1, ups_factor=precision)
+        (
+            shiftx2,
+            shiftz1,
+        ) = result[2:4]
+        result = dft_registration(ft_array1_0, ft_array2_0, ups_factor=precision)
+        (
+            shifty2,
+            shiftz2,
+        ) = result[2:4]
+
+        # average them
+        xshift = (shiftx1 + shiftx2) / 2
+        yshift = (shifty1 + shifty2) / 2
+        zshift = (shiftz1 + shiftz2) / 2
+        shift_list = xshift, yshift, zshift
+
+    # 2D arrays
+    elif len(array1.shape) == 2:
+        ft_array1 = fftn(array1)
+        ft_array2 = fftn(array2)
+        result = dft_registration(ft_array1, ft_array2, ups_factor=precision)
+        shift_list = tuple(result[2:])
+    else:
+        shift_list = None
+    return shift_list
+
+
+def get_shift(
+    reference_array: np.ndarray,
+    shifted_array: np.ndarray,
+    shift_method: str = "modulus",
+    precision: int = 1000,
+    support_threshold: Union[None, float] = None,
+    verbose: bool = True,
+) -> Sequence[float]:
+    """
+    Calculate the shift between two arrays.
+
+    The shift is calculated using dft registration. If a threshold for creating a
+    support is not provided, DFT registration is performed on the arrays themselves.
+    If a threshold is provided, shifts are calculated using the support created by
+    thresholding the modulus of the arrays.
+
+    :param reference_array: numpy ndarray
+    :param shifted_array: numpy ndarray of the same shape as reference_array
+    :param shift_method: 'raw', 'modulus' or 'support'. Object to use for the
+     determination of the shift. If 'raw', it uses the raw, eventually complex array.
+     if 'modulus', it uses the modulus of the array. If 'support', it uses a support
+     created by threshold the modulus of the array.
+    :param precision: precision for the DFT registration in 1/pixel
+    :param support_threshold: optional normalized threshold in [0, 1]. If not None, it
+     will be used to define a support. The center of mass will be calculated for that
+     support instead of the modulus.
+    :param verbose: True to print comment
+    :return: list of shifts, of length equal to the number of dimensions of the arrays.
+     These are shifts that need to be applied to shifted_array in order to align it
+     with reference_array (no need to flip signs)
+    """
+    ##########################
+    # check input parameters #
+    ##########################
+    valid.valid_ndarray(
+        arrays=(reference_array, shifted_array),
+        fix_shape=True,
+        name="arrays",
+    )
+    if shift_method not in {"raw", "modulus", "support"}:
+        raise ValueError("shift_method should be 'raw', 'modulus' or 'support'")
+    valid.valid_item(
+        precision,
+        allowed_types=int,
+        min_included=1,
+        name="precision",
+    )
+    valid.valid_item(
+        support_threshold,
+        allowed_types=Real,
+        min_included=0,
+        max_included=1,
+        allow_none=True,
+        name="support_threshold",
+    )
+    valid.valid_item(verbose, allowed_types=bool, name="verbose")
+
+    ##########################################################################
+    # define the objects that will be used for the calculation of the shift  #
+    ##########################################################################
+    if shift_method == "raw":
+        reference_obj = reference_array
+        shifted_obj = shifted_array
+    elif shift_method == "modulus":
+        reference_obj = abs(reference_array)
+        shifted_obj = abs(shifted_array)
+    else:  # "support"
+        reference_obj, shifted_obj = util.make_support(
+            arrays=(reference_array, shifted_array), support_threshold=support_threshold
+        )
+
+    ##############################################
+    # calculate the shift between the two arrays #
+    ##############################################
+    shift = getimageregistration(reference_obj, shifted_obj, precision=precision)
+
+    if verbose:
+        print(f"shifts with the reference object: {shift} pixels")
+    return shift
+
+
+def index_max(mydata):
+    """Look for the data max and location."""
+    myamp = np.abs(mydata)
+    myamp_max = myamp.max()
+    idx = np.unravel_index(myamp.argmax(), mydata.shape)
+    return myamp_max, idx
+
+
+def index_max1(mydata):
+    """Look for the data maximum locations."""
+    return np.where(mydata == mydata.max())
+
+
+def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndarray:
+    """
+    Interpolate the shifted array on new positions using a RegularGridInterpolator.
+
+    :param array: a 3D numpy array
+    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+     need to be applied to array
+    :return: the shifted array
+    """
+    # check some parameters
+    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_container(
+        shift, container_types=(tuple, list), item_types=float, name="shift"
+    )
+
+    if array.ndim == 3:
+        # calculate the new positions
+        nbz, nby, nbx = array.shape
+        old_z = np.arange(-nbz // 2, nbz // 2)
+        old_y = np.arange(-nby // 2, nby // 2)
+        old_x = np.arange(-nbx // 2, nbx // 2)
+        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
+        new_z = myz - shift[0]
+        new_y = myy - shift[1]
+        new_x = myx - shift[2]
+
+        # interpolate array
+        rgi = RegularGridInterpolator(
+            (old_z, old_y, old_x),
+            array,
+            method="linear",
+            bounds_error=False,
+            fill_value=0,
+        )
+        shifted_array = rgi(
+            np.concatenate(
+                (
+                    new_z.reshape((1, new_z.size)),
+                    new_y.reshape((1, new_z.size)),
+                    new_x.reshape((1, new_z.size)),
+                )
+            ).transpose()
+        )
+    else:  # 2D case
+        # calculate the new positions
+        nby, nbx = array.shape
+        old_y = np.arange(-nby // 2, nby // 2)
+        old_x = np.arange(-nbx // 2, nbx // 2)
+        myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
+        new_y = myy - shift[0]
+        new_x = myx - shift[1]
+
+        # interpolate array
+        rgi = RegularGridInterpolator(
+            (old_y, old_x),
+            array,
+            method="linear",
+            bounds_error=False,
+            fill_value=0,
+        )
+        shifted_array = rgi(
+            np.concatenate(
+                (
+                    new_y.reshape((1, new_y.size)),
+                    new_x.reshape((1, new_y.size)),
+                )
+            ).transpose()
+        )
+    return shifted_array.reshape(array.shape).astype(array.dtype)
+
+
+def shift_array(
+    array: np.ndarray, shift: Sequence[float], interpolation_method: str = "subpixel"
+) -> np.ndarray:
+    """
+    Shift array using the defined method given the offsets.
+
+    :param array: a numpy ndarray
+    :param shift: tuple of floats, shifts of the array in each dimension
+    :param interpolation_method: 'subpixel' for interpolating using subpixel shift,
+     'rgi' for interpolating using a RegularGridInterpolator, 'roll' to shift voxels
+     by an integral number (the shifts are rounded to the nearest integer)
+     created by thresholding the modulus of the array.
+    :return: the shifted array
+    """
+    #########################
+    # check some parameters #
+    #########################
+    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_container(
+        shift, container_types=(tuple, list), item_types=Real, name="shifts"
+    )
+    if interpolation_method not in {"subpixel", "rgi", "roll"}:
+        raise ValueError("shift_method should be 'subpixel', 'rgi' or 'roll'")
+
+    ###################
+    # shift the array #
+    ###################
+    if interpolation_method == "subpixel":
+        # align obj using subpixel shift, keep the complex output
+        shifted_array = subpixel_shift(array, *shift)
+
+        ###################################################
+        # convert shifted_array to the original data type #
+        # subpixel_shift outputs a complex number         #
+        ###################################################
+        if not isinstance(array.flatten()[0], Complex):
+            shifted_array = abs(shifted_array)
+
+    elif interpolation_method == "rgi":
+        # re-sample data on a new grid based on COM shift of support
+        shifted_array = interp_rgi_translation(array=array, shift=shift)
+    else:  # "roll"
+        shifted_array = np.roll(
+            array,
+            shift=list(map(lambda x: int(np.rint(x)), shift)),
+            axis=tuple(range((len(shift)))),
+        )
+    return shifted_array
+
+
+def subpixel_shift(array, z_shift, y_shift, x_shift=None):
     """
     Shift array by the shift values.
 
@@ -336,11 +895,17 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
     :param x_shift: shift in the third dimension
     :return: the shifted array
     """
-    if len(array.shape) == 3:
+    # check some parameters
+    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_item(z_shift, allowed_types=float, name="z_shift")
+    valid.valid_item(y_shift, allowed_types=float, name="y_shift")
+    valid.valid_item(x_shift, allowed_types=float, allow_none=True, name="x_shift")
+
+    # shift the array
+    ndim = len(array.shape)
+    if ndim == 3:
         numz, numy, numx = array.shape
         buf2ft = fftn(array)
-        del array
-        gc.collect()
         temp_z = ifftshift(
             np.arange(-np.fix(numz / 2), np.ceil(numz / 2))
         )  # python does not include the end point
@@ -357,10 +922,8 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
             * np.pi
             * (z_shift * myz / numz + y_shift * myy / numy + x_shift * myx / numx)
         )
-        del buf2ft, myz, myy, myx
-        gc.collect()
         shifted_array = ifftn(greg)
-    else:
+    else:  # 2D case
         buf2ft = fftn(array)
         numz, numy = array.shape
         temp_z = ifftshift(
@@ -375,40 +938,3 @@ def subpixel_shift(array, z_shift, y_shift, x_shift=0):
         )
         shifted_array = ifftn(greg)
     return shifted_array
-
-
-# uncomment below to test the code
-
-# if __name__ == "__main__":
-#     import matplotlib.pyplot as plt
-#     from scipy.ndimage.interpolation import shift
-#
-#     img1 = np.zeros((64, 64, 64), dtype="Float64")
-#     img1[32-10:32+10, 32-10:32+10, 32-10:32+10] = 1
-#     img1 = img1[:, :, 32]
-#     img2 = img1.copy()
-#     img2 = shift(img2, (-5, 3))
-#     shiftz, shifty = getimageregistration(img1, img2, precision=1000)
-#     print(shiftz, shifty)
-#     shifted_img2 = subpixel_shift(img2, shiftz, shifty)
-#
-#     fig = plt.figure()
-#     plt.subplot(2, 3, 1)
-#     plt.imshow(abs(img1))
-#     plt.title('original image amp')
-#     plt.subplot(2, 3, 2)
-#     plt.imshow(abs(img2))
-#     plt.title('shifted image amp')
-#     plt.subplot(2, 3, 3)
-#     plt.imshow(abs(shifted_img2))
-#     plt.title('registered image amp')
-#     plt.subplot(2, 3, 4)
-#     plt.imshow(np.angle(img1))
-#     plt.title('original image phase')
-#     plt.subplot(2, 3, 5)
-#     plt.imshow(np.angle(img2))
-#     plt.title('shifted image phase')
-#     plt.subplot(2, 3, 6)
-#     plt.imshow(np.angle(shifted_img2))
-#     plt.title('registered image phase')
-#     plt.show()

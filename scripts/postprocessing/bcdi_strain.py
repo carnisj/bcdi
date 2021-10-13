@@ -29,6 +29,7 @@ from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
+import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -265,7 +266,7 @@ reference_temperature = (
 ##########################################################
 # parameters for averaging several reconstructed objects #
 ##########################################################
-avg_method = "reciprocal_space"  # 'real_space' or 'reciprocal_space'
+avg_space = "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
 avg_threshold = 0.90  # minimum correlation within reconstructed object for averaging
 ############################################
 # setup for phase averaging or apodization #
@@ -562,14 +563,14 @@ for counter, value in enumerate(sorted_obj):
         print("This reconstruction will be used as reference.")
         ref_obj = obj
 
-    avg_obj, flag_avg = pu.average_obj(
+    avg_obj, flag_avg = reg.average_arrays(
         avg_obj=avg_obj,
         ref_obj=ref_obj,
         obj=obj,
         support_threshold=0.25,
         correlation_threshold=avg_threshold,
         aligning_option="dft",
-        method=avg_method,
+        space=avg_space,
         reciprocal_space=False,
         is_orthogonal=is_orthogonal,
         debugging=debug,
