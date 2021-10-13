@@ -40,6 +40,9 @@ Setup instance.
   }
     ABC <|-- Beamline
 
+API Reference
+-------------
+
 """
 from abc import ABC, abstractmethod
 import h5py
@@ -115,6 +118,7 @@ class Beamline(ABC):
           - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
           - 'datadir': the data directory
           - 'template_imagefile': the template for data/image file names
+          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
 
         :return: logfile
         """
@@ -222,34 +226,32 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def init_paths(**kwargs):
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
         Initialize paths used for data processing and logging.
 
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: beamline-dependent template for the data files:
+
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+
         :param kwargs: dictionnary of the setup parameters including the following keys:
 
-         - 'sample_name': string in front of the scan number in the data folder
-           name.
-         - 'scan_number': int, the scan number
-         - 'root_folder': folder of the experiment, where all scans are stored
-         - 'save_dir': path of the directory where to save the analysis results,
-           can be None
          - 'specfile_name': beamline-dependent string:
 
            - ID01: name of the spec file without '.spec'
            - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
              root_folder+'alias_dict_2019.txt')
            - empty string for all other beamlines
-
-         - 'template_imagefile': beamline-dependent template for the data files:
-
-           - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-           - Cristal: 'S%d.nxs'
-           - P10: '_master.h5'
-           - NANOMAX: '%06d.h5'
-           - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 
         :return: a tuple of strings:
 
@@ -469,15 +471,21 @@ class BeamlineCRISTAL(Beamline):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
-    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which is the data itself for CRISTAL.
 
-        :param datadir: str, the data directory
-        :param template_imagefile: str, template for data file name, e.g. 'S%d.nxs'
-        :param scan_number: int, the scan number to load
+        :param kwargs:
+         - 'datadir': str, the data directory
+         - 'template_imagefile': str, template for data file name, e.g. 'S%d.nxs'
+         - 'scan_number': int, the scan number to load
+
         :return: logfile
         """
+        datadir = kwargs.get("datadir")
+        template_imagefile = kwargs.get("template_imagefile")
+        scan_number = kwargs.get("scan_number")
+
         if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
             raise TypeError("datadir and template_imagefile should be strings")
         if not isinstance(scan_number, int):
@@ -778,15 +786,20 @@ class BeamlineID01(Beamline):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
-    def create_logfile(root_folder, filename, **kwargs):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which is the spec file for ID01.
 
-        :param root_folder: str, the root directory of the experiment, where is e.g. the
-         specfile file.
-        :param filename: str, name of the spec file without '.spec'
+        :param kwargs:
+         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+           specfile file.
+         - 'filename': str, name of the spec file without '.spec'
+
         :return: logfile
         """
+        root_folder = kwargs.get("root_folder")
+        filename = kwargs.get("filename")
+
         if not all(isinstance(val, str) for val in {root_folder, filename}):
             raise ValueError("root_folder and filename should be strings")
         # load the spec file
@@ -814,14 +827,7 @@ class BeamlineID01(Beamline):
         return "y-"
 
     @staticmethod
-    def init_paths(
-        root_folder,
-        sample_name,
-        scan_number,
-        specfile_name,
-        template_imagefile,
-        **kwargs,
-    ):
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
         Initialize paths used for data processing and logging at ID01.
 
@@ -829,9 +835,11 @@ class BeamlineID01(Beamline):
         :param sample_name: string in front of the scan number in the data folder
          name.
         :param scan_number: int, the scan number
-        :param specfile_name: name of the spec file without '.spec'
         :param template_imagefile: template for the data files, e.g.
          'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+        :param kwargs:
+         - 'specfile_name': name of the spec file without '.spec'
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -840,6 +848,10 @@ class BeamlineID01(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
+        specfile_name = kwargs.get("specfile_name")
+        if specfile_name is None:
+            raise ValueError("'specfile_name' parameter required")
+
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
@@ -1095,15 +1107,21 @@ class BeamlineNANOMAX(Beamline):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
-    def create_logfile(datadir, template_imagefile, scan_number, **kwargs):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which is the data itself for Nanomax.
 
-        :param datadir: str, the data directory
-        :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
-        :param scan_number: int, the scan number to load
+        :param kwargs:
+         - 'datadir': str, the data directory
+         - 'template_imagefile': str, template for data file name, e.g. '%06d.h5'
+         - 'scan_number': int, the scan number to load
+
         :return: logfile
         """
+        datadir = kwargs.get("datadir")
+        template_imagefile = kwargs.get("template_imagefile")
+        scan_number = kwargs.get("scan_number")
+
         if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
             raise TypeError("datadir and template_imagefile should be strings")
         if not isinstance(scan_number, int):
@@ -1405,15 +1423,20 @@ class BeamlineP10(Beamline):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
-    def create_logfile(root_folder, filename, **kwargs):
+    def create_logfile(**kwargs):
         """
         Create the logfile, which is the .fio file for P10.
 
-        :param root_folder: str, the root directory of the experiment, where the scan
-         folders are located.
-        :param filename: str, name of the .fio file (without ".fio")
+        :param kwargs:
+         - 'root_folder': str, the root directory of the experiment, where the scan
+           folders are located.
+         - 'filename': str, name of the .fio file (without ".fio")
+
         :return: logfile
         """
+        root_folder = kwargs.get("root_folder")
+        filename = kwargs.get("filename")
+
         if not all(isinstance(val, str) for val in {root_folder, filename}):
             raise TypeError("root_folder and filename should be strings")
         # load .fio file
@@ -1958,22 +1981,30 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    def create_logfile(
-        self, datadir, template_imagefile, scan_number, filename, **kwargs
-    ):
+    @staticmethod
+    def create_logfile(**kwargs):
         """
         Create the logfile, which is the data itself for SIXS.
 
-        :param datadir: str, the data directory
-        :param template_imagefile: str, template for data file name:
+        :param kwargs:
+         - 'datadir': str, the data directory
+         - 'template_imagefile': str, template for data file name:
 
            - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
            - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 
-        :param scan_number: int, the scan number to load
-        :param filename: str, absolute path of 'alias_dict.txt'
+         - 'scan_number': int, the scan number to load
+         - 'filename': str, absolute path of 'alias_dict.txt'
+         - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
+
         :return: logfile
         """
+        datadir = kwargs.get("datadir")
+        template_imagefile = kwargs.get("template_imagefile")
+        scan_number = kwargs.get("scan_number")
+        filename = kwargs.get("filename")
+        name = kwargs.get("name")
+
         if not all(
             isinstance(val, str) for val in {datadir, template_imagefile, filename}
         ):
@@ -1984,7 +2015,7 @@ class BeamlineSIXS(Beamline):
             )
 
         shortname = template_imagefile % scan_number
-        if self.name == "SIXS_2018":
+        if name == "SIXS_2018":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.nxsReady as nxsReady
 
@@ -1994,7 +2025,7 @@ class BeamlineSIXS(Beamline):
                 alias_dict=filename,
                 scan="SBS",
             )
-        if self.name == "SIXS_2019":
+        if name == "SIXS_2019":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
@@ -2003,7 +2034,7 @@ class BeamlineSIXS(Beamline):
                 filename=shortname,
                 alias_dict=filename,
             )
-        raise NotImplementedError(f"{self.name} is not implemented")
+        raise NotImplementedError(f"{name} is not implemented")
 
     @property
     def detector_hor(self):
@@ -2027,14 +2058,7 @@ class BeamlineSIXS(Beamline):
         return "y-"
 
     @staticmethod
-    def init_paths(
-        root_folder,
-        sample_name,
-        scan_number,
-        specfile_name,
-        template_imagefile,
-        **kwargs,
-    ):
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
         Initialize paths used for data processing and logging at SIXS.
 
@@ -2042,11 +2066,13 @@ class BeamlineSIXS(Beamline):
         :param sample_name: string in front of the scan number in the data folder
          name.
         :param scan_number: int, the scan number
-        :param specfile_name: None or full path of the alias dictionnary (e.g.
-         root_folder+'alias_dict_2019.txt')
         :param template_imagefile: template for the data files, e.g.
          'align.spec_ascan_mu_%05d.nxs' (SIXS_2018), 'spare_ascan_mu_%05d.nxs'
          (SIXS_2019).
+        :param kwargs:
+         - 'specfile_name': None or full path of the alias dictionnary (e.g.
+           root_folder+'alias_dict_2019.txt')
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -2055,6 +2081,10 @@ class BeamlineSIXS(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
+        specfile_name = kwargs.get("specfile_name")
+        if specfile_name is None:
+            raise ValueError("'specfile_name' parameter required")
+
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
 

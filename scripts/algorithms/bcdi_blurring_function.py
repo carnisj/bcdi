@@ -20,7 +20,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 import bcdi.algorithms.algorithms_utils as algo
-import bcdi.facet_recognition.facet_utils as fu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

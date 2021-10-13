@@ -753,6 +753,7 @@ class Setup:
             filename=filename,
             datadir=self.detector.datadir,
             template_imagefile=self.detector.template_imagefile,
+            name=self.beamline,
         )
 
     def detector_frame(
@@ -1098,7 +1099,6 @@ class Setup:
             sample_name=sample_name,
             scan_number=scan_number,
             root_folder=root_folder,
-            save_dir=save_dir,
             specfile_name=specfile_name,
             template_imagefile=template_imagefile,
             data_dirname=data_dirname,
@@ -1620,8 +1620,6 @@ class Setup:
         nx_output += 10
         ny_output += 10
         nz_output += 10
-        del pos_along_x, pos_along_y, pos_along_z
-        gc.collect()
 
         #########################################
         # calculate the interpolation positions #
@@ -1654,8 +1652,6 @@ class Setup:
             + transfer_imatrix[2, 1] * myy
             + transfer_imatrix[2, 2] * myz
         )
-        del myx, myy, myz
-        gc.collect()
 
         ######################
         # interpolate arrays #
@@ -1990,9 +1986,6 @@ class Setup:
                     f" {dq_along_x:.5f} 1/nm)"
                 )
 
-        del q_along_x, q_along_y, q_along_z, myx, myy, myz
-        gc.collect()
-
         ##########################################################
         # crop the output shape in order to fit FFT requirements #
         ##########################################################
@@ -2044,8 +2037,6 @@ class Setup:
             + transfer_imatrix[2, 1] * myy
             + transfer_imatrix[2, 2] * myz
         )
-        del myx, myy, myz
-        gc.collect()
 
         ######################
         # interpolate arrays #
