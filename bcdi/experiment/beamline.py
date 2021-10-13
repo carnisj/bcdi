@@ -2326,7 +2326,7 @@ class Beamline34ID(Beamline):
         direction. The laboratory frame convention is (z downstream, y vertical,
         x outboard).
         """
-        return "x-"
+        return "x+"
 
     @property
     def detector_ver(self):

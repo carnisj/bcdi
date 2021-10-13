@@ -1172,7 +1172,7 @@ class TestBeamline34ID(unittest.TestCase):
         }
 
     def test_detector_hor(self):
-        self.assertTrue(self.beamline.detector_hor == "x-")
+        self.assertTrue(self.beamline.detector_hor == "x+")
 
     def test_detector_ver(self):
         self.assertTrue(self.beamline.detector_ver == "y-")
@@ -1228,7 +1228,7 @@ class TestBeamline34ID(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
 
     def test_outofplane_coeff(self):
         self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
@@ -1244,9 +1244,9 @@ class TestBeamline34ID(unittest.TestCase):
                 matrix,
                 np.array(
                     [
-                        [-2.88286898e05, 5.16236394e04, 5.66438046e-02],
-                        [0.00000000e00, 3.32652707e05, 0.00000000e00],
-                        [1.90559381e05, 7.80985893e04, -1.66757798e-02],
+                        [2.88286898e05, 5.16236394e04, 5.66438046e-02],
+                        [-0.00000000e00, 3.32652707e05, 0.00000000e00],
+                        [-1.90559381e05, 7.80985893e04, -1.66757798e-02],
                     ]
                 ),
                 rtol=1e-09,
@@ -1282,9 +1282,9 @@ class TestBeamline34ID(unittest.TestCase):
                 matrix,
                 np.array(
                     [
-                        [-2.88286898e05, 5.16236394e04, 8.31952065e-03],
-                        [0.00000000e00, 3.32652707e05, 1.19402761e-02],
-                        [1.90559381e05, 7.80985893e04, 1.79403169e-03],
+                        [2.88286898e05, 5.16236394e04, 8.31952065e-03],
+                        [-0.00000000e00, 3.32652707e05, 1.19402761e-02],
+                        [-1.90559381e05, 7.80985893e04, 1.79403169e-03],
                     ]
                 ),
                 rtol=1e-09,
@@ -1318,9 +1318,9 @@ class TestBeamline34ID(unittest.TestCase):
                 matrix,
                 np.array(
                     [
-                        [-2.88286898e05, 5.16236394e04, 8.31952065e-03],
-                        [0.00000000e00, 3.32652707e05, 1.19402761e-02],
-                        [1.90559381e05, 7.80985893e04, 1.79403169e-03],
+                        [2.88286898e05, 5.16236394e04, 8.31952065e-03],
+                        [-0.00000000e00, 3.32652707e05, 1.19402761e-02],
+                        [-1.90559381e05, 7.80985893e04, 1.79403169e-03],
                     ]
                 ),
                 rtol=1e-09,
