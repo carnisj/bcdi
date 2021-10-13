@@ -122,6 +122,31 @@ Documentation
 
 The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 
+Video Documentation
+===================
+
+All talks from the bcdiHackweek 2021 are available at the following links:
+
+* Carnis, J. - BCDI package overview: https://youtu.be/g4jkzmz8JGk
+
+* Li, N.  - data preprocessing: https://youtu.be/D-fl19Mi7Ao
+
+* Carnis, J. - data preprocessing interactive: https://youtu.be/ddipN43HR1w
+
+* Dupraz, M. - data postprocessing + viz: https://youtu.be/WyDzOkJJu8c
+
+* Carnis, J. - all that is left in the BCDI package: https://youtu.be/egh8X6iI4Nw
+
+* Richard, M.-I. - paraview Facet analyser: https://youtu.be/RarHeUIOu08
+
+* Carnis, J. - bcdi Facet analyser: https://youtu.be/gucQk8p3vyk
+
+* Simonne, D. - jupyter GUI for bcdi package: https://youtu.be/9SDcGfJqiVw
+
+Related package `Cohere <https://github.com/AdvancedPhotonSource/cohere>`_:
+
+* Harder, R. - Cohere package overview https://youtu.be/I1YOZoxddlE
+
 License
 =======
 The BCDI library is distributed with a CeCILL-B license
@@ -162,9 +187,9 @@ This package contributed to the following peer-reviewed publications:
 * J. Carnis, et al. Towards a quantitative determination of strain in Bragg Coherent
   X-ray Diffraction Imaging: artefacts and sign convention in reconstructions.
   Scientific reports 9, 17357 (2019). DOI: 10.1038/s41598-019-53774-2
-  
-* W. Hua, et al. Structural insights into the formation and voltage degradation of 
-  lithium- and manganese-rich layered oxides. Nat Commun 10, 5365 (2019). 
+
+* W. Hua, et al. Structural insights into the formation and voltage degradation of
+  lithium- and manganese-rich layered oxides. Nat Commun 10, 5365 (2019).
   DOI: 10.1038/s41467-019-13240-z
 
 * G. Niu, et al. Advanced coherent X-ray diffraction and electron microscopy of

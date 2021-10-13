@@ -13,45 +13,54 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 import sys
 import bcdi.graph.graph_utils as gu
-import bcdi.preprocessing.bcdi_utils as bu
+import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 
 helptext = """
 Average several BCDI or CDI scans after an optional alignement step, based on a
 threshold on their Pearson correlation coefficient. The alignment of diffraction
-patterns is based on the center of mass shift or dft registration, using Python regular
-grid interpolator or subpixel shift. Note thta there are many artefacts when using
-subpixel shift in reciprocal space.
+patterns can be realized using Python regular grid interpolator, subpixel shift or a
+simple roll of pixels. Note that there are many artefacts when interpolating in
+reciprocal space, rolling is the best option.
+
+The script expects that datasets have already been stacked, for example using the script
+bcdi_preprocessing_BCDI. Relative to root_folder, the stacked data for scan S1 would be
+in /root_folder/S1/S1_pynx_suffix and the mask in /root_folder/S1/S1_maskpynx_suffix
+
+In this example, sample_name=["S"] and suffix=["_suffix"], but it could be different for
+each dataset (hence the use of a list).
 """
 
-scans = np.arange(314, 374 + 1, 4)  # list or array of scan numbers
-# scans = np.concatenate((scans, np.arange(1147, 1195+1, 3)))
+scans = np.arange(314, 322 + 1, 4)
+# list or array of scan numbers
 # bad_indices = np.argwhere(scans == 738)
 # scans = np.delete(scans, bad_indices)
-sample_name = ["PtNP1"]  # list of sample names. If only one name is indicated,
+sample_name = ["PtNP1"]
+# list of sample names. If only one name is indicated,
 # it will be repeated to match the length of scans
-suffix = [
-    "_norm_250_1100_900_1_1_1.npz"
-]  # list of sample names (end of the filename template after 'pynx'),
+suffix = ["_norm_250_1100_900_1_1_1.npz"]
+# list of sample names (end of the filename template after 'pynx'),
 # it will be repeated to match the length of scans
-homedir = "G:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/"
+root_folder = "C:/Users/Jerome/Documents/data/isosurface/"
 # parent folder of scans folders
-savedir = "D:/data/P10_2nd_test_isosurface_Dec2020/data_nanolab/dataset_2/test/"
+save_dir = "C:/Users/Jerome/Documents/data/isosurface/test"
 # path of the folder to save data
-alignement_method = "registration"
-# method to find the translational offset, 'skip', 'center_of_mass' or 'registration'
-combining_method = (
-    "subpixel"  # 'rgi' for RegularGridInterpolator or 'subpixel' for subpixel shift
-)
+shift_method = "raw"  # ' raw', 'modulus', 'support' or 'skip'
+# Object to use for the determination of the shift. If 'raw', it uses the raw,
+# eventually complex array. if 'modulus', it uses the modulus of the array.
+# If 'support', it uses a support created by threshold the modulus of the array.
+# if 'skip', it skips the alignment.
+interpolation_method = "roll"  # 'rgi' for RegularGridInterpolator,
+# 'subpixel' for subpixel shift, 'roll' to shift voxels by an integral number
+# (the shifts are rounded to the nearest integer)
 corr_roi = None
 # [420, 520, 660, 760, 600, 700]
 # region of interest where to calculate the correlation between scans.
 # If None, it will use the full array. [zstart, zstop, ystart, ystop, xstart, xstop]
-output_shape = (
-    250,
-    1024,
-    800,
-)  # (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+output_shape = (250, 1024, 800)
+# (1160, 1083, 1160)  # the output dataset will be cropped/padded to this shape
+apply_fft_constraint = True  # set to True to enforce the constraint on the FFT shape
+# for phase retrieval, output_shape may be overriden.
 crop_center = None  # [z, y, x] pixels position in the original array
 # of the center of the cropped output
 # if None, it will be set to the center of the original array
@@ -62,15 +71,14 @@ boundaries = "crop"  # 'mask', 'crop' or 'skip'.
 partially_masked = "unmask"  # 'unmask' or 'mask'.
 # If 'unmask', partially masked pixels will be set to their mean value
 # and unmasked. If 'mask', partially masked pixels will be set to 0 and masked.
-correlation_threshold = (
-    0.95  # only scans having a correlation larger than this threshold will be combined
-)
+correlation_threshold = 0.95
+# only scans having a correlation larger than this threshold will be combined
 reference_scan = 0
 # index in scans of the scan to be used as the reference for the correlation calculation
-combine_masks = True  # if True, the output mask is the combination of all masks.
-# If False, the reference mask is used
-# if a pixel is defined only in part of the dataset,
-# its value will be used with proper rescaling
+combine_masks = True  # if True, the output mask is the union of all masks.
+# If False, the reference mask is used.
+# If a pixel is defined only in part of the dataset, its value will be used with proper
+# rescaling
 is_orthogonal = False  # if True, it will look for the data in a folder named /pynx,
 # otherwise in /pynxraw
 plot_threshold = 0  # data below this will be set to 0, only in plots
@@ -91,7 +99,12 @@ if type(output_shape) is tuple:
     output_shape = list(output_shape)
 if len(output_shape) != 3:
     raise ValueError("output_shape should be a list or tuple of three numbers")
-
+if apply_fft_constraint:
+    output_shape = util.smaller_primes(output_shape, maxprime=7, required_dividers=(2,))
+    print(
+        "\nChecking that output_shape fits FFT shape requirements for phase retrieval, "
+        f"output_shape={output_shape}"
+    )
 if isinstance(sample_name, (tuple, list)):
     if len(sample_name) == 1:
         sample_name = [sample_name[0] for idx in range(len(scans))]
@@ -130,13 +143,13 @@ else:
 # load the reference scan #
 ###########################
 plt.ion()
-print(scans)
+print(f"Scan list: {scans}")
 samplename = (
     sample_name[reference_scan] + "_" + str("{:05d}").format(scans[reference_scan])
 )
 print("Reference scan:", samplename)
 refdata = np.load(
-    homedir
+    root_folder
     + samplename
     + parent_folder
     + "S"
@@ -145,7 +158,7 @@ refdata = np.load(
     + suffix[reference_scan]
 )["data"]
 refmask = np.load(
-    homedir
+    root_folder
     + samplename
     + parent_folder
     + "S"
@@ -195,7 +208,7 @@ if (
 
 # crop the data directly to output_shape if no alignment is required,
 # update corr_roi accordingly
-if alignement_method == "skip":
+if shift_method == "skip":
     refmask = util.crop_pad(
         array=refmask, output_shape=output_shape, crop_center=crop_center
     )
@@ -253,12 +266,14 @@ for idx, item in enumerate(scans):
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
     samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
-    print("\n Opening ", samplename)
+    print(
+        f'\n{"#" * len(samplename)}\n' + samplename + "\n" + f'{"#" * len(samplename)}'
+    )
     data = np.load(
-        homedir + samplename + parent_folder + "S" + str(item) + "_pynx" + suffix[idx]
+        root_folder + samplename + parent_folder + f"S{item}_pynx" + suffix[idx]
     )["data"]
     mask = np.load(
-        homedir
+        root_folder
         + samplename
         + parent_folder
         + "S"
@@ -296,14 +311,13 @@ for idx, item in enumerate(scans):
     ##################
     # align datasets #
     ##################
-    if alignement_method != "skip":
-        data, mask, shifts = bu.align_diffpattern(
+    if shift_method != "skip":
+        data, mask, shifts = reg.align_diffpattern(
             reference_data=refdata,
             data=data,
             mask=mask,
-            method=alignement_method,
-            combining_method=combining_method,
-            return_shift=True,
+            shift_method=shift_method,
+            interpolation_method=interpolation_method,
         )
         shift_min = [min(shift_min[axis], shifts[axis]) for axis in range(3)]
         shift_max = [max(shift_max[axis], shifts[axis]) for axis in range(3)]
@@ -392,7 +406,7 @@ for idx, item in enumerate(scans):
 ###################################################################################
 # process boundaries, where some voxels can be undefined after aligning a dataset #
 ###################################################################################
-if alignement_method != "skip":
+if shift_method != "skip":
     shift_min = [int(np.ceil(abs(shift_min[axis]))) for axis in range(3)]
     # shift_min is the number of pixels to remove at the end along each axis
     shift_max = [int(np.ceil(shift_max[axis])) for axis in range(3)]
@@ -540,9 +554,9 @@ template = (
 )
 
 
-pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-np.savez_compressed(savedir + "combined_pynx" + template + ".npz", data=mean_data)
-np.savez_compressed(savedir + "combined_maskpynx" + template + ".npz", mask=summask)
+pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
+np.savez_compressed(save_dir + "combined_pynx" + template + ".npz", data=mean_data)
+np.savez_compressed(save_dir + "combined_maskpynx" + template + ".npz", mask=summask)
 print("\nSum of ", len(combined_list), "scans")
 
 ###################################
@@ -588,7 +602,7 @@ if plot_threshold != 0:
     )
 
 plt.pause(0.1)
-plt.savefig(savedir + "data" + template + ".png")
+plt.savefig(save_dir + "data" + template + ".png")
 
 fig, _, _ = gu.multislices_plot(
     mean_data,
@@ -616,7 +630,7 @@ if plot_threshold != 0:
     )
 
 plt.pause(0.1)
-plt.savefig(savedir + "data_slice" + template + ".png")
+plt.savefig(save_dir + "data_slice" + template + ".png")
 
 gu.multislices_plot(
     summask,
@@ -628,7 +642,7 @@ gu.multislices_plot(
     reciprocal_space=True,
     is_orthogonal=is_orthogonal,
 )
-plt.savefig(savedir + "mask" + template + ".png")
+plt.savefig(save_dir + "mask" + template + ".png")
 
 print("\nEnd of script")
 

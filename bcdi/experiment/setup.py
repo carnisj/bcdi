@@ -1026,7 +1026,7 @@ class Setup:
         save_dir,
         specfile_name,
         template_imagefile,
-        data_dirname=None,
+        data_dir=None,
         save_dirname="result",
         verbose=False,
     ):
@@ -1058,9 +1058,8 @@ class Setup:
          - NANOMAX: '%06d.h5'
          - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
 
-        :param data_dirname: name of the data folder, if None it will use the beamline
-         default, if it is an empty string, it will look for the data directly into
-         the scan folder (no subfolder)
+        :param data_dir: if None it will use the beamline default, otherwise it will
+         look for the data directly into that directory
         :param save_dirname: name of the saving folder, by default 'save_dir/result/'
          will be created
         :param verbose: True to print the paths
@@ -1073,14 +1072,14 @@ class Setup:
 
         # check that the provided folder names are not an empty string
         valid.valid_container(
-            save_dirname, container_types=str, min_length=1, name="Setup.init_paths"
+            save_dirname, container_types=str, min_length=1, name="save_dirname"
         )
         valid.valid_container(
-            data_dirname,
+            data_dir,
             container_types=str,
             min_length=0,
             allow_none=True,
-            name="Setup.init_paths",
+            name="data_dir",
         )
         # update the detector instance
         (
@@ -1096,21 +1095,16 @@ class Setup:
             specfile,
             template_imagefile,
         ) = self._beamline.init_paths(
+            root_folder=root_folder,
             sample_name=sample_name,
             scan_number=scan_number,
-            root_folder=root_folder,
-            specfile_name=specfile_name,
             template_imagefile=template_imagefile,
-            data_dirname=data_dirname,
-            save_dirname=save_dirname,
+            specfile_name=specfile_name,
         )
 
         # define the data directory
-        if data_dirname is not None:
-            if len(data_dirname) == 0:  # no subfolder
-                datadir = homedir
-            else:
-                datadir = homedir + data_dirname
+        if data_dir is not None:
+            datadir = data_dir
         else:
             datadir = homedir + default_dirname
         if not datadir.endswith("/"):
