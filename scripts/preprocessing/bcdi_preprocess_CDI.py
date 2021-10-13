@@ -43,6 +43,8 @@ Output files are saved in:
 
 scans = [22]  # list or array of scan numbers
 root_folder = "C:/Users/Jerome/Documents/data/dataset_P10_saxs/"
+data_dir = None
+# leave None to use the beamline default. It will look for the data at this location
 save_dir = root_folder + "test/"
 # images will be saved here, leave it to None otherwise
 # (default to data directory's parent)
@@ -479,6 +481,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
+        data_dir=data_dir,
     )
 
     logfile = setup.create_logfile(

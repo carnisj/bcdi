@@ -1,9 +1,12 @@
 Future
 ------
 
-* move all functions related to dataset alignment in the module
+* Rename the parameter data_dirname to data_dir for the function setup.init_paths.
+  Now the user can provide directly the path to the data directory.
+
+* Move all functions related to dataset alignment in the module
   ``utils.image_registration.py`` and create generic functions
-  
+
 * Enable preprocessing d2scan using xrayutilities for ID01. The parameter `follow_bragg`
   become obsolete and is removed.
 
