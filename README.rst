@@ -125,28 +125,27 @@ The documentation is available at: https://bcdi.readthedocs.io/en/latest/
 Video Documentation
 ===================
 
-All talks from the bcdiHackweek 2021 are available at the following links.
+All talks from the bcdiHackweek 2021 are available at the following links:
 
-J. Carnis - BCDI package overview: https://youtu.be/g4jkzmz8JGk
+* Carnis, J. - BCDI package overview: https://youtu.be/g4jkzmz8JGk
 
-N. Li - data preprocessing: https://youtu.be/D-fl19Mi7Ao
+* Li, N.  - data preprocessing: https://youtu.be/D-fl19Mi7Ao
 
-J. Carnis - data preprocessing interactive: https://youtu.be/ddipN43HR1w
+* Carnis, J. - data preprocessing interactive: https://youtu.be/ddipN43HR1w
 
-M. Dupraz - data postprocessing + viz: https://youtu.be/WyDzOkJJu8c
+* Dupraz, M. - data postprocessing + viz: https://youtu.be/WyDzOkJJu8c
 
-J. Carnis - all that is left in the BCDI package: https://youtu.be/egh8X6iI4Nw
+* Carnis, J. - all that is left in the BCDI package: https://youtu.be/egh8X6iI4Nw
 
-M-I. Richard - paraview Facet analyser: https://youtu.be/RarHeUIOu08
+* Richard, M.-I. - paraview Facet analyser: https://youtu.be/RarHeUIOu08
 
-J. Carnis - bcdi Facet analyser: https://youtu.be/gucQk8p3vyk
+* Carnis, J. - bcdi Facet analyser: https://youtu.be/gucQk8p3vyk
 
-D. Simonne - jupyter GUI for bcdi package: https://youtu.be/9SDcGfJqiVw
+* Simonne, D. - jupyter GUI for bcdi package: https://youtu.be/9SDcGfJqiVw
 
+Related package `Cohere <https://github.com/AdvancedPhotonSource/cohere>`_:
 
-related package Cohere (https://github.com/AdvancedPhotonSource/cohere).
-R. Harder - Cohere package overview https://youtu.be/I1YOZoxddlE
-
+* Harder, R. - Cohere package overview https://youtu.be/I1YOZoxddlE
 
 License
 =======

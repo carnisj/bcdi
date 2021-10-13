@@ -17,8 +17,9 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.image_registration as reg
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
 plt.switch_backend("Qt5Agg")
@@ -111,10 +112,10 @@ for idx in range(1, nbfiles):
     print("\n" + os.path.basename(file_path[idx]))
     obj, _ = util.load_file(file_path[idx])
     obj = util.crop_pad(array=obj, output_shape=obj0.shape)
-    obj = pu.align_obj(
-        reference_obj=obj0,
-        obj=obj,
-        method=alignment_method,
+    obj, _ = reg.align_arrays(
+        reference_array=obj0,
+        shifted_array=obj,
+        shift_method=alignment_method,
         support_threshold=support_threshold,
         debugging=debug,
     )
