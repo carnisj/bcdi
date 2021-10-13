@@ -802,7 +802,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     :return: the shifted array
     """
     # check some parameters
-    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_ndarray(array, name="array")
     valid.valid_container(
         shift, container_types=(tuple, list), item_types=float, name="shift"
     )
