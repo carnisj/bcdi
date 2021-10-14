@@ -370,10 +370,11 @@ def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarra
     """
     Calculate the new voxels position depending on the shift.
 
-    :param old_positions: list
-    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+    :param old_positions: Sequence of 1D arrays, correpsonding to the position of the
+     points in the old frame, in each dimension
+    :param shift: a tuple of floats, corresponding to the shift in each dimension that
      need to be applied to array
-    :return: array
+    :return: the shifted positions were to interpolate, for the RegularGridInterpolator
     """
     grids = np.meshgrid(*old_positions, indexing="ij")
     new_positions = [grid - shift[index] for index, grid in enumerate(grids)]
@@ -785,8 +786,8 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     """
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
 
-    :param array: a 3D numpy array
-    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+    :param array: a numpy array
+    :param shift: a tuple of floats, corresponding to the shift in each dimension that
      need to be applied to array
     :return: the shifted array
     """
@@ -796,8 +797,10 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
         shift, container_types=(tuple, list), item_types=float, name="shift"
     )
 
-    # calculate the new positions
+    # current points positions in each dimension
     old_positions = [np.arange(-val // 2, val // 2) for val in array.shape]
+
+    # calculate the new positions
     new_positions = calc_new_positions(old_positions, shift)
 
     # interpolate array #
