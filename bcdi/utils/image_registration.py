@@ -375,25 +375,14 @@ def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarra
      need to be applied to array
     :return: array
     """
-    if len(old_positions) == 3:
-        myz, myy, myx = np.meshgrid(*old_positions, indexing="ij")
-        new_z = myz - shift[0]
-        new_y = myy - shift[1]
-        new_x = myx - shift[2]
-        new_positions = np.concatenate((
-            new_z.reshape((1, new_z.size)),
-            new_y.reshape((1, new_z.size)),
-            new_x.reshape((1, new_z.size))
-        ))
-    elif len(old_positions) == 2:
-        myy, myx = np.meshgrid(*old_positions, indexing="ij")
-        new_y = myy - shift[0]
-        new_x = myx - shift[1]
-        new_positions =np.concatenate((new_y.reshape((1, new_y.size)), new_x.reshape((1, new_y.size))))
-    else:
-        raise NotImplementedError("only 2D and 3D are supported")
-
-    return new_positions
+    grids = np.meshgrid(*old_positions, indexing="ij")
+    new_positions = [grid - shift[index] for index, grid in enumerate(grids)]
+    return np.concatenate(
+        [
+            new_grid.reshape((1, new_grid.size))
+            for _, new_grid in enumerate(new_positions)
+        ]
+    )
 
 
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
@@ -808,7 +797,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     )
 
     # calculate the new positions
-    old_positions = [np.arange(-val//2, val//2) for val in array.shape]
+    old_positions = [np.arange(-val // 2, val // 2) for val in array.shape]
     new_positions = calc_new_positions(old_positions, shift)
 
     # interpolate array #
