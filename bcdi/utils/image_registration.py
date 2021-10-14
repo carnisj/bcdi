@@ -376,6 +376,23 @@ def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarra
      need to be applied to array
     :return: the shifted positions were to interpolate, for the RegularGridInterpolator
     """
+    # check parameters
+    valid.valid_container(
+        old_positions,
+        container_types=(tuple, list, np.ndarray),
+        item_types=np.ndarray,
+        min_length=1,
+        name="old_positions",
+    )
+    valid.valid_container(
+        shift,
+        container_types=(tuple, list),
+        item_types=Real,
+        length=len(old_positions),
+        name="shift",
+    )
+
+    # calculate the new positions
     grids = np.meshgrid(*old_positions, indexing="ij")
     new_positions = [grid - shift[index] for index, grid in enumerate(grids)]
     return np.concatenate(
@@ -383,7 +400,7 @@ def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarra
             new_grid.reshape((1, new_grid.size))
             for _, new_grid in enumerate(new_positions)
         ]
-    )
+    ).transpose()
 
 
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
@@ -811,7 +828,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
         bounds_error=False,
         fill_value=0,
     )
-    shifted_array = rgi(new_positions.transpose())
+    shifted_array = rgi(new_positions)
 
     return shifted_array.reshape(array.shape).astype(array.dtype)
 
