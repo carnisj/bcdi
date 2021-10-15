@@ -5,13 +5,11 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #   (c) 06/2021-present : DESY CFEL
 #       authors:
-#         David Simonne
-"""
-Postprocessing of the output from the facet analyzer plugin for Paraview.
+#         David Simonne, david.simonne@universite-paris-saclay.fr
+#         Marie-Ingrid Richard, mrichard@esrf.fr
+#         Maxime Dupraz, maxime.dupraz@esrf.fr
 
-Nice tutorial on how to open vtk files:
-http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
-"""
+"""Postprocessing of the output from the facet analyzer plugin for Paraview."""
 
 import h5py
 import ipywidgets as widgets
@@ -20,34 +18,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+from typing import Sequence, Union
 import vtk
 
 
 class Facets:
     """
     Import and stores data output of facet analyzer plugin for further analysis.
-    Extract strain and displacements at facets, and retrieves the correct facet normals
-    based on a user input.
-    Needs a vtk file extracted from the FacetAnalyser plugin of ParaView
-    (see phdutils.bcdi repository for further info)
-    acknowledgements: mrichard@esrf.fr & maxime.dupraz@esrf.fr
-    original tutorial:
+
+    Extract the strain component and the displacement on the facets, and retrieves the
+    correct facet normals based on a user input (geometric transformation into the
+    crystal frame). It requries as input a VTK file extracted from the FacetAnalyser
+    plugin from ParaView. See: https://doi.org/10.1016/j.ultramic.2012.07.024
+
+    Original tutorial on how to open vtk files:
     http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
 
-    vtk file should have been saved in in Sxxxx/postprocessing
-    Analysis output in Sxxxx/postprocessing/facet_analysis
+    Expected directory structure:
+     - vtk file should have been saved in in Sxxxx/postprocessing
+     - the analysis output will be saved in Sxxxx/postprocessing/facet_analysis
 
     Several plotting options are attributes of this class, feel free to change them
     (cmap, strain_range, disp_range_avg, disp_range, strain_range_avg, comment,
     title_fontsize, axes_fontsize, legend_fontsize, ticks_fontsize)
+
+    :param filename: str, name of the VTK file
+    :param pathdir: str, path to the VTK file
+    :param lattice: float, atomic spacing of the material in angstroms
+     (only cubic lattices are supported).
     """
 
     def __init__(
         self,
-        filename,
-        pathdir="./",
-        lattice=3.912,
-    ):
+        filename : str,
+        pathdir : str = "./",
+        lattice : float = 3.912,
+    ) -> None:
         super(Facets, self).__init__()
         self.pathsave = pathdir + "facets_analysis/"
         self.path_to_data = pathdir + filename
@@ -130,11 +136,12 @@ class Facets:
             ),
         )
 
-    def load_vtk(self):
+    def load_vtk(self) -> None:
         """
-        Load VTK file
-        In paraview, the facets have an index that starts at 1, the index 0
-        corresponds to the edges and corners of the facets
+        Load the VTK file.
+
+        In paraview, the facets have an index that starts at 1, the index 0 corresponds
+        to the edges and corners of the facets.
         """
         if not os.path.exists(self.pathsave):
             os.makedirs(self.pathsave)
@@ -293,12 +300,19 @@ class Facets:
         w0,
         u,
         v,
-    ):
+    ) -> None :
         """
-        Defining the rotation matrix
-        u and v should be the vectors perpendicular to two facets
-        the rotation matric is then used if the argument rotate_particle is set
-        to true in the load_vtk method
+        Define the rotation matrix.
+
+        u and v should be the vectors perpendicular to two facets. The rotation matrix
+        is then used if the argument rotate_particle is set to True in the method
+        load_vtk.
+
+        :param u0:TODO what are those (type, shape if ndarray or length, ...)
+        :param v0:
+        :param w0:
+        :param u:
+        :param v:
         """
         # Input theoretical values for three facets' normals
         self.u0 = u0
@@ -322,10 +336,12 @@ class Facets:
         inv_tensor1 = np.linalg.inv(tensor1)
         self.rotation_matrix = np.dot(np.transpose(tensor0), np.transpose(inv_tensor1))
 
-    def rotate_particle(self):
+    def rotate_particle(self) -> None:
         """
-        Rotate the particle so that the base of the normals
-        to the facets is computed with the new rotation matrix
+        Rotate the nanocrystal.
+
+        The rotation is so that the base of the normals to the facets is computed with
+        the new rotation matrix.
         """
         # Get normals, again to make sure that we have the good ones
         normals = {
@@ -358,12 +374,15 @@ class Facets:
 
     def fixed_reference(
         self,
-        hkl_reference=[1, 1, 1],
-        plot=True,
-    ):
+        hkl_reference : Sequence[float, float, float] = (1, 1, 1),
+        plot : bool = True,
+    ) -> None :
         """
-        Recompute the interplanar angles between each normal
-        and a fixed reference vector
+        Compute the interplanar angles between each normal and a fixed reference vector.
+
+        :param hkl_reference: tuple of three real numbers, reference crystallographic
+         direction
+        :param plot: True to see plots
         """
         self.hkl_reference = hkl_reference
         self.hkls = " ".join(str(e) for e in self.hkl_reference)
@@ -476,10 +495,12 @@ class Facets:
             ax.grid(which="major", alpha=0.5)
             plt.show()
 
-    def test_vector(self, vec):
+    def test_vector(self, vec : np.ndarray) -> None :
         """
-        `vec` needs to be an (1, 3) array,
-        e.g. np.array([-0.833238, -0.418199, -0.300809])
+        TODO: add a one sentence description here.
+
+        :param vec: numpy ndarray of shape (1, 3).
+         e.g. np.array([-0.833238, -0.418199, -0.300809])
         """
         try:
             print(np.dot(self.rotation_matrix, vec / np.linalg.norm(vec)))
@@ -487,11 +508,24 @@ class Facets:
             print("You need to define the rotation matrix before")
 
     def extract_facet(
-        self, facet_id, plot=False, view=[90, 90], output=True, save=True
-    ):
+            self,
+            facet_id,
+            plot : bool = False,
+            view : Sequence[float, float] = (90, 90),
+            output : bool = True,
+            save : bool = True
+    ) -> Union[None, dict] :
         """
-        Extract data from one facet, [x, y, z], strain,
-        displacement and their means, also plots it
+        Extract data from one facet.
+
+        It extracts the facet direction [x, y, z], the strain component, the
+        displacement and their means, and also plots it.
+
+        :param facet_id: TODO
+        :param plot: True to see plots:
+        :param view:
+        :param output:
+        :param save:
         """
         # Retrieve voxels that correspond to that facet index
         voxel_indices = []
@@ -577,22 +611,28 @@ class Facets:
                 raise e
                 # pass
 
-        if output:
-            return results
-        else:
-            return None
+        if not output:
+            results = None
+        return results
 
     def view_particle(
         self,
-        elev,
-        azim,
+        elev : float,
+        azim : float,
         facet_id_range,
         elev_axis,
-        show_edges_corners,
-    ):
+        show_edges_corners : bool,
+    ) -> None:
         """
-        'elev' stores the elevation angle in the z plane (in degrees).
-        'azim' stores the azimuth angle in the (x, y) plane (in degrees).
+        Visualization of the nanocrystal.
+
+        TODO: indicate what the reference is (where points z?)
+
+        :param elev: elevation angle in the z plane (in degrees).
+        :param azim: azimuth angle in the (x, y) plane (in degrees).
+        :param facet_id_range:
+        :param elev_axis:
+        :param show_edges_corners:
         """
         plt.close()
         fig = plt.figure(figsize=(15, 15))
@@ -603,10 +643,13 @@ class Facets:
         ax.set_ylabel("Y axis", fontsize=self.axes_fontsize)
         ax.set_zlabel("Z axis", fontsize=self.axes_fontsize)
 
-        def plot_facet_id(facet_id):
+        def plot_facet_id(facet_id : int) -> None:
             """
-            Plots the voxes belonging to a specific facet,
-            together with the normal to that facet and it's id
+            Plots the voxels belonging to a specific facet.
+
+            It plots together the normal to that facet and it's id.
+
+            :param facet_id: number of the facet
             """
             # Retrieve voxels for each facet
             voxel_indices = []
@@ -721,11 +764,21 @@ class Facets:
         plt.tight_layout()
         plt.show()
 
-    def plot_strain(self, figsize=(12, 10), view=[20, 60], save=True):
+    def plot_strain(
+            self,
+            figsize : Sequence[float, float] = (12, 10),
+            view : Sequence[float, float] = (20, 60),
+            save : bool = True
+    ) -> None :
         """
-        Plot two views of the particle,
-        with the surface coloured by the mean strain per facet,
-        with the surface coloured by the strain per voxel
+        Plot two views of the surface strain of the nanocrystal.
+
+        The first one with the surface coloured by the mean strain per facet. The second
+        one with the surface coloured by the strain per voxel.
+
+        :param figsize: figure size in inches (width, height)
+        :param view: TODO
+        :param save: True to save the figures
         """
         # 3D strain
         fig_name = (
@@ -803,11 +856,21 @@ class Facets:
             plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-    def plot_displacement(self, figsize=(12, 10), view=[20, 60], save=True):
+    def plot_displacement(
+            self,
+            figsize: Sequence[float, float] = (12, 10),
+            view: Sequence[float, float] = (20, 60),
+            save: bool = True
+    ) -> None:
         """
-        Plot two views of the particle,
-        with the surface coloured by the mean displacement per facet,
-        with the surface coloured by the displacement per voxel
+        Plot two views of the surface dispalcement of the nanocrystal.
+
+        The first one with the surface coloured by the mean displacement per facet.
+        The second one with the surface coloured by the displacement per voxel.
+
+        :param figsize: figure size in inches (width, height)
+        :param view: TODO
+        :param save: True to save the figures
         """
         # 3D displacement
         fig_name = "disp_3D_" + self.hkls + self.comment + "_" + str(self.disp_range)
@@ -879,8 +942,12 @@ class Facets:
             plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-    def evolution_curves(self, ncol=1):
-        "Plot strain and displacement evolution for each facet"
+    def evolution_curves(self, ncol : int = 1) -> None:
+        """
+        Plot strain and displacement evolution for each facet.
+
+        :param ncol: #ODO
+        """
         # 1D plot: average displacement vs facet index
         fig_name = "avg_disp_vs_facet_id_" + self.hkls + self.comment
         fig = plt.figure(figsize=(10, 6))
@@ -1114,11 +1181,8 @@ class Facets:
         plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-    def save_edges_corners_data(self):
-        """
-        Also extract the edges and corners data,
-        i.e. mean strain and displacement
-        """
+    def save_edges_corners_data(self) -> None:
+        """Extract the edges and corners data, i.e. the mean strain and displacement."""
         if 0 not in self.field_data.facet_id.values:
             result = self.extract_facet(0)
 
@@ -1146,15 +1210,22 @@ class Facets:
             self.field_data = self.field_data.sort_values(by="facet_id")
             self.field_data = self.field_data.reset_index(drop=True)
 
-    def save_data(self, path_to_data):
-        "Save field data as csv file"
+    def save_data(self, path_to_data : str) -> None :
+        """
+        Save the field data as a csv file.
+
+        :param path_to_data: path where to save the data
+        """
         # Save field data
         self.field_data.to_csv(path_to_data, index=False)
 
-    def to_hdf5(self, path_to_data):
+    def to_hdf5(self, path_to_data : str) -> None :
         """
-        Save the facets object as an hdf5 file
-        Can be combined with the file saved by the gwaihir gui
+        Save the facets object as an hdf5 file.
+
+        Can be combined with the file saved by the gwaihir gui.
+
+        :param path_to_data: path where to save the data
         """
         # Save attributes
         with h5py.File(path_to_data, mode="a") as f:
@@ -1248,9 +1319,11 @@ class Facets:
             raise e
 
     def __repr__(self):
+        """Unambiguous representation of the class."""
         return "Facets {}\n".format(
             self.filename,
         )
 
     def __str__(self):
+        """Readable representation of the class."""
         return repr(self)
