@@ -148,6 +148,8 @@ setup(
         "lmfit",
         "moviepy",
         "pillow",
+        "pandas",
+        "ipywidgets",
     ],
     extras_require={
         "doc": [

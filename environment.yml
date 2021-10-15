@@ -20,6 +20,8 @@ dependencies:
   - lmfit
   - moviepy
   - pillow
+  - pandas
+  - ipywidgets
   - black
   - coverage
   - doit
