@@ -13,6 +13,8 @@ silx
 lmfit
 moviepy
 pillow
+pandas
+ipywidgets
 black
 coverage
 doit
