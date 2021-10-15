@@ -1,20 +1,26 @@
-import numpy as np
-import vtk
-import matplotlib.pyplot as plt
-import os
-import glob
-import pandas as pd
-import pickle
+# -*- coding: utf-8 -*-
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
+#   (c) 06/2021-present : DESY CFEL
+#       authors:
+#         David Simonne
+"""
+Postprocessing of the output from the facet analyzer plugin for Paraview.
+
+Nice tutorial on how to open vtk files:
+http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
+"""
+
 import h5py
-
 import ipywidgets as widgets
-from ipywidgets import interact, Button, Layout, interactive, fixed
-from IPython.display import display, Markdown, Latex, clear_output
-
-#######################
-# how to open vtk file#
-#######################
-# http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
+from ipywidgets import Layout, interactive
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pandas as pd
+import vtk
 
 
 class Facets:
