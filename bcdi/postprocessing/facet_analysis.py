@@ -17,25 +17,25 @@ from IPython.display import display, Markdown, Latex, clear_output
 # http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
 
 
-class Facets():
+class Facets:
     """
     Import and stores data output of facet analyzer plugin for further analysis.
     Extract strain and displacements at facets, and retrieves the correct facet normals
     based on a user input.
-    Needs a vtk file extracted from the FacetAnalyser plugin of ParaView 
+    Needs a vtk file extracted from the FacetAnalyser plugin of ParaView
     (see phdutils.bcdi repository for further info)
     acknowledgements: mrichard@esrf.fr & maxime.dupraz@esrf.fr
-    original tutorial: 
+    original tutorial:
     http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
 
     vtk file should have been saved in in Sxxxx/postprocessing
     Analysis output in Sxxxx/postprocessing/facet_analysis
 
-    Several plotting options are attributes of this class, feel free to change them 
-    (cmap, strain_range, disp_range_avg, disp_range, strain_range_avg, comment, 
+    Several plotting options are attributes of this class, feel free to change them
+    (cmap, strain_range, disp_range_avg, disp_range, strain_range_avg, comment,
     title_fontsize, axes_fontsize, legend_fontsize, ticks_fontsize)
     """
-    
+
     def __init__(
         self,
         filename,
@@ -127,7 +127,7 @@ class Facets():
     def load_vtk(self):
         """
         Load VTK file
-        In paraview, the facets have an index that starts at 1, the index 0 
+        In paraview, the facets have an index that starts at 1, the index 0
         corresponds to the edges and corners of the facets
         """
         if not os.path.exists(self.pathsave):
@@ -300,7 +300,7 @@ class Facets():
         self.w0 = w0
         print("Cross product of u0 and v0:", np.cross(self.u0, self.v0))
 
-        # Current values for the first two facets' normals, 
+        # Current values for the first two facets' normals,
         # to compute the rotation matrix
         self.u = u
         self.v = v
@@ -356,7 +356,7 @@ class Facets():
         plot=True,
     ):
         """
-        Recompute the interplanar angles between each normal 
+        Recompute the interplanar angles between each normal
         and a fixed reference vector
         """
         self.hkl_reference = hkl_reference
@@ -472,7 +472,7 @@ class Facets():
 
     def test_vector(self, vec):
         """
-        `vec` needs to be an (1, 3) array, 
+        `vec` needs to be an (1, 3) array,
         e.g. np.array([-0.833238, -0.418199, -0.300809])
         """
         try:
@@ -484,7 +484,7 @@ class Facets():
         self, facet_id, plot=False, view=[90, 90], output=True, save=True
     ):
         """
-        Extract data from one facet, [x, y, z], strain, 
+        Extract data from one facet, [x, y, z], strain,
         displacement and their means, also plots it
         """
         # Retrieve voxels that correspond to that facet index
@@ -495,7 +495,7 @@ class Facets():
                 voxel_indices.append(self.vtk_data["y0"][i])
                 voxel_indices.append(self.vtk_data["z0"][i])
 
-        # 
+        #
         voxel_indices_new = list(set(voxel_indices))
         results = {}
         results["x"], results["y"], results["z"] = (
@@ -575,7 +575,7 @@ class Facets():
             return results
         else:
             return None
-        
+
     def view_particle(
         self,
         elev,
@@ -599,7 +599,7 @@ class Facets():
 
         def plot_facet_id(facet_id):
             """
-            Plots the voxes belonging to a specific facet, 
+            Plots the voxes belonging to a specific facet,
             together with the normal to that facet and it's id
             """
             # Retrieve voxels for each facet
@@ -669,7 +669,7 @@ class Facets():
                     depthshade=True,
                 )
 
-            # Plot the normal to each facet at their center, 
+            # Plot the normal to each facet at their center,
             # do it after so that is it the top layer
             row = self.field_data.loc[self.field_data["facet_id"] == facet_id]
             if facet_id != 0:
@@ -717,7 +717,7 @@ class Facets():
 
     def plot_strain(self, figsize=(12, 10), view=[20, 60], save=True):
         """
-        Plot two views of the particle, 
+        Plot two views of the particle,
         with the surface coloured by the mean strain per facet,
         with the surface coloured by the strain per voxel
         """
@@ -799,7 +799,7 @@ class Facets():
 
     def plot_displacement(self, figsize=(12, 10), view=[20, 60], save=True):
         """
-        Plot two views of the particle, 
+        Plot two views of the particle,
         with the surface coloured by the mean displacement per facet,
         with the surface coloured by the displacement per voxel
         """
@@ -970,7 +970,7 @@ class Facets():
         plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-        # disp, strain & size vs angle planes, 
+        # disp, strain & size vs angle planes,
         # change line style as a fct of the planes indices
         fig_name = "disp_strain_size_vs_angle_planes_" + self.hkls + self.comment
         fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex=True, figsize=(10, 12))
@@ -1144,7 +1144,6 @@ class Facets():
         "Save field data as csv file"
         # Save field data
         self.field_data.to_csv(path_to_data, index=False)
-
 
     def to_hdf5(self, path_to_data):
         """
