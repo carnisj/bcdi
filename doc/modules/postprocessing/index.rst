@@ -28,7 +28,7 @@ https://doi.org/10.1016/j.ultramic.2012.07.024
 
 One can extract the strain component and the displacement on the facets, and retrieve
 the correct facet normals based on a user input (geometric transformation into the
-crystal frame).
+crystal frame). Only cubic lattices are supported.
 
 API Reference
 -------------
