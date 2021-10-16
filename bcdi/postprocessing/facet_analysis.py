@@ -511,8 +511,8 @@ class Facets:
             self,
             facet_id,
             plot : bool = False,
-            elev : float,
-            azim : float,
+            elev : int = 0,
+            azim : int = 0,
             output : bool = True,
             save : bool = True
     ) -> Union[None, dict] :
@@ -619,11 +619,11 @@ class Facets:
 
     def view_particle(
         self,
-        elev : float,
-        azim : float,
         facet_id_range,
         elev_axis,
         show_edges_corners : bool,
+        elev : int = 0,
+        azim : int = 0,
     ) -> None:
         """
         Visualization of the nanocrystal.
@@ -770,8 +770,8 @@ class Facets:
     def plot_strain(
             self,
             figsize : Sequence[float, float] = (12, 10),
-            elev : float,
-            azim : float,
+            elev : int = 0,
+            azim : int = 0,
             save : bool = True
     ) -> None :
         """
@@ -864,8 +864,8 @@ class Facets:
     def plot_displacement(
             self,
             figsize: Sequence[float, float] = (12, 10),
-            elev : float,
-            azim : float,
+            elev : int = 0,
+            azim : int = 0,
             save: bool = True
     ) -> None:
         """
