@@ -308,11 +308,11 @@ class Facets:
         is then used if the argument rotate_particle is set to True in the method
         load_vtk.
 
-        :param u0:TODO what are those (type, shape if ndarray or length, ...)
-        :param v0:
-        :param w0:
-        :param u:
-        :param v:
+        :param u0: numpy.ndarray, shape (3,) 
+        :param v0: numpy.ndarray, shape (3,)
+        :param w0: numpy.ndarray, shape (3,)
+        :param u: numpy.ndarray, shape (3,)
+        :param v: numpy.ndarray, shape (3,)
         """
         # Input theoretical values for three facets' normals
         self.u0 = u0
@@ -497,7 +497,7 @@ class Facets:
 
     def test_vector(self, vec : np.ndarray) -> None :
         """
-        TODO: add a one sentence description here.
+        Computes value of a vector passed through the rotation matrix 
 
         :param vec: numpy ndarray of shape (1, 3).
          e.g. np.array([-0.833238, -0.418199, -0.300809])
@@ -511,7 +511,8 @@ class Facets:
             self,
             facet_id,
             plot : bool = False,
-            view : Sequence[float, float] = (90, 90),
+            elev : float,
+            azim : float,
             output : bool = True,
             save : bool = True
     ) -> Union[None, dict] :
@@ -521,11 +522,12 @@ class Facets:
         It extracts the facet direction [x, y, z], the strain component, the
         displacement and their means, and also plots it.
 
-        :param facet_id: TODO
+        :param facet_id: id of facet in paraview, int
         :param plot: True to see plots:
-        :param view:
-        :param output:
-        :param save:
+        :param elev: elevation angle in the z plane (in degrees).
+        :param azim: azimuth angle in the (x, y) plane (in degrees).
+        :param output: True to return facet data
+        :param save: True to save plot
         """
         # Retrieve voxels that correspond to that facet index
         voxel_indices = []
@@ -562,7 +564,7 @@ class Facets:
         if plot:
             fig = plt.figure(figsize=(10, 10))
             ax = fig.add_subplot(projection="3d")
-            ax.view_init(elev=view[0], azim=view[1])
+            ax.view_init(elev=elev, azim=azim)
 
             ax.scatter(
                 self.vtk_data["x"],
@@ -626,7 +628,8 @@ class Facets:
         """
         Visualization of the nanocrystal.
 
-        TODO: indicate what the reference is (where points z?)
+        x, y and z correspond to the frame used in paraview
+        before saving the facet analyser plugin data
 
         :param elev: elevation angle in the z plane (in degrees).
         :param azim: azimuth angle in the (x, y) plane (in degrees).
@@ -767,7 +770,8 @@ class Facets:
     def plot_strain(
             self,
             figsize : Sequence[float, float] = (12, 10),
-            view : Sequence[float, float] = (20, 60),
+            elev : float,
+            azim : float,
             save : bool = True
     ) -> None :
         """
@@ -777,7 +781,8 @@ class Facets:
         one with the surface coloured by the strain per voxel.
 
         :param figsize: figure size in inches (width, height)
-        :param view: TODO
+        :param elev: elevation angle in the z plane (in degrees).
+        :param azim: azimuth angle in the (x, y) plane (in degrees).
         :param save: True to save the figures
         """
         # 3D strain
@@ -804,7 +809,7 @@ class Facets:
             )
 
         fig.colorbar(p)
-        ax.view_init(elev=view[0], azim=view[1])
+        ax.view_init(elev=elev, azim=azim)
         plt.title("Strain for each voxel", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
@@ -847,7 +852,7 @@ class Facets:
             )
 
         fig.colorbar(p)
-        ax.view_init(elev=view[0], azim=view[1])
+        ax.view_init(elev=elev, azim=azim)
         plt.title("Mean strain per facet", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
@@ -859,7 +864,8 @@ class Facets:
     def plot_displacement(
             self,
             figsize: Sequence[float, float] = (12, 10),
-            view: Sequence[float, float] = (20, 60),
+            elev : float,
+            azim : float,
             save: bool = True
     ) -> None:
         """
@@ -869,7 +875,8 @@ class Facets:
         The second one with the surface coloured by the displacement per voxel.
 
         :param figsize: figure size in inches (width, height)
-        :param view: TODO
+        :param elev: elevation angle in the z plane (in degrees).
+        :param azim: azimuth angle in the (x, y) plane (in degrees).
         :param save: True to save the figures
         """
         # 3D displacement
@@ -894,7 +901,7 @@ class Facets:
             )
 
         fig.colorbar(p)
-        ax.view_init(elev=view[0], azim=view[1])
+        ax.view_init(elev=elev, azim=azim)
         plt.title("Displacement for each voxel", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
@@ -933,7 +940,7 @@ class Facets:
             )
 
         fig.colorbar(p)
-        ax.view_init(elev=view[0], azim=view[1])
+        ax.view_init(elev=elev, azim=azim)
         plt.title("Mean displacement per facet", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
