@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
-from typing import Sequence, Union
+from typing import Tuple, Union
 import vtk
 
 
@@ -373,7 +373,7 @@ class Facets:
 
     def fixed_reference(
         self,
-        hkl_reference : Sequence[float, float, float] = (1, 1, 1),
+        hkl_reference : Tuple[float, float, float] = (1, 1, 1),
         plot : bool = True,
     ) -> None :
         """
@@ -767,7 +767,7 @@ class Facets:
 
     def plot_strain(
             self,
-            figsize : Sequence[float, float] = (12, 10),
+            figsize : Tuple[float, float] = (12, 10),
             elev : int = 0,
             azim : int = 0,
             save : bool = True
@@ -861,7 +861,7 @@ class Facets:
 
     def plot_displacement(
             self,
-            figsize: Sequence[float, float] = (12, 10),
+            figsize: Tuple[float, float] = (12, 10),
             elev : int = 0,
             azim : int = 0,
             save: bool = True
