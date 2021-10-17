@@ -601,7 +601,7 @@ class Facets:
             "disp": np.zeros(len(voxel_indices_new))
         }
 
-        for j, v in enumerate(voxel_indices_new):
+        for j, _ in enumerate(voxel_indices_new):
             results["x"][j] = self.vtk_data["x"][int(voxel_indices_new[j])]
             results["y"][j] = self.vtk_data["y"][int(voxel_indices_new[j])]
             results["z"][j] = self.vtk_data["z"][int(voxel_indices_new[j])]
@@ -1125,7 +1125,7 @@ class Facets:
         ax.set_yticks(minor_y_ticks_facet, minor=True)
         plt.yticks(fontsize=self.ticks_fontsize)
 
-        for j, row in self.field_data.iterrows():
+        for _, row in self.field_data.iterrows():
             ax.errorbar(
                 row["facet_id"],
                 row["strain_mean"],
