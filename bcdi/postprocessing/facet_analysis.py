@@ -251,7 +251,7 @@ class Facets:
 
         for ind in facet_indices:
             print("Facet = %d" % ind)
-            results = self.extract_facet(ind, plot=False)
+            results = self.extract_facet(int(ind), plot=False)
             strain_mean[ind - 1] = results["strain_mean"]
             strain_std[ind - 1] = results["strain_std"]
             disp_mean[ind - 1] = results["disp_mean"]
@@ -417,7 +417,7 @@ class Facets:
         valid.valid_container(
             hkl_reference,
             container_types=(tuple, list),
-            item_types=float,
+            item_types=(int, float),
             length=3,
             name="hkl_reference"
         )
@@ -549,6 +549,8 @@ class Facets:
         try:
             print(np.dot(self.rotation_matrix, vec / np.linalg.norm(vec)))
         except AttributeError:
+            print("You need to define the rotation matrix before")
+        except TypeError:
             print("You need to define the rotation matrix before")
 
     def extract_facet(
@@ -858,7 +860,7 @@ class Facets:
         valid.valid_container(
             figsize,
             container_types=(tuple, list),
-            item_types=float,
+            item_types=(int, float),
             length=2,
             min_included=0,
             name="figsize"
@@ -966,7 +968,7 @@ class Facets:
         valid.valid_container(
             figsize,
             container_types=(tuple, list),
-            item_types=float,
+            item_types=(int, float),
             length=2,
             min_included=0,
             name="figsize"
@@ -1153,7 +1155,7 @@ class Facets:
         # disp, strain & size vs angle planes,
         # change line style as a fct of the planes indices
         fig_name = "disp_strain_size_vs_angle_planes_" + self.hkls + self.comment
-        fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="True", figsize=(10, 12))
+        fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="all", figsize=(10, 12))
 
         plt.xticks(fontsize=self.ticks_fontsize)
         plt.yticks(fontsize=self.ticks_fontsize)
