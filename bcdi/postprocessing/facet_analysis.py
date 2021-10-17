@@ -21,6 +21,8 @@ import pandas as pd
 from typing import Tuple, Union
 import vtk
 
+from bcdi.utils import validation as valid
+
 
 class Facets:
     """
@@ -75,7 +77,19 @@ class Facets:
         self.ref_normal = None
         self.theoretical_angles = None
 
-        # Check parameters
+        # Check input parameters
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename"
+        )
+        valid.valid_container(
+            pathdir,
+            container_types=str,
+            min_length=1,
+            name="pathdir")
+        valid.valid_item(lattice, allowed_types=float, min_excluded=0, name="lattice")
         self.pathsave = pathdir + "facets_analysis/"
         self.path_to_data = pathdir + filename
         self.filename = filename
