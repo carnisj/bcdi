@@ -585,7 +585,7 @@ class Facets:
 
         # Retrieve voxels that correspond to that facet index
         voxel_indices = []
-        for i, v in enumerate(self.vtk_data["facet_id"]):
+        for i, _ in enumerate(self.vtk_data["facet_id"]):
             if int(self.vtk_data["facet_id"][i]) == facet_id:
                 voxel_indices.append(self.vtk_data["x0"][i])
                 voxel_indices.append(self.vtk_data["y0"][i])
@@ -1078,7 +1078,7 @@ class Facets:
         ax.set_yticks(minor_y_ticks_facet, minor=True)
         plt.yticks(fontsize=self.ticks_fontsize)
 
-        for j, row in self.field_data.iterrows():
+        for _, row in self.field_data.iterrows():
             ax.errorbar(
                 row["facet_id"],
                 row["disp_mean"],
