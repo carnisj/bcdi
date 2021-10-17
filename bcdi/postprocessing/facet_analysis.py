@@ -341,6 +341,9 @@ class Facets:
         :param u: numpy.ndarray, shape (3,)
         :param v: numpy.ndarray, shape (3,)
         """
+        # Check parameters
+        valid.valid_ndarray(arrays=(u0, v0, w0, u, v), shape=(3,))
+
         # Input theoretical values for three facets' normals
         self.u0 = u0
         self.v0 = v0
@@ -411,6 +414,16 @@ class Facets:
          direction
         :param plot: True to see plots
         """
+        # Check parameters
+        valid.valid_container(
+            hkl_reference,
+            container_types=(tuple, list),
+            item_types=float,
+            length=3,
+            name="hkl_reference"
+        )
+        valid.valid_item(plot, allowed_types=bool, name="plot")
+
         self.hkl_reference = hkl_reference
         self.hkls = " ".join(str(e) for e in self.hkl_reference)
         self.planar_dist = self.lattice / np.sqrt(
@@ -524,10 +537,14 @@ class Facets:
 
     def test_vector(self, vec : np.ndarray) -> None :
         """
-        Computes value of a vector passed through the rotation matrix
-        :param vec: numpy ndarray of shape (1, 3).
+        Computes value of a vector passed through the rotation matrix.
+
+        :param vec: numpy ndarray of shape (3,).
          e.g. np.array([-0.833238, -0.418199, -0.300809])
         """
+        # Check parameter
+        valid.valid_ndarray(vec, shape=(3,), name="vec")
+
         try:
             print(np.dot(self.rotation_matrix, vec / np.linalg.norm(vec)))
         except AttributeError:
@@ -535,7 +552,7 @@ class Facets:
 
     def extract_facet(
             self,
-            facet_id,
+            facet_id : int,
             plot : bool = False,
             elev : int = 0,
             azim : int = 0,
@@ -548,13 +565,21 @@ class Facets:
         It extracts the facet direction [x, y, z], the strain component, the
         displacement and their means, and also plots it.
 
-        :param facet_id: id of facet in paraview, int
+        :param facet_id: id of facet in paraview
         :param plot: True to see plots:
         :param elev: elevation angle in the z plane (in degrees).
         :param azim: azimuth angle in the (x, y) plane (in degrees).
         :param output: True to return facet data
         :param save: True to save plot
         """
+        # Check parameters
+        valid.valid_item(facet_id, allowed_types=int, name="facet_id")
+        valid.valid_item(elev, allowed_types=int, name="elev")
+        valid.valid_item(azim, allowed_types=int, name="azim")
+        valid.valid_item(plot, allowed_types=bool, name="plot")
+        valid.valid_item(output, allowed_types=bool, name="output")
+        valid.valid_item(save, allowed_types=bool, name="save")
+
         # Retrieve voxels that correspond to that facet index
         voxel_indices = []
         for i, v in enumerate(self.vtk_data["facet_id"]):
@@ -643,8 +668,8 @@ class Facets:
 
     def view_particle(
         self,
-        facet_id_range,
-        elev_axis,
+        facet_id_range : Tuple[int, int],
+        elev_axis : str,
         show_edges_corners : bool,
         elev : int = 0,
         azim : int = 0,
@@ -652,15 +677,35 @@ class Facets:
         """
         Visualization of the nanocrystal.
 
-        x, y and z correspond to the frame used in paraview
-        before saving the facet analyser plugin data
+        x, y and z correspond to the frame used in paraview before saving the facet
+        analyser plugin data.
 
         :param elev: elevation angle in the z plane (in degrees).
         :param azim: azimuth angle in the (x, y) plane (in degrees).
-        :param facet_id_range:
-        :param elev_axis:
-        :param show_edges_corners:
+        :param facet_id_range: tuple of two facets numbers, facets with numbers between
+         these two values will be plotted (higher boundary is excluded)
+        :param elev_axis: "x", "y" or "z"
+        :param show_edges_corners: set it to True to plot also edges and corners
         """
+        # Check some parameters
+        valid.valid_container(
+            facet_id_range,
+            container_types=(tuple, list),
+            item_types=int,
+            length=2,
+            min_included=0,
+            name="facet_id_range"
+        )
+        valid.valid_item(elev, allowed_types=int, name="elev")
+        valid.valid_item(azim, allowed_types=int, name="azim")
+        valid.valid_item(
+            show_edges_corners,
+            allowed_types=bool,
+            name="show_edges_corners"
+        )
+        if elev_axis not in {"x", "y", "z"}:
+            raise ValueError(f"unsupported value for 'elev_axis': {elev_axis}")
+
         plt.close()
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(projection="3d")
@@ -808,6 +853,19 @@ class Facets:
         :param azim: azimuth angle in the (x, y) plane (in degrees).
         :param save: True to save the figures
         """
+        # Check parameters
+        valid.valid_container(
+            figsize,
+            container_types=(tuple, list),
+            item_types=float,
+            length=2,
+            min_included=0,
+            name="figsize"
+        )
+        valid.valid_item(elev, allowed_types=int, name="elev")
+        valid.valid_item(azim, allowed_types=int, name="azim")
+        valid.valid_item(save, allowed_types=bool, name="save")
+
         # 3D strain
         p = None
         fig_name = (
@@ -903,6 +961,19 @@ class Facets:
         :param azim: azimuth angle in the (x, y) plane (in degrees).
         :param save: True to save the figures
         """
+        # Check parameters
+        valid.valid_container(
+            figsize,
+            container_types=(tuple, list),
+            item_types=float,
+            length=2,
+            min_included=0,
+            name="figsize"
+        )
+        valid.valid_item(elev, allowed_types=int, name="elev")
+        valid.valid_item(azim, allowed_types=int, name="azim")
+        valid.valid_item(save, allowed_types=bool, name="save")
+
         # 3D displacement
         p = None
         fig_name = "disp_3D_" + self.hkls + self.comment + "_" + str(self.disp_range)
@@ -978,8 +1049,11 @@ class Facets:
         """
         Plot strain and displacement evolution for each facet.
 
-        :param ncol: #ODO
+        :param ncol: number of columns in the plot
         """
+        # Check parameters
+        valid.valid_item(ncol, allowed_types=int, min_included=1, name="ncol")
+
         # 1D plot: average displacement vs facet index
         fig_name = "avg_disp_vs_facet_id_" + self.hkls + self.comment
         fig = plt.figure(figsize=(10, 6))
@@ -1235,6 +1309,9 @@ class Facets:
 
         :param path_to_data: path where to save the data
         """
+        # Check parameters
+        valid.valid_item(path_to_data, allowed_types=str, name="path_to_data")
+
         # Save field data
         self.field_data.to_csv(path_to_data, index=False)
 
@@ -1246,6 +1323,9 @@ class Facets:
 
         :param path_to_data: path where to save the data
         """
+        # Check parameters
+        valid.valid_item(path_to_data, allowed_types=str, name="path_to_data")
+
         # Save attributes
         with h5py.File(path_to_data, mode="a") as f:
             try:
