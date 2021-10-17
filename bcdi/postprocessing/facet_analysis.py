@@ -501,23 +501,25 @@ class Facets:
                 "Interplanar angles between [111] and other possible facets",
                 fontsize=self.title_fontsize,
             )
-            # TODO: here, please define a default value for color
+            # Default value is red
             for norm, (norm_str, angle) in zip(
                 normals, self.theoretical_angles.items()
             ):
                 # add colors ass a fct of multiplicity
                 if [abs(x) for x in norm] == [1, 1, 1]:
                     color = "#7fc97f"
-                if [abs(x) for x in norm] == [1, 1, 0]:
+                elif [abs(x) for x in norm] == [1, 1, 0]:
                     color = "#beaed4"
-                if [abs(x) for x in norm] == [1, 0, 0]:
+                elif [abs(x) for x in norm] == [1, 0, 0]:
                     color = "#fdc086"
-                if [abs(x) for x in norm] == [2, 1, 0]:
+                elif [abs(x) for x in norm] == [2, 1, 0]:
                     color = "#f0027f"
-                if [abs(x) for x in norm] == [1, 1, 3]:
+                elif [abs(x) for x in norm] == [1, 1, 3]:
                     color = "#386cb0"
-                if [abs(x) for x in norm] == [1, 1, 5]:
+                elif [abs(x) for x in norm] == [1, 1, 5]:
                     color = "k"
+                else:
+                    color = "r"
 
                 ax.scatter(angle, norm_str, color=color)
 
