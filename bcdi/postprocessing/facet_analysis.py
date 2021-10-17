@@ -1152,7 +1152,7 @@ class Facets:
         # disp, strain & size vs angle planes,
         # change line style as a fct of the planes indices
         fig_name = "disp_strain_size_vs_angle_planes_" + self.hkls + self.comment
-        fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex=True, figsize=(10, 12))
+        fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="True", figsize=(10, 12))
 
         plt.xticks(fontsize=self.ticks_fontsize)
         plt.yticks(fontsize=self.ticks_fontsize)
