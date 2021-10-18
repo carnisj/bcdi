@@ -12,3 +12,4 @@ include bcdi/preprocessing/alias_dict_2018.txt
 include bcdi/preprocessing/alias_dict_2019.txt
 include bcdi/preprocessing/alias_dict_2020.txt
 include bcdi/preprocessing/alias_dict_2021.txt
+include tests/postprocessing/3572_fa.vtk
