@@ -46,6 +46,8 @@ class Facets:
 
     :param filename: str, name of the VTK file
     :param pathdir: str, path to the VTK file
+    :param savedir: str, path where to save results. If None, they will be saved in
+     pathdir/facets_analysis
     :param lattice: float, atomic spacing of the material in angstroms
      (only cubic lattices are supported).
     """
@@ -54,6 +56,7 @@ class Facets:
         self,
         filename : str,
         pathdir : str = "./",
+        savedir : str = None,
         lattice : float = 3.912,
     ) -> None:
         # Create other required parameters with default None value
@@ -89,8 +92,18 @@ class Facets:
             container_types=str,
             min_length=1,
             name="pathdir")
+        if not pathdir.endswith("/"):
+            pathdir += "/"
+        valid.valid_container(
+            savedir,
+            container_types=str,
+            min_length=1,
+            allow_none=True,
+            name="savedir")
+        if savedir is not None and not savedir.endswith("/"):
+            savedir += "/"
         valid.valid_item(lattice, allowed_types=float, min_excluded=0, name="lattice")
-        self.pathsave = pathdir + "facets_analysis/"
+        self.pathsave = savedir or pathdir + "facets_analysis/"
         self.path_to_data = pathdir + filename
         self.filename = filename
         self.lattice = lattice
