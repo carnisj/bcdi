@@ -16,7 +16,7 @@ import ipywidgets as widgets
 from ipywidgets import Layout, interactive
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+import pathlib
 import pandas as pd
 from typing import Tuple, Union
 import vtk
@@ -190,8 +190,7 @@ class Facets:
         In paraview, the facets have an index that starts at 1, the index 0 corresponds
         to the edges and corners of the facets.
         """
-        if not os.path.exists(self.pathsave):
-            os.makedirs(self.pathsave)
+        pathlib.Path(self.pathsave).mkdir(parents=True, exist_ok=True)
 
         reader = vtk.vtkGenericDataObjectReader()
         reader.SetFileName(self.path_to_data)
