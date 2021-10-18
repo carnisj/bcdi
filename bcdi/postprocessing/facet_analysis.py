@@ -334,7 +334,7 @@ class Facets:
         u and v should be the vectors perpendicular to two facets. The rotation matrix
         is then used if the argument rotate_particle is set to True in the method
         load_vtk.
-        
+
         :param u0: numpy.ndarray, shape (3,)
         :param v0: numpy.ndarray, shape (3,)
         :param w0: numpy.ndarray, shape (3,)
