@@ -54,10 +54,10 @@ class Facets:
 
     def __init__(
         self,
-        filename : str,
-        pathdir : str = "./",
-        savedir : str = None,
-        lattice : float = 3.912,
+        filename: str,
+        pathdir: str = "./",
+        savedir: str = None,
+        lattice: float = 3.912,
     ) -> None:
         # Create other required parameters with default None value
         self.nb_facets = None
@@ -82,24 +82,16 @@ class Facets:
 
         # Check input parameters
         valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename"
+            filename, container_types=str, min_length=1, name="filename"
         )
         valid.valid_container(
-            pathdir,
-            container_types=str,
-            min_length=1,
-            name="pathdir")
+            pathdir, container_types=str, min_length=1, name="pathdir"
+        )
         if not pathdir.endswith("/"):
             pathdir += "/"
         valid.valid_container(
-            savedir,
-            container_types=str,
-            min_length=1,
-            allow_none=True,
-            name="savedir")
+            savedir, container_types=str, min_length=1, allow_none=True, name="savedir"
+        )
         if savedir is not None and not savedir.endswith("/"):
             savedir += "/"
         valid.valid_item(lattice, allowed_types=float, min_excluded=0, name="lattice")
@@ -334,12 +326,12 @@ class Facets:
 
     def set_rotation_matrix(
         self,
-        u0 : np.ndarray,
-        v0 : np.ndarray,
-        w0 : np.ndarray,
-        u : np.ndarray,
-        v : np.ndarray,
-    ) -> None :
+        u0: np.ndarray,
+        v0: np.ndarray,
+        w0: np.ndarray,
+        u: np.ndarray,
+        v: np.ndarray,
+    ) -> None:
         """
         Define the rotation matrix.
 
@@ -416,9 +408,9 @@ class Facets:
 
     def fixed_reference(
         self,
-        hkl_reference : Tuple[float, float, float] = (1, 1, 1),
-        plot : bool = True,
-    ) -> None :
+        hkl_reference: Tuple[float, float, float] = (1, 1, 1),
+        plot: bool = True,
+    ) -> None:
         """
         Compute the interplanar angles between each normal and a fixed reference vector.
 
@@ -432,7 +424,7 @@ class Facets:
             container_types=(tuple, list),
             item_types=(int, float),
             length=3,
-            name="hkl_reference"
+            name="hkl_reference",
         )
         valid.valid_item(plot, allowed_types=bool, name="plot")
 
@@ -549,7 +541,7 @@ class Facets:
             ax.grid(which="major", alpha=0.5)
             plt.show()
 
-    def test_vector(self, vec : np.ndarray) -> None :
+    def test_vector(self, vec: np.ndarray) -> None:
         """
         Computes value of a vector passed through the rotation matrix.
 
@@ -567,14 +559,14 @@ class Facets:
             print("You need to define the rotation matrix before")
 
     def extract_facet(
-            self,
-            facet_id : int,
-            plot : bool = False,
-            elev : int = 0,
-            azim : int = 0,
-            output : bool = True,
-            save : bool = True
-    ) -> Union[None, dict] :
+        self,
+        facet_id: int,
+        plot: bool = False,
+        elev: int = 0,
+        azim: int = 0,
+        output: bool = True,
+        save: bool = True,
+    ) -> Union[None, dict]:
         """
         Extract data from one facet.
 
@@ -611,7 +603,7 @@ class Facets:
             "y": np.zeros(len(voxel_indices_new)),
             "z": np.zeros(len(voxel_indices_new)),
             "strain": np.zeros(len(voxel_indices_new)),
-            "disp": np.zeros(len(voxel_indices_new))
+            "disp": np.zeros(len(voxel_indices_new)),
         }
 
         for j, _ in enumerate(voxel_indices_new):
@@ -684,11 +676,11 @@ class Facets:
 
     def view_particle(
         self,
-        facet_id_range : Tuple[int, int],
-        elev_axis : str,
-        show_edges_corners : bool,
-        elev : int = 0,
-        azim : int = 0,
+        facet_id_range: Tuple[int, int],
+        elev_axis: str,
+        show_edges_corners: bool,
+        elev: int = 0,
+        azim: int = 0,
     ) -> None:
         """
         Visualization of the nanocrystal.
@@ -710,14 +702,12 @@ class Facets:
             item_types=int,
             length=2,
             min_included=0,
-            name="facet_id_range"
+            name="facet_id_range",
         )
         valid.valid_item(elev, allowed_types=int, name="elev")
         valid.valid_item(azim, allowed_types=int, name="azim")
         valid.valid_item(
-            show_edges_corners,
-            allowed_types=bool,
-            name="show_edges_corners"
+            show_edges_corners, allowed_types=bool, name="show_edges_corners"
         )
         if elev_axis not in {"x", "y", "z"}:
             raise ValueError(f"unsupported value for 'elev_axis': {elev_axis}")
@@ -731,9 +721,9 @@ class Facets:
         ax.set_ylabel("Y axis", fontsize=self.axes_fontsize)
         ax.set_zlabel("Z axis", fontsize=self.axes_fontsize)
 
-        def plot_facet_id(facet_id : int) -> None:
+        def plot_facet_id(facet_id: int) -> None:
             """
-            Plots the voxels belonging to a specific facet.
+            Plot the voxels belonging to a specific facet.
 
             It plots together the normal to that facet and it's id.
 
@@ -852,12 +842,12 @@ class Facets:
         plt.show()
 
     def plot_strain(
-            self,
-            figsize : Tuple[float, float] = (12, 10),
-            elev : int = 0,
-            azim : int = 0,
-            save : bool = True
-    ) -> None :
+        self,
+        figsize: Tuple[float, float] = (12, 10),
+        elev: int = 0,
+        azim: int = 0,
+        save: bool = True,
+    ) -> None:
         """
         Plot two views of the surface strain of the nanocrystal.
 
@@ -876,7 +866,7 @@ class Facets:
             item_types=(int, float),
             length=2,
             min_included=0,
-            name="figsize"
+            name="figsize",
         )
         valid.valid_item(elev, allowed_types=int, name="elev")
         valid.valid_item(azim, allowed_types=int, name="azim")
@@ -960,11 +950,11 @@ class Facets:
         plt.show()
 
     def plot_displacement(
-            self,
-            figsize: Tuple[float, float] = (12, 10),
-            elev : int = 0,
-            azim : int = 0,
-            save: bool = True
+        self,
+        figsize: Tuple[float, float] = (12, 10),
+        elev: int = 0,
+        azim: int = 0,
+        save: bool = True,
     ) -> None:
         """
         Plot two views of the surface dispalcement of the nanocrystal.
@@ -984,7 +974,7 @@ class Facets:
             item_types=(int, float),
             length=2,
             min_included=0,
-            name="figsize"
+            name="figsize",
         )
         valid.valid_item(elev, allowed_types=int, name="elev")
         valid.valid_item(azim, allowed_types=int, name="azim")
@@ -1061,7 +1051,7 @@ class Facets:
             plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-    def evolution_curves(self, ncol : int = 1) -> None:
+    def evolution_curves(self, ncol: int = 1) -> None:
         """
         Plot strain and displacement evolution for each facet.
 
@@ -1319,7 +1309,7 @@ class Facets:
             self.field_data = self.field_data.sort_values(by="facet_id")
             self.field_data = self.field_data.reset_index(drop=True)
 
-    def save_data(self, path_to_data : str) -> None :
+    def save_data(self, path_to_data: str) -> None:
         """
         Save the field data as a csv file.
 
@@ -1331,7 +1321,7 @@ class Facets:
         # Save field data
         self.field_data.to_csv(path_to_data, index=False)
 
-    def to_hdf5(self, path_to_data : str) -> None :
+    def to_hdf5(self, path_to_data: str) -> None:
         """
         Save the facets object as an hdf5 file.
 

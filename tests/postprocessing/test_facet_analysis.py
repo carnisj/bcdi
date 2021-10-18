@@ -78,7 +78,9 @@ class TestInitFacetsParams(unittest.TestCase):
 
     def test_init_lattice_str(self):
         with self.assertRaises(TypeError):
-            Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR, lattice=str(3.912))
+            Facets(
+                pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR, lattice=str(3.912)
+            )
 
 
 class TestInitFacetsAttributes(unittest.TestCase):
@@ -87,6 +89,7 @@ class TestInitFacetsAttributes(unittest.TestCase):
 
     __init__(self, filename : str,pathdir : str = "./",lattice : float = 3.912) -> None:
     """
+
     def setUp(self):
         # executed before each test
         self.facets = Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR)
@@ -96,17 +99,35 @@ class TestInitFacetsAttributes(unittest.TestCase):
 
     def test_init_vtk_data(self):
         self.assertIsInstance(self.facets.vtk_data, dict)
-        self.assertTrue(all(
-            key in self.facets.vtk_data.keys() for key in
-            {"x", "y", "z", "strain", "disp", "facet_probabilities", "facet_id", "x0", "y0", "z0"}))
+        self.assertTrue(
+            all(
+                key in self.facets.vtk_data.keys()
+                for key in {
+                    "x",
+                    "y",
+                    "z",
+                    "strain",
+                    "disp",
+                    "facet_probabilities",
+                    "facet_id",
+                    "x0",
+                    "y0",
+                    "z0",
+                }
+            )
+        )
 
     def test_init_strain_mean_facets(self):
-        self.assertTrue(isinstance(self.facets.strain_mean_facets, list) and len(
-            self.facets.strain_mean_facets) == 0)
+        self.assertTrue(
+            isinstance(self.facets.strain_mean_facets, list)
+            and len(self.facets.strain_mean_facets) == 0
+        )
 
     def test_init_disp_mean_facets(self):
-        self.assertTrue(isinstance(self.facets.disp_mean_facets, list) and len(
-            self.facets.disp_mean_facets) == 0)
+        self.assertTrue(
+            isinstance(self.facets.disp_mean_facets, list)
+            and len(self.facets.disp_mean_facets) == 0
+        )
 
     def test_init_field_data(self):
         self.assertIsInstance(self.facets.field_data, DataFrame)
