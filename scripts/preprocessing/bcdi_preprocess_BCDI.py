@@ -22,6 +22,8 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
+import argparse
+
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
@@ -29,9 +31,6 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
-
-import argparse
-
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("--data-root-folder", required=True, type=str,
