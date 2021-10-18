@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 from pandas import DataFrame
 from pathlib import Path
 import unittest
@@ -35,7 +36,7 @@ class TestInitFacetsParams(unittest.TestCase):
         with self.assertRaises(ValueError):
             Facets(pathdir="", filename=FILENAME, savedir=SAVEDIR)
 
-    def test_init_pathdir_None(self):
+    def test_init_pathdir_none(self):
         with self.assertRaises(ValueError):
             Facets(pathdir=None, filename=FILENAME, savedir=SAVEDIR)
 
@@ -43,11 +44,23 @@ class TestInitFacetsParams(unittest.TestCase):
         with self.assertRaises(TypeError):
             Facets(pathdir=0, filename=FILENAME, savedir=SAVEDIR)
 
+    def test_init_savedir_empty(self):
+        with self.assertRaises(ValueError):
+            Facets(pathdir=THIS_DIR, filename=FILENAME, savedir="")
+
+    def test_init_savedir_none(self):
+        facets = Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=None)
+        self.assertTrue(facets.pathsave == THIS_DIR + "/facets_analysis/")
+
+    def test_init_savedir_wrong_type(self):
+        with self.assertRaises(TypeError):
+            Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=0)
+
     def test_init_filename_empty(self):
         with self.assertRaises(ValueError):
             Facets(pathdir=THIS_DIR, filename="", savedir=SAVEDIR)
 
-    def test_init_filename_None(self):
+    def test_init_filename_none(self):
         with self.assertRaises(ValueError):
             Facets(pathdir=THIS_DIR, filename=None, savedir=SAVEDIR)
 
@@ -55,7 +68,7 @@ class TestInitFacetsParams(unittest.TestCase):
         with self.assertRaises(TypeError):
             Facets(pathdir=THIS_DIR, filename=0, savedir=SAVEDIR)
 
-    def test_init_lattice_None(self):
+    def test_init_lattice_none(self):
         with self.assertRaises(ValueError):
             Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR, lattice=None)
 
@@ -98,47 +111,80 @@ class TestInitFacetsAttributes(unittest.TestCase):
     def test_init_field_data(self):
         self.assertIsInstance(self.facets.field_data, DataFrame)
 
-    def test_init_parameters_u0(self):
+    def test_init_u0(self):
         self.assertTrue(self.facets.u0 is None)
 
-    def test_init_parameters_v0(self):
+    def test_init_v0(self):
         self.assertTrue(self.facets.v0 is None)
 
-    def test_init_parameters_w0(self):
+    def test_init_w0(self):
         self.assertTrue(self.facets.w0 is None)
 
-    def test_init_parameters_u(self):
+    def test_init_u(self):
         self.assertTrue(self.facets.u is None)
 
-    def test_init_parameters_v(self):
+    def test_init_v(self):
         self.assertTrue(self.facets.v is None)
 
-    def test_init_parameters_norm_u(self):
+    def test_init_norm_u(self):
         self.assertTrue(self.facets.norm_u is None)
 
-    def test_init_parameters_norm_v(self):
+    def test_init_norm_v(self):
         self.assertTrue(self.facets.norm_v is None)
 
-    def test_init_parameters_norm_w(self):
+    def test_init_norm_w(self):
         self.assertTrue(self.facets.norm_w is None)
 
-    def test_init_parameters_rotation_matrix(self):
+    def test_init_rotation_matrix(self):
         self.assertTrue(self.facets.rotation_matrix is None)
 
-    def test_init_parameters_hkl_reference(self):
+    def test_init_hkl_reference(self):
         self.assertTrue(self.facets.hkl_reference is None)
 
-    def test_init_parameters_hkls(self):
+    def test_init_hkls(self):
         self.assertTrue(self.facets.hkls is None)
 
-    def test_init_parameters_planar_dist(self):
+    def test_init_planar_dist(self):
         self.assertTrue(self.facets.planar_dist is None)
 
-    def test_init_parameters_ref_normal(self):
+    def test_init_ref_normal(self):
         self.assertTrue(self.facets.ref_normal is None)
 
-    def test_init_parameters_theoretical_angles(self):
+    def test_init_theoretical_angles(self):
         self.assertTrue(self.facets.theoretical_angles is None)
+
+    def test_init_strain_range(self):
+        self.assertTrue(np.isclose(self.facets.strain_range, 0.001))
+
+    def test_init_disp_range_avg(self):
+        self.assertTrue(np.isclose(self.facets.disp_range_avg, 0.2))
+
+    def test_init_disp_range(self):
+        self.assertTrue(np.isclose(self.facets.disp_range, 0.35))
+
+    def test_init_strain_range_avg(self):
+        self.assertTrue(np.isclose(self.facets.strain_range_avg, 0.0005))
+
+    def test_init_comment(self):
+        self.assertTrue(self.facets.comment == "")
+
+    def test_init_title_fontsize(self):
+        self.assertTrue(self.facets.title_fontsize == 24)
+
+    def test_init_axes_fontsize(self):
+        self.assertTrue(self.facets.axes_fontsize == 18)
+
+    def test_init_legend_fontsize(self):
+        self.assertTrue(self.facets.legend_fontsize == 11)
+
+    def test_init_ticks_fontsize(self):
+        self.assertTrue(self.facets.ticks_fontsize == 14)
+
+    def test_init_cmap(self):
+        self.assertTrue(self.facets.cmap == "viridis")
+
+    def test_init_particle_cmap(self):
+        self.assertTrue(self.facets.particle_cmap == "gist_ncar")
 
 
 if __name__ == "__main__":
