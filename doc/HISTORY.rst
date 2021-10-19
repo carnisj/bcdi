@@ -1,6 +1,8 @@
 Future
 ------
 
+* add mypy for type checking in doit and GitHub workflows
+
 * Bug: correct the detector horizontal direction in Beamline34ID, it was flipped.
 
 * Rename the parameter data_dirname to data_dir for the function setup.init_paths.
