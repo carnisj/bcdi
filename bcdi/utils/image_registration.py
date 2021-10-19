@@ -368,13 +368,17 @@ def average_arrays(
 
 def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarray:
     """
-    Calculate the new voxels position depending on the shift.
+    Transform old_positions depending on the shift.
 
-    :param old_positions: Sequence of 1D arrays, correpsonding to the position of the
-     points in the old frame, in each dimension
+    :param old_positions: list of 1D arrays corresponding to the position of the
+     voxels in a regular grid before transformation, in each dimension. For example,
+     if the array to be interpolated is 3D, old_positions will be a list of three 1D
+     arrays [array0, array1, array2], where array0 describes the voxel positions along
+     axis 0, array1 along axis 1 and array2 along axis 2. It does not work if the grid
+     is not regular (each coordinate would need to be described by a 3D array instead).
     :param shift: a tuple of floats, corresponding to the shift in each dimension that
      need to be applied to array
-    :return: the shifted positions were to interpolate, for the RegularGridInterpolator
+    :return: the shifted positions where to interpolate, for the RegularGridInterpolator
     """
     # check parameters
     valid.valid_container(
@@ -803,7 +807,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     """
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
 
-    :param array: a numpy array
+    :param array: a numpy array expressed in a regular grid
     :param shift: a tuple of floats, corresponding to the shift in each dimension that
      need to be applied to array
     :return: the shifted array
