@@ -776,6 +776,8 @@ def get_shift(
         reference_obj = abs(reference_array)
         shifted_obj = abs(shifted_array)
     else:  # "support"
+        if support_threshold is None:
+            raise ValueError("support_threshold should be a float in [0, 1]")
         reference_obj, shifted_obj = util.make_support(
             arrays=(reference_array, shifted_array), support_threshold=support_threshold
         )
@@ -787,7 +789,7 @@ def get_shift(
 
     if verbose:
         print(f"shifts with the reference object: {shift} pixels")
-    return shift
+    return tuple(shift)
 
 
 def index_max(mydata):
@@ -884,7 +886,7 @@ def shift_array(
             shift=list(map(lambda x: int(np.rint(x)), shift)),
             axis=tuple(range((len(shift)))),
         )
-    return shifted_array
+    return np.asarray(shifted_array)
 
 
 def subpixel_shift(array, z_shift, y_shift, x_shift=None):
