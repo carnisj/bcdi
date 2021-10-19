@@ -19,6 +19,7 @@ dependencies:
   - silx
   - lmfit
   - moviepy
+  - mypy
   - pillow
   - black
   - coverage

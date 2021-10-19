@@ -1224,7 +1224,7 @@ def make_support(
         supports.append(support)
 
     if len(arrays) == 1:  # return an array to avoid having to unpack it every time
-        supports = supports[0]
+        return supports[0]
     return supports
 
 
