@@ -880,7 +880,7 @@ def shift_array(
             shift=list(map(lambda x: int(np.rint(x)), shift)),
             axis=tuple(range((len(shift)))),
         )
-    return shifted_array
+    return np.asarray(shifted_array)
 
 
 def subpixel_shift(array, z_shift, y_shift, x_shift=None):
