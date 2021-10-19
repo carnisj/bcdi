@@ -21,6 +21,8 @@ dependencies:
   - moviepy
   - mypy
   - pillow
+  - pandas
+  - ipywidgets
   - black
   - coverage
   - doit
