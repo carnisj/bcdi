@@ -83,9 +83,8 @@ class ArgumentHandler():
         return pathlib.Path(self.file_path).suffix
 
     def _checked_args(self, dic):
-        keys = dic.keys()
         checked_keys = []
-        for key in keys:
+        for key in dic.keys():
             if key not in _AUTHORIZED_KEYS[self.script_type]:
                 print(f"'{key}' is an unexpected key, "
                       "its value won't be considered.")
