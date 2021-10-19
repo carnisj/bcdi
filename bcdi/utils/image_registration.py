@@ -746,7 +746,7 @@ def get_shift(
 
     if verbose:
         print(f"shifts with the reference object: {shift} pixels")
-    return shift
+    return tuple(shift)
 
 
 def index_max(mydata):
