@@ -133,28 +133,47 @@ class TestInitFacetsAttributes(unittest.TestCase):
         self.assertIsInstance(self.facets.field_data, DataFrame)
 
     def test_init_u0(self):
-        self.assertTrue(self.facets.u0 is None)
+        self.assertTrue(
+            isinstance(self.facets.u0, np.ndarray) and self.facets.u0.shape == (3,)
+        )
 
     def test_init_v0(self):
-        self.assertTrue(self.facets.v0 is None)
+        self.assertTrue(
+            isinstance(self.facets.v0, np.ndarray) and self.facets.v0.shape == (3,)
+        )
 
     def test_init_w0(self):
-        self.assertTrue(self.facets.w0 is None)
+        self.assertTrue(
+            isinstance(self.facets.w0, np.ndarray) and self.facets.w0.shape == (3,)
+        )
 
     def test_init_u(self):
-        self.assertTrue(self.facets.u is None)
+        self.assertTrue(
+            isinstance(self.facets.u, np.ndarray) and self.facets.u.shape == (3,)
+        )
 
     def test_init_v(self):
-        self.assertTrue(self.facets.v is None)
+        self.assertTrue(
+            isinstance(self.facets.v, np.ndarray) and self.facets.v.shape == (3,)
+        )
 
     def test_init_norm_u(self):
-        self.assertTrue(self.facets.norm_u is None)
+        self.assertTrue(
+            isinstance(self.facets.norm_u, np.ndarray)
+            and self.facets.norm_u.shape == (3,)
+        )
 
     def test_init_norm_v(self):
-        self.assertTrue(self.facets.norm_v is None)
+        self.assertTrue(
+            isinstance(self.facets.norm_v, np.ndarray)
+            and self.facets.norm_v.shape == (3,)
+        )
 
     def test_init_norm_w(self):
-        self.assertTrue(self.facets.norm_w is None)
+        self.assertTrue(
+            isinstance(self.facets.norm_w, np.ndarray)
+            and self.facets.norm_w.shape == (3,)
+        )
 
     def test_init_rotation_matrix(self):
         self.assertTrue(self.facets.rotation_matrix is None)
@@ -163,7 +182,7 @@ class TestInitFacetsAttributes(unittest.TestCase):
         self.assertTrue(self.facets.hkl_reference is None)
 
     def test_init_hkls(self):
-        self.assertTrue(self.facets.hkls is None)
+        self.assertTrue(self.facets.hkls == "")
 
     def test_init_planar_dist(self):
         self.assertTrue(self.facets.planar_dist is None)
