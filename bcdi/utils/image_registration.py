@@ -735,6 +735,8 @@ def get_shift(
         reference_obj = abs(reference_array)
         shifted_obj = abs(shifted_array)
     else:  # "support"
+        if support_threshold is None:
+            raise ValueError("support_threshold should be a float in [0, 1]")
         reference_obj, shifted_obj = util.make_support(
             arrays=(reference_array, shifted_array), support_threshold=support_threshold
         )
