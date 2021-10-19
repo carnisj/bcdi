@@ -38,65 +38,101 @@ import bcdi.utils.validation as valid
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 
-ap.add_argument("--data-root-folder", required=True, type=str,
-                help="where to find experiment data")
+ap.add_argument(
+    "--data-root-folder", required=True, type=str, help="where to find experiment data"
+)
 
-ap.add_argument("-s", "--scan", required=True, type=int,
-                help="number of the scan to process")
+ap.add_argument(
+    "-s", "--scan", required=True, type=int, help="number of the scan to process"
+)
 
-ap.add_argument("--outofplane-angle", required=True, type=float,
-                help="detector out of plane angle")
+ap.add_argument(
+    "--outofplane-angle", required=True, type=float, help="detector out of plane angle"
+)
 
-ap.add_argument("--incidence-angle", required=True, type=float,
-                help="incidence angle")
+ap.add_argument("--incidence-angle", required=True, type=float, help="incidence angle")
 
-ap.add_argument("--inplane-angle", required=True, type=float,
-                help="detector in plane angle")
+ap.add_argument(
+    "--inplane-angle", required=True, type=float, help="detector in plane angle"
+)
 
-ap.add_argument("-as", "--angle-step", required=True, type=float,
-                help="angle step used during scan")
+ap.add_argument(
+    "-as", "--angle-step", required=True, type=float, help="angle step used during scan"
+)
 
-ap.add_argument("-sdd", "--sample-detector-distance", default=1, type=float,
-                help="sample to detector distance")
+ap.add_argument(
+    "-sdd",
+    "--sample-detector-distance",
+    default=1,
+    type=float,
+    help="sample to detector distance",
+)
 
-ap.add_argument("-en", "--energy", default=12994, type=float,
-                help="beam energy")
+ap.add_argument("-en", "--energy", default=12994, type=float, help="beam energy")
 
-ap.add_argument("-ra", "--rocking-angle", default="inplane", type=str,
-                choices=["inplane", "outofplane"], help="rocking angle")
+ap.add_argument(
+    "-ra",
+    "--rocking-angle",
+    default="inplane",
+    type=str,
+    choices=["inplane", "outofplane"],
+    help="rocking angle",
+)
 
-ap.add_argument("-m", "--modes", required=True, type=str,
-                help="modes to be analyzed")
+ap.add_argument("-m", "--modes", required=True, type=str, help="modes to be analyzed")
 
-ap.add_argument("-f", "--flip", default="False", type=str,
-                help="choose to flip or not the reconstruction")
+ap.add_argument(
+    "-f",
+    "--flip",
+    default="False",
+    type=str,
+    help="choose to flip or not the reconstruction",
+)
 
-ap.add_argument("--debug", default="False", type=str,
-                help="debugging option")
+ap.add_argument("--debug", default="False", type=str, help="debugging option")
 
-ap.add_argument("--save-dir", required=True, type=str,
-                help="directory path where to save")
+ap.add_argument(
+    "--save-dir", required=True, type=str, help="directory path where to save"
+)
 
-ap.add_argument("--beamline", default="ID01", type=str,
-                help="beamline where the measurement was made")
+ap.add_argument(
+    "--beamline",
+    default="ID01",
+    type=str,
+    help="beamline where the measurement was made",
+)
 
-ap.add_argument("--binning", default="1, 1, 1", type=str,
-                help="binning factor applied during phasing")
+ap.add_argument(
+    "--binning",
+    default="1, 1, 1",
+    type=str,
+    help="binning factor applied during phasing",
+)
 
-ap.add_argument("--is-orthogonalized", default="False", type=str,
-                help="If orthogonalized, do not algin q")
+ap.add_argument(
+    "--is-orthogonalized",
+    default="False",
+    type=str,
+    help="If orthogonalized, do not align q",
+)
 
-ap.add_argument("--specfile-path", required=True, type=str,
-                help="path to '.spec' file")
+ap.add_argument("--specfile-path", required=True, type=str, help="path to '.spec' file")
 
-ap.add_argument("--sample-name", default='S', type=str,
-                help="name of the sample")
+ap.add_argument("--sample-name", default="S", type=str, help="name of the sample")
 
-ap.add_argument("--isosurface-threshold", default=0.5, type=float,
-                help="the isosurface threshold used for postprocessing")
+ap.add_argument(
+    "--isosurface-threshold",
+    default=0.5,
+    type=float,
+    help="the isosurface threshold used for postprocessing",
+)
 
-ap.add_argument("--voxel-size", required=False, type=str,
-                help="the voxel size used for interpolation")
+ap.add_argument(
+    "--voxel-size",
+    required=False,
+    type=str,
+    help="the voxel size used for interpolation",
+)
 
 args = vars(ap.parse_args())
 
@@ -365,10 +401,9 @@ root_folder = args["data_root_folder"]
 
 save_dir = args["save_dir"] + "/"
 
-npz_file = glob.glob(os.path.dirname(
-    args["modes"]) + "/S{}_pynx_*.npz".format(scan))[0]
+npz_file = glob.glob(os.path.dirname(args["modes"]) + "/S{}_pynx_*.npz".format(scan))[0]
 
-binning = tuple(map(int, args["binning"].split(',')))
+binning = tuple(map(int, args["binning"].split(",")))
 
 original_size = list(np.load(npz_file)["data"].shape)
 
@@ -392,19 +427,27 @@ grazing_angle = args["incidence_angle"]
 inplane_angle = args["inplane_angle"]
 tilt_angle = args["angle_step"]
 
-flip_reconstruction = False if args["flip"] in \
-  ["False", "false", "FALSE", "f", 0, "0"] else True
+flip_reconstruction = (
+    False if args["flip"] in ["False", "false", "FALSE", "f", 0, "0"] else True
+)
 
-xrayutils_ortho = False if args["is_orthogonalized"] in \
-  ["False", "false", "FALSE", "f", 0, "0"] else True   # True if the
+xrayutils_ortho = (
+    False
+    if args["is_orthogonalized"] in ["False", "false", "FALSE", "f", 0, "0"]
+    else True
+)  # True if the
 # data is already orthogonalized
 
-debug =  False if args["debug"] in \
-  ["False", "false", "FALSE", "f", 0, "0"] else True  # set to True to
+debug = (
+    False if args["debug"] in ["False", "false", "FALSE", "f", 0, "0"] else True
+)  # set to True to
 # show all plots for debugging
 
-align_q = True if args["is_orthogonalized"] in \
-  ["False", "false", "FALSE", "f", 0, "0"] else False  # if True rotates
+align_q = (
+    True
+    if args["is_orthogonalized"] in ["False", "false", "FALSE", "f", 0, "0"]
+    else False
+)  # if True rotates
 # the crystal to align q along one axis of the array
 
 isosurface_strain = args["isosurface_threshold"]
@@ -418,7 +461,8 @@ else:
 
 if not debug:
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
 
 ####################
 # Check parameters #
