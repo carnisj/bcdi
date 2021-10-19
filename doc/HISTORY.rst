@@ -1,7 +1,7 @@
 Future
 ------
 
-* add mypy for type checking in doit and GitHub workflows
+* Add mypy for type checking in doit and GitHub workflows
 
 * Bug: correct the detector horizontal direction in Beamline34ID, it was flipped.
 
