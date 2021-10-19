@@ -2705,7 +2705,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
     """
 
     sample_rotations = ["y+"]
-    detector_rotations : List[str] = []
+    detector_rotations: List[str] = []
 
     def __init__(self):
         super().__init__(sample_offsets=(0,))
