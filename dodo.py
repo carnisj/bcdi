@@ -138,6 +138,14 @@ def task_tests():
     }
 
 
+def task_mypy():
+    """Type check using mypy."""
+    return {
+        "actions": ["python -m mypy bcdi"],
+        "verbosity": 2,
+    }
+
+
 def task_build_doc():
     """Build the documentation with sphinx."""
     # import pathlib
