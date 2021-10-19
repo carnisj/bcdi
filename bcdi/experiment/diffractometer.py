@@ -72,6 +72,7 @@ import re
 import sys
 import tkinter as tk
 from tkinter import filedialog
+from typing import List
 
 from ..graph import graph_utils as gu
 from .rotation_matrix import RotationMatrix
@@ -2704,7 +2705,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
     """
 
     sample_rotations = ["y+"]
-    detector_rotations = []
+    detector_rotations : List[str] = []
 
     def __init__(self):
         super().__init__(sample_offsets=(0,))
