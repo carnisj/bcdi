@@ -50,7 +50,9 @@ class ArgumentHandler():
     Base class to deal with arguments required by scripts
 
     :param file_path: path of the configuration file that contains
-    the arguments
+    the arguments, str.
+    :param script_type: the type of the script that the arguments will
+    be parsed into, str.
     """
     def __init__(self, file_path, script_type="preprocessing"):
         self.file_path = file_path
