@@ -16,6 +16,7 @@ pillow
 black
 coverage
 doit
+mypy
 pycodestyle
 pydocstyle
 pyfakefs

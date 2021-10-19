@@ -158,6 +158,7 @@ setup(
             "black",
             "coverage",
             "doit",
+            "mypy",
             "pycodestyle",
             "pydocstyle",
             "pyfakefs",
