@@ -830,7 +830,7 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
                 )
             ).transpose()
         )
-    return shifted_array.reshape(array.shape).astype(array.dtype)
+    return np.asarray(shifted_array.reshape(array.shape).astype(array.dtype))
 
 
 def shift_array(
