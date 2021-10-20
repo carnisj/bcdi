@@ -366,6 +366,47 @@ def average_arrays(
     return avg_obj, avg_flag
 
 
+def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarray:
+    """
+    Transform old_positions depending on the shift.
+
+    :param old_positions: list of 1D arrays corresponding to the position of the
+     voxels in a regular grid before transformation, in each dimension. For example,
+     if the array to be interpolated is 3D, old_positions will be a list of three 1D
+     arrays [array0, array1, array2], where array0 describes the voxel positions along
+     axis 0, array1 along axis 1 and array2 along axis 2. It does not work if the grid
+     is not regular (each coordinate would need to be described by a 3D array instead).
+    :param shift: a tuple of floats, corresponding to the shift in each dimension that
+     need to be applied to array
+    :return: the shifted positions where to interpolate, for the RegularGridInterpolator
+    """
+    # check parameters
+    valid.valid_container(
+        old_positions,
+        container_types=(tuple, list, np.ndarray),
+        item_types=np.ndarray,
+        min_length=1,
+        name="old_positions",
+    )
+    valid.valid_container(
+        shift,
+        container_types=(tuple, list),
+        item_types=Real,
+        length=len(old_positions),
+        name="shift",
+    )
+
+    # calculate the new positions
+    grids = np.meshgrid(*old_positions, indexing="ij")
+    new_positions = [grid - shift[index] for index, grid in enumerate(grids)]
+    return np.asarray(np.concatenate(
+        [
+            new_grid.reshape((1, new_grid.size))
+            for _, new_grid in enumerate(new_positions)
+        ]
+    ).transpose())
+
+
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
     """
     Efficient subpixel image registration by cross-correlation.
@@ -768,70 +809,33 @@ def interp_rgi_translation(array: np.ndarray, shift: Sequence[float]) -> np.ndar
     """
     Interpolate the shifted array on new positions using a RegularGridInterpolator.
 
-    :param array: a 3D numpy array
-    :param shift: a tuple of 3 floats, corresponding to the shift in each dimension that
+    :param array: a numpy array expressed in a regular grid
+    :param shift: a tuple of floats, corresponding to the shift in each dimension that
      need to be applied to array
     :return: the shifted array
     """
     # check some parameters
-    valid.valid_ndarray(array, ndim=(2, 3), name="array")
+    valid.valid_ndarray(array, name="array")
     valid.valid_container(
         shift, container_types=(tuple, list), item_types=float, name="shift"
     )
 
-    if array.ndim == 3:
-        # calculate the new positions
-        nbz, nby, nbx = array.shape
-        old_z = np.arange(-nbz // 2, nbz // 2)
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myz, myy, myx = np.meshgrid(old_z, old_y, old_x, indexing="ij")
-        new_z = myz - shift[0]
-        new_y = myy - shift[1]
-        new_x = myx - shift[2]
+    # current points positions in each dimension
+    old_positions = [np.arange(-val // 2, val // 2) for val in array.shape]
 
-        # interpolate array
-        rgi = RegularGridInterpolator(
-            (old_z, old_y, old_x),
-            array,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        shifted_array = rgi(
-            np.concatenate(
-                (
-                    new_z.reshape((1, new_z.size)),
-                    new_y.reshape((1, new_z.size)),
-                    new_x.reshape((1, new_z.size)),
-                )
-            ).transpose()
-        )
-    else:  # 2D case
-        # calculate the new positions
-        nby, nbx = array.shape
-        old_y = np.arange(-nby // 2, nby // 2)
-        old_x = np.arange(-nbx // 2, nbx // 2)
-        myy, myx = np.meshgrid(old_y, old_x, indexing="ij")
-        new_y = myy - shift[0]
-        new_x = myx - shift[1]
+    # calculate the new positions
+    new_positions = calc_new_positions(old_positions, shift)
 
-        # interpolate array
-        rgi = RegularGridInterpolator(
-            (old_y, old_x),
-            array,
-            method="linear",
-            bounds_error=False,
-            fill_value=0,
-        )
-        shifted_array = rgi(
-            np.concatenate(
-                (
-                    new_y.reshape((1, new_y.size)),
-                    new_x.reshape((1, new_y.size)),
-                )
-            ).transpose()
-        )
+    # interpolate array #
+    rgi = RegularGridInterpolator(
+        old_positions,
+        array,
+        method="linear",
+        bounds_error=False,
+        fill_value=0,
+    )
+    shifted_array = rgi(new_positions)
+
     return np.asarray(shifted_array.reshape(array.shape).astype(array.dtype))
 
 
