@@ -141,6 +141,7 @@ setup(
         "xrayutilities",
         "fabio",
         "silx",
+        "pyaml",
         "black",
         "doit",
         "coverage",
