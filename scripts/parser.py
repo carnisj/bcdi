@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
+#   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
+#   (c) 07/2019-present : DESY PHOTON SCIENCE
+#       authors:
+#         Clément Atlan, c.atlan@outlook.com
+
 import yaml
 import pathlib
 
@@ -94,7 +103,7 @@ class ArgumentHandler():
                 checked_keys.append(key)
         return {key: dic[key] for key in checked_keys}
 
-    # For now the yam Loader already returns a dic, so not useful
+    # For now the yaml Loader already returns a dic, so not useful
     # but we may need it if we use other file format
     def to_dict(self):
         pass
@@ -107,7 +116,7 @@ if __name__ == '__main__':
     config_file = "../conf/default_config.yml"
     arg_handler = ArgumentHandler(
         config_file,
-        script_type="postprocessing"  # try with "postprocessing"
+        script_type="preprocessing"  # try with "postprocessing"
         )
 
     args = arg_handler.load_arguments()  # this can also be accessed by
