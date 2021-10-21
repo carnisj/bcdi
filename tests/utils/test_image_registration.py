@@ -18,6 +18,72 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
+class TestCalcNewPositions(unittest.TestCase):
+    """
+    Tests on the function calc_new_positions.
+
+    def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarray
+    """
+
+    def setUp(self):
+        self.shapes = ((3,), (4,), (2, 2), (1, 2, 2))
+        self.shifts = ((1,), (-0.2,), (2.3, -0.1), (1.1, 0.3, 0))
+
+    def test_ndim_no_shift(self):
+        correct = (
+            np.array([[-2], [-1], [0]]),
+            np.array([[-2], [-1], [0], [1]]),
+            np.array(
+                [
+                    [-1, -1],
+                    [-1, 0],
+                    [0, -1],
+                    [0, 0],
+                ]
+            ),
+            np.array([[-1, -1, -1], [-1, -1, 0], [-1, 0, -1], [-1, 0, 0]]),
+        )
+        for index, shape in enumerate(self.shapes):
+            with self.subTest():
+                old_pos = [np.arange(-val // 2, val // 2) for val in shape]
+                new_pos = reg.calc_new_positions(old_pos, shift=(0,) * len(shape))
+                self.assertTrue(np.allclose(new_pos, correct[index]))
+
+    def test_ndim_with_shift(self):
+        correct = (
+            np.array([[-3], [-2], [-1]]),
+            np.array([[-1.8], [-0.8], [0.2], [1.2]]),
+            np.array(
+                [
+                    [-3.3, -0.9],
+                    [-3.3, 0.1],
+                    [-2.3, -0.9],
+                    [-2.3, 0.1],
+                ]
+            ),
+            np.array(
+                [[-2.1, -1.3, -1], [-2.1, -1.3, 0], [-2.1, -0.3, -1], [-2.1, -0.3, 0]]
+            ),
+        )
+        for index, shape in enumerate(self.shapes):
+            with self.subTest():
+                old_pos = [np.arange(-val // 2, val // 2) for val in shape]
+                new_pos = reg.calc_new_positions(old_pos, shift=self.shifts[index])
+                self.assertTrue(np.allclose(new_pos, correct[index]))
+
+    def test_empty_positions(self):
+        with self.assertRaises(ValueError):
+            reg.calc_new_positions([], shift=[])
+
+    def test_wrong_shift_length(self):
+        with self.assertRaises(ValueError):
+            reg.calc_new_positions([np.arange(-2, 1)], shift=[1, 2])
+
+    def test_wrong_shift_none(self):
+        with self.assertRaises(ValueError):
+            reg.calc_new_positions([np.arange(-2, 1)], shift=None)
+
+
 class TestGetShift2D(unittest.TestCase):
     """
     Tests on the function image_registration.get_shift for 2D arrays.
@@ -497,6 +563,7 @@ class TestShiftArray3D(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    run_tests(TestCalcNewPositions)
     run_tests(TestGetShift2D)
     run_tests(TestGetShift2D)
     run_tests(TestShiftArray2D)

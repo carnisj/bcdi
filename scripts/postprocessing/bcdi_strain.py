@@ -143,6 +143,113 @@ for k, v in args.items():
     print("argument: {}".format(k), "value: {}".format(v))
 
 
+# construct the argument parser and parse the arguments
+ap = argparse.ArgumentParser()
+
+ap.add_argument(
+    "--data-root-folder", required=True, type=str, help="where to find experiment data"
+)
+
+ap.add_argument(
+    "-s", "--scan", required=True, type=int, help="number of the scan to process"
+)
+
+ap.add_argument(
+    "--outofplane-angle", required=True, type=float, help="detector out of plane angle"
+)
+
+ap.add_argument("--incidence-angle", required=True, type=float, help="incidence angle")
+
+ap.add_argument(
+    "--inplane-angle", required=True, type=float, help="detector in plane angle"
+)
+
+ap.add_argument(
+    "-as", "--angle-step", required=True, type=float, help="angle step used during scan"
+)
+
+ap.add_argument(
+    "-sdd",
+    "--sample-detector-distance",
+    default=1,
+    type=float,
+    help="sample to detector distance",
+)
+
+ap.add_argument("-en", "--energy", default=12994, type=float, help="beam energy")
+
+ap.add_argument(
+    "-ra",
+    "--rocking-angle",
+    default="inplane",
+    type=str,
+    choices=["inplane", "outofplane"],
+    help="rocking angle",
+)
+
+ap.add_argument("-m", "--modes", required=True, type=str, help="modes to be analyzed")
+
+ap.add_argument(
+    "-f",
+    "--flip",
+    default="False",
+    type=str,
+    help="choose to flip or not the reconstruction",
+)
+
+ap.add_argument("--debug", default="False", type=str, help="debugging option")
+
+ap.add_argument(
+    "--save-dir", required=True, type=str, help="directory path where to save"
+)
+
+ap.add_argument(
+    "--beamline",
+    default="ID01",
+    type=str,
+    help="beamline where the measurement was made",
+)
+
+ap.add_argument(
+    "--binning",
+    default="1, 1, 1",
+    type=str,
+    help="binning factor applied during phasing",
+)
+
+ap.add_argument(
+    "--is-orthogonalized",
+    default="False",
+    type=str,
+    help="If orthogonalized, do not align q",
+)
+
+ap.add_argument("--specfile-path", required=True, type=str, help="path to '.spec' file")
+
+ap.add_argument("--sample-name", default="S", type=str, help="name of the sample")
+
+ap.add_argument(
+    "--isosurface-threshold",
+    default=0.5,
+    type=float,
+    help="the isosurface threshold used for postprocessing",
+)
+
+ap.add_argument(
+    "--voxel-size",
+    required=False,
+    type=str,
+    help="the voxel size used for interpolation",
+)
+
+args = vars(ap.parse_args())
+
+# print arguments
+print("Arguments parsed:")
+for k, v in args.items():
+    print("argument: {}".format(k), "value: {}".format(v))
+
+
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
 and calculate the strain component along the direction of the experimental diffusion

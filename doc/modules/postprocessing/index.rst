@@ -19,6 +19,23 @@ API Reference
 .. automodule:: bcdi.postprocessing.facet_recognition
    :members:
 
+facet_analysis
+^^^^^^^^^^^^^^
+
+This module provides tools to import and stores the output of the facet analyzer plugin
+from Paraview for further analysis. See Ultramicroscopy 122, 65-75 (2012)
+https://doi.org/10.1016/j.ultramic.2012.07.024
+
+One can extract the strain component and the displacement on the facets, and retrieve
+the correct facet normals based on a user input (geometric transformation into the
+crystal frame). Only cubic lattices are supported.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.postprocessing.facet_analysis
+   :members:
+
 postprocessing_utils
 ^^^^^^^^^^^^^^^^^^^^
 
