@@ -10,7 +10,7 @@
 from bcdi.utils.parser import ArgumentParser
 
 if __name__ == '__main__':
-    config_file = "../conf/default_config.yml"
+    config_file = "../../conf/default_config.yml"
     arg_handler = ArgumentParser(
         config_file,
         script_type="preprocessing"  # try with "postprocessing"
