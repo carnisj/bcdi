@@ -11,10 +11,7 @@ from bcdi.utils.parser import ArgumentParser
 
 if __name__ == '__main__':
     config_file = "../../conf/default_config.yml"
-    arg_handler = ArgumentParser(
-        config_file,
-        script_type="preprocessing"  # try with "postprocessing"
-        )
+    arg_handler = ArgumentParser(config_file)
 
     args = arg_handler.load_arguments()  # this can also be accessed by
     # arg_handler.arguments once load_arguments() has been computed
