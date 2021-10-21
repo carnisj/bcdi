@@ -9,6 +9,7 @@
 
 from argparse import ArgumentParser
 import pathlib
+from typing import Any, ByteString, Dict, Union
 import yaml
 
 from bcdi.utils.parameters import valid_param
@@ -121,10 +122,30 @@ class ConfigParser:
     the arguments, str.
     """
 
-    def __init__(self, file_path: str) -> None:
+    def __init__(
+            self,
+            file_path: str,
+            command_line_args: Union[Dict[str, Any], None] = None
+    ) -> None:
         self.file_path = file_path
+        self.command_line_args = command_line_args
         self.raw_config = self._open_file()
-        self.arguments = None
+        args = self._load_arguments()
+        if self.command_line_args is not None:
+            args.update(self.command_line_args)
+        self.arguments = self._check_args(args)
+
+    @property
+    def command_line_args(self):
+        """Optional dictionary of command line parameters."""
+        return self._command_line_args
+
+    @command_line_args.setter
+    def command_line_args(self, value):
+        valid.valid_container(
+            value, container_types=dict, allow_none=True, name="command_line_args"
+        )
+        self._command_line_args = value
 
     @property
     def file_path(self):
@@ -136,29 +157,12 @@ class ConfigParser:
         valid.valid_container(
             value, container_types=str, min_length=1, name="file_path"
         )
+        if self._get_extension() != ".yml":
+            raise ValueError("Expecting a YAML config file")
         self._file_path = value
 
-    def _open_file(self):
-        """Open the file and return it."""
-        with open(self.file_path, "rb") as f:
-            raw_config = f.read()
-        return raw_config
-
-    def load_arguments(self):
-        extension = self._get_extension()
-        if extension == ".yml":
-            args = yaml.load(self.raw_config, Loader=yaml.FullLoader)
-            self.arguments = self._check_args(args)
-            return self.arguments
-        else:
-            return None
-
-    def _get_extension(self):
-        """return the extension of the the file_path attribute"""
-        return pathlib.Path(self.file_path).suffix
-
     @staticmethod
-    def _check_args(dic):
+    def _check_args(dic : Dict[str, Any]) -> Dict[str, Any]:
         checked_keys = []
         for key, value in dic.items():
             if valid_param(key, value):
@@ -168,6 +172,20 @@ class ConfigParser:
                     f"'{key}' is an unexpected key, " "its value won't be considered."
                 )
         return {key: dic[key] for key in checked_keys}
+
+    def _get_extension(self) -> str:
+        """Return the extension of the the file_path attribute."""
+        return pathlib.Path(self.file_path).suffix
+
+    def _load_arguments(self) -> Dict:
+        """Parse the byte string."""
+        return yaml.load(self.raw_config, Loader=yaml.SafeLoader)
+
+    def _open_file(self) -> ByteString:
+        """Open the file and return it."""
+        with open(self.file_path, "rb") as f:
+            raw_config = f.read()
+        return raw_config
 
     # For now the yaml Loader already returns a dic, so not useful
     # but we may need it if we use other file format
