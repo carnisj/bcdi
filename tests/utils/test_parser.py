@@ -7,9 +7,13 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from pathlib import Path
 import unittest
-import bcdi.utils.parser as parser
+from bcdi.utils.parameters import valid_param
+from bcdi.utils.parser import ArgumentParser
 
+here = Path(__file__).parent
+CONFIG = str(here.parents[1] / "conf/default_config.yml")
 
 def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
@@ -23,8 +27,16 @@ class TestArgumentParser(unittest.TestCase):
 
     def __init__(self, file_path : str, script_type : str = "preprocessing") -> None :
     """
+    def setUp(self) -> None:
+        self.parser = ArgumentParser(CONFIG)
 
     def test_init(self):
+        pass
+
+    def test_expected_param(self):
+        pass
+
+    def test_unexpected_param(self):
         pass
 
 
