@@ -16,7 +16,7 @@ from typing import Any
 import bcdi.utils.validation as valid
 
 
-def valid_param(key : str, value : Any) -> bool :
+def valid_param(key: str, value: Any) -> bool:
     """
     Validate a key value pair corresponding to an input parameter.
 
@@ -26,20 +26,17 @@ def valid_param(key : str, value : Any) -> bool :
     :param value: the value of the parameter
     :return: True if the check is sucessful, False if the key is not expected
     """
-    if key == "scans":
-        valid.valid_container(
-            value,
-            container_types=(tuple, list, np.ndarray),
-            min_length=1,
-            name=key
-        )
+    if key == "absorption":
+        valid.valid_item(value, allowed_types=float, min_excluded=0, name=key)
+    elif key == "actuators":
+        valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "scan":
-        valid.valid_item(
-            value,
-            allowed_types=int,
-            min_included=0,
-            name=key
+        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
+    elif key == "scans":
+        valid.valid_container(
+            value, container_types=(tuple, list, np.ndarray), min_length=1, name=key
         )
+
     # here we will list all the possible parameters used in scripts (we need to unify
     # as much as possible the names)
     else:
