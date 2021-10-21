@@ -34,6 +34,7 @@ import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+import glob
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
