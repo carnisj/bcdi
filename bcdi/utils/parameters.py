@@ -35,23 +35,39 @@ def valid_param(key: str, value: Any) -> bool:
     """
     # test the booleans first
     if key in {"align_q", "bin_during_loading",
-               "custom_scan", "debug", "flag_interact", "is_series", "mask_zero_event",
+               "custom_scan", "debug", "flag_interact", "is_series", "keep_size",
+               "mask_zero_event",
                "reload_orthogonal", "reload_previous",
                "save_asint", "save_rawdata", "save_to_mat", "save_to_npz",
                "save_to_vti", "use_rawdata"}:
         valid.valid_item(value, allowed_types=bool, name=key)
     elif key == "absorption":
-        valid.valid_item(value, allowed_types=float, min_excluded=0, name=key)
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "actuators":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "beam_direction":
         valid.valid_container(
-            value, container_types=(tuple, list), length=3, item_types=Real, name=key
+            value, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
+            name=key
         )
     elif key == "beamline":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "centering_method":
+        allowed = {"com", "max", "max_com", "do_nothing"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "comment":
+        valid.valid_container(value, container_types=str, name=key)
+        if value and not value.startwith("_"):
+            value += "_"
+    elif key == "correlation_threshold":
+        valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
     elif key == "custom_motors":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
+    elif key == "data_frame":
+        allowed = {"detector", "crystal", "laboratory"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "energy":
@@ -66,14 +82,73 @@ def valid_param(key: str, value: Any) -> bool:
         allowed = {0, 1}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "fix_voxel":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, allow_none=True,
+                         name=key)
+    elif key == "inplane_angle":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "interp_method":
+        allowed = {"xrayutilities", "linearization"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "isosurface_strain":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "offset_method":
+        allowed = {"com", "mean"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "original_size":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=int,
+            min_excluded=0,
+            allow_none=True, name=key)
+    elif key == "outofplane_angle":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "output_size":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=int,
+            min_excluded=0,
+            allow_none=True, name=key)
+    elif key == "phase_offset_origin":
+        valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
+    elif key == "phasing_binning":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=int,
+            min_excluded=0,
+            name=key)
+    elif key == "preprocessing_binning":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=int,
+            min_excluded=0,
+            name=key)
+    elif key == "ref_axis_q":
+        allowed = {"x", "y", "z"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "rocking_angle":
         allowed = {"outofplane", "inplane", "energy"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "sample_offsets":
         valid.valid_container(
-            value, container_types=(tuple, list), allow_none=True, name=key
+            value, container_types=(tuple, list, np.ndarray), allow_none=True, name=key
         )
+    elif key == "save_frame":
+        allowed = {"laboratory", "crystal", "lab_flat_sample"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "scan":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "scans":
@@ -82,8 +157,16 @@ def valid_param(key: str, value: Any) -> bool:
         )
     elif key == "sdd":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "sort_method":
+        allowed = {"mean_amplitude", "variance", "variance/mean", "volume"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "specfile_name":
-        valid.valid_container(value, container_types=str, name=key)
+        valid.valid_container(value, container_types=str, allow_none=True, name=key)
+    elif key == "strain_method":
+        allowed = {"default", "defect"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "tilt_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
     else:
