@@ -9,11 +9,11 @@
 
 from pathlib import Path
 import unittest
-from bcdi.utils.parameters import valid_param
 from bcdi.utils.parser import ArgumentParser
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "conf/default_config.yml")
+
 
 def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
