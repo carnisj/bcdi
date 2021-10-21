@@ -7,11 +7,11 @@
 #       authors:
 #         Clément Atlan, c.atlan@outlook.com
 
-from bcdi.utils.parser import ArgumentParser
+from bcdi.utils.parser import ConfigParser
 
 if __name__ == '__main__':
     config_file = "../../conf/default_config.yml"
-    arg_handler = ArgumentParser(config_file)
+    arg_handler = ConfigParser(config_file)
 
     args = arg_handler.load_arguments()  # this can also be accessed by
     # arg_handler.arguments once load_arguments() has been computed

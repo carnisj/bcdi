@@ -9,7 +9,7 @@
 
 from pathlib import Path
 import unittest
-from bcdi.utils.parser import ArgumentParser
+from bcdi.utils.parser import ConfigParser
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "conf/default_config.yml")
@@ -21,14 +21,14 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
-class TestArgumentParser(unittest.TestCase):
+class TestConfigParser(unittest.TestCase):
     """
-    Tests on the class ArgumentParser.
+    Tests on the class ConfigParser.
 
     def __init__(self, file_path : str, script_type : str = "preprocessing") -> None :
     """
     def setUp(self) -> None:
-        self.parser = ArgumentParser(CONFIG)
+        self.parser = ConfigParser(CONFIG)
 
     def test_init(self):
         pass
@@ -41,4 +41,4 @@ class TestArgumentParser(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    run_tests(TestArgumentParser)
+    run_tests(TestConfigParser)

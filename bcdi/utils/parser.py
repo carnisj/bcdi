@@ -14,7 +14,7 @@ from bcdi.utils.parameters import valid_param
 import bcdi.utils.validation as valid
 
 
-class ArgumentParser:
+class ConfigParser:
     """
     Base class for parsing arguments.
 
