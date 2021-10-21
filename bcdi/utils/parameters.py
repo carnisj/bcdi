@@ -12,10 +12,20 @@ Definition of the correct parameters for the config files.
 Parameter validation is performed over the excepted parameters.
 """
 import numpy as np
+from typing import Any
 import bcdi.utils.validation as valid
 
 
-def valid_param(key, value):
+def valid_param(key : str, value : Any) -> bool :
+    """
+    Validate a key value pair corresponding to an input parameter.
+
+    It will raise an exception if the check fails.
+
+    :param key: name of the parameter
+    :param value: the value of the parameter
+    :return: True if the check is sucessful, False if the key is not expected
+    """
     if key == "scans":
         valid.valid_container(
             value,
