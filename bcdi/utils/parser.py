@@ -10,49 +10,8 @@
 import yaml
 import pathlib
 
+from bcdi.utils.parameters import valid_param
 import bcdi.utils.validation as valid
-
-_AUTHORIZED_KEYS = {
-    'preprocessing': [
-        'beamline',
-        'binning',
-        'rocking-angle',
-        'data-root-folder',
-        'debug',
-        'detector',
-        'filter',
-        'interact',
-        'mask',
-        'orthogonalize',
-        'output-dir',
-        'sample-name',
-        'save-dir',
-        'sample_detector_distance',
-        'scan',
-        'specfile-path',
-        'template-data-file'
-    ],
-    'postprocessing': [
-        'angle-step',
-        'beamline',
-        'data-root-folderscan',
-        'debug',
-        'energy',
-        'flip',
-        'incidence-angle',
-        'inplane-angle',
-        'is-orthogonalized',
-        'isosurface-threshold',
-        'modes',
-        'outofplane-angle',
-        'rocking-angle',
-        'rocking-angle',
-        'sample-detector-distance',
-        'save-dir',
-        'specfile-path',
-        'voxel-size'
-    ]
-}
 
 
 class ArgumentParser:
@@ -63,17 +22,10 @@ class ArgumentParser:
 
     :param file_path: path of the configuration file that contains
     the arguments, str.
-    :param script_type: the type of the script that the arguments will
-    be parsed into, str.
     """
-    def __init__(self, file_path : str, script_type : str = "preprocessing") -> None :
-        self.file_path = file_path
-        if script_type not in _AUTHORIZED_KEYS.keys():
-            print("Please, provide a script_type from "
-                  f"{_AUTHORIZED_KEYS.keys()}")
-        else:
-            self.script_type = script_type
 
+    def __init__(self, file_path : str) -> None :
+        self.file_path = file_path
         self.raw_config = self._open_file()
         self.arguments = None
 
@@ -91,21 +43,6 @@ class ArgumentParser:
             name="file_path"
         )
         self._file_path = value
-
-    @property
-    def script_type(self):
-        """Type of the script that will use the parameters from the config file."""
-        return self._script_type
-
-    @script_type.setter
-    def script_type(self, value):
-        valid.valid_container(
-            value,
-            container_types=str,
-            min_length=1,
-            name="file_path"
-        )
-        self._script_type = value
 
     def _open_file(self):
         """Open the file and return it."""
@@ -126,14 +63,16 @@ class ArgumentParser:
         """return the extension of the the file_path attribute"""
         return pathlib.Path(self.file_path).suffix
 
-    def _check_args(self, dic):
+    @staticmethod
+    def _check_args(dic):
         checked_keys = []
-        for key in dic.keys():
-            if key not in _AUTHORIZED_KEYS[self.script_type]:
+        for key, value in dic.items():
+            is_valid = valid_param(key, value)
+            if is_valid:
+                checked_keys.append(key)
+            else:
                 print(f"'{key}' is an unexpected key, "
                       "its value won't be considered.")
-            else:
-                checked_keys.append(key)
         return {key: dic[key] for key in checked_keys}
 
     # For now the yaml Loader already returns a dic, so not useful
