@@ -5,9 +5,12 @@
 #   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
 #         Clément Atlan, c.atlan@outlook.com
+#         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import yaml
 import pathlib
+
+import bcdi.utils.validation as valid
 
 _AUTHORIZED_KEYS = {
     'preprocessing': [
@@ -73,6 +76,36 @@ class ArgumentParser:
 
         self.raw_config = self._open_file()
         self.arguments = None
+
+    @property
+    def file_path(self):
+        """Path of the configuration file."""
+        return self._file_path
+
+    @file_path.setter
+    def file_path(self, value):
+        valid.valid_container(
+            value,
+            container_types=str,
+            min_length=1,
+            name="file_path"
+        )
+        self._file_path = value
+
+    @property
+    def script_type(self):
+        """Type of the script that will use the parameters from the config file."""
+        return self._script_type
+
+    @script_type.setter
+    def script_type(self, value):
+        valid.valid_container(
+            value,
+            container_types=str,
+            min_length=1,
+            name="file_path"
+        )
+        self._script_type = value
 
     def _open_file(self):
         """Open the file and return it."""
