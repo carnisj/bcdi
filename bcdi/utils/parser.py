@@ -67,8 +67,7 @@ class ArgumentParser:
     def _check_args(dic):
         checked_keys = []
         for key, value in dic.items():
-            is_valid = valid_param(key, value)
-            if is_valid:
+            if valid_param(key, value):
                 checked_keys.append(key)
             else:
                 print(f"'{key}' is an unexpected key, "
