@@ -1485,7 +1485,7 @@ def regrid(array, old_voxelsize, new_voxelsize):
 def remove_offset(
     array,
     support,
-    offset_method="COM",
+    offset_method="com",
     user_offset=0,
     offset_origin=None,
     title="",
@@ -1497,7 +1497,7 @@ def remove_offset(
 
     :param array: a 3D array
     :param support: A 3D support of the same shape as array, defining the object
-    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center
+    :param offset_method: 'com' or 'mean'. If 'com', the value of array at the center
      of mass of the support will be subtracted to the array. If 'mean', the mean
      value of array on the support will be subtracted to the array.
     :param user_offset: value to add to the array
@@ -1533,7 +1533,7 @@ def remove_offset(
         )
 
     if offset_origin is None:  # use offset_method to remove the offset
-        if offset_method == "COM":
+        if offset_method == "com":
             zcom, ycom, xcom = center_of_mass(support)
             zcom, ycom, xcom = (
                 int(np.rint(zcom)),
