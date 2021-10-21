@@ -7,11 +7,108 @@
 #         Clément Atlan, c.atlan@outlook.com
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import yaml
+from argparse import ArgumentParser
 import pathlib
+import yaml
 
 from bcdi.utils.parameters import valid_param
 import bcdi.utils.validation as valid
+
+
+def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
+    """
+    Add generic parameters to the argument parser.
+
+    :param argument_parser: an instance of argparse.ArgumentParser
+    :return: the updated instance
+    """
+    argument_parser.add_argument(
+        "--align_q",
+        default="False",
+        type=str,
+        help="If orthogonalized, do not align q",
+    )
+
+    argument_parser.add_argument(
+        "--beamline",
+        type=str,
+        help="beamline where the measurement was made",
+    )
+
+    argument_parser.add_argument("--debug", type=str, help="debugging option")
+
+    argument_parser.add_argument("--energy", type=float, help="beam energy")
+
+    argument_parser.add_argument(
+        "--fix_voxel",
+        type=str,
+        help="the voxel size used for interpolation",
+    )
+
+    argument_parser.add_argument(
+        "--flip_reconstruction",
+        type=str,
+        help="choose to flip or not the reconstruction",
+    )
+
+    argument_parser.add_argument("--grazing_angle", type=float, help="incidence angle")
+
+    argument_parser.add_argument(
+        "--inplane-angle", type=float, help="detector in plane angle"
+    )
+
+    argument_parser.add_argument(
+        "--isosurface_strain",
+        type=float,
+        help="the isosurface threshold used for postprocessing",
+    )
+
+    argument_parser.add_argument(
+        "--outofplane-angle", type=float, help="detector out of plane angle"
+    )
+
+    argument_parser.add_argument(
+        "--phasing_binning",
+        type=str,
+        help="binning factor applied during phasing",
+    )
+
+    argument_parser.add_argument(
+        "--rocking-angle",
+        type=str,
+        choices=["inplane", "outofplane"],
+        help="rocking angle",
+    )
+
+    argument_parser.add_argument(
+        "--root-folder", type=str, help="where to find experiment data"
+    )
+
+    argument_parser.add_argument("--sample-name", type=str, help="name of the sample")
+
+    argument_parser.add_argument(
+        "--save-dir", type=str, help="directory path where to save"
+    )
+
+    argument_parser.add_argument(
+        "--scan", type=int, help="number of the scan to process"
+    )
+
+    argument_parser.add_argument(
+        "--sdd",
+        type=float,
+        help="sample to detector distance",
+    )
+
+    argument_parser.add_argument(
+        "--specfile_name", required=True, type=str, help="path to '.spec' file"
+    )
+
+    argument_parser.add_argument(
+        "--tilt_angle", type=float, help="angle step used during scan"
+    )
+
+    return argument_parser
 
 
 class ConfigParser:
@@ -24,7 +121,7 @@ class ConfigParser:
     the arguments, str.
     """
 
-    def __init__(self, file_path : str) -> None :
+    def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self.raw_config = self._open_file()
         self.arguments = None
@@ -37,10 +134,7 @@ class ConfigParser:
     @file_path.setter
     def file_path(self, value):
         valid.valid_container(
-            value,
-            container_types=str,
-            min_length=1,
-            name="file_path"
+            value, container_types=str, min_length=1, name="file_path"
         )
         self._file_path = value
 
@@ -70,8 +164,9 @@ class ConfigParser:
             if valid_param(key, value):
                 checked_keys.append(key)
             else:
-                print(f"'{key}' is an unexpected key, "
-                      "its value won't be considered.")
+                print(
+                    f"'{key}' is an unexpected key, " "its value won't be considered."
+                )
         return {key: dic[key] for key in checked_keys}
 
     # For now the yaml Loader already returns a dic, so not useful
