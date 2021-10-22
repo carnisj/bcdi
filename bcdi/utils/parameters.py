@@ -13,7 +13,7 @@ Parameter validation is performed over the excepted parameters.
 """
 from numbers import Number, Real
 import numpy as np
-from typing import Any
+from typing import Any, Tuple
 import bcdi.utils.validation as valid
 
 
@@ -23,7 +23,7 @@ class ParameterError(Exception):
                          f"Allowed are {allowed}")
 
 
-def valid_param(key: str, value: Any) -> bool:
+def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     """
     Validate a key value pair corresponding to an input parameter.
 
@@ -31,20 +31,33 @@ def valid_param(key: str, value: Any) -> bool:
 
     :param key: name of the parameter
     :param value: the value of the parameter
-    :return: True if the check is sucessful, False if the key is not expected
+    :return: a tuple (formatted_value, is_valid). is_valid is True if the key
+     is valid, False otherwise.
     """
+    is_valid = True
     # test the booleans first
-    if key in {"align_q", "bin_during_loading",
-               "custom_scan", "debug", "flag_interact", "is_series", "keep_size",
+    if key in {"align_axis", "align_q", "bin_during_loading", "correct_refraction",
+               "custom_scan", "debug", "flag_interact", "flip_reconstruction",
+               "invert_phase", "is_series",
+               "keep_size",
                "mask_zero_event",
-               "reload_orthogonal", "reload_previous",
-               "save_asint", "save_rawdata", "save_to_mat", "save_to_npz",
-               "save_to_vti", "use_rawdata"}:
+               "reload_orthogonal", "reload_previous", "save",
+               "save_asint", "save_rawdata", "save_support",
+               "save_to_mat", "save_to_npz",
+               "save_to_vti", "simu_flag", "use_rawdata"}:
         valid.valid_item(value, allowed_types=bool, name=key)
     elif key == "absorption":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "actuators":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
+    elif key == "axis_to_align":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name=key)
+        value = np.asarray(value)
     elif key == "beam_direction":
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), length=3, item_types=Real,
@@ -70,6 +83,8 @@ def valid_param(key: str, value: Any) -> bool:
             raise ParameterError(key, value, allowed)
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "dispersion":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "energy":
         if isinstance(value, Number):
             valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
@@ -97,6 +112,10 @@ def valid_param(key: str, value: Any) -> bool:
         allowed = {"com", "mean"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "optical_path_method":
+        allowed = {"threshold", "defect"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "original_size":
         valid.valid_container(
             value,
@@ -117,6 +136,10 @@ def valid_param(key: str, value: Any) -> bool:
             allow_none=True, name=key)
     elif key == "phase_offset_origin":
         valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
+    elif key == "phase_ramp_removal":
+        allowed = {"gradient", "upsampling"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "phasing_binning":
         valid.valid_container(
             value,
@@ -125,6 +148,10 @@ def valid_param(key: str, value: Any) -> bool:
             item_types=int,
             min_excluded=0,
             name=key)
+    elif key == "pixel_size":
+        valid.valid_item(
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+        )
     elif key == "preprocessing_binning":
         valid.valid_container(
             value,
@@ -133,7 +160,7 @@ def valid_param(key: str, value: Any) -> bool:
             item_types=int,
             min_excluded=0,
             name=key)
-    elif key == "ref_axis_q":
+    elif key == "ref_axis_q" or key == "ref_axis":
         allowed = {"x", "y", "z"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
@@ -141,10 +168,25 @@ def valid_param(key: str, value: Any) -> bool:
         allowed = {"outofplane", "inplane", "energy"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "roll_modes":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=int,
+            name=key)
+    elif key == "root_folder":
+        valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "sample_name":
+        valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "sample_offsets":
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), allow_none=True, name=key
         )
+    elif key == "save_dir":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key)
+
     elif key == "save_frame":
         allowed = {"laboratory", "crystal", "lab_flat_sample"}
         if value not in allowed:
@@ -167,9 +209,18 @@ def valid_param(key: str, value: Any) -> bool:
         allowed = {"default", "defect"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "template_imagefile":
+        valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "threshold_gradient":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "threshold_unwrap_refraction":
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, name=key
+        )
     elif key == "tilt_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
     else:
         # this key is not in the known parameters
-        return False
-    return True
+        is_valid = False
+
+    return value, is_valid
