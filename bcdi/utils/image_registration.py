@@ -399,12 +399,14 @@ def calc_new_positions(old_positions: list, shift: Sequence[float]) -> np.ndarra
     # calculate the new positions
     grids = np.meshgrid(*old_positions, indexing="ij")
     new_positions = [grid - shift[index] for index, grid in enumerate(grids)]
-    return np.asarray(np.concatenate(
-        [
-            new_grid.reshape((1, new_grid.size))
-            for _, new_grid in enumerate(new_positions)
-        ]
-    ).transpose())
+    return np.asarray(
+        np.concatenate(
+            [
+                new_grid.reshape((1, new_grid.size))
+                for _, new_grid in enumerate(new_positions)
+            ]
+        ).transpose()
+    )
 
 
 def dft_registration(buf1ft, buf2ft, ups_factor=100):
