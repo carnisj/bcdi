@@ -31,58 +31,93 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("--data-root-folder", required=True, type=str,
-                help="where to find experiment data")
+ap.add_argument(
+    "--data-root-folder", required=True, type=str, help="where to find experiment data"
+)
 
-ap.add_argument("-s", "--scan", nargs="+", required=True, type=int,
-                help="number of the scan to process")
+ap.add_argument(
+    "-s",
+    "--scan",
+    nargs="+",
+    required=True,
+    type=int,
+    help="number of the scan to process",
+)
 
-ap.add_argument("--interact", default="False", type=str,
-                help="choose if interaction mode is enabled")
+ap.add_argument(
+    "--interact",
+    default="False",
+    type=str,
+    help="choose if interaction mode is enabled",
+)
 
-ap.add_argument("--debug", default="False", type=str,
-                help="debugging option")
+ap.add_argument("--debug", default="False", type=str, help="debugging option")
 
-ap.add_argument("--beamline", default="ID01", type=str,
-                help="beamline where the measurement was made")
+ap.add_argument(
+    "--beamline",
+    default="ID01",
+    type=str,
+    help="beamline where the measurement was made",
+)
 
-ap.add_argument("--detector", default="Maxipix", type=str,
-                help="detector used during measurement")
+ap.add_argument(
+    "--detector", default="Maxipix", type=str, help="detector used during measurement"
+)
 
-ap.add_argument("--template-data-file", default='data_mpx4_%05d.edf.gz',
-                type=str, help="template of the data image files")
+ap.add_argument(
+    "--template-data-file",
+    default="data_mpx4_%05d.edf.gz",
+    type=str,
+    help="template of the data image files",
+)
 
-ap.add_argument("--sample-name", default='S', type=str,
-                help="name of the sample")
+ap.add_argument("--sample-name", default="S", type=str, help="name of the sample")
 
-ap.add_argument("--specfile-path", required=True, type=str,
-                help="path to '.spec' file")
+ap.add_argument("--specfile-path", required=True, type=str, help="path to '.spec' file")
 
-ap.add_argument("--output-dir", required=True, type=str,
-                help="output directory")
+ap.add_argument("--output-dir", required=True, type=str, help="output directory")
 
-ap.add_argument("--mask", default=None, type=str,
-                help="optional mask")
+ap.add_argument("--mask", default=None, type=str, help="optional mask")
 
-ap.add_argument("--binning", default="1, 1, 1", type=str,
-                help="binning factor applied during phasing")
+ap.add_argument(
+    "--binning",
+    default="1, 1, 1",
+    type=str,
+    help="binning factor applied during phasing",
+)
 
-ap.add_argument("--filter", default="skip", type=str,
-                help="filtering, flag_medianfilter in the bcdi script")
+ap.add_argument(
+    "--filter",
+    default="skip",
+    type=str,
+    help="filtering, flag_medianfilter in the bcdi script",
+)
 
-ap.add_argument("--orthogonalize", default="False", type=str,
-                help="Whether to orthogonalize or not")
+ap.add_argument(
+    "--orthogonalize", default="False", type=str, help="Whether to orthogonalize or not"
+)
 
-ap.add_argument("-sdd", "--sample-detector-distance", default=1, type=float,
-                help="sample to detector distance")
+ap.add_argument(
+    "-sdd",
+    "--sample-detector-distance",
+    default=1,
+    type=float,
+    help="sample to detector distance",
+)
 
-ap.add_argument("-en", "--energy", default=12994, type=float,
-                help="beam energy")
+ap.add_argument("-en", "--energy", default=12994, type=float, help="beam energy")
 
-ap.add_argument("-ra", "--rocking-angle", default="inplane", type=str,
-                choices=["inplane", "outofplane"], help="rocking angle")
+ap.add_argument(
+    "-ra",
+    "--rocking-angle",
+    default="inplane",
+    type=str,
+    choices=["inplane", "outofplane"],
+    help="rocking angle",
+)
 
 args = vars(ap.parse_args())
 
@@ -337,13 +372,15 @@ root_folder = args["data_root_folder"]
 # save_dir = args["output_dir"] + "/S{}".format(scans[0])
 save_dir = args["output_dir"]
 
-debug = False if args["debug"] in ["False", "false", "FALSE", "f", 0, "0"] \
-    else True  # set to True to see plots
+debug = (
+    False if args["debug"] in ["False", "false", "FALSE", "f", 0, "0"] else True
+)  # set to True to see plots
 
-binning = [int(i) for i in args["binning"].split(',')]
+binning = [int(i) for i in args["binning"].split(",")]
 
-flag_interact = False if args["interact"] in \
-    ["False", "false", "FALSE", "f", 0, "0"] else True
+flag_interact = (
+    False if args["interact"] in ["False", "false", "FALSE", "f", 0, "0"] else True
+)
 
 flag_medianfilter = args["filter"]
 
@@ -361,8 +398,9 @@ sample_name = args["sample_name"]
 
 background_file = args["mask"]
 
-use_rawdata = True if args["orthogonalize"] in \
-    ["False", "false", "FALSE", "f", 0, "0"] else False
+use_rawdata = (
+    True if args["orthogonalize"] in ["False", "false", "FALSE", "f", 0, "0"] else False
+)
 
 sdd = args["sample_detector_distance"]
 

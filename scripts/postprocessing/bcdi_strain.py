@@ -9,6 +9,7 @@
 
 from functools import reduce
 import gc
+
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -138,9 +139,7 @@ def run(prm, pretty_params):
     # define the experimental geometry #
     ####################################
     # correct the tilt_angle for binning
-    tilt_angle = (
-        prm["tilt_angle"] * preprocessing_binning[0] * phasing_binning[0]
-    )
+    tilt_angle = prm["tilt_angle"] * preprocessing_binning[0] * phasing_binning[0]
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
@@ -246,8 +245,9 @@ def run(prm, pretty_params):
     # find the best reconstruction from the list, based on mean amplitude and variance #
     ####################################################################################
     if nbfiles > 1:
-        print("\nTrying to find the best reconstruction\nSorting by ",
-              prm["sort_method"])
+        print(
+            "\nTrying to find the best reconstruction\nSorting by ", prm["sort_method"]
+        )
         sorted_obj = pu.sort_reconstruction(
             file_path=file_path,
             amplitude_threshold=isosurface_strain,
@@ -1057,8 +1057,9 @@ def run(prm, pretty_params):
     fig.text(0.60, 0.35, f"Ticks spacing={tick_spacing} nm", size=20)
     fig.text(0.60, 0.30, f"Volume={int(volume)} nm3", size=20)
     fig.text(0.60, 0.25, "Sorted by " + prm["sort_method"], size=20)
-    fig.text(0.60, 0.20, f"correlation threshold={prm['correlation_threshold']}",
-             size=20)
+    fig.text(
+        0.60, 0.20, f"correlation threshold={prm['correlation_threshold']}", size=20
+    )
     fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
     fig.text(0.60, 0.10, f"Planar distance={planar_dist:.5f} nm", size=20)
     if prm["get_temperature"]:
