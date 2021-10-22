@@ -36,20 +36,56 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     """
     is_valid = True
     # test the booleans first
-    if key in {"align_axis", "align_q", "bin_during_loading", "correct_refraction",
+    if key in {"align_axis", "align_q", "apodize", "bin_during_loading",
+               "correct_refraction",
                "custom_scan", "debug", "flag_interact", "flip_reconstruction",
-               "invert_phase", "is_series",
+               "get_temperature", "grey_background", "invert_phase", "is_series",
                "keep_size",
                "mask_zero_event",
                "reload_orthogonal", "reload_previous", "save",
                "save_asint", "save_rawdata", "save_support",
                "save_to_mat", "save_to_npz",
-               "save_to_vti", "simu_flag", "use_rawdata"}:
+               "save_to_vti", "simulation", "use_rawdata"}:
         valid.valid_item(value, allowed_types=bool, name=key)
     elif key == "absorption":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "actuators":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
+    elif key == "apodization_alpha":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            min_included=0,
+            name=key)
+        value = np.asarray(value)
+    elif key == "apodization_mu":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            min_included=0,
+            name=key)
+        value = np.asarray(value)
+    elif key == "apodization_sigma":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            min_included=0,
+            name=key)
+        value = np.asarray(value)
+    elif key == "apodization_window":
+        allowed = {"blackman", "tukey", "normal"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "avg_space":
+        allowed = {"reciprocal_space", "direct_space"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "axis_to_align":
         valid.valid_container(
             value,
@@ -100,6 +136,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "fix_voxel":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, allow_none=True,
                          name=key)
+    elif key == "half_width_avg_phase":
+        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "inplane_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "interp_method":
@@ -140,6 +178,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"gradient", "upsampling"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "phase_range":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "phasing_binning":
         valid.valid_container(
             value,
@@ -164,6 +204,22 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"x", "y", "z"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "reference_spacing":
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, allow_none=True, name=key
+        )
+    elif key == "reference_temperature":
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, allow_none=True, name=key
+        )
+    elif key == "reflection":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name=key)
+        value = np.asarray(value)
     elif key == "rocking_angle":
         allowed = {"outofplane", "inplane", "energy"}
         if value not in allowed:
@@ -209,6 +265,12 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"default", "defect"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "strain_range":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "threshold_avg":
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, max_included=1, name=key
+        )
     elif key == "template_imagefile":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "threshold_gradient":
@@ -217,6 +279,16 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(
             value, allowed_types=Real, min_included=0, name=key
         )
+    elif key == "tick_direction":
+        allowed = {"out", "in", "inout"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "tick_length":
+        valid.valid_item(value, allowed_types=int, min_included=1, name=key)
+    elif key == "tick_spacing":
+        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "tick_width":
+        valid.valid_item(value, allowed_types=int, min_included=1, name=key)
     elif key == "tilt_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
     else:
