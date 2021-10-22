@@ -282,7 +282,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(
             value, container_types=str, min_length=1, allow_none=True, name=key
         )
-
+        if isinstance(value, str) and not value.endswith("/"):
+            value += "/"
     elif key == "save_frame":
         allowed = {"laboratory", "crystal", "lab_flat_sample"}
         if value not in allowed:
