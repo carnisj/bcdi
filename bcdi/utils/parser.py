@@ -8,6 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from argparse import ArgumentParser
+from datetime import datetime
 import pathlib
 from typing import Any, ByteString, Dict, Union
 import yaml
@@ -123,9 +124,7 @@ class ConfigParser:
     """
 
     def __init__(
-            self,
-            file_path: str,
-            command_line_args: Union[Dict[str, Any], None] = None
+        self, file_path: str, command_line_args: Union[Dict[str, Any], None] = None
     ) -> None:
         self.file_path = file_path
         self.command_line_args = command_line_args
@@ -159,7 +158,7 @@ class ConfigParser:
         self._file_path = value
 
     @staticmethod
-    def _check_args(dic : Dict[str, Any]) -> Dict[str, Any]:
+    def _check_args(dic: Dict[str, Any]) -> Dict[str, Any]:
         checked_keys = []
         for key, value in dic.items():
             value, is_valid = valid_param(key, value)
@@ -195,5 +194,35 @@ class ConfigParser:
     def to_dict(self):
         pass
 
-    def dump(self, output_path, extension):
-        pass
+    def dump(self) -> Dict:
+        """Return a reader-friendly dictionary."""
+        return {
+            "isosurface_threshold": self.arguments["isosurface_strain"],
+            "strain_method": self.arguments["strain_method"],
+            "phase_offset": self.arguments["phase_offset"],
+            "phase_offset_origin": self.arguments["phase_offset_origin"],
+            "centering_method": self.arguments["centering_method"],
+            "data_frame": self.arguments["data_frame"],
+            "ref_axis_q": self.arguments["ref_axis_q"],
+            "save_frame": self.arguments["save_frame"],
+            "fix_voxel": self.arguments["fix_voxel"],
+            "original_size": self.arguments["original_size"],
+            "sample": f"{self.arguments['sample_name']}+{self.arguments['scan']}",
+            "correct_refraction": self.arguments["correct_refraction"],
+            "optical_path_method": self.arguments["optical_path_method"],
+            "dispersion": self.arguments["dispersion"],
+            "time": f"{datetime.now()}",
+            "threshold_unwrap_refraction": self.arguments[
+                "threshold_unwrap_refraction"
+            ],
+            "invert_phase": self.arguments["invert_phase"],
+            "phase_ramp_removal": self.arguments["phase_ramp_removal"],
+            "threshold_gradient": self.arguments["threshold_gradient"],
+            "tick_spacing_nm": self.arguments["tick_spacing"],
+            "half_width_avg_phase": self.arguments["half_width_avg_phase"],
+            "apodize": self.arguments["apodize"],
+            "apodization_window": self.arguments["apodization_window"],
+            "apodization_mu": self.arguments["apodization_mu"],
+            "apodization_sigma": self.arguments["apodization_sigma"],
+            "apodization_alpha": self.arguments["apodization_alpha"],
+        }
