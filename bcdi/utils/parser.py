@@ -162,7 +162,9 @@ class ConfigParser:
     def _check_args(dic : Dict[str, Any]) -> Dict[str, Any]:
         checked_keys = []
         for key, value in dic.items():
-            if valid_param(key, value):
+            value, is_valid = valid_param(key, value)
+            if is_valid:
+                dic[key] = value
                 checked_keys.append(key)
             else:
                 print(
