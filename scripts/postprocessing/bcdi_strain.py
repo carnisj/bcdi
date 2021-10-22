@@ -62,40 +62,6 @@ def run(prm, pretty_params):
     """
     pretty = pprint.PrettyPrinter(indent=4)
 
-    #########################
-    # Check some parameters #
-    #########################
-    invert_phase = prm["invert_phase"]
-    correct_refraction = prm["correct_refraction"]
-    if prm["simulation"]:
-        invert_phase = False
-        correct_refraction = 0
-    if invert_phase:
-        phase_fieldname = "disp"
-    else:
-        phase_fieldname = "phase"
-
-    data_frame = prm["data_frame"]
-    if data_frame == "detector":
-        is_orthogonal = False
-    else:
-        is_orthogonal = True
-
-    save_frame = prm["save_frame"]
-    if data_frame == "crystal" and save_frame != "crystal":
-        print(
-            "data already in the crystal frame before phase retrieval,"
-            " it is impossible to come back to the laboratory "
-            "frame, parameter 'save_frame' defaulted to 'crystal'"
-        )
-        save_frame = "crystal"
-
-    axis_to_array_xyz = {
-        "x": np.array([1, 0, 0]),
-        "y": np.array([0, 1, 0]),
-        "z": np.array([0, 0, 1]),
-    }  # in xyz order
-
     ################################
     # assign often used parameters #
     ################################
@@ -114,6 +80,42 @@ def run(prm, pretty_params):
     tick_direction = prm["tick_direction"]
     tick_length = prm["tick_length"]
     tick_width = ["tick_width"]
+    invert_phase = prm["invert_phase"]
+    correct_refraction = prm["correct_refraction"]
+    save_frame = prm["save_frame"]
+    data_frame = prm["data_frame"]
+    scan = prm["scan"]
+    root_folder = prm["root_folder"]
+    #########################
+    # Check some parameters #
+    #########################
+    if prm["simulation"]:
+        invert_phase = False
+        correct_refraction = 0
+    if invert_phase:
+        phase_fieldname = "disp"
+    else:
+        phase_fieldname = "phase"
+
+    if data_frame == "detector":
+        is_orthogonal = False
+    else:
+        is_orthogonal = True
+
+    if data_frame == "crystal" and save_frame != "crystal":
+        print(
+            "data already in the crystal frame before phase retrieval,"
+            " it is impossible to come back to the laboratory "
+            "frame, parameter 'save_frame' defaulted to 'crystal'"
+        )
+        save_frame = "crystal"
+
+    axis_to_array_xyz = {
+        "x": np.array([1, 0, 0]),
+        "y": np.array([0, 1, 0]),
+        "z": np.array([0, 0, 1]),
+    }  # in xyz order
+
     ###################
     # define colormap #
     ###################
@@ -158,8 +160,6 @@ def run(prm, pretty_params):
     ########################################
     # Initialize the paths and the logfile #
     ########################################
-    scan = prm["scan"]
-    root_folder = prm["root_folder"]
     setup.init_paths(
         sample_name=prm["sample_name"],
         scan_number=scan,
