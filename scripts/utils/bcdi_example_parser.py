@@ -9,7 +9,7 @@
 
 from bcdi.utils.parser import ConfigParser
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     config_file = "../../conf/default_config.yml"
     arg_handler = ConfigParser(config_file)
 

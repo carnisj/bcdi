@@ -27,6 +27,7 @@ class TestConfigParser(unittest.TestCase):
 
     def __init__(self, file_path : str, script_type : str = "preprocessing") -> None :
     """
+
     def setUp(self) -> None:
         self.parser = ConfigParser(CONFIG)
 
