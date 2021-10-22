@@ -1595,7 +1595,7 @@ def remove_ramp(
     width_y=None,
     width_x=None,
     amplitude_threshold=0.25,
-    gradient_threshold=0.2,
+    threshold_gradient=0.2,
     method="gradient",
     ups_factor=2,
     debugging=False,
@@ -1614,7 +1614,7 @@ def remove_ramp(
      of the initial array
     :param amplitude_threshold: threshold used to define the support of the object
      from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in
+    :param threshold_gradient: higher threshold used to select valid voxels in
      the gradient array
     :param method: 'gradient' or 'upsampling'
     :param ups_factor: upsampling factor (the original shape will be multiplied by
@@ -1722,7 +1722,7 @@ def remove_ramp(
     mygradz, _, _ = np.gradient(phase, 1)
 
     mysupportz = np.zeros((nbz, nby, nbx))
-    mysupportz[abs(mygradz) < gradient_threshold] = 1
+    mysupportz[abs(mygradz) < threshold_gradient] = 1
     mysupportz = mysupportz * mysupport
     if mysupportz.sum() == 0:
         raise ValueError(
@@ -1736,8 +1736,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along Z",
         )
         gu.multislices_plot(
@@ -1755,7 +1755,7 @@ def remove_ramp(
     # axis 1 (Y)
     _, mygrady, _ = np.gradient(phase, 1)
     mysupporty = np.zeros((nbz, nby, nbx))
-    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty[abs(mygrady) < threshold_gradient] = 1
     mysupporty = mysupporty * mysupport
     if mysupporty.sum() == 0:
         raise ValueError(
@@ -1769,8 +1769,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along Y",
         )
         gu.multislices_plot(
@@ -1788,7 +1788,7 @@ def remove_ramp(
     # axis 2 (X)
     _, _, mygradx = np.gradient(phase, 1)
     mysupportx = np.zeros((nbz, nby, nbx))
-    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx[abs(mygradx) < threshold_gradient] = 1
     mysupportx = mysupportx * mysupport
     if mysupportx.sum() == 0:
         raise ValueError(
@@ -1802,8 +1802,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along X",
         )
         gu.multislices_plot(
@@ -1840,7 +1840,7 @@ def remove_ramp_2d(
     width_y=None,
     width_x=None,
     amplitude_threshold=0.25,
-    gradient_threshold=0.2,
+    threshold_gradient=0.2,
     method="gradient",
     ups_factor=2,
     debugging=False,
@@ -1859,7 +1859,7 @@ def remove_ramp_2d(
      the middle of the initial array
     :param amplitude_threshold: threshold used to define the support of the object
      from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in
+    :param threshold_gradient: higher threshold used to select valid voxels in
      the gradient array
     :param method: 'gradient' or 'upsampling'
     :param ups_factor: upsampling factor (the original shape will be multiplied
@@ -1959,7 +1959,7 @@ def remove_ramp_2d(
     # axis 0 (Y)
     mygrady, _ = np.gradient(phase, 1)
     mysupporty = np.zeros((nby, nbx))
-    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty[abs(mygrady) < threshold_gradient] = 1
     mysupporty = mysupporty * mysupport
     myrampy = mygrady[mysupporty == 1].mean()
     if debugging:
@@ -1985,7 +1985,7 @@ def remove_ramp_2d(
     # axis 1 (X)
     _, mygradx = np.gradient(phase, 1)
     mysupportx = np.zeros((nby, nbx))
-    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx[abs(mygradx) < threshold_gradient] = 1
     mysupportx = mysupportx * mysupport
     myrampx = mygradx[mysupportx == 1].mean()
     if debugging:
