@@ -130,10 +130,7 @@ class ConfigParser:
         self.file_path = file_path
         self.command_line_args = command_line_args
         self.raw_config = self._open_file()
-        args = self._load_arguments()
-        if self.command_line_args is not None:
-            args.update(self.command_line_args)
-        self.arguments = self._check_args(args)
+        self.arguments = None
 
     @property
     def command_line_args(self):
@@ -177,9 +174,13 @@ class ConfigParser:
         """Return the extension of the the file_path attribute."""
         return pathlib.Path(self.file_path).suffix
 
-    def _load_arguments(self) -> Dict:
-        """Parse the byte string."""
-        return yaml.load(self.raw_config, Loader=yaml.SafeLoader)
+    def load_arguments(self) -> Dict:
+        """Parse the byte string, eventually override defaults and check parameters."""
+        args = yaml.load(self.raw_config, Loader=yaml.SafeLoader)
+        if self.command_line_args is not None:
+            args.update(self.command_line_args)
+        self.arguments = self._check_args(args)
+        return self.arguments
 
     def _open_file(self) -> ByteString:
         """Open the file and return it."""
