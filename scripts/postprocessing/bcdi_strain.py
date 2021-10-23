@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from datetime import datetime
 from functools import reduce
 import gc
 
@@ -52,13 +53,11 @@ qy] for reciprocal space, or data[z, y, x] for real space
 """
 
 
-def run(prm, pretty_params):
+def run(prm):
     """
+    Run the postprocessing.
 
-
-    :param prm:
-    :param pretty_params:
-    :return:
+    :param prm: the parsed parameters
     """
     pretty = pprint.PrettyPrinter(indent=4)
 
@@ -85,7 +84,10 @@ def run(prm, pretty_params):
     save_frame = prm["save_frame"]
     data_frame = prm["data_frame"]
     scan = prm["scan"]
+    sample_name = prm["sample_name"]
     root_folder = prm["root_folder"]
+
+    prm["sample"] = f"{sample_name}+{scan}",
     #########################
     # Check some parameters #
     #########################
@@ -152,7 +154,7 @@ def run(prm, pretty_params):
         rocking_angle=prm["rocking_angle"],
         distance=prm["sdd"],
         sample_offsets=prm["sample_offsets"],
-        actuators=args["actuators"],
+        actuators=prm["actuators"],
         custom_scan=prm["custom_scan"],
         custom_motors=prm["custom_motors"],
     )
@@ -161,7 +163,7 @@ def run(prm, pretty_params):
     # Initialize the paths and the logfile #
     ########################################
     setup.init_paths(
-        sample_name=prm["sample_name"],
+        sample_name=sample_name,
         scan_number=scan,
         root_folder=root_folder,
         save_dir=prm["save_dir"],
@@ -267,7 +269,7 @@ def run(prm, pretty_params):
     for counter, value in enumerate(sorted_obj):
         obj, extension = util.load_file(file_path[value])
         print("\nOpening ", file_path[value])
-        pretty_params[f"from_file_{counter}"] = file_path[value]
+        prm[f"from_file_{counter}"] = file_path[value]
 
         if prm["flip_reconstruction"]:
             obj = pu.flip_reconstruction(obj, debugging=True)
@@ -744,7 +746,7 @@ def run(prm, pretty_params):
         correct_absorption = False
         if correct_absorption:
             amp_correction = np.exp(
-                2 * np.pi / (1e9 * setup.wavelength) * args["absorption"] * optical_path
+                2 * np.pi / (1e9 * setup.wavelength) * prm["absorption"] * optical_path
             )
             amp = amp * amp_correction
 
@@ -915,7 +917,7 @@ def run(prm, pretty_params):
         amp=amp, support_threshold=isosurface_strain, method="threshold"
     )
     if save:
-        pretty_params["comment"] = comment
+        prm["comment"] = comment
         np.savez_compressed(
             f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
             amp=amp,
@@ -926,7 +928,7 @@ def run(prm, pretty_params):
             voxel_sizes=voxel_size,
             detector=detector.params,
             setup=setup.params,
-            params=pretty_params,
+            params=prm,
         )
 
         # save results in hdf5 file
@@ -943,7 +945,7 @@ def run(prm, pretty_params):
             out.create_dataset("voxel_sizes", data=voxel_size)
             par.create_dataset("detector", data=str(detector.params))
             par.create_dataset("setup", data=str(setup.params))
-            par.create_dataset("parameters", data=str(pretty_params))
+            par.create_dataset("parameters", data=str(prm))
 
         # save amp & phase to VTK
         # in VTK, x is downstream, y vertical, z inboard,
@@ -1173,10 +1175,11 @@ if __name__ == "__main__":
         print("argument: {}".format(k), "value: {}".format(v))
 
     # load the config file
-    config_file = "../../conf/default_config.yml"
+    config_file = "../../conf/config_postprocessing.yml"
     parser = ConfigParser(config_file, cli_args)
     args = parser.load_arguments()
-    run(prm=args, pretty_params=parser.dump())
+    args["time"] = f"{datetime.now()}"
+    run(prm=args)
 
     print("\nEnd of script")
     plt.ioff()
