@@ -21,10 +21,10 @@ correlation_threshold: 0.90
 original_size: [150, 256, 500]  # size of the FFT array before binning.
 # It will be modified to take into account binning
 # during phasing automatically. Leave it to () if the shape did not change.
-phasing_binning: (1, 1, 1)  # binning factor applied during phase retrieval
-preprocessing_binning: (1, 2, 2)
+phasing_binning: [1, 1, 1]  # binning factor applied during phase retrieval
+preprocessing_binning: [1, 2, 2]
 # binning factors in each dimension used in preprocessing (not phase retrieval)
-output_size: (50, 50, 50)
+output_size: [50, 50, 50]
 # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size: False  # True to keep the initial array size for orthogonalization (slower)
 # it will be cropped otherwise
@@ -90,7 +90,7 @@ inplane_angle: 26.69775  # detector angle in deg(rotation around y vertical up):
 # this is the true angle, corrected for the direct beam position
 tilt_angle: 0.006  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
-sample_offsets: (0, 0)
+sample_offsets: [0, 0]
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name: "Dmitry1120c"
@@ -162,7 +162,7 @@ save_support: False
 # True to save the non-orthogonal support for later phase retrieval
 save: True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 debug: False  # set to True to show all plots for debugging
-roll_modes: (0, 0, 0)
+roll_modes: [0, 0, 0]
 # axis=(0, 1, 2), correct a roll of few pixels
 # after the decomposition into modes in PyNX
 ############################################
