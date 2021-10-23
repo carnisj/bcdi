@@ -1024,8 +1024,8 @@ class Setup:
         scan_number,
         root_folder,
         save_dir,
-        specfile_name,
-        template_imagefile,
+        specfile_name=None,
+        template_imagefile=None,
         data_dir=None,
         save_dirname="result",
         verbose=False,
@@ -1046,7 +1046,7 @@ class Setup:
          - ID01: name of the spec file without '.spec'
          - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
            root_folder+'alias_dict_2019.txt')
-         - empty string for all other beamlines
+         - None for all other beamlines
 
         :param template_imagefile: beamline-dependent template for the data files
 
