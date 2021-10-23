@@ -1,6 +1,8 @@
 Future
 ------
 
+* Implement loading motor positions from a specfile at 34ID.
+
 * Add mypy for type checking in doit and GitHub workflows
 
 * Bug: correct the detector horizontal direction in Beamline34ID, it was flipped.
