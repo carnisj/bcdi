@@ -3182,7 +3182,7 @@ class Diffractometer34ID(Diffractometer):
             # else:  # positioner
             #     chi = motor_values[motor_names.index(names_table["chi"])]
 
-            if names_table["phi"] in labels: # scanned
+            if names_table["phi"] in labels:  # scanned
                 phi = labels_data[labels.index(names_table["phi"]), :]
             else:  # positioner
                 phi = motor_values[motor_names.index(names_table["phi"])]
