@@ -2314,8 +2314,23 @@ class Beamline34ID(Beamline):
 
     @staticmethod
     def create_logfile(**kwargs):
-        """Create logfile for 34ID-C."""
-        return
+        """
+        Create the logfile, which is the spec file for 34ID-C.
+
+        :param kwargs:
+         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+           specfile file.
+         - 'filename': str, name of the spec file without '.spec'
+
+        :return: logfile
+        """
+        root_folder = kwargs.get("root_folder")
+        filename = kwargs.get("filename")
+
+        if not all(isinstance(val, str) for val in {root_folder, filename}):
+            raise ValueError("root_folder and filename should be strings")
+        # load the spec file
+        return SpecFile(root_folder + filename + ".spec")
 
     @property
     def detector_hor(self):
@@ -2349,6 +2364,9 @@ class Beamline34ID(Beamline):
         :param scan_number: int, the scan number
         :param template_imagefile: template for the data files, e.g.
          'Sample%dC_ES_data_51_256_256.npz'.
+        :param kwargs:
+         - 'specfile_name': name of the spec file without '.spec'
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -2357,9 +2375,13 @@ class Beamline34ID(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
+        specfile_name = kwargs.get("specfile_name")
+        if specfile_name is None:
+            raise ValueError("'specfile_name' parameter required")
+
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def process_positions(
         self,
