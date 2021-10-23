@@ -821,7 +821,7 @@ class BeamlineID01(Beamline):
         )
 
         if not filename:
-            return
+            return None
 
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
@@ -2345,7 +2345,7 @@ class Beamline34ID(Beamline):
         )
 
         if not filename:
-            return
+            return None
 
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
