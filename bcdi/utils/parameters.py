@@ -42,11 +42,11 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = None
 
     # convert 'True' to True
-    if value == {"True", "true", "TRUE", "t", 1, "1"}:
+    if value == ("True", "true", "TRUE", "t", 1, "1"):
         value = True
 
     # convert 'False' to False
-    if value in {"False", "false", "FALSE", "f", 0, "0"}:
+    if value in ("False", "false", "FALSE", "f", 0, "0"):
         value = False
 
     # test the booleans first
