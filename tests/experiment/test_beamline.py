@@ -1155,7 +1155,7 @@ class TestBeamline34ID(unittest.TestCase):
         self.sample_name = "S"
         self.scan_number = 1
         self.template_imagefile = None
-        self.specfile_name = ""
+        self.specfile_name = "test_spec"
         self.beamline = create_beamline("34ID")
         self.diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
@@ -1211,7 +1211,7 @@ class TestBeamline34ID(unittest.TestCase):
             homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
         )
         self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, "")
+        self.assertEqual(specfile, self.specfile_name)
         self.assertEqual(template_imagefile, None)
 
     def test_init_qconversion(self):
