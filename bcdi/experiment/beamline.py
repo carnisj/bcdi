@@ -2492,7 +2492,7 @@ class Beamline34ID(Beamline):
         if rocking_angle == "inplane":
             if grazing_angle is not None:
                 raise NotImplementedError(
-                    "Circle blow theta not implemented for 34ID-C"
+                    "Circle below theta not implemented for 34ID-C"
                 )
             if verbose:
                 print("rocking angle is theta, no grazing angle (phi above theta)")
