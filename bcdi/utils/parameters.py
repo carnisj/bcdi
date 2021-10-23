@@ -319,7 +319,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value, allowed_types=Real, min_included=0, max_included=1, name=key
         )
     elif key == "template_imagefile":
-        valid.valid_container(value, container_types=str, min_length=1, name=key)
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
     elif key == "threshold_gradient":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "threshold_unwrap_refraction":
