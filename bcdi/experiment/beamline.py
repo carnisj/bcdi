@@ -856,8 +856,6 @@ class BeamlineID01(Beamline):
 
         """
         specfile_name = kwargs.get("specfile_name")
-        if specfile_name is None:
-            raise ValueError("'specfile_name' parameter required")
 
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
@@ -2077,8 +2075,6 @@ class BeamlineSIXS(Beamline):
 
         """
         specfile_name = kwargs.get("specfile_name")
-        if specfile_name is None:
-            raise ValueError("'specfile_name' parameter required")
 
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
@@ -2367,8 +2363,6 @@ class Beamline34ID(Beamline):
 
         """
         specfile_name = kwargs.get("specfile_name")
-        if specfile_name is None:
-            raise ValueError("'specfile_name' parameter required")
 
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
