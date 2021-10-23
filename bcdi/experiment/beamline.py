@@ -2315,7 +2315,7 @@ class Beamline34ID(Beamline):
     @staticmethod
     def create_logfile(**kwargs):
         """Create logfile for 34ID-C."""
-        raise NotImplementedError("create_logfile method not implemented for 34ID")
+        return
 
     @property
     def detector_hor(self):
