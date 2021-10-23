@@ -52,17 +52,16 @@ second the column (horizontal axis). Therefore the data structure is data[qx, qz
 qy] for reciprocal space, or data[z, y, x] for real space
 """
 
-scan = 76  # spec scan number
-root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
+scan = 622  # spec scan number
+root_folder = "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + "test/"
+save_dir = root_folder + 'test/'
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-data_dir = None
+data_dir = root_folder + "S622/ici/"
 # leave None to use the beamline default. It will look for the data at this location
-sample_name = (
-    "B15_syn_S1_2"  # "S"  # string in front of the scan number in the folder name.
-)
+sample_name = "S"
+# string in front of the scan number in the folder name.
 comment = ""  # comment in filenames, should start with _
 #########################################################
 # parameters used when averaging several reconstruction #
@@ -83,13 +82,13 @@ preprocessing_binning = (
     2,
 )  # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size = (
-    100,
-    100,
-    100,
+    50,
+    50,
+    50,
 )  # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size = False  # True to keep the initial array size for orthogonalization (slower)
 # it will be cropped otherwise
-fix_voxel = 10  # voxel size in nm for the interpolation during the geometrical
+fix_voxel = 6  # voxel size in nm for the interpolation during the geometrical
 # transformation. If a single value is provided, the voxel size will be identical is
 # all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
@@ -130,7 +129,7 @@ centering_method = (
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "P10"  # name of the beamline, used for data loading and normalization
+beamline = "34ID"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 actuators = None
@@ -138,27 +137,28 @@ actuators = None
 # corresponding to actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
+rocking_angle = "inplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd = 1.84  # 1.26  # sample to detector distance in m
-energy = 8170  # x-ray energy in eV, 6eV offset at ID01
+sdd = 0.500  # 1.26  # sample to detector distance in m
+energy = 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction = np.array(
     [1, 0, 0]
 )  # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle = 42.6093  # detector angle in deg (rotation around x outboard):
+outofplane_angle = 7.4751  # detector angle in deg (rotation around x outboard):
 # delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle = -0.5783  # detector angle in deg(rotation around y vertical up):
-# nu ID01, gamma SIXS, tth 34ID
+inplane_angle = 26.69775  # detector angle in deg(rotation around y vertical up):
+# nu ID01, gamma SIXS, delta 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle = 0.00537  # angular step size for rocking angle, eta ID01, mu SIXS,
+tilt_angle = 0.006  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
-sample_offsets = (0, 0, 90, 0)
+sample_offsets = (0, 0)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
-specfile_name = None  # root_folder + 'alias_dict_2021.txt'
+specfile_name = "Dmitry1120c"
+# root_folder + 'alias_dict_2021.txt'
 # template for ID01 or 34ID-C: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary,
 # typically root_folder + 'alias_dict_2019.txt'
@@ -178,10 +178,10 @@ custom_motors = {
 ###############################
 # detector related parameters #
 ###############################
-detector = "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
+detector = "Timepix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 pixel_size = None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile = "_master.h5"
+template_imagefile = None
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -192,7 +192,7 @@ template_imagefile = "_master.h5"
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction = True  # True for correcting the phase shift due to refraction
+correct_refraction = False  # True for correcting the phase shift due to refraction
 optical_path_method = "threshold"
 # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove
@@ -246,8 +246,8 @@ axis_to_align = np.array(
     [-0.011662456997498807, 0.957321364700986, -0.28879022106682123]
 )
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
-strain_range = 0.003  # for plots
-phase_range = np.pi / 2  # for plots
+strain_range = 0.001  # for plots
+phase_range = np.pi / 4  # for plots
 grey_background = True  # True to set the background to grey in phase and strain plots
 tick_spacing = 50  # for plots, in nm
 tick_direction = "inout"  # 'out', 'in', 'inout'
