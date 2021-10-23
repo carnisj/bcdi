@@ -152,7 +152,7 @@ simulation: False  # set to True if it is a simulation, the parameter invert_pha
 # will be set to 0 (see below)
 invert_phase: True  # True for the displacement to have the right sign
 # (FFT convention), False only for simulations
-flip_reconstruction: False  # True if you want to get the conjugate object
+flip_reconstruction: True  # True if you want to get the conjugate object
 phase_ramp_removal: "gradient"
 # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient: 1.0
