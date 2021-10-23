@@ -3047,6 +3047,10 @@ class Diffractometer34ID(Diffractometer):
 
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+         - 'scan_number': the scan number to load
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -3058,12 +3062,21 @@ class Diffractometer34ID(Diffractometer):
            outer to the most inner circle
 
         """
+        # load kwargs
+        logfile = kwargs["logfile"]
+        scan_number = kwargs["scan_number"]
+
         # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, delta, gamma, _ = self.motor_positions(setup=setup)
+        theta, phi, delta, gamma, _ = self.motor_positions(
+            setup=setup, logfile=logfile, scan_number=scan_number
+        )
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
