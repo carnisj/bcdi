@@ -53,9 +53,9 @@ import os
 from silx.io.specfile import SpecFile
 import xrayutilities as xu
 
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 
 def create_beamline(name, **kwargs):
@@ -378,6 +378,17 @@ class Beamline(ABC):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
+        motor_positions = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+        )
+        # remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        return util.apply_logical_array(
+            arrays=motor_positions,
+            frames_logical=frames_logical,
+        )
 
     @staticmethod
     def process_tilt(array, nb_steps, nb_frames, angular_step):
@@ -563,19 +574,15 @@ class BeamlineCRISTAL(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        mgomega, mgphi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mgomega, mgphi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(mgomega, mgphi, gamma, delta, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             nb_steps = len(mgomega)
@@ -880,19 +887,15 @@ class BeamlineID01(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, eta, phi, nu, delta, energy = setup.diffractometer.motor_positions(
+        mu, eta, phi, nu, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mu, eta, phi, nu, delta, energy = util.apply_logical_array(
-            arrays=(mu, eta, phi, nu, delta, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             print("phi", phi)
@@ -1198,19 +1201,15 @@ class BeamlineNANOMAX(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        theta, phi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        theta, phi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(theta, phi, gamma, delta, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             nb_steps = len(theta)
@@ -1511,19 +1510,15 @@ class BeamlineP10(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, om, chi, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        mu, om, chi, phi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mu, om, chi, phi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(mu, om, chi, phi, gamma, delta, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         print("chi", chi)
         print("mu", mu)
@@ -2126,19 +2121,15 @@ class BeamlineSIXS(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        beta, mu, gamma, delta, energy = setup.diffractometer.motor_positions(
+        beta, mu, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        beta, mu, gamma, delta, energy = util.apply_logical_array(
-            arrays=(beta, mu, gamma, delta, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         print("beta", beta)
         if setup.rocking_angle == "inplane":  # mu rocking curve
@@ -2407,19 +2398,15 @@ class Beamline34ID(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, delta, gamma, energy = setup.diffractometer.motor_positions(
+        theta, phi, delta, gamma, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        theta, phi, delta, gamma, energy = util.apply_logical_array(
-            arrays=(theta, phi, delta, gamma, energy),
-            frames_logical=frames_logical,
+            frames_logical=frames_logical
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # phi rocking curve
             nb_steps = len(phi)
