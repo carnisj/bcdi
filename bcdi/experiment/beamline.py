@@ -497,12 +497,15 @@ class BeamlineCRISTAL(Beamline):
         template_imagefile = kwargs.get("template_imagefile")
         scan_number = kwargs.get("scan_number")
 
-        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+
         # no specfile, load directly the dataset
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
@@ -807,8 +810,19 @@ class BeamlineID01(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not all(isinstance(val, str) for val in {root_folder, filename}):
-            raise ValueError("root_folder and filename should be strings")
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            allow_none=True,
+            name="filename",
+        )
+
+        if not filename:
+            return
+
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
 
@@ -1123,12 +1137,15 @@ class BeamlineNANOMAX(Beamline):
         template_imagefile = kwargs.get("template_imagefile")
         scan_number = kwargs.get("scan_number")
 
-        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
@@ -1434,8 +1451,10 @@ class BeamlineP10(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not all(isinstance(val, str) for val in {root_folder, filename}):
-            raise TypeError("root_folder and filename should be strings")
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        valid.valid_container(filename, container_types=str, name="filename")
+
         # load .fio file
         return root_folder + filename + "/" + filename + ".fio"
 
@@ -1998,14 +2017,15 @@ class BeamlineSIXS(Beamline):
         filename = kwargs.get("filename")
         name = kwargs.get("name")
 
-        if not all(
-            isinstance(val, str) for val in {datadir, template_imagefile, filename}
-        ):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_container(filename, container_types=str, name="filename")
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
 
         shortname = template_imagefile % scan_number
         if name == "SIXS_2018":
@@ -2314,8 +2334,19 @@ class Beamline34ID(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not all(isinstance(val, str) for val in {root_folder, filename}):
-            raise ValueError("root_folder and filename should be strings")
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            allow_none=True,
+            name="filename",
+        )
+
+        if not filename:
+            return
+
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
 
