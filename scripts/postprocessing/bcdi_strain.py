@@ -7,6 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import argparse
 from datetime import datetime
 from functools import reduce
 import gc
@@ -22,7 +23,6 @@ import os
 import pprint
 import tkinter as tk
 from tkinter import filedialog
-import argparse
 
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
@@ -1169,10 +1169,6 @@ if __name__ == "__main__":
     # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
     cli_args = vars(ap.parse_args())
-    # print arguments
-    print("Arguments parsed:")
-    for k, v in cli_args.items():
-        print("argument: {}".format(k), "value: {}".format(v))
 
     # load the config file
     config_file = "../../conf/config_postprocessing.yml"
