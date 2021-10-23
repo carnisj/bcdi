@@ -8,7 +8,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 from argparse import ArgumentParser
-from datetime import datetime
 import pathlib
 from typing import Any, ByteString, Dict, Union
 import yaml
@@ -31,15 +30,29 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
         help="If orthogonalized, do not align q",
     )
 
+    argument_parser.add_argument("--background_file", type=str, help="optional background_file")
+
     argument_parser.add_argument(
         "--beamline",
         type=str,
         help="beamline where the measurement was made",
     )
 
+    argument_parser.add_argument(
+        "--binning",
+        type=str,
+        help="binning factor applied during phasing",
+    )
+
     argument_parser.add_argument("--debug", type=str, help="debugging option")
 
+    argument_parser.add_argument(
+        "--detector", type=str, help="detector used during measurement"
+    )
+
     argument_parser.add_argument("--energy", type=float, help="beam energy")
+
+    argument_parser.add_argument("--median_filter", type=str, help="apply a filter")
 
     argument_parser.add_argument(
         "--fix_voxel",
@@ -60,9 +73,19 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
+        "--interact",
+        type=str,
+        help="choose if interaction mode is enabled",
+    )
+
+    argument_parser.add_argument(
         "--isosurface_strain",
         type=float,
         help="the isosurface threshold used for postprocessing",
+    )
+
+    argument_parser.add_argument(
+        "--orthogonalize", type=str, help="Whether to orthogonalize or not"
     )
 
     argument_parser.add_argument(
@@ -104,6 +127,10 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
 
     argument_parser.add_argument(
         "--specfile_name", required=True, type=str, help="path to '.spec' file"
+    )
+
+    argument_parser.add_argument(
+        "--template_imagefile", type=str, help="template of the data image files",
     )
 
     argument_parser.add_argument(
