@@ -55,7 +55,7 @@ qy] for reciprocal space, or data[z, y, x] for real space
 scan = 622  # spec scan number
 root_folder = "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
 # folder of the experiment, where all scans are stored
-save_dir = root_folder + 'test/'
+save_dir = root_folder + "test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
 data_dir = root_folder + "S622/ici/"
