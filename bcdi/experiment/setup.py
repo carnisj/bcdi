@@ -1069,12 +1069,18 @@ class Setup:
             raise TypeError("sample_name should be a string")
 
         valid.valid_container(
-            specfile_name, container_types=str, min_length=1, allow_none=True,
-            name="specfile_name"
+            specfile_name,
+            container_types=str,
+            min_length=1,
+            allow_none=True,
+            name="specfile_name",
         )
         valid.valid_container(
-            template_imagefile, container_types=str, min_length=1, allow_none=True,
-            name="template_imagefile"
+            template_imagefile,
+            container_types=str,
+            min_length=1,
+            allow_none=True,
+            name="template_imagefile",
         )
 
         # check that the provided folder names are not an empty string
