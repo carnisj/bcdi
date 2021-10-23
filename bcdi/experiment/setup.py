@@ -746,14 +746,17 @@ class Setup:
          'alias_dict.txt' for SIXS
         :return: logfile
         """
-        return self._beamline.create_logfile(
-            scan_number=scan_number,
-            root_folder=root_folder,
-            filename=filename,
-            datadir=self.detector.datadir,
-            template_imagefile=self.detector.template_imagefile,
-            name=self.beamline,
-        )
+        if self.custom_scan:
+            return None
+        else:
+            return self._beamline.create_logfile(
+                scan_number=scan_number,
+                root_folder=root_folder,
+                filename=filename,
+                datadir=self.detector.datadir,
+                template_imagefile=self.detector.template_imagefile,
+                name=self.beamline,
+            )
 
     def detector_frame(
         self,
