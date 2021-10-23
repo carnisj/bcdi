@@ -579,7 +579,7 @@ class BeamlineCRISTAL(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
@@ -892,7 +892,7 @@ class BeamlineID01(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
@@ -1206,7 +1206,7 @@ class BeamlineNANOMAX(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
@@ -1515,7 +1515,7 @@ class BeamlineP10(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
@@ -2126,7 +2126,7 @@ class BeamlineSIXS(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
@@ -2403,7 +2403,7 @@ class Beamline34ID(Beamline):
             logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical
+            frames_logical=frames_logical,
         )
 
         # eventually crop/pad motor values if the provided dataset was further
