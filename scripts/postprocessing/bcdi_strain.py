@@ -159,10 +159,10 @@ sample_offsets = (0, 0, 90, 0)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name = None  # root_folder + 'alias_dict_2021.txt'
-# template for ID01: name of the spec file without '.spec'
+# template for ID01 or 34ID-C: name of the spec file without '.spec'
 # template for SIXS_2018: full path of the alias dictionnary,
 # typically root_folder + 'alias_dict_2019.txt'
-# template for all other beamlines: ''
+# template for all other beamlines: None
 ##########################
 # setup for custom scans #
 ##########################
