@@ -69,7 +69,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "reload_orthogonal",
         "reload_previous",
         "save",
-        "save_asint",
+        "save_as_int",
         "save_rawdata",
         "save_support",
         "save_to_mat",
@@ -130,6 +130,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
         value = np.asarray(value)
+    elif key == "background_file":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
     elif key == "beam_direction":
         valid.valid_container(
             value,
@@ -141,6 +145,24 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = np.asarray(value)
     elif key == "beamline":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "cch1":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "cch2":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "center_fft":
+        allowed = {
+            "crop_sym_ZYX",
+            "crop_asym_ZYX",
+            "pad_asym_Z_crop_sym_YX",
+            "pad_sym_Z_crop_asym_YX",
+            "pad_sym_Z",
+            "pad_asym_Z",
+            "pad_sym_ZYX",
+            "pad_asym_ZYX",
+            "skip",
+        }
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "centering_method":
         allowed = {"com", "max", "max_com", "do_nothing"}
         if value not in allowed:
@@ -151,6 +173,22 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value += "_"
     elif key == "correlation_threshold":
         valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
+    elif key == "custom_images":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            item_types=int,
+            min_included=0,
+            name=key,
+        )
+    elif key == "custom_monitor":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            item_types=Real,
+            min_included=0,
+            name=key,
+        )
     elif key == "custom_motors":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "data_dir":
@@ -163,6 +201,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "detrot":
+        valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "dispersion":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "energy":
@@ -181,20 +221,62 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {0, 1}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "fix_bragg":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=3,
+            item_types=int,
+            allow_none=True,
+            name=key,
+        )
+    elif key == "fix_size":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=6,
+            item_types=int,
+            allow_none=True,
+            name=key,
+        )
     elif key == "fix_voxel":
         valid.valid_item(
             value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
         )
+    elif key == "flatfield_file":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
+    elif key == "frames_pattern":
+        if value is not None:
+            value = np.asarray(value)
+            valid.valid_1d_array(allow_none=False, allowed_values={0, 1}, name=key)
     elif key == "half_width_avg_phase":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)
+    elif key == "hotpixels_file":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
     elif key == "inplane_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
-    elif key == "interp_method":
+    elif key == "interpolation_method":
         allowed = {"xrayutilities", "linearization"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "isosurface_strain":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "median_filter":
+        allowed = {"median", "interp_isolated", "mask_isolated", "skip"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "median_filt_order":
+        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
+    elif key == "normalize_flux":
+        allowed = {"monitor", "skip"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "offset_inplane":
+        valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "offset_method":
         allowed = {"com", "mean"}
         if value not in allowed:
@@ -225,6 +307,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             allow_none=True,
             name=key,
         )
+    elif key == "pad_size":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=3,
+            item_types=int,
+            allow_none=True,
+            name=key,
+        )
     elif key == "phase_offset":
         valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "phase_offset_origin":
@@ -244,6 +335,12 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             min_excluded=0,
             name=key,
         )
+    elif key == "photon_filter":
+        allowed = {"loading", "postprocessing"}
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
+    elif key == "photon_threshold":
+        valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
     elif key == "pixel_size":
         valid.valid_item(
             value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
@@ -282,6 +379,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"outofplane", "inplane", "energy"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "roi_detector":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=4,
+            item_types=int,
+            allow_none=True,
+            name=key,
+        )
     elif key == "roll_modes":
         valid.valid_container(
             value,
@@ -292,11 +398,27 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "root_folder":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "sample_inplane":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=3,
+            item_types=Real,
+            name=key,
+        )
     elif key == "sample_name":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "sample_offsets":
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), allow_none=True, name=key
+        )
+    elif key == "sample_outofplane":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=3,
+            item_types=Real,
+            name=key,
         )
     elif key == "save_dir":
         valid.valid_container(
@@ -311,9 +433,12 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "scan":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "scans":
+        if isinstance(value, Real):
+            value = (value,)
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), min_length=1, name=key
         )
+
     elif key == "sdd":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "sort_method":
@@ -352,6 +477,14 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(value, allowed_types=int, min_included=1, name=key)
     elif key == "tilt_angle":
         valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "tiltazimuth":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "tilt_detector":
+        valid.valid_item(value, allowed_types=Real, name=key)
+    elif key == "x_bragg":
+        valid.valid_item(value, allowed_types=int, name=key)
+    elif key == "y_bragg":
+        valid.valid_item(value, allowed_types=int, name=key)
     else:
         # this key is not in the known parameters
         is_valid = False
