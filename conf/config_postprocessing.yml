@@ -148,8 +148,8 @@ threshold_unwrap_refraction: 0.05  # threshold used to calculate the optical pat
 ###########
 # options #
 ###########
-simu_flag: False  # set to True if it is simulation,
-# the parameter invert_phase will be set to 0
+simulation: False  # set to True if it is a simulation, the parameter invert_phase
+# will be set to 0 (see below)
 invert_phase: True  # True for the displacement to have the right sign
 # (FFT convention), False only for simulations
 flip_reconstruction: False  # True if you want to get the conjugate object
@@ -157,7 +157,7 @@ phase_ramp_removal: "gradient"
 # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient: 1.0
 # upper threshold of the gradient of the phase, use for ramp removal
-save_raw: False  # True to save the amp-phase.vti before orthogonalization
+save_rawdata: False  # True to save the amp-phase.vti before orthogonalization
 save_support: False
 # True to save the non-orthogonal support for later phase retrieval
 save: True  # True to save amp.npz, phase.npz, strain.npz and vtk files
@@ -175,7 +175,7 @@ ref_axis: "y"  # will align axis_to_align to that axis
 axis_to_align: [-0.011662456997498807, 0.957321364700986, -0.28879022106682123]
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
 strain_range: 0.001  # for plots
-phase_range: np.pi / 4  # for plots
+phase_range: 0.4  # for plots
 grey_background: True  # True to set the background to grey in phase and strain plots
 tick_spacing: 50  # for plots, in nm
 tick_direction: "inout"  # 'out', 'in', 'inout'
