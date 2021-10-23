@@ -12,7 +12,7 @@ import unittest
 from bcdi.utils.parameters import valid_param
 
 here = Path(__file__).parent
-CONFIG = str(here.parents[1] / "conf/default_config.yml")
+CONFIG = str(here.parents[1] / "conf/config_postprocessing.yml")
 
 
 def run_tests(test_class):
