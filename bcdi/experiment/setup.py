@@ -1027,7 +1027,6 @@ class Setup:
         template_imagefile=None,
         data_dir=None,
         save_dirname="result",
-        verbose=False,
     ):
         """
         Init paths used for data processing and logging.
@@ -1061,13 +1060,22 @@ class Setup:
          look for the data directly into that directory
         :param save_dirname: name of the saving folder, by default 'save_dir/result/'
          will be created
-        :param verbose: True to print the paths
         """
+        # check some parameters
         if not isinstance(scan_number, int):
             raise TypeError("scan_number should be an integer")
 
         if not isinstance(sample_name, str):
             raise TypeError("sample_name should be a string")
+
+        valid.valid_container(
+            specfile_name, container_types=str, min_length=1, allow_none=True,
+            name="specfile_name"
+        )
+        valid.valid_container(
+            template_imagefile, container_types=str, min_length=1, allow_none=True,
+            name="template_imagefile"
+        )
 
         # check that the provided folder names are not an empty string
         valid.valid_container(
@@ -1076,18 +1084,14 @@ class Setup:
         valid.valid_container(
             data_dir,
             container_types=str,
-            min_length=0,
+            min_length=1,
             allow_none=True,
             name="data_dir",
         )
-        # update the detector instance
-        (
-            self.detector.rootdir,
-            self.detector.sample_name,
-            self.detector.template_file,
-        ) = (root_folder, sample_name, template_imagefile)
 
-        # create beamline-dependent path parameters
+        #############################################
+        # create beamline-dependent path parameters #
+        #############################################
         (
             homedir,
             default_dirname,
@@ -1119,24 +1123,13 @@ class Setup:
 
         # update the detector instance
         (
+            self.detector.rootdir,
             self.detector.savedir,
             self.detector.datadir,
+            self.detector.sample_name,
             self.detector.specfile,
             self.detector.template_imagefile,
-        ) = (savedir, datadir, specfile, template_imagefile)
-
-        if verbose:
-            if not self.custom_scan:
-                print(
-                    f"datadir = '{datadir}'\nsavedir = '{savedir}'\n"
-                    f"template_imagefile = '{template_imagefile}'\n"
-                )
-            else:
-                print(
-                    f"rootdir = '{root_folder}'\nsavedir = '{savedir}'\n"
-                    f"sample_name = '{self.detector.sample_name}'\n"
-                    f"template_imagefile = '{self.detector.template_file}'\n"
-                )
+        ) = (root_folder, savedir, datadir, sample_name, specfile, template_imagefile)
 
     def init_qconversion(self):
         """
