@@ -16,7 +16,6 @@ beamline-dependent information from the child classes.
 """
 from collections.abc import Sequence
 import datetime
-import gc
 import multiprocessing as mp
 from numbers import Real, Integral
 import numpy as np
