@@ -87,7 +87,7 @@ def run(prm):
     sample_name = prm["sample_name"]
     root_folder = prm["root_folder"]
 
-    prm["sample"] = f"{sample_name}+{scan}",
+    prm["sample"] = (f"{sample_name}+{scan}",)
     #########################
     # Check some parameters #
     #########################

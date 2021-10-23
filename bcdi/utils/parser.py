@@ -30,7 +30,9 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
         help="If orthogonalized, do not align q",
     )
 
-    argument_parser.add_argument("--background_file", type=str, help="optional background_file")
+    argument_parser.add_argument(
+        "--background_file", type=str, help="optional background_file"
+    )
 
     argument_parser.add_argument(
         "--beamline",
@@ -130,7 +132,9 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "--template_imagefile", type=str, help="template of the data image files",
+        "--template_imagefile",
+        type=str,
+        help="template of the data image files",
     )
 
     argument_parser.add_argument(
