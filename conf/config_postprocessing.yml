@@ -80,7 +80,7 @@ rocking_angle: "inplane"  # "outofplane" for a sample rotation around x outboard
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
 sdd: 0.500  # 1.26  # sample to detector distance in m
 energy: 9000  # x-ray energy in eV, 6eV offset at ID01
-beam_direction: np.array([1, 0, 0])
+beam_direction: [1, 0, 0]
 # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
 outofplane_angle: 7.4751  # detector angle in deg (rotation around x outboard):
 # delta ID01, delta SIXS, gamma 34ID
@@ -172,9 +172,7 @@ align_axis: False  # for visualization, if True rotates the crystal to align
 # axis_to_align along ref_axis after the
 # calculation of the strain
 ref_axis: "y"  # will align axis_to_align to that axis
-axis_to_align: np.array(
-    [-0.011662456997498807, 0.957321364700986, -0.28879022106682123]
-)
+axis_to_align: [-0.011662456997498807, 0.957321364700986, -0.28879022106682123]
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
 strain_range: 0.001  # for plots
 phase_range: np.pi / 4  # for plots
@@ -187,7 +185,7 @@ tick_width: 1  # 2  # in plots
 # parameteres for temperature estimation #
 ##########################################
 get_temperature: False  # only available for platinum at the moment
-reflection: np.array([1, 1, 1])
+reflection: [1, 1, 1]
 # measured reflection, use for estimating the temperature
 reference_spacing: None  # for calibrating the thermal expansion,
 # if None it is fixed to 3.9236/norm(reflection) Pt
@@ -196,19 +194,19 @@ reference_temperature: None
 ##########################################################
 # parameters for averaging several reconstructed objects #
 ##########################################################
-avg_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
-avg_threshold: 0.90  # minimum correlation within reconstructed object for averaging
+averaging_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
+threshold_avg: 0.90  # minimum correlation within reconstructed object for averaging
 ############################################
 # setup for phase averaging or apodization #
 ############################################
-hwidth: 0
+half_width_avg_phase: 0
 # (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
-apodize_flag: False  # True to multiply the diffraction pattern by a filtering window
-apodize_window: "blackman"
+apodize: False  # True to multiply the diffraction pattern by a filtering window
+apodization_window: "blackman"
 # filtering window, multivariate 'normal' or 'tukey' or 'blackman'
-mu: np.array([0.0, 0.0, 0.0])  # mu of the gaussian window
-sigma: np.array([0.30, 0.30, 0.30])  # sigma of the gaussian window
-alpha: np.array([1.0, 1.0, 1.0])  # shape parameter of the tukey window
+apodization_mu: [0.0, 0.0, 0.0]  # mu of the gaussian window
+apodization_sigma: [0.30, 0.30, 0.30]  # sigma of the gaussian window
+apodization_alpha: [1.0, 1.0, 1.0]  # shape parameter of the tukey window
 ##################################
 # end of user-defined parameters #
 ##################################

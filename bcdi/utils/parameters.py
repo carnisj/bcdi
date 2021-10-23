@@ -104,7 +104,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"blackman", "tukey", "normal"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "avg_space":
+    elif key == "averaging_space":
         allowed = {"reciprocal_space", "direct_space"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
@@ -125,6 +125,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             item_types=Real,
             name=key,
         )
+        value = np.asarray(value)
     elif key == "beamline":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "centering_method":

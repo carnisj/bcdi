@@ -153,7 +153,7 @@ class ConfigParser:
         valid.valid_container(
             value, container_types=str, min_length=1, name="file_path"
         )
-        if self._get_extension() != ".yml":
+        if pathlib.Path(value).suffix != ".yml":
             raise ValueError("Expecting a YAML config file")
         self._file_path = value
 
@@ -170,10 +170,6 @@ class ConfigParser:
                     f"'{key}' is an unexpected key, " "its value won't be considered."
                 )
         return {key: dic[key] for key in checked_keys}
-
-    def _get_extension(self) -> str:
-        """Return the extension of the the file_path attribute."""
-        return pathlib.Path(self.file_path).suffix
 
     def load_arguments(self) -> Dict:
         """Parse the byte string, eventually override defaults and check parameters."""
