@@ -175,7 +175,6 @@ setup.init_paths(
     specfile_name=specfile_name,
     template_imagefile=template_imagefile,
     data_dir=data_dir,
-    verbose=True,
 )
 
 logfile = setup.create_logfile(
