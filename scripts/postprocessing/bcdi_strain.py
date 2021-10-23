@@ -58,6 +58,8 @@ root_folder = "C:/Users/carnisj/Documents/data/P10_Longfei_Nov2020/data/"
 save_dir = root_folder + "test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
+data_dir = None
+# leave None to use the beamline default. It will look for the data at this location
 sample_name = (
     "B15_syn_S1_2"  # "S"  # string in front of the scan number in the folder name.
 )
@@ -441,6 +443,7 @@ setup = Setup(
 setup.init_paths(
     sample_name=sample_name,
     scan_number=scan,
+    data_dir=data_dir,
     root_folder=root_folder,
     save_dir=save_dir,
     specfile_name=specfile_name,
