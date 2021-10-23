@@ -78,7 +78,7 @@ def run(prm):
     tick_spacing = prm["tick_spacing"]
     tick_direction = prm["tick_direction"]
     tick_length = prm["tick_length"]
-    tick_width = ["tick_width"]
+    tick_width = prm["tick_width"]
     invert_phase = prm["invert_phase"]
     correct_refraction = prm["correct_refraction"]
     save_frame = prm["save_frame"]
