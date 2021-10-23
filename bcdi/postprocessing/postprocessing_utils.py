@@ -1486,7 +1486,7 @@ def remove_offset(
     array,
     support,
     offset_method="com",
-    user_offset=0,
+    phase_offset=0,
     offset_origin=None,
     title="",
     debugging=False,
@@ -1500,7 +1500,7 @@ def remove_offset(
     :param offset_method: 'com' or 'mean'. If 'com', the value of array at the center
      of mass of the support will be subtracted to the array. If 'mean', the mean
      value of array on the support will be subtracted to the array.
-    :param user_offset: value to add to the array
+    :param phase_offset: value to add to the array
     :param offset_origin: If provided, the value of array at this voxel will be
      subtracted to the array.
     :param title: string, used in plot title
@@ -1532,6 +1532,9 @@ def remove_offset(
             is_orthogonal=is_orthogonal,
         )
 
+    if phase_offset is None:
+        phase_offset = 0
+
     if offset_origin is None:  # use offset_method to remove the offset
         if offset_method == "com":
             zcom, ycom, xcom = center_of_mass(support)
@@ -1546,9 +1549,9 @@ def remove_offset(
                 str("{:.2f}".format(array[zcom, ycom, xcom])),
                 "rad",
             )
-            array = array - array[zcom, ycom, xcom] + user_offset
+            array = array - array[zcom, ycom, xcom] + phase_offset
         elif offset_method == "mean":
-            array = array - array[support == 1].mean() + user_offset
+            array = array - array[support == 1].mean() + phase_offset
         else:
             raise ValueError('Invalid setting for parameter "offset_method"')
     else:
@@ -1572,7 +1575,7 @@ def remove_offset(
         array = (
             array
             - array[offset_origin[0], offset_origin[1], offset_origin[2]]
-            + user_offset
+            + phase_offset
         )
 
     if debugging:
