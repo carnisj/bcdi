@@ -11,7 +11,7 @@ data_dir: None  # leave None to use the beamline default,
 sample_name: "S"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
-user_comment: ""  # string, should start with "_"
+comment: ""  # string, should start with "_"
 debug: False  # set to True to see plots
 binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
@@ -48,7 +48,7 @@ normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
 #################################
 mask_zero_event: False  # mask pixels where the sum along the rocking curve is zero
 # may be dead pixels
-flag_medianfilter: "skip"
+median_filter: "skip"
 # set to 'median' for applying med2filter [3,3]
 # set to 'interp_isolated' to interpolate isolated empty pixels based on
 # 'medfilt_order' parameter
