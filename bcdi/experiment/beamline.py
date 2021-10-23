@@ -820,9 +820,6 @@ class BeamlineID01(Beamline):
             name="filename",
         )
 
-        if not filename:
-            return None
-
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
 
@@ -2340,12 +2337,8 @@ class Beamline34ID(Beamline):
             filename,
             container_types=str,
             min_length=1,
-            allow_none=True,
             name="filename",
         )
-
-        if not filename:
-            return None
 
         # load the spec file
         return SpecFile(root_folder + filename + ".spec")
