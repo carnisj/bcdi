@@ -3213,7 +3213,7 @@ class Diffractometer34ID(Diffractometer):
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
 
-        return theta, phi, delta, gamma, setup.energy
+        return theta, phi, delta, gamma, energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
