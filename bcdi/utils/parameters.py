@@ -145,6 +145,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
     elif key == "custom_motors":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
+    elif key == "data_dir":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
@@ -213,6 +217,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             allow_none=True,
             name=key,
         )
+    elif key == "phase_offset":
+        valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "phase_offset_origin":
         valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "phase_ramp_removal":
