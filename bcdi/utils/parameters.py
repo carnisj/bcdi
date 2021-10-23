@@ -36,6 +36,11 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
      is valid, False otherwise.
     """
     is_valid = True
+
+    # convert 'None' to None
+    if value == "None":
+        value = None
+
     # test the booleans first
     if key in {
         "align_axis",
