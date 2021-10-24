@@ -52,7 +52,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = None
 
     # convert 'True' to True
-    if value == ("True", "true", "TRUE"):
+    if value in ("True", "true", "TRUE"):
         value = True
 
     # convert 'False' to False
