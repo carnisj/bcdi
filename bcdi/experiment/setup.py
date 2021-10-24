@@ -194,7 +194,7 @@ class Setup:
     def beam_direction(self, value):
         valid.valid_container(
             value,
-            container_types=(tuple, list),
+            container_types=(tuple, list, np.ndarray),
             length=3,
             item_types=Real,
             name="Setup.beam_direction",
