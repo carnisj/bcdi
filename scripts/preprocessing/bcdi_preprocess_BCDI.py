@@ -175,8 +175,8 @@ where the data is.
     :param phasing_binning: e.g. [1, 2, 2]
      binning to apply to the data (stacking dimension, detector vertical axis, detector
      horizontal axis)
-    :param linearity_func: linearity correction for the detector decalred as a string,
-     leave None otherwise.
+    :param linearity_func: name of the linearity correction for the detector, leave None
+     otherwise.
     :param x_bragg: e.g. 1577
      horizontal pixel number of the Bragg peak, used for the definition of roi_detector
      (see below). Leave None otherwise.
