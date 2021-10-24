@@ -19,6 +19,14 @@ import bcdi.utils.validation as valid
 
 
 class ParameterError(Exception):
+    """
+    Custom Exception for a dictionary of parsed parameters.
+
+    :param key: a key of the dictionary
+    :param value: the corresponding value
+    :param allowed: allowed values for value
+    """
+
     def __init__(self, key, value, allowed):
         super().__init__(
             f"Incorrect value {value} for parameter {key}\n" f"Allowed are {allowed}"

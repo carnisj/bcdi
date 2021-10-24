@@ -7,6 +7,8 @@
 #         Clément Atlan, c.atlan@outlook.com
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+"""Parsing of command-line arguments and config files."""
+
 from argparse import ArgumentParser
 import pathlib
 from typing import Any, ByteString, Dict, Union
@@ -41,8 +43,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "-bin"
-        "--phasing_binning",
+        "-bin" "--phasing_binning",
         type=str,
         help="binning factor applied during phasing",
     )
@@ -116,8 +117,9 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "--root_folder", type=str,
-        help="path to the directory where all scans are stored"
+        "--root_folder",
+        type=str,
+        help="path to the directory where all scans are stored",
     )
 
     argument_parser.add_argument("--sample_name", type=str, help="name of the sample")
@@ -161,10 +163,12 @@ class ConfigParser:
     """
     Base class for parsing arguments.
 
-    Some validation is also realized in the class.
+    If provided, command line arguments will override the parameters from the config
+    file. Some validation is also realized in the class.
 
     :param file_path: path of the configuration file that contains
     the arguments, str.
+    :param command_line_args: an optional dictionary of command-line arguments
     """
 
     def __init__(
@@ -177,7 +181,7 @@ class ConfigParser:
 
     @property
     def command_line_args(self):
-        """Optional dictionary of command line parameters."""
+        """Return an optional dictionary of command line parameters."""
         return self._command_line_args
 
     @command_line_args.setter
@@ -216,7 +220,7 @@ class ConfigParser:
         return {key: dic[key] for key in checked_keys}
 
     @staticmethod
-    def filter_dict(dic : Dict, filter_value : Any = None) -> Dict:
+    def filter_dict(dic: Dict, filter_value: Any = None) -> Dict:
         """
         Filter out key where the value is None.
 

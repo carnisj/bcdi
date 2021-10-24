@@ -33,8 +33,9 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
-CONFIG_FILE = \
+CONFIG_FILE = (
     "C:/Users/Jerome/Documents/myscripts/clement/bcdi/conf/config_postprocessing.yml"
+)
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
