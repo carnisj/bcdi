@@ -60,7 +60,7 @@ strain_method: "default"  # 'default' or 'defect'.
 phase_offset: 0  # manual offset to add to the phase, should be 0 in most cases
 phase_offset_origin: None
 # the phase at this voxel will be set to phase_offset, None otherwise
-offset_method: "mean"  # 'COM' or 'mean', method for removing the offset in the phase
+offset_method: "mean"  # 'com' or 'mean', method for determining the phase offset origin
 centering_method: "max_com"
 # 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 ######################################
