@@ -207,6 +207,17 @@ class ConfigParser:
                 )
         return {key: dic[key] for key in checked_keys}
 
+    @staticmethod
+    def filter_dict(dic : Dict, filter_value : Any = None) -> Dict:
+        """
+        Filter out key where the value is None.
+
+        :param dic: a dictionary
+        :param filter_value: value to be filtered out
+        :return: a dictionary with only keys where the value is not None
+        """
+        return {k: v for k, v in dic.items() if v is not filter_value}
+
     def load_arguments(self) -> Dict:
         """Parse the byte string, eventually override defaults and check parameters."""
         args = yaml.load(self.raw_config, Loader=yaml.SafeLoader)
@@ -226,14 +237,3 @@ class ConfigParser:
         with open(self.file_path, "rb") as f:
             raw_config = f.read()
         return raw_config
-
-    @staticmethod
-    def filter_dict(dic : Dict, filter_value : Any = None) -> Dict:
-        """
-        Filter out key where the value is None.
-
-        :param dic: a dictionary
-        :param filter_value: value to be filtered out
-        :return: a dictionary with only keys where the value is not None
-        """
-        return {k: v for k, v in dic.items() if v is not filter_value}
