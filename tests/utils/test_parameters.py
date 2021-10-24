@@ -7,8 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+from pathlib import Path
 import unittest
 from bcdi.utils.parameters import valid_param
+
+here = Path(__file__).parent
+THIS_DIR = str(here)
 
 
 def run_tests(test_class):
@@ -55,6 +59,18 @@ class TestParameters(unittest.TestCase):
     def test_false_expected_3(self):
         val, flag = valid_param(key="align_axis", value="FALSE")
         self.assertTrue(not val and flag)
+
+    def test_data_dir_none(self):
+        val, flag = valid_param(key="data_dir", value="None")
+        self.assertTrue(val is None and flag)
+
+    def test_data_dir_not_existing(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="data_dir", value="this_is_not_a_valid_path")
+
+    def test_data_dir_existing(self):
+        val, flag = valid_param(key="data_dir", value=THIS_DIR)
+        self.assertTrue(val == THIS_DIR and flag)
 
 
 if __name__ == "__main__":
