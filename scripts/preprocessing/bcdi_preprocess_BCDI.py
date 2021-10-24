@@ -51,10 +51,10 @@ specfile, hotpixels file and flatfield file in:    /rootdir/
 data in:                                           /rootdir/S1/data/
 
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on the
-'use_rawdata' option
+'use_rawdata' option.
 
     Parameters related to path names:
-    
+
     :param scans: e.g. 11
      scan number or list of scan numbers
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
