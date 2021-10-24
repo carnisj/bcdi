@@ -90,7 +90,7 @@ def create_detector(name, **kwargs):
     raise NotImplementedError(f"No implementation for the {name} detector")
 
 
-def create_roi(dic : Dict[str, Any]) -> Union[List[int], None]:
+def create_roi(dic: Dict[str, Any]) -> Any:
     """
     Load "roi_detector" from the dictionary of parameters and update it.
 
