@@ -13,6 +13,7 @@ Parameter validation is performed over the excepted parameters.
 """
 from numbers import Number, Real
 import numpy as np
+import os
 from typing import Any, Tuple
 import bcdi.utils.validation as valid
 
@@ -42,11 +43,11 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = None
 
     # convert 'True' to True
-    if value == ("True", "true", "TRUE", "t", 1, "1"):
+    if value == ("True", "true", "TRUE"):
         value = True
 
     # convert 'False' to False
-    if value in ("False", "false", "FALSE", "f", 0, "0"):
+    if value in ("False", "false", "FALSE"):
         value = False
 
     # test the booleans first
@@ -195,6 +196,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(
             value, container_types=str, min_length=1, allow_none=True, name=key
         )
+        if value is not None and not os.path.isdir(value):
+            raise ValueError(f"The directory {value} does not exist")
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
@@ -250,7 +253,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "frames_pattern":
         if value is not None:
             value = np.asarray(value)
-            valid.valid_1d_array(allow_none=False, allowed_values={0, 1}, name=key)
+            valid.valid_1d_array(
+                value, allow_none=False, allowed_values={0, 1}, name=key
+            )
     elif key == "half_width_avg_phase":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "hotpixels_file":
@@ -398,6 +403,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "root_folder":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+        if not os.path.isdir(value):
+            raise ValueError(f"The directory {value} does not exist")
     elif key == "sample_inplane":
         valid.valid_container(
             value,
