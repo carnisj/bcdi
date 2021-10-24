@@ -510,9 +510,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "tilt_detector":
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "x_bragg":
-        valid.valid_item(value, allowed_types=int, name=key)
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     elif key == "y_bragg":
-        valid.valid_item(value, allowed_types=int, name=key)
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     else:
         # this key is not in the known parameters
         is_valid = False
