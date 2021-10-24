@@ -29,7 +29,7 @@ class TestConfigParser(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.command_line_args = {"scan": "9999"}
+        self.command_line_args = {"scan": "9999", }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
 
     def test_init_file_path(self):
@@ -49,6 +49,13 @@ class TestConfigParser(unittest.TestCase):
     def test_init_file_path_not_existing(self):
         with self.assertRaises(ValueError):
             ConfigParser("C:/test.yml", self.command_line_args)
+
+    def test_init_command_line_args(self):
+        self.assertTrue(self.parser.command_line_args == self.command_line_args)
+
+    def test_init_command_line_args_none(self):
+        parser = ConfigParser(CONFIG, None)
+        self.assertTrue(parser.command_line_args is None)
 
     def test_init_raw_config(self):
         self.assertIsInstance(self.parser.raw_config, bytes)
