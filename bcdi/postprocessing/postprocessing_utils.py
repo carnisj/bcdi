@@ -1524,7 +1524,7 @@ def remove_offset(
         container_types=(tuple, list, np.ndarray),
         item_types=int,
         allow_none=True,
-        name="offset_origin"
+        name="offset_origin",
     )
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)

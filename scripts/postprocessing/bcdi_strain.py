@@ -281,7 +281,7 @@ qy] for reciprocal space, or data[z, y, x] for real space
     :param tick_width: e.g. 1
      width of the ticks in plots
 
-    Parameteres for temperature estimation:
+    Parameters for temperature estimation:
 
     :param get_temperature: e.g. False
      True to estimate the temperature, only available for platinum at the moment

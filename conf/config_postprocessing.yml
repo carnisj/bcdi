@@ -180,9 +180,9 @@ tick_spacing: 50  # for plots, in nm
 tick_direction: "inout"  # 'out', 'in', 'inout'
 tick_length: 3  # 10  # in plots
 tick_width: 1  # 2  # in plots
-##########################################
-# parameteres for temperature estimation #
-##########################################
+#########################################
+# parameters for temperature estimation #
+#########################################
 get_temperature: False  # only available for platinum at the moment
 reflection: [1, 1, 1]
 # measured reflection, use for estimating the temperature
@@ -195,9 +195,9 @@ reference_temperature: None
 ##########################################################
 averaging_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
 threshold_avg: 0.90  # minimum correlation within reconstructed object for averaging
-############################################
-# setup for phase averaging or apodization #
-############################################
+#################################################
+# parameters for phase averaging or apodization #
+#################################################
 half_width_avg_phase: 0
 # (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
 apodize: False  # True to multiply the diffraction pattern by a filtering window
