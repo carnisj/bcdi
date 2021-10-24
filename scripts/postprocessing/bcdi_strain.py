@@ -33,6 +33,8 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.parser import ConfigParser
 import bcdi.utils.utilities as util
 
+CONFIG_FILE = "../../conf/config_postprocessing.yml"
+
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
 and calculate the strain component along the direction of the experimental diffusion
@@ -1171,8 +1173,7 @@ if __name__ == "__main__":
     cli_args = vars(ap.parse_args())
 
     # load the config file
-    config_file = "../../conf/config_postprocessing.yml"
-    parser = ConfigParser(config_file, cli_args)
+    parser = ConfigParser(CONFIG_FILE, cli_args)
     args = parser.load_arguments()
     args["time"] = f"{datetime.now()}"
     run(prm=args)
