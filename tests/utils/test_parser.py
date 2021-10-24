@@ -29,7 +29,7 @@ class TestConfigParser(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.command_line_args = {"scan": "9999"}
+        self.command_line_args = {"scan": 999999999}
         self.parser = ConfigParser(CONFIG, self.command_line_args)
 
     def test_init_file_path(self):
@@ -69,6 +69,12 @@ class TestConfigParser(unittest.TestCase):
         dic = {"scan": "9999", "sdd": None, "test": True}
         output = self.parser.filter_dict(dic, filter_value=True)
         self.assertTrue(output == {"scan": "9999", "sdd": None})
+
+    def test_load_arguments(self):
+        args = self.parser.load_arguments()
+        # "scan" is also key in CONFIG, which means that the overriding by the optional
+        # --scan argument from the command line works as expected
+        self.assertTrue(args.get("scan") == self.command_line_args["scan"])
 
 
 if __name__ == "__main__":
