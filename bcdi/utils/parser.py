@@ -25,7 +25,6 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     """
     argument_parser.add_argument(
         "--align_q",
-        default="False",
         type=str,
         help="If orthogonalized, do not align q",
     )
@@ -134,7 +133,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "--specfile_name", required=True, type=str, help="path to '.spec' file"
+        "--specfile_name", type=str, help="path to '.spec' file"
     )
 
     argument_parser.add_argument(
