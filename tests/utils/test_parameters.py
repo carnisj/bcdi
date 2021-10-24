@@ -7,7 +7,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from pathlib import Path
 import unittest
 from bcdi.utils.parameters import valid_param
 
