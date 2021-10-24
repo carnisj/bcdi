@@ -172,6 +172,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startwith("_"):
             value += "_"
+    elif key == "config":
+        valid.valid_container(value, container_types=str, min_length=1, name=key)
+        if not os.path.isfile(value):
+            raise ValueError(f"The directory {value} does not exist")
     elif key == "correlation_threshold":
         valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
     elif key == "custom_images":
