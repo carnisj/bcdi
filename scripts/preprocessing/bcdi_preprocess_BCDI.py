@@ -1063,7 +1063,7 @@ def run(prm):
             ):  # filter only frames whith data (not padded)
                 data[idx, :, :], processed_pix, mask[idx, :, :] = util.mean_filter(
                     data=data[idx, :, :],
-                    nb_neighbours=prm["median_filt_order"],
+                    nb_neighbours=prm["median_filter_order"],
                     mask=mask[idx, :, :],
                     interpolate=median_filter,
                     min_count=3,
