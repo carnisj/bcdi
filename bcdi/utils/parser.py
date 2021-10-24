@@ -210,8 +210,14 @@ class ConfigParser:
     def load_arguments(self) -> Dict:
         """Parse the byte string, eventually override defaults and check parameters."""
         args = yaml.load(self.raw_config, Loader=yaml.SafeLoader)
-        if self.command_line_args is not None:
-            args.update(self.command_line_args)
+
+        # keep only command line arguments which are defined (not None)
+        valid_cla = self.filter_dict(self.command_line_args)
+
+        # override the default config by the valid command line arguments
+        args.update(valid_cla)
+
+        # validate the parameters
         self.arguments = self._check_args(args)
         return self.arguments
 
@@ -220,3 +226,14 @@ class ConfigParser:
         with open(self.file_path, "rb") as f:
             raw_config = f.read()
         return raw_config
+
+    @staticmethod
+    def filter_dict(dic : Dict, filter_value : Any = None) -> Dict:
+        """
+        Filter out key where the value is None.
+
+        :param dic: a dictionary
+        :param filter_value: value to be filtered out
+        :return: a dictionary with only keys where the value is not None
+        """
+        return {k: v for k, v in dic.items() if v is not filter_value}
