@@ -55,6 +55,10 @@ In arrays, when plotting the first parameter is the row (vertical axis), and the
 second the column (horizontal axis). Therefore the data structure is data[qx, qz,
 qy] for reciprocal space, or data[z, y, x] for real space
 
+Usage:
+
+ - from the command line: `python path_to/bcdi_strain.py --config path_to/config.yml`
+ - directly from a code editor: update the constant CONFIG_FILE at the top of the file
 
     Parameters related to path names:
 
