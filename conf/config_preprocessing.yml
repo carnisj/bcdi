@@ -42,11 +42,6 @@ center_fft: "skip"
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
 pad_size: None  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
 # Leave None otherwise. Used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'.
-##############################################
-# parameters used in intensity normalization #
-##############################################
-normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
-# the default monitor values, 'skip' to do nothing
 #################################
 # parameters for data filtering #
 #################################
@@ -116,6 +111,8 @@ roi_detector: None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 20
 # [Vstart, Vstop, Hstart, Hstop]
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
+normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
+# the default monitor values, 'skip' to do nothing
 photon_threshold: 0  # data[data < photon_threshold]: 0
 photon_filter: "loading"  # 'loading' or 'postprocessing',
 # when the photon threshold should be applied
