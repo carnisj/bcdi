@@ -130,7 +130,7 @@ template_imagefile: "_master.h5"
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction: True  # True for correcting the phase shift due to refraction
+correct_refraction: False  # True for correcting the phase shift due to refraction
 optical_path_method: "threshold"
 # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove
