@@ -210,11 +210,12 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "custom_motors":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "data_dir":
-        valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
-        )
-        if value is not None and not os.path.isdir(value):
-            raise ValueError(f"The directory {value} does not exist")
+        if value is not None:
+            valid.valid_container(
+                value, container_types=str, min_length=1, name=key
+            )
+            if not os.path.isdir(value):
+                raise ValueError(f"The directory {value} does not exist")
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
