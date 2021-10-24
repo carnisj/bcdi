@@ -13,8 +13,6 @@ sample_name: "S"  # str or list of str of sample names
 # If only one name is indicated, it will be repeated to match the number of scans.
 comment: ""  # string, should start with "_"
 debug: False  # set to True to see plots
-phasing_binning: [1, 2, 2]  # binning to apply to the data
-# (stacking dimension, detector vertical axis, detector horizontal axis)
 ##############################
 # parameters used in masking #
 ##############################
@@ -96,6 +94,8 @@ specfile_name: "l5"
 # detector related parameters #
 ###############################
 detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+phasing_binning: [1, 2, 2]  # binning to apply to the data
+# (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # linearity correction for the detector as a string, leave None otherwise.
 x_bragg: 1577  # horizontal pixel number of the Bragg peak,
