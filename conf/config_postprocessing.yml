@@ -15,6 +15,14 @@ comment: ""  # comment in filenames, should start with _
 sort_method: "variance/mean"
 # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 correlation_threshold: 0.90
+###################################
+# parameters related to centering #
+####################################
+roll_modes: [0, 0, 0]
+# axis=(0, 1, 2), correct a roll of few pixels
+# after the decomposition into modes in PyNX
+centering_method: "max_com"
+# 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
@@ -32,9 +40,9 @@ fix_voxel: 10  # voxel size in nm for the interpolation during the geometrical
 # transformation. If a single value is provided, the voxel size will be identical is
 # all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
-#############################################################
-# parameters related to displacement and strain calculation #
-#############################################################
+################################################
+# parameters related to the strain calculation #
+################################################
 data_frame: "detector"
 # 'crystal' if the data was interpolated into the crystal frame using (xrayutilities) or
 # (transformation matrix + align_q=True)
@@ -57,12 +65,6 @@ strain_method: "default"  # 'default' or 'defect'.
 # If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain.
 # See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
-phase_offset: 0  # manual offset to add to the phase, should be 0 in most cases
-phase_offset_origin: None
-# the phase at this voxel will be set to phase_offset, None otherwise
-offset_method: "mean"  # 'com' or 'mean', method for determining the phase offset origin
-centering_method: "max_com"
-# 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 ######################################
 # define beamline related parameters #
 ######################################
@@ -145,9 +147,9 @@ threshold_unwrap_refraction: 0.05  # threshold used to calculate the optical pat
 # the threshold for refraction/absorption corrections should be low,
 # to correct for an object larger than the real one,
 # otherwise it messes up the phase
-###########
-# options #
-###########
+###################################
+# parameters related to the phase #
+###################################
 simulation: False  # set to True if it is a simulation, the parameter invert_phase
 # will be set to 0 (see below)
 invert_phase: True  # True for the displacement to have the right sign
@@ -157,17 +159,14 @@ phase_ramp_removal: "gradient"
 # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient: 1.0
 # upper threshold of the gradient of the phase, use for ramp removal
-save_rawdata: False  # True to save the amp-phase.vti before orthogonalization
-save_support: False
-# True to save the non-orthogonal support for later phase retrieval
-save: True  # True to save amp.npz, phase.npz, strain.npz and vtk files
-debug: False  # set to True to show all plots for debugging
-roll_modes: [0, 0, 0]
-# axis=(0, 1, 2), correct a roll of few pixels
-# after the decomposition into modes in PyNX
+phase_offset: 0  # manual offset to add to the phase, should be 0 in most cases
+phase_offset_origin: None
+# the phase at this voxel will be set to phase_offset, None otherwise
+offset_method: "mean"  # 'com' or 'mean', method for determining the phase offset origin
 ############################################
 # parameters related to data visualization #
 ############################################
+debug: False  # set to True to show all plots for debugging
 align_axis: False  # for visualization, if True rotates the crystal to align
 # axis_to_align along ref_axis after the
 # calculation of the strain
@@ -207,6 +206,13 @@ apodization_window: "blackman"
 apodization_mu: [0.0, 0.0, 0.0]  # mu of the gaussian window
 apodization_sigma: [0.30, 0.30, 0.30]  # sigma of the gaussian window
 apodization_alpha: [1.0, 1.0, 1.0]  # shape parameter of the tukey window
+################################
+# parameters related to saving #
+################################
+save_rawdata: False  # True to save the amp-phase.vti before orthogonalization
+save_support: False
+# True to save the non-orthogonal support for later phase retrieval
+save: True  # True to save amp.npz, phase.npz, strain.npz and vtk files
 ##################################
 # end of user-defined parameters #
 ##################################

@@ -81,6 +81,14 @@ qy] for reciprocal space, or data[z, y, x] for real space
     :param correlation_threshold: e.g. 0.90
      minimum correlation between two arrays to average them
 
+    Parameters related to centering:
+    
+    :param centering_method: e.g. "max_com"
+    'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
+    :param roll_modes: e.g. [0, 0, 0]
+    correct a roll of few pixels after the decomposition into modes in PyNX
+    axis=(0, 1, 2)
+    
     Prameters relative to the FFT window and voxel sizes:
 
     :param original_size: e.g. [150, 256, 500]
@@ -101,7 +109,7 @@ qy] for reciprocal space, or data[z, y, x] for real space
      directions. Set it to None to use the default voxel size (calculated from q values,
      it will be different in each dimension).
 
-    Parameters related to displacement and strain calculation:
+    Parameters related to the strain calculation:
 
     :param data_frame: e.g. "detector"
      in which frame is defined the input data, available options:
@@ -111,7 +119,7 @@ qy] for reciprocal space, or data[z, y, x] for real space
      - 'laboratory' if the data was interpolated into the laboratory frame using
        the transformation matrix (align_q: False)
      - 'detector' if the data is still in the detector frame
-
+   
     :param ref_axis_q: e.g. "y"
      axis along which q will be aligned (data_frame= 'detector' or 'laboratory') or is
      already aligned (data_frame='crystal')
@@ -134,16 +142,6 @@ qy] for reciprocal space, or data[z, y, x] for real space
      - 'default': use the single value calculated from the gradient of the phase
      - 'defect': it will offset the phase in a loop and keep the smallest magnitude
        value for the strain. See: F. Hofmann et al. PhysRevMaterials 4, 013801 (2020)
-
-    :param phase_offset: e.g. 0
-     manual offset to add to the phase, should be 0 in most cases
-    :param phase_offset_origin: e.g. [12, 32, 65]
-     the phase at this voxel will be set to phase_offset, leave None to use the default
-     position computed using offset_method (see below)
-    :param offset_method: e.g. "mean"
-     'com' (center of mass) or 'mean', method for determining the phase offset origin
-    :param centering_method: e.g. "max_com"
-    'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
 
     Parameters for the beamline:
 
@@ -235,6 +233,98 @@ qy] for reciprocal space, or data[z, y, x] for real space
      threshold used to calculate the optical path. The threshold for refraction
      correction should be low, to correct for an object larger than the real one,
      otherwise it messes up the phase
+
+    Parameters related to the phase:
+
+    :param simulation: e.g. False
+     True if it is a simulation, the parameter invert_phase will be set to 0 (see below)
+    :param invert_phase: e.g. True
+    True for the displacement to have the right sign (FFT convention), it is False only
+    for simulations
+    :param flip_reconstruction: e.g. True
+     True if you want to get the conjugate object
+    :param phase_ramp_removal: e.g. "gradient"
+     'gradient' or 'upsampling', 'gradient' is much faster
+    :param threshold_gradient: e.g. 1.0
+     upper threshold of the gradient of the phase, use for ramp removal
+    :param phase_offset: e.g. 0
+     manual offset to add to the phase, should be 0 in most cases
+    :param phase_offset_origin: e.g. [12, 32, 65]
+     the phase at this voxel will be set to phase_offset, leave None to use the default
+     position computed using offset_method (see below)
+    :param offset_method: e.g. "mean"
+     'com' (center of mass) or 'mean', method for determining the phase offset origin
+     
+    Parameters related to data visualization:
+
+    :param debug: e.g. False
+     True to show all plots for debugging
+    :param align_axis: e.g. False
+     True to rotate the crystal to align axis_to_align along ref_axis for visualization.
+     This is done after the calculation of the strain and has no effect on it.
+    :param ref_axis: e.g. "y"
+     it will align axis_to_align to that axis if align_axis is True
+    :param axis_to_align: e.g. [-0.01166, 0.9573, -0.2887]
+     axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
+    :param strain_range: e.g. 0.001
+     range of the colorbar for strain plots
+    :param phase_range: e.g. 0.4
+     range of the colorbar for phase plots
+    :param grey_background: e.g. True
+     True to set the background to grey in phase and strain plots
+    :param tick_spacing: e.g. 50
+     spacing between axis ticks in plots, in nm
+    :param tick_direction: e.g. "inout"
+     direction of the ticks in plots: 'out', 'in', 'inout'
+    :param tick_length: e.g. 3
+     length of the ticks in plots
+    :param tick_width: e.g. 1
+     width of the ticks in plots
+
+    Parameteres for temperature estimation:
+
+    :param get_temperature: e.g. False
+     True to estimate the temperature, only available for platinum at the moment
+    :param reflection: e.g. [1, 1, 1]
+    measured reflection, use for estimating the temperature from the lattice parameter
+    :param reference_spacing: 3.9236
+     for calibrating the thermal expansion, if None it is fixed to the one of Platinum
+     3.9236/norm(reflection)
+    :param reference_temperature: 325
+     temperature in Kelvins used to calibrate the thermal expansion, if None it is fixed
+     to 293.15K (room temperature)
+
+
+    Parameters for averaging several reconstructed objects:
+
+    :param averaging_space: e.g. "reciprocal_space"
+     in which space to average, 'direct_space' or 'reciprocal_space'
+    :param threshold_avg: e.g. 0.90
+     minimum correlation between arrays for averaging
+    
+    Parameters for phase averaging or apodization:
+    
+    :param half_width_avg_phase: e.g. 0
+     (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
+    :param apodize: e.g. False
+     True to multiply the diffraction pattern by a filtering window
+    :param apodization_window: e.g. "blackman"
+     filtering window, multivariate 'normal' or 'tukey' or 'blackman'
+    :param apodization_mu: e.g. [0.0, 0.0, 0.0]
+     mu of the gaussian window
+    :param apodization_sigma: e.g. [0.30, 0.30, 0.30]
+     sigma of the gaussian window
+    :param apodization_alpha: e.g. [1.0, 1.0, 1.0]
+     shape parameter of the tukey window
+
+    Parameters related to saving:
+
+    :param save_rawdata: e.g. False  
+     True to save the amp-phase.vti before orthogonalization
+    :param save_support: e.g. False
+     True to save the non-orthogonal support for later phase retrieval
+    :param save: e.g. True
+     True to save amp.npz, phase.npz, strain.npz and vtk files
 """
 
 
