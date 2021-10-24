@@ -178,13 +178,18 @@ where the data is.
     :param linearity_func: linearity correction for the detector decalred as a string,
      leave None otherwise.
     :param x_bragg: e.g. 1577
-     horizontal pixel number of the Bragg peak, it can be used for the definition of
-     the ROI
+     horizontal pixel number of the Bragg peak, used for the definition of roi_detector
+     (see below). Leave None otherwise.
     :param y_bragg: e.g. 833
-     vertical pixel number of the Bragg peak, can be used for the definition of the ROI
-    :param roi_detector: e.g.[y_bragg - 50, y_bragg + 50, x_bragg - 50, x_bragg + 50]
-     [Vstart, Vstop, Hstart, Hstop], leave None to use the full detector. Use this with
-     center_fft='skip' if you want this exact size.
+     vertical pixel number of the Bragg peak, used for the definition of roi_detector
+     (see below). Leave None otherwise.
+    :param roi_detector: e.g.[0, 250, 10, 210]
+     region of interest of the detector to load. If "x_bragg" or "y_bragg" are not None,
+     it will consider that the current values in roi_detector define a window around the
+     Bragg peak position and the final output will be:
+     [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
+     x_bragg - roi_detector[2], x_bragg + roi_detector[3]]. Leave None to use the full
+     detector. Use with center_fft='skip' if you want this exact size for the output.
     :param normalize_flux: e.g. "monitor"
      'monitor' to normalize the intensity by the default monitor values,
      'skip' to do nothing

@@ -95,7 +95,8 @@ def create_roi(dic : Dict[str, Any]) -> Union[List[int], None]:
     Load "roi_detector" from the dictionary of parameters and update it.
 
     If the keys "x_bragg" or "y_bragg", it will consider that the current values in
-    roi_detector define a window around the position and the final output will be
+    roi_detector define a window around the Bragg peak position and the final output
+    will be:
     [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
     x_bragg - roi_detector[2], x_bragg + roi_detector[3]].
 

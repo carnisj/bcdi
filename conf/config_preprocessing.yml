@@ -98,12 +98,16 @@ phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # linearity correction for the detector as a string, leave None otherwise.
-x_bragg: 1577  # horizontal pixel number of the Bragg peak,
+x_bragg: None  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-y_bragg: 833  # vertical pixel number of the Bragg peak,
+y_bragg: None  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector: None  # [y_bragg - 216, y_bragg + 216, x_bragg - 200, x_bragg + 200]  #
-# [Vstart, Vstop, Hstart, Hstop]
+roi_detector: None
+# [Vstart, Vstop, Hstart, Hstop]. If "x_bragg" or "y_bragg" are not None, it will
+# consider that the current values in roi_detector define a window around the Bragg
+# peak position and the final output will be
+# [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
+# x_bragg - roi_detector[2], x_bragg + roi_detector[3]].
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
 normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
