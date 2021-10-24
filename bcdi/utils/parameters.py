@@ -45,6 +45,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
      is valid, False otherwise.
     """
     is_valid = True
+    allowed : Any = None
 
     # convert 'None' to None
     if value == "None":
@@ -237,7 +238,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
                 name=key,
             )
     elif key == "fill_value_mask":
-        allowed = {0, 1}
+        allowed = (0, 1)
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "fix_bragg":
