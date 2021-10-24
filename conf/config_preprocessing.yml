@@ -15,11 +15,6 @@ comment: ""  # string, should start with "_"
 debug: False  # set to True to see plots
 phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
-bin_during_loading: False  # True to bin during loading, faster
-frames_pattern: None
-# list of int, of length data.shape[0]. If frames_pattern is 0 at index,
-# the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
-# Use this if you need to remove some frames and you know it in advance.
 ##############################
 # parameters used in masking #
 ##############################
@@ -118,6 +113,11 @@ photon_filter: "loading"  # 'loading' or 'postprocessing',
 # when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing',
 # it is applied at the end of the script before saving
+bin_during_loading: False  # True to bin during loading, faster
+frames_pattern: None
+# list of int, of length data.shape[0]. If frames_pattern is 0 at index,
+# the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
+# Use this if you need to remove some frames and you know it in advance.
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
