@@ -1519,6 +1519,13 @@ def remove_offset(
         allowed_kwargs={"reciprocal_space", "is_orthogonal"},
         name="postprocessing_utils.average_obj",
     )
+    valid.valid_container(
+        offset_origin,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        allow_none=True,
+        name="offset_origin"
+    )
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
@@ -1555,8 +1562,6 @@ def remove_offset(
         else:
             raise ValueError('Invalid setting for parameter "offset_method"')
     else:
-        if len(offset_origin) != 3:
-            raise ValueError("offset_origin should be a tuple of three pixel positions")
         print(
             "\nOrigin for offset removal at pixels (z, y, x): ",
             offset_origin[0],
