@@ -76,13 +76,6 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series: True  # specific to series measurement at P10
-custom_scan: False  # set it to True for a stack of images acquired without scan,
-# e.g. with ct in a macro, or when
-# there is no spec/log file available
-custom_images: None  # np.arange(11353, 11453, 1)
-# list of image numbers for the custom_scan, None otherwise
-custom_monitor: None
-# monitor values for normalization for the custom_scan, None otherwise
 rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 specfile_name: "l5"
@@ -90,6 +83,16 @@ specfile_name: "l5"
 # template for SIXS: full path of the alias dictionnary or
 # None to use the one in the package folder
 # template for all other beamlines: ''
+###############################
+# parameters for custom scans #
+###############################
+custom_scan: False  # set it to True for a stack of images acquired without scan,
+# e.g. with ct in a macro, or when
+# there is no spec/log file available
+custom_images: None  # np.arange(11353, 11453, 1)
+# list of image numbers for the custom_scan, None otherwise
+custom_monitor: None
+# monitor values for normalization for the custom_scan, None otherwise
 ###############################
 # detector related parameters #
 ###############################

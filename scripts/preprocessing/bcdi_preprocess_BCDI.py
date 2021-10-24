@@ -151,12 +151,6 @@ where the data is.
      changing, or to declare a non-standard monitor)
     :param is_series: e.g. True
      specific to series measurement at P10
-    :param custom_scan: e.g. False
-     True for a stack of images acquired without scan, e.g. with ct in a
-     macro, or when there is no spec/log file available
-    :param custom_images: list of image numbers for the custom_scan, None otherwise
-    :param custom_monitor: list of monitor values for normalization for the custom_scan,
-     None otherwise
     :param rocking_angle: e.g. "outofplane"
      "outofplane" for a sample rotation around x outboard, "inplane" for a sample
      rotation around y vertical up, "energy"
@@ -167,6 +161,15 @@ where the data is.
      - template for SIXS: full path of the alias dictionnary or None to use the one in
        the package folder
      - template for all other beamlines: None
+
+    Parameters for custom scans:
+
+    :param custom_scan: e.g. False
+     True for a stack of images acquired without scan, e.g. with ct in a
+     macro, or when there is no spec/log file available
+    :param custom_images: list of image numbers for the custom_scan, None otherwise
+    :param custom_monitor: list of monitor values for normalization for the custom_scan,
+     None otherwise
 
     Parameters for the detector:
 
