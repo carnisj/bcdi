@@ -29,16 +29,29 @@ class TestConfigParser(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG)
+        self.command_line_args = {"scan": "9999"}
+        self.parser = ConfigParser(CONFIG, self.command_line_args)
 
-    def test_init(self):
-        pass
+    def test_init_file_path(self):
+        self.assertTrue(self.parser.file_path == CONFIG)
 
-    def test_expected_param(self):
-        pass
+    def test_init_file_path_2(self):
+        self.assertTrue(self.parser.arguments is None)
 
-    def test_unexpected_param(self):
-        pass
+    def test_init_file_path_wrong_type(self):
+        with self.assertRaises(TypeError):
+            ConfigParser(1234, self.command_line_args)
+
+    def test_init_file_path_wrong_file_extension(self):
+        with self.assertRaises(ValueError):
+            ConfigParser("C:/test.txt", self.command_line_args)
+
+    def test_init_file_path_not_existing(self):
+        with self.assertRaises(ValueError):
+            ConfigParser("C:/test.yml", self.command_line_args)
+
+    def test_init_raw_config(self):
+        self.assertIsInstance(self.parser.raw_config, bytes)
 
 
 if __name__ == "__main__":
