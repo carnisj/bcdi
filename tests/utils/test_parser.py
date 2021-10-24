@@ -29,7 +29,7 @@ class TestConfigParser(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.command_line_args = {"scan": "9999", }
+        self.command_line_args = {"scan": "9999"}
         self.parser = ConfigParser(CONFIG, self.command_line_args)
 
     def test_init_file_path(self):
@@ -59,6 +59,16 @@ class TestConfigParser(unittest.TestCase):
 
     def test_init_raw_config(self):
         self.assertIsInstance(self.parser.raw_config, bytes)
+
+    def test_filter_dict(self):
+        dic = {"scan": "9999", "sdd": None}
+        output = self.parser.filter_dict(dic)
+        self.assertTrue(output == {"scan": "9999"})
+
+    def test_filter_dict_filter_value(self):
+        dic = {"scan": "9999", "sdd": None, "test": True}
+        output = self.parser.filter_dict(dic, filter_value=True)
+        self.assertTrue(output == {"scan": "9999", "sdd": None})
 
 
 if __name__ == "__main__":
