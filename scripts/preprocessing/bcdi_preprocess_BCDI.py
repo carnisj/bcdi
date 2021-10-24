@@ -46,12 +46,15 @@ filter the data.
 Beamlines currently supported: ESRF ID01, SOLEIL CRISTAL, SOLEIL SIXS, PETRAIII P10 and
 APS 34ID-C.
 
-By default, the directory structure should be (e.g. scan 1):
+The directory structure expected by default is (e.g. scan 1):
 specfile, hotpixels file and flatfield file in:    /rootdir/
 data in:                                           /rootdir/S1/data/
 
 output files saved in:   /rootdir/S1/pynxraw/ or /rootdir/S1/pynx/ depending on the
 'use_rawdata' option.
+
+If you directory structure is different, you can use the parameter data_dir to indicate
+where the data is.
 
     Parameters related to path names:
 
