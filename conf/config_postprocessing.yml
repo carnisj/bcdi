@@ -173,8 +173,8 @@ align_axis: False  # for visualization, if True rotates the crystal to align
 ref_axis: "y"  # will align axis_to_align to that axis
 axis_to_align: [-0.011662456997498807, 0.957321364700986, -0.28879022106682123]
 # axis to align with ref_axis in the order x y z (axis 2, axis 1, axis 0)
-strain_range: 0.001  # for plots
-phase_range: 0.4  # for plots
+strain_range: 0.002  # for plots
+phase_range: 1.5  # for plots
 grey_background: True  # True to set the background to grey in phase and strain plots
 tick_spacing: 50  # for plots, in nm
 tick_direction: "inout"  # 'out', 'in', 'inout'
