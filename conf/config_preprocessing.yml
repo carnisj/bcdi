@@ -13,9 +13,13 @@ sample_name: "S"  # str or list of str of sample names
 # If only one name is indicated, it will be repeated to match the number of scans.
 comment: ""  # string, should start with "_"
 debug: False  # set to True to see plots
-binning: [1, 2, 2]  # binning to apply to the data
+phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 bin_during_loading: False  # True to bin during loading, faster
+frames_pattern: None
+# list of int, of length data.shape[0]. If frames_pattern is 0 at index,
+# the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
+# Use this if you need to remove some frames and you know it in advance.
 ##############################
 # parameters used in masking #
 ##############################
@@ -25,19 +29,19 @@ background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 #########################################################
 # parameters related to data cropping/padding/centering #
 #########################################################
-centering: "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
+centering_method: "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
-fix_bragg: []  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
+fix_bragg: None  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
 # considering the full detector
-# It is useful if hotpixels or intense aliens. Leave it [] otherwise.
-fix_size: []  # crop the array to predefined size considering the full detector,
-# leave it to [] otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
+# It is useful if hotpixels or intense aliens. Leave None otherwise.
+fix_size: None  # crop the array to predefined size considering the full detector,
+# leave None otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
 # ROI will be defaulted to []
 center_fft: "skip"
 # 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
 # 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
-pad_size: []  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
-# used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'
+pad_size: None  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
+# Leave None otherwise. Used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'.
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
@@ -54,7 +58,7 @@ median_filter: "skip"
 # 'medfilt_order' parameter
 # set to 'mask_isolated' it will mask isolated empty pixels
 # set to 'skip' will skip filtering
-medfilt_order: 7  # for custom median filter,
+median_filter_order: 7  # for custom median filter,
 # number of pixels with intensity surrounding the empty pixel
 #################################################
 # parameters used when reloading processed data #
@@ -70,7 +74,7 @@ save_rawdata: False  # save also the raw data when use_rawdata is False
 save_to_npz: True  # True to save the processed data in npz format
 save_to_mat: False  # True to save also in .mat format
 save_to_vti: False  # save the orthogonalized diffraction pattern to VTK file
-save_asint: False
+save_as_int: False
 # if True, the result will be saved as an array of integers (save space)
 ######################################
 # define beamline related parameters #
@@ -87,14 +91,12 @@ is_series: True  # specific to series measurement at P10
 custom_scan: False  # set it to True for a stack of images acquired without scan,
 # e.g. with ct in a macro, or when
 # there is no spec/log file available
-custom_images: [3]  # np.arange(11353, 11453, 1)
+custom_images: None  # np.arange(11353, 11453, 1)
 # list of image numbers for the custom_scan, None otherwise
 custom_monitor: None
 # monitor values for normalization for the custom_scan, None otherwise
 rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
-follow_bragg: False  # only for energy scans, set to True if the detector
-# was also scanned to follow the Bragg peak
 specfile_name: "l5"
 # template for ID01: name of the spec file without '.spec'
 # template for SIXS: full path of the alias dictionnary or
@@ -133,9 +135,9 @@ template_imagefile: "data_mpx4_%05d.edf.gz"
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata: False  # False for using data gridded in laboratory frame
+use_rawdata: True  # False for using data gridded in laboratory frame
 # True for using data in detector frame
-interp_method: "xrayutilities"  # 'xrayutilities' or 'linearization'
+interpolation_method: "xrayutilities"  # 'xrayutilities' or 'linearization'
 fill_value_mask: 0  # 0 (not masked) or 1 (masked).
 # It will define how the pixels outside of the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
@@ -192,7 +194,7 @@ cch2: 154  # direct beam horizontal position in the full unbinned detector for
 # xrayutilities 2D detector calibration
 detrot: 0  # detrot parameter from xrayutilities 2D detector calibration
 tiltazimuth: 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt: 0  # tilt parameter from xrayutilities 2D detector calibration
+tilt_detector: 0  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################

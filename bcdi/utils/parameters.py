@@ -135,6 +135,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(
             value, container_types=str, min_length=1, allow_none=True, name=key
         )
+    elif key == "background_plot":
+        valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "beam_direction":
         valid.valid_container(
             value,
@@ -184,6 +186,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             container_types=(tuple, list, np.ndarray),
             item_types=int,
             min_included=0,
+            allow_none=True,
             name=key,
         )
     elif key == "custom_monitor":
@@ -192,6 +195,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             container_types=(tuple, list, np.ndarray),
             item_types=Real,
             min_included=0,
+            allow_none=True,
             name=key,
         )
     elif key == "custom_motors":
@@ -274,11 +278,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "isosurface_strain":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+    elif key == "linearity_func":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
+        )
     elif key == "median_filter":
         allowed = {"median", "interp_isolated", "mask_isolated", "skip"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "median_filt_order":
+    elif key == "median_filter_order":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "normalize_flux":
         allowed = {"monitor", "skip"}
