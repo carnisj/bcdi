@@ -11,9 +11,6 @@ from pathlib import Path
 import unittest
 from bcdi.utils.parameters import valid_param
 
-here = Path(__file__).parent
-CONFIG = str(here.parents[1] / "conf/config_postprocessing.yml")
-
 
 def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
@@ -25,10 +22,40 @@ class TestParameters(unittest.TestCase):
     """
     Tests on the function valid_param.
 
-    def __init__(self, file_path : str, script_type : str = "preprocessing") -> None :
+    def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     """
 
-    pass
+    def test_none_str_unexpected(self):
+        val, flag = valid_param(key="not_expected", value="None")
+        self.assertTrue(val is None and not flag)
+
+    def test_none_str_expected(self):
+        val, flag = valid_param(key="actuators", value="None")
+        self.assertTrue(val is None and flag)
+
+    def test_true_expected_1(self):
+        val, flag = valid_param(key="align_axis", value="True")
+        self.assertTrue(val and flag)
+
+    def test_true_expected_2(self):
+        val, flag = valid_param(key="align_axis", value="true")
+        self.assertTrue(val and flag)
+
+    def test_true_expected_3(self):
+        val, flag = valid_param(key="align_axis", value="TRUE")
+        self.assertTrue(val and flag)
+
+    def test_false_expected_1(self):
+        val, flag = valid_param(key="align_axis", value="False")
+        self.assertTrue(not val and flag)
+
+    def test_false_expected_2(self):
+        val, flag = valid_param(key="align_axis", value="false")
+        self.assertTrue(not val and flag)
+
+    def test_false_expected_3(self):
+        val, flag = valid_param(key="align_axis", value="FALSE")
+        self.assertTrue(not val and flag)
 
 
 if __name__ == "__main__":
