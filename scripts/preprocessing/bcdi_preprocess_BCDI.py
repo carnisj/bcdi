@@ -28,7 +28,7 @@ from tkinter import filedialog
 import xrayutilities as xu
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
+from bcdi.experiment.detector import create_detector, create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
@@ -463,7 +463,7 @@ def run(prm):
     reload_orthogonal = prm["reload_orthogonal"]
     inplane_angle = prm["inplane_angle"]
     outofplane_angle = prm["outofplane_angle"]
-    roi_detector = prm["roi_detector"]
+    roi_detector = create_roi(dic=prm)
     use_rawdata = prm["use_rawdata"]
     normalize_flux = prm["normalize_flux"]
     #########################
