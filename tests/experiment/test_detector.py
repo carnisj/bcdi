@@ -14,6 +14,7 @@ import unittest
 from unittest.mock import patch
 from bcdi.experiment.detector import (
     create_detector,
+    create_roi,
     Detector,
     Dummy,
     Merlin,
@@ -66,6 +67,68 @@ class TestCreateDetector(unittest.TestCase):
     def test_name_missing(self):
         with self.assertRaises(TypeError):
             create_detector()
+
+
+class TestCreateRoi(unittest.TestCase):
+    """
+    Tests related to create_roi.
+
+    def create_roi(dic : Dict[str, Any]) -> Union[List[int], None]:
+    """
+
+    def test_not_a_dict(self):
+        with self.assertRaises(TypeError):
+            create_roi({0, 1})
+
+    def test_roi_none(self):
+        self.assertEqual(create_roi({"a": 0}), None)
+
+    def test_roi_wrong_length(self):
+        with self.assertRaises(ValueError):
+            create_roi({"roi_detector":  [1, 2]})
+
+    def test_roi_wrong_type(self):
+        with self.assertRaises(TypeError):
+            create_roi({"roi_detector":  "[1, 2, 3, 4]"})
+
+    def test_xbragg_ybragg_none(self):
+        roi = [10, 200, 20, 50]
+        output = create_roi({"roi_detector":  roi})
+        self.assertTrue(all(out == roi[idx] for idx, out in enumerate(output)))
+
+    def test_xbragg_not_none(self):
+        roi = [10, 200, 20, 50]
+        correct = [10, 200, 130, 200]
+        output = create_roi({"roi_detector":  roi, "x_bragg": 150})
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_xbragg_wrong_type_str(self):
+        with self.assertRaises(TypeError):
+            create_roi({"roi_detector":  [10, 200, 20, 50], "x_bragg": "150"})
+
+    def test_xbragg_wrong_type_float(self):
+        with self.assertRaises(TypeError):
+            create_roi({"roi_detector":  [10, 200, 20, 50], "x_bragg": 1.5})
+
+    def test_ybragg_wrong_type_str(self):
+        with self.assertRaises(TypeError):
+            create_roi({"roi_detector":  [10, 200, 20, 50], "y_bragg": "150"})
+
+    def test_ybragg_wrong_type_float(self):
+        with self.assertRaises(TypeError):
+            create_roi({"roi_detector":  [10, 200, 20, 50], "y_bragg": 1.5})
+
+    def test_ybragg_not_none(self):
+        roi = [10, 200, 20, 50]
+        correct = [140, 350, 20, 50]
+        output = create_roi({"roi_detector":  roi, "y_bragg": 150})
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_x_bragg_ybragg_not_none(self):
+        roi = [10, 200, 20, 50]
+        correct = [140, 350, -10, 60]
+        output = create_roi({"roi_detector":  roi, "y_bragg": 150, "x_bragg": 10})
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
 
 class TestDetector(fake_filesystem_unittest.TestCase):
