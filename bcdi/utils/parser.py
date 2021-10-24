@@ -46,6 +46,12 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
         help="binning factor applied during phasing",
     )
 
+    argument_parser.add_argument(
+        "--config",
+        type=str,
+        help="path to the config file",
+    )
+
     argument_parser.add_argument("--debug", type=str, help="debugging option")
 
     argument_parser.add_argument(
