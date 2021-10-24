@@ -45,7 +45,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
      is valid, False otherwise.
     """
     is_valid = True
-    allowed : Any = None
+    allowed: Any = None
 
     # convert 'None' to None
     if value == "None":

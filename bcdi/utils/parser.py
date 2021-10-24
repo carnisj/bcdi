@@ -177,7 +177,7 @@ class ConfigParser:
         self.file_path = file_path
         self.command_line_args = command_line_args
         self.raw_config = self._open_file()
-        self.arguments : Union[Dict, None] = None
+        self.arguments: Union[Dict, None] = None
 
     @property
     def command_line_args(self):
