@@ -23,7 +23,7 @@ dependencies:
   - pillow
   - pandas
   - ipywidgets
-  - pyaml
+  - pyyaml
   - black
   - coverage
   - doit
