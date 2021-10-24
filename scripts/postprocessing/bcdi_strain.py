@@ -30,7 +30,7 @@ from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
-from bcdi.utils.parser import ConfigParser
+from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
 CONFIG_FILE = \
@@ -1171,6 +1171,7 @@ def run(prm):
 if __name__ == "__main__":
     # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
+    ap = add_cli_parameters(ap)
     cli_args = vars(ap.parse_args())
 
     # load the config file

@@ -32,7 +32,7 @@ from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.utils.parser import ConfigParser
+from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
 CONFIG_FILE = \
@@ -1302,6 +1302,7 @@ def run(prm):
 if __name__ == "__main__":
     # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
+    ap = add_cli_parameters(ap)
     cli_args = vars(ap.parse_args())
 
     # load the config file
