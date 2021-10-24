@@ -54,6 +54,53 @@ Detector convention: when out_of_plane angle=0   Y=-y , when in_plane angle=0   
 In arrays, when plotting the first parameter is the row (vertical axis), and the
 second the column (horizontal axis). Therefore the data structure is data[qx, qz,
 qy] for reciprocal space, or data[z, y, x] for real space
+
+
+    Parameters related to path names:
+
+    :param scan: e.g. 11
+     scan number
+    :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
+     folder of the experiment, where all scans are stored
+    :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"
+     images will be saved here, leave it to None otherwise
+    :param data_dir: e.g. None
+     use this to override the beamline default search path for the data
+    :param sample_name: e.g. "S"
+     str or list of str of sample names (string in front of the scan number in the
+     folder name). If only one name is indicated, it will be repeated to match the
+     number of scans.
+    :param comment: string use in filenames when saving
+    :param debug: e.g. False
+     True to see plots
+
+    Parameters used when averaging several reconstruction:
+
+    :param sort_method: e.g. "variance/mean"
+     'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
+    :param correlation_threshold: e.g. 0.90
+     minimum correlation between two arrays to average them
+
+    Prameters relative to the FFT window and voxel sizes:
+
+    :param original_size: e.g. [150, 256, 500]
+     size of the FFT array before binning. It will be modified to take into account
+     binning during phasing automatically. Leave it to None if the shape did not change.
+    :param phasing_binning: e.g. [1, 1, 1]
+     binning factor applied during phase retrieval
+    :param preprocessing_binning: e.g. [1, 2, 2]
+     binning factors in each dimension used in preprocessing (not phase retrieval)
+    :param output_size: e.g. [100, 100, 100]
+     (z, y, x) Fix the size of the output array, leave None to use the object size
+    :param keep_size: e.g. False
+     True to keep the initial array size for orthogonalization (slower), it will be
+     cropped otherwise
+    :param fix_voxel: e.g. 10
+     voxel size in nm for the interpolation during the geometrical transformation.
+     If a single value is provided, the voxel size will be identical in all 3
+     directions. Set it to None to use the default voxel size (calculated from q values,
+     it will be different in each dimension).
+
 """
 
 
@@ -220,7 +267,7 @@ def run(prm):
     print("\n###############\nProcessing data\n###############")
     nz, ny, nx = obj.shape
     print("Initial data size: (", nz, ",", ny, ",", nx, ")")
-    if len(original_size) == 0:
+    if not original_size:
         original_size = obj.shape
     print("FFT size before accounting for phasing_binning", original_size)
     original_size = tuple(
