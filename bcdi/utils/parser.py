@@ -10,6 +10,7 @@
 """Parsing of command-line arguments and config files."""
 
 from argparse import ArgumentParser
+import os
 import pathlib
 from typing import Any, ByteString, Dict, Union
 import yaml
@@ -203,6 +204,8 @@ class ConfigParser:
         )
         if pathlib.Path(value).suffix != ".yml":
             raise ValueError("Expecting a YAML config file")
+        if not os.path.isfile(value):
+            raise ValueError(f"The file {value} does not exist")
         self._file_path = value
 
     @staticmethod
