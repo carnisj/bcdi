@@ -81,7 +81,8 @@ def run(prm):
 
         :param event: mouse click event
         """
-        global xy, flag_pause, previous_axis
+        nonlocal xy, flag_pause, previous_axis
+
         if not event.inaxes:
             return
         if not flag_pause:
@@ -107,9 +108,9 @@ def run(prm):
 
         :param event: button press event
         """
-        global original_data, original_mask, updated_mask, data, mask, frame_index, width
-        global flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar, ax0, ax1
-        global ax2, ax3, previous_axis, info_text, my_cmap
+        nonlocal original_data, original_mask, updated_mask, data, mask, frame_index
+        nonlocal flag_aliens, flag_mask, flag_pause, xy, fig_mask, max_colorbar
+        nonlocal ax0, ax1, ax2, ax3, previous_axis, info_text, my_cmap, width
 
         try:
             if event.inaxes == ax0:
