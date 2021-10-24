@@ -211,9 +211,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "data_dir":
         if value is not None:
-            valid.valid_container(
-                value, container_types=str, min_length=1, name=key
-            )
+            valid.valid_container(value, container_types=str, min_length=1, name=key)
             if not os.path.isdir(value):
                 raise ValueError(f"The directory {value} does not exist")
     elif key == "data_frame":
