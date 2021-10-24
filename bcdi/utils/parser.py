@@ -30,23 +30,26 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "--background_file", type=str, help="optional background_file"
+        "-bckg", "--background_file", type=str, help="optional background_file"
     )
 
     argument_parser.add_argument(
+        "-bl",
         "--beamline",
         type=str,
         help="beamline where the measurement was made",
     )
 
     argument_parser.add_argument(
-        "--binning",
+        "-bin"
+        "--phasing_binning",
         type=str,
         help="binning factor applied during phasing",
     )
 
     argument_parser.add_argument(
-        "--config",
+        "-c",
+        "--config_file",
         type=str,
         help="path to the config file",
     )
@@ -54,12 +57,14 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     argument_parser.add_argument("--debug", type=str, help="debugging option")
 
     argument_parser.add_argument(
-        "--detector", type=str, help="detector used during measurement"
+        "-det", "--detector", type=str, help="detector used during measurement"
     )
 
-    argument_parser.add_argument("--energy", type=float, help="beam energy")
+    argument_parser.add_argument("-en", "--energy", type=float, help="beam energy")
 
-    argument_parser.add_argument("--median_filter", type=str, help="apply a filter")
+    argument_parser.add_argument(
+        "-med", "--median_filter", type=str, help="apply a filtering method"
+    )
 
     argument_parser.add_argument(
         "--fix_voxel",
@@ -68,6 +73,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
+        "-flip",
         "--flip_reconstruction",
         type=str,
         help="choose to flip or not the reconstruction",
@@ -76,7 +82,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     argument_parser.add_argument("--grazing_angle", type=float, help="incidence angle")
 
     argument_parser.add_argument(
-        "--inplane-angle", type=float, help="detector in plane angle"
+        "--inplane_angle", type=float, help="detector in-plane angle"
     )
 
     argument_parser.add_argument(
@@ -86,17 +92,14 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
+        "-iso",
         "--isosurface_strain",
         type=float,
         help="the isosurface threshold used for postprocessing",
     )
 
     argument_parser.add_argument(
-        "--orthogonalize", type=str, help="Whether to orthogonalize or not"
-    )
-
-    argument_parser.add_argument(
-        "--outofplane-angle", type=float, help="detector out of plane angle"
+        "--outofplane_angle", type=float, help="detector out-of-plane angle"
     )
 
     argument_parser.add_argument(
@@ -106,24 +109,29 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "--rocking-angle",
+        "--rocking_angle",
         type=str,
         choices=["inplane", "outofplane"],
         help="rocking angle",
     )
 
     argument_parser.add_argument(
-        "--root-folder", type=str, help="where to find experiment data"
+        "--root_folder", type=str,
+        help="path to the directory where all scans are stored"
     )
 
-    argument_parser.add_argument("--sample-name", type=str, help="name of the sample")
+    argument_parser.add_argument("--sample_name", type=str, help="name of the sample")
 
     argument_parser.add_argument(
-        "--save-dir", type=str, help="directory path where to save"
+        "--save_dir", type=str, help="directory path where to save"
     )
 
     argument_parser.add_argument(
-        "--scan", type=int, help="number of the scan to process"
+        "-s", "--scan", type=int, help="number of the scan to process"
+    )
+
+    argument_parser.add_argument(
+        "--scans", type=int, help="list of the scans to process"
     )
 
     argument_parser.add_argument(
