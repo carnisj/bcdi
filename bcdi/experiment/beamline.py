@@ -810,18 +810,20 @@ class BeamlineID01(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
-            allow_none=True,
             name="filename",
         )
 
-        # load the spec file
-        return SpecFile(root_folder + filename + ".spec")
+        if os.path.isfile(filename):
+            # filename is already the full path to the .spec file
+            return SpecFile(filename)
+
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        return SpecFile(root_folder + filename)
 
     @property
     def detector_hor(self):
@@ -1448,11 +1450,21 @@ class BeamlineP10(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename",
+        )
+
+        if os.path.isfile(filename):
+            # filename is already the full path to the .fio file
+            return filename
+
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
-        valid.valid_container(filename, container_types=str, name="filename")
 
-        # load .fio file
+        # return the path to the .fio file
         return root_folder + filename + "/" + filename + ".fio"
 
     @property
@@ -2331,8 +2343,6 @@ class Beamline34ID(Beamline):
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
@@ -2340,8 +2350,13 @@ class Beamline34ID(Beamline):
             name="filename",
         )
 
-        # load the spec file
-        return SpecFile(root_folder + filename + ".spec")
+        if os.path.isfile(filename):
+            # filename is already the full path to the .spec file
+            return SpecFile(filename)
+
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        return SpecFile(root_folder + filename)
 
     @property
     def detector_hor(self):
