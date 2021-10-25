@@ -1,6 +1,10 @@
 Future
 ------
 
+* Modify the behavior of the parameter `specfile_name`: for beamlines relying on a
+  separate file for logging motor positions (specfiles at ID01 and 34ID, fio file at
+  P10), the user can provide the full path to the file
+
 * Implement loading motor positions from a specfile at 34ID.
 
 * Add mypy for type checking in doit and GitHub workflows
