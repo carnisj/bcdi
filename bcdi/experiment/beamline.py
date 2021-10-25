@@ -545,13 +545,13 @@ class BeamlineCRISTAL(Beamline):
 
          - homedir: the path of the scan folder
          - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
+         - specfile: not used at CRISTAL
          - template_imagefile: the template for data/image file names
 
         """
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, None, template_imagefile
 
     def process_positions(
         self,
@@ -803,7 +803,7 @@ class BeamlineID01(Beamline):
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file without '.spec'
+         - 'filename': str, name of the spec file or full path of the spec file
 
         :return: logfile
         """
@@ -1189,7 +1189,7 @@ class BeamlineNANOMAX(Beamline):
         """
         homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, None, template_imagefile
 
     def process_positions(
         self,
@@ -1443,7 +1443,7 @@ class BeamlineP10(Beamline):
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where the scan
            folders are located.
-         - 'filename': str, name of the .fio file (without ".fio")
+         - 'filename': str, name of the .fio file or full path of the .fio file
 
         :return: logfile
         """
@@ -1498,6 +1498,9 @@ class BeamlineP10(Beamline):
          name.
         :param scan_number: int, the scan number
         :param template_imagefile: template for the data files, e.g. '_master.h5'
+        :param kwargs:
+         - 'specfile_name': optional, full path of the .fio file
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -1506,7 +1509,11 @@ class BeamlineP10(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        specfile = sample_name + "_{:05d}".format(scan_number)
+        specfile = kwargs.get("specfile_name")
+        if not os.path.isfile(specfile):
+            # default to the usual position of .fio at P10
+            specfile = sample_name + "_{:05d}".format(scan_number)
+
         homedir = root_folder + specfile + "/"
         default_dirname = "e4m/"
         template_imagefile = specfile + template_imagefile
@@ -2336,7 +2343,7 @@ class Beamline34ID(Beamline):
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file without '.spec'
+         - 'filename': str, name of the spec file or full path of the .spec file
 
         :return: logfile
         """
