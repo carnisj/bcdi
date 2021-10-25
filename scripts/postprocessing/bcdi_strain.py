@@ -58,7 +58,7 @@ root_folder = "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
 save_dir = root_folder + "test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-data_dir = root_folder + "S622/ici/"
+data_dir = root_folder + "S622/data/"
 # leave None to use the beamline default. It will look for the data at this location
 sample_name = "S"
 # string in front of the scan number in the folder name.
@@ -157,11 +157,13 @@ tilt_angle = 0.006  # angular step size for rocking angle, eta ID01, mu SIXS,
 sample_offsets = (0, 0)
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
-specfile_name = "Dmitry1120c.spec"
-# root_folder + 'alias_dict_2021.txt'
-# template for ID01 or 34ID-C: name of the spec file
-# template for SIXS_2018: full path of the alias dictionnary,
-# typically root_folder + 'alias_dict_2019.txt'
+specfile_name = root_folder + "S622/Dmitry1120c.spec"
+# template for ID01 and 34ID: name of the spec file if it is at the default location
+# (in root_folder) or full path to the spec file
+# template for SIXS: full path of the alias dictionnary or None to use the one in the
+# package folder
+# for P10, either None (if you are using the same directory structure as the beamline)
+# or the full path to the .fio file
 # template for all other beamlines: None
 ##########################
 # setup for custom scans #
