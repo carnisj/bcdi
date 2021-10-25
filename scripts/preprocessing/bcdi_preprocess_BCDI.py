@@ -153,7 +153,7 @@ rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outb
 # "inplane" for a sample rotation around y vertical up, "energy"
 
 specfile_name = "l5"
-# template for ID01: name of the spec file without '.spec'
+# template for ID01: name of the spec file
 # template for SIXS: full path of the alias dictionnary or
 # None to use the one in the package folder
 # template for all other beamlines: ''
