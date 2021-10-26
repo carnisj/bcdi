@@ -484,15 +484,13 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertTrue(np.all(np.isclose(output[1], mask)))
 
     def test_linearity_correction_correct(self):
-        func = lambda x: x ** 2
         data = np.ones((3, 3))
-        self.det.linearity_func = func
+        self.det.linearity_func = lambda x: x ** 2
         self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
 
     def test_linearity_correction_zero(self):
-        func = lambda x: x - x
         data = np.ones((3, 3))
-        self.det.linearity_func = func
+        self.det.linearity_func = lambda x: x - x
         self.assertTrue(
             np.all(np.isclose(self.det._linearity_correction(data), np.zeros((3, 3))))
         )
@@ -503,9 +501,8 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
 
     def test_linearity_correction_wrong_ndim(self):
-        func = lambda x: x ** 2
         data = np.ones((3, 3, 3))
-        self.det.linearity_func = func
+        self.det.linearity_func = lambda x: x ** 2
         with self.assertRaises(ValueError):
             self.det._linearity_correction(data)
 
