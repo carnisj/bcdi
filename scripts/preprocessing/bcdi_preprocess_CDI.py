@@ -478,7 +478,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         root_folder=root_folder,
         save_dir=save_dir,
         save_dirname=save_dirname,
-        verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
         data_dir=data_dir,

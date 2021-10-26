@@ -152,11 +152,14 @@ custom_monitor = np.ones(51)
 rocking_angle = "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 
-specfile_name = "l5"
-# template for ID01: name of the spec file without '.spec'
-# template for SIXS: full path of the alias dictionnary or
-# None to use the one in the package folder
-# template for all other beamlines: ''
+specfile_name = "l5.spec"
+# template for ID01 and 34ID: name of the spec file if it is at the default location
+# (in root_folder) or full path to the spec file
+# template for SIXS: full path of the alias dictionnary or None to use the one in the
+# package folder
+# for P10, either None (if you are using the same directory structure as the beamline)
+# or the full path to the .fio file
+# template for all other beamlines: None
 ###############################
 # detector related parameters #
 ###############################
@@ -592,7 +595,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         root_folder=root_folder,
         save_dir=save_dir,
         save_dirname=save_dirname,
-        verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
     )
