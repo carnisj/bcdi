@@ -509,12 +509,20 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(ValueError):
             self.det._linearity_correction(data)
 
-    def test_mask_detector_correct(self):
-        det = Timepix("Timepix")
+    def test_mask_detector_no_linearity_correction(self):
+        det = Timepix("Timepix", linearity_func=None)
         data = np.ones(det.unbinned_pixel_number)
         mask = np.zeros(det.unbinned_pixel_number)
         output = det.mask_detector(data, mask, nb_frames=1)
         self.assertTrue(np.all(np.isclose(output[0], data)))
+        self.assertTrue(np.all(np.isclose(output[1], mask)))
+
+    def test_mask_detector_linearity_correction(self):
+        det = Timepix("Timepix", linearity_func=lambda x: 2*x)
+        data = np.ones(det.unbinned_pixel_number)
+        mask = np.zeros(det.unbinned_pixel_number)
+        output = det.mask_detector(data, mask, nb_frames=1)
+        self.assertTrue(np.all(np.isclose(output[0], 2*data)))
         self.assertTrue(np.all(np.isclose(output[1], mask)))
 
     def test_mask_detector_wrong_type(self):
