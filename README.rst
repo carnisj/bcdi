@@ -110,7 +110,7 @@ BCDI is available from:
 * Python Package Index: ``pip install bcdi``
 * `Most updated version on GitHub <https://github.com/carnisj/bcdi>`_
 
-- Upgrade your version with the latest changes from GitHub:
+- Upgrade your version with the latest changes from GitHub (main branch):
   ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
 - Test a specific branch from GitHub:
   ``pip install --upgrade git+https://github.com/carnisj/bcdi.git@branch_name``
