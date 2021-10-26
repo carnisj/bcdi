@@ -825,7 +825,7 @@ class BeamlineID01(Beamline):
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
         path = root_folder + filename
-        print(f"Loading the spec file at {path}")
+        print(f"Trying to load the spec file at {path}")
         return SpecFile(path)
 
     @property
@@ -1470,7 +1470,7 @@ class BeamlineP10(Beamline):
 
         # return the path to the .fio file
         path = root_folder + filename + "/" + filename + ".fio"
-        print(f"Loading the fio file at {path}")
+        print(f"Trying to load the fio file at {path}")
         return path
 
     @property
@@ -2371,7 +2371,7 @@ class Beamline34ID(Beamline):
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
         path = root_folder + filename
-        print(f"Loading the spec file at {path}")
+        print(f"Trying to load the spec file at {path}")
         return SpecFile(path)
 
     @property
