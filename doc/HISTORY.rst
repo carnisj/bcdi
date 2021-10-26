@@ -1,6 +1,9 @@
 Future
 ------
 
+* Bug: apply correctly the non-linearity correction function to the detector frames
+  (typo in the function name)
+
 * Modify the behavior of the parameter `specfile_name`: for beamlines relying on a
   separate file for logging motor positions (specfiles at ID01 and 34ID, fio file at
   P10), the user can provide the full path to the file
