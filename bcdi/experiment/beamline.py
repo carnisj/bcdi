@@ -823,7 +823,9 @@ class BeamlineID01(Beamline):
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
-        return SpecFile(root_folder + filename)
+        path = root_folder + filename
+        print(f"Loading the spec file at {path}")
+        return SpecFile(path)
 
     @property
     def detector_hor(self):
@@ -1465,7 +1467,9 @@ class BeamlineP10(Beamline):
             raise ValueError(f"The directory {root_folder} does not exist")
 
         # return the path to the .fio file
-        return root_folder + filename + "/" + filename + ".fio"
+        path = root_folder + filename + "/" + filename + ".fio"
+        print(f"Loading the fio file at {path}")
+        return path
 
     @property
     def detector_hor(self):
@@ -2363,7 +2367,9 @@ class Beamline34ID(Beamline):
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
-        return SpecFile(root_folder + filename)
+        path = root_folder + filename
+        print(f"Loading the spec file at {path}")
+        return SpecFile(path)
 
     @property
     def detector_hor(self):
