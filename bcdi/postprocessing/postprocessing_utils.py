@@ -1485,8 +1485,8 @@ def regrid(array, old_voxelsize, new_voxelsize):
 def remove_offset(
     array,
     support,
-    offset_method="COM",
-    user_offset=0,
+    offset_method="com",
+    phase_offset=0,
     offset_origin=None,
     title="",
     debugging=False,
@@ -1497,10 +1497,10 @@ def remove_offset(
 
     :param array: a 3D array
     :param support: A 3D support of the same shape as array, defining the object
-    :param offset_method: 'COM' or 'mean'. If 'COM', the value of array at the center
+    :param offset_method: 'com' or 'mean'. If 'com', the value of array at the center
      of mass of the support will be subtracted to the array. If 'mean', the mean
      value of array on the support will be subtracted to the array.
-    :param user_offset: value to add to the array
+    :param phase_offset: value to add to the array
     :param offset_origin: If provided, the value of array at this voxel will be
      subtracted to the array.
     :param title: string, used in plot title
@@ -1519,6 +1519,13 @@ def remove_offset(
         allowed_kwargs={"reciprocal_space", "is_orthogonal"},
         name="postprocessing_utils.average_obj",
     )
+    valid.valid_container(
+        offset_origin,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        allow_none=True,
+        name="offset_origin",
+    )
     reciprocal_space = kwargs.get("reciprocal_space", False)
     is_orthogonal = kwargs.get("is_orthogonal", False)
 
@@ -1532,8 +1539,11 @@ def remove_offset(
             is_orthogonal=is_orthogonal,
         )
 
+    if phase_offset is None:
+        phase_offset = 0
+
     if offset_origin is None:  # use offset_method to remove the offset
-        if offset_method == "COM":
+        if offset_method == "com":
             zcom, ycom, xcom = center_of_mass(support)
             zcom, ycom, xcom = (
                 int(np.rint(zcom)),
@@ -1546,14 +1556,12 @@ def remove_offset(
                 str("{:.2f}".format(array[zcom, ycom, xcom])),
                 "rad",
             )
-            array = array - array[zcom, ycom, xcom] + user_offset
+            array = array - array[zcom, ycom, xcom] + phase_offset
         elif offset_method == "mean":
-            array = array - array[support == 1].mean() + user_offset
+            array = array - array[support == 1].mean() + phase_offset
         else:
             raise ValueError('Invalid setting for parameter "offset_method"')
     else:
-        if len(offset_origin) != 3:
-            raise ValueError("offset_origin should be a tuple of three pixel positions")
         print(
             "\nOrigin for offset removal at pixels (z, y, x): ",
             offset_origin[0],
@@ -1572,7 +1580,7 @@ def remove_offset(
         array = (
             array
             - array[offset_origin[0], offset_origin[1], offset_origin[2]]
-            + user_offset
+            + phase_offset
         )
 
     if debugging:
@@ -1595,7 +1603,7 @@ def remove_ramp(
     width_y=None,
     width_x=None,
     amplitude_threshold=0.25,
-    gradient_threshold=0.2,
+    threshold_gradient=0.2,
     method="gradient",
     ups_factor=2,
     debugging=False,
@@ -1614,7 +1622,7 @@ def remove_ramp(
      of the initial array
     :param amplitude_threshold: threshold used to define the support of the object
      from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in
+    :param threshold_gradient: higher threshold used to select valid voxels in
      the gradient array
     :param method: 'gradient' or 'upsampling'
     :param ups_factor: upsampling factor (the original shape will be multiplied by
@@ -1722,7 +1730,7 @@ def remove_ramp(
     mygradz, _, _ = np.gradient(phase, 1)
 
     mysupportz = np.zeros((nbz, nby, nbx))
-    mysupportz[abs(mygradz) < gradient_threshold] = 1
+    mysupportz[abs(mygradz) < threshold_gradient] = 1
     mysupportz = mysupportz * mysupport
     if mysupportz.sum() == 0:
         raise ValueError(
@@ -1736,8 +1744,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along Z",
         )
         gu.multislices_plot(
@@ -1755,7 +1763,7 @@ def remove_ramp(
     # axis 1 (Y)
     _, mygrady, _ = np.gradient(phase, 1)
     mysupporty = np.zeros((nbz, nby, nbx))
-    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty[abs(mygrady) < threshold_gradient] = 1
     mysupporty = mysupporty * mysupport
     if mysupporty.sum() == 0:
         raise ValueError(
@@ -1769,8 +1777,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along Y",
         )
         gu.multislices_plot(
@@ -1788,7 +1796,7 @@ def remove_ramp(
     # axis 2 (X)
     _, _, mygradx = np.gradient(phase, 1)
     mysupportx = np.zeros((nbz, nby, nbx))
-    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx[abs(mygradx) < threshold_gradient] = 1
     mysupportx = mysupportx * mysupport
     if mysupportx.sum() == 0:
         raise ValueError(
@@ -1802,8 +1810,8 @@ def remove_ramp(
             width_z=width_z,
             width_y=width_y,
             width_x=width_x,
-            vmin=-gradient_threshold,
-            vmax=gradient_threshold,
+            vmin=-threshold_gradient,
+            vmax=threshold_gradient,
             title="Phase gradient along X",
         )
         gu.multislices_plot(
@@ -1840,7 +1848,7 @@ def remove_ramp_2d(
     width_y=None,
     width_x=None,
     amplitude_threshold=0.25,
-    gradient_threshold=0.2,
+    threshold_gradient=0.2,
     method="gradient",
     ups_factor=2,
     debugging=False,
@@ -1859,7 +1867,7 @@ def remove_ramp_2d(
      the middle of the initial array
     :param amplitude_threshold: threshold used to define the support of the object
      from the amplitude
-    :param gradient_threshold: higher threshold used to select valid voxels in
+    :param threshold_gradient: higher threshold used to select valid voxels in
      the gradient array
     :param method: 'gradient' or 'upsampling'
     :param ups_factor: upsampling factor (the original shape will be multiplied
@@ -1959,7 +1967,7 @@ def remove_ramp_2d(
     # axis 0 (Y)
     mygrady, _ = np.gradient(phase, 1)
     mysupporty = np.zeros((nby, nbx))
-    mysupporty[abs(mygrady) < gradient_threshold] = 1
+    mysupporty[abs(mygrady) < threshold_gradient] = 1
     mysupporty = mysupporty * mysupport
     myrampy = mygrady[mysupporty == 1].mean()
     if debugging:
@@ -1985,7 +1993,7 @@ def remove_ramp_2d(
     # axis 1 (X)
     _, mygradx = np.gradient(phase, 1)
     mysupportx = np.zeros((nby, nbx))
-    mysupportx[abs(mygradx) < gradient_threshold] = 1
+    mysupportx[abs(mygradx) < threshold_gradient] = 1
     mysupportx = mysupportx * mysupport
     myrampx = mygradx[mysupportx == 1].mean()
     if debugging:

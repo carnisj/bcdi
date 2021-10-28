@@ -15,6 +15,7 @@ moviepy
 pillow
 pandas
 ipywidgets
+pyyaml
 black
 coverage
 doit
