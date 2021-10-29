@@ -1,5 +1,5 @@
-Future
-------
+Version 0.1.7
+-------------
 
 * Bug: apply correctly the non-linearity correction function to the detector frames
   (typo in the function name)
