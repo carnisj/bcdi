@@ -582,9 +582,8 @@ class Detector(ABC):
         """
         valid.valid_ndarray((data, mask), ndim=2)
 
-        # linearity correctiondata
-        if self._linearity_func is not None:
-            data = self._linearity_func(data)
+        # linearity correction, returns the data itself if linearity_func is None
+        data = self._linearity_correction(data)
 
         # flatfield correction
         data = self._flatfield_correction(data=data, flatfield=flatfield)

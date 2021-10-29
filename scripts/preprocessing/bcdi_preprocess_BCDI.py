@@ -199,10 +199,6 @@ template_imagefile = "data_mpx4_%05d.edf.gz"
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
 # template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-nb_pixel_x = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
-nb_pixel_y = None  # fix to declare a known detector but with less pixels
-# (e.g. one tile HS), leave None otherwise
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
