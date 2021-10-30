@@ -258,7 +258,7 @@ Usage:
      position computed using offset_method (see below)
     :param offset_method: e.g. "mean"
      'com' (center of mass) or 'mean', method for determining the phase offset origin
-     
+
     Parameters related to data visualization:
 
     :param debug: e.g. False
@@ -305,9 +305,9 @@ Usage:
      in which space to average, 'direct_space' or 'reciprocal_space'
     :param threshold_avg: e.g. 0.90
      minimum correlation between arrays for averaging
-    
+
     Parameters for phase averaging or apodization:
-    
+
     :param half_width_avg_phase: e.g. 0
      (width-1)/2 of the averaging window for the phase, 0 means no phase averaging
     :param apodize: e.g. False
