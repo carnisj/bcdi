@@ -53,9 +53,9 @@ import os
 from silx.io.specfile import SpecFile
 import xrayutilities as xu
 
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 
 def create_beamline(name, **kwargs):
@@ -378,6 +378,17 @@ class Beamline(ABC):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
+        motor_positions = setup.diffractometer.motor_positions(
+            setup=setup,
+            logfile=logfile,
+            scan_number=scan_number,
+        )
+        # remove the motor positions corresponding to deleted frames during data
+        # loading (frames_logical = 0)
+        return util.apply_logical_array(
+            arrays=motor_positions,
+            frames_logical=frames_logical,
+        )
 
     @staticmethod
     def process_tilt(array, nb_steps, nb_frames, angular_step):
@@ -486,12 +497,15 @@ class BeamlineCRISTAL(Beamline):
         template_imagefile = kwargs.get("template_imagefile")
         scan_number = kwargs.get("scan_number")
 
-        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+
         # no specfile, load directly the dataset
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
@@ -531,13 +545,13 @@ class BeamlineCRISTAL(Beamline):
 
          - homedir: the path of the scan folder
          - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
+         - specfile: not used at CRISTAL
          - template_imagefile: the template for data/image file names
 
         """
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, None, template_imagefile
 
     def process_positions(
         self,
@@ -563,19 +577,15 @@ class BeamlineCRISTAL(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mgomega, mgphi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        mgomega, mgphi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mgomega, mgphi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(mgomega, mgphi, gamma, delta, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             nb_steps = len(mgomega)
@@ -793,17 +803,30 @@ class BeamlineID01(Beamline):
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file without '.spec'
+         - 'filename': str, name of the spec file or full path of the spec file
 
         :return: logfile
         """
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not all(isinstance(val, str) for val in {root_folder, filename}):
-            raise ValueError("root_folder and filename should be strings")
-        # load the spec file
-        return SpecFile(root_folder + filename + ".spec")
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename",
+        )
+
+        if os.path.isfile(filename):
+            # filename is already the full path to the .spec file
+            return SpecFile(filename)
+        print(f"Could not find the spec file at {filename}")
+
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        path = root_folder + filename
+        print(f"Trying to load the spec file at {path}")
+        return SpecFile(path)
 
     @property
     def detector_hor(self):
@@ -849,8 +872,6 @@ class BeamlineID01(Beamline):
 
         """
         specfile_name = kwargs.get("specfile_name")
-        if specfile_name is None:
-            raise ValueError("'specfile_name' parameter required")
 
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
@@ -880,19 +901,15 @@ class BeamlineID01(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, eta, phi, nu, delta, energy = setup.diffractometer.motor_positions(
+        mu, eta, phi, nu, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mu, eta, phi, nu, delta, energy = util.apply_logical_array(
-            arrays=(mu, eta, phi, nu, delta, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             print("phi", phi)
@@ -1122,12 +1139,15 @@ class BeamlineNANOMAX(Beamline):
         template_imagefile = kwargs.get("template_imagefile")
         scan_number = kwargs.get("scan_number")
 
-        if not all(isinstance(val, str) for val in {datadir, template_imagefile}):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
 
@@ -1172,7 +1192,7 @@ class BeamlineNANOMAX(Beamline):
         """
         homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, None, template_imagefile
 
     def process_positions(
         self,
@@ -1198,19 +1218,15 @@ class BeamlineNANOMAX(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        theta, phi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        theta, phi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(theta, phi, gamma, delta, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             nb_steps = len(theta)
@@ -1430,17 +1446,32 @@ class BeamlineP10(Beamline):
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where the scan
            folders are located.
-         - 'filename': str, name of the .fio file (without ".fio")
+         - 'filename': str, name of the .fio file or full path of the .fio file
 
         :return: logfile
         """
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
-        if not all(isinstance(val, str) for val in {root_folder, filename}):
-            raise TypeError("root_folder and filename should be strings")
-        # load .fio file
-        return root_folder + filename + "/" + filename + ".fio"
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename",
+        )
+
+        if os.path.isfile(filename):
+            # filename is already the full path to the .fio file
+            return filename
+        print(f"Could not find the spec file at {filename}")
+
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+
+        # return the path to the .fio file
+        path = root_folder + filename + "/" + filename + ".fio"
+        print(f"Trying to load the fio file at {path}")
+        return path
 
     @property
     def detector_hor(self):
@@ -1473,6 +1504,9 @@ class BeamlineP10(Beamline):
          name.
         :param scan_number: int, the scan number
         :param template_imagefile: template for the data files, e.g. '_master.h5'
+        :param kwargs:
+         - 'specfile_name': optional, full path of the .fio file
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -1481,7 +1515,11 @@ class BeamlineP10(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
-        specfile = sample_name + "_{:05d}".format(scan_number)
+        specfile = kwargs.get("specfile_name")
+        if not os.path.isfile(specfile):
+            # default to the usual position of .fio at P10
+            specfile = sample_name + "_{:05d}".format(scan_number)
+
         homedir = root_folder + specfile + "/"
         default_dirname = "e4m/"
         template_imagefile = specfile + template_imagefile
@@ -1511,19 +1549,15 @@ class BeamlineP10(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, om, chi, phi, gamma, delta, energy = setup.diffractometer.motor_positions(
+        mu, om, chi, phi, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        mu, om, chi, phi, gamma, delta, energy = util.apply_logical_array(
-            arrays=(mu, om, chi, phi, gamma, delta, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         print("chi", chi)
         print("mu", mu)
@@ -2005,14 +2039,15 @@ class BeamlineSIXS(Beamline):
         filename = kwargs.get("filename")
         name = kwargs.get("name")
 
-        if not all(
-            isinstance(val, str) for val in {datadir, template_imagefile, filename}
-        ):
-            raise TypeError("datadir and template_imagefile should be strings")
-        if not isinstance(scan_number, int):
-            raise TypeError(
-                "scan_number should be an integer, " f"got {type(scan_number)}"
-            )
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_container(filename, container_types=str, name="filename")
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
 
         shortname = template_imagefile % scan_number
         if name == "SIXS_2018":
@@ -2082,8 +2117,6 @@ class BeamlineSIXS(Beamline):
 
         """
         specfile_name = kwargs.get("specfile_name")
-        if specfile_name is None:
-            raise ValueError("'specfile_name' parameter required")
 
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
@@ -2126,19 +2159,15 @@ class BeamlineSIXS(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        beta, mu, gamma, delta, energy = setup.diffractometer.motor_positions(
+        beta, mu, gamma, delta, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        beta, mu, gamma, delta, energy = util.apply_logical_array(
-            arrays=(beta, mu, gamma, delta, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         print("beta", beta)
         if setup.rocking_angle == "inplane":  # mu rocking curve
@@ -2314,8 +2343,36 @@ class Beamline34ID(Beamline):
 
     @staticmethod
     def create_logfile(**kwargs):
-        """Create logfile for 34ID-C."""
-        raise NotImplementedError("create_logfile method not implemented for 34ID")
+        """
+        Create the logfile, which is the spec file for 34ID-C.
+
+        :param kwargs:
+         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+           specfile file.
+         - 'filename': str, name of the spec file or full path of the .spec file
+
+        :return: logfile
+        """
+        root_folder = kwargs.get("root_folder")
+        filename = kwargs.get("filename")
+
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename",
+        )
+
+        if os.path.isfile(filename):
+            # filename is already the full path to the .spec file
+            return SpecFile(filename)
+        print(f"Could not find the spec file at {filename}")
+
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
+        path = root_folder + filename
+        print(f"Trying to load the spec file at {path}")
+        return SpecFile(path)
 
     @property
     def detector_hor(self):
@@ -2349,6 +2406,9 @@ class Beamline34ID(Beamline):
         :param scan_number: int, the scan number
         :param template_imagefile: template for the data files, e.g.
          'Sample%dC_ES_data_51_256_256.npz'.
+        :param kwargs:
+         - 'specfile_name': name of the spec file without '.spec'
+
         :return: a tuple of strings:
 
          - homedir: the path of the scan folder
@@ -2357,9 +2417,11 @@ class Beamline34ID(Beamline):
          - template_imagefile: the template for data/image file names
 
         """
+        specfile_name = kwargs.get("specfile_name")
+
         homedir = root_folder + sample_name + str(scan_number) + "/"
         default_dirname = "data/"
-        return homedir, default_dirname, "", template_imagefile
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def process_positions(
         self,
@@ -2385,19 +2447,15 @@ class Beamline34ID(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, delta, gamma, energy = setup.diffractometer.motor_positions(
+        theta, phi, delta, gamma, energy = super().process_positions(
             setup=setup,
             logfile=logfile,
+            nb_frames=nb_frames,
             scan_number=scan_number,
-        )
-        # first, remove the motor positions corresponding to deleted frames during data
-        # loading (frames_logical = 0)
-        theta, phi, delta, gamma, energy = util.apply_logical_array(
-            arrays=(theta, phi, delta, gamma, energy),
             frames_logical=frames_logical,
         )
 
-        # then, eventually crop/pad motor values if the provided dataset was further
+        # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # phi rocking curve
             nb_steps = len(phi)
@@ -2470,7 +2528,7 @@ class Beamline34ID(Beamline):
         if rocking_angle == "inplane":
             if grazing_angle is not None:
                 raise NotImplementedError(
-                    "Circle blow theta not implemented for 34ID-C"
+                    "Circle below theta not implemented for 34ID-C"
                 )
             if verbose:
                 print("rocking angle is theta, no grazing angle (phi above theta)")

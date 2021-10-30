@@ -230,7 +230,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         scan_number=scan_nb,
         root_folder=root_folder,
         save_dir=save_dir,
-        verbose=True,
         specfile_name=specfile_name,
         template_imagefile=template_imagefile,
         data_dir=data_dir,

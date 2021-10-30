@@ -36,9 +36,15 @@ branch.
   
 ### Note on virtual environment 
 
- - It is recommended not to install the bcdi package in your virtual environment, but rather tell python where to look for it. This means that you don't have to `pip install .` every time you make a small modification.
- - In your virtual environment bin/activate script add `export PYTHONPATH = "/path/to/your/bcdi/clone"`
- - Confirm with an `python` , `import bcdi`. 
+- For contributors, it is recommended not to install the bcdi package in your virtual
+  environment, but rather tell python where to look for it. This means that you don't
+  have to `pip install .` every time you make a small modification.
+- Modify your virtual environment script:
+  - Linux: in bin/activate, add
+    `export PYTHONPATH = "/path/to/your/bcdi/clone"`
+  - Windows: in Scripts\activate.bat, add
+    `set PYTHONPATH=$PYTHONPATH;path\to\your\bcdi\clone`
+- Confirm with an `python` , `import bcdi`. 
   
 ## 2. Make your local clone track the original upstream repository.
 

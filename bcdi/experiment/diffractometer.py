@@ -886,6 +886,7 @@ class Diffractometer(ABC):
 
         :return: the initialized monitor as a 1D array
         """
+        monitor = None
         if normalize == "sum_roi":
             monitor = np.zeros(nb_frames)
         elif normalize == "monitor":
@@ -898,8 +899,9 @@ class Diffractometer(ABC):
                     actuators=setup.actuators,
                     **kwargs,
                 )
-        else:  # 'skip'
+        if monitor is None:
             monitor = np.ones(nb_frames)
+            print("Cannot retrieve the monitor, use `actuators` to define it.")
         return monitor
 
     def load_check_dataset(
@@ -1173,10 +1175,10 @@ class Diffractometer(ABC):
     @abstractmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during a scan.
+        Extract the scanned device positions/values.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
 
@@ -1703,10 +1705,10 @@ class DiffractometerCRISTAL(Diffractometer):
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at CRISTAL beamline.
+        Extract the scanned device positions/values at CRISTAL beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]
@@ -1731,11 +1733,10 @@ class DiffractometerCRISTAL(Diffractometer):
         :return: the default monitor values
         """
         actuators = kwargs.get("actuators")
-        if actuators is None:
-            raise ValueError("'actuators' parameter required")
-
-        monitor_name = actuators.get("monitor", "data_04")
-        return self.read_device(logfile=logfile, device_name=monitor_name)
+        if actuators is not None:
+            monitor_name = actuators.get("monitor", "data_04")
+            return self.read_device(logfile=logfile, device_name=monitor_name)
+        return None
 
 
 class DiffractometerID01(Diffractometer):
@@ -2034,10 +2035,10 @@ class DiffractometerID01(Diffractometer):
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at ID01 beamline.
+        Extract the scanned device positions/values at ID01 beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :param kwargs:
          - 'scan_number': int, the scan number to load
 
@@ -2074,19 +2075,12 @@ class DiffractometerID01(Diffractometer):
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         actuators = kwargs.get("actuators")
-        if actuators is None:
-            raise ValueError("'actuators' parameter required")
-
-        monitor_name = actuators.get("monitor")
-        if monitor_name is None:
-            monitor = self.read_device(
-                logfile=logfile, scan_number=scan_number, device_name="exp1"
-            )
-        else:
-            monitor = self.read_device(
+        if actuators is not None:
+            monitor_name = actuators.get("monitor", "exp1")
+            return self.read_device(
                 logfile=logfile, scan_number=scan_number, device_name=monitor_name
             )
-        return monitor
+        return None
 
 
 class DiffractometerNANOMAX(Diffractometer):
@@ -2300,10 +2294,10 @@ class DiffractometerNANOMAX(Diffractometer):
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at Nanomax beamline.
+        Extract the scanned device positions/values at Nanomax beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         group_key = list(logfile.keys())[0]  # currently 'entry'
@@ -2651,10 +2645,10 @@ class DiffractometerP10(Diffractometer):
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at P10 beamline.
+        Extract the scanned device positions/values at P10 beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         device_values = []
@@ -2988,10 +2982,10 @@ class DiffractometerSIXS(Diffractometer):
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at SIXS beamline.
+        Extract the scanned device positions/values at SIXS beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
+        :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         print(f"Trying to load values for {device_name}...", end="")
@@ -3053,6 +3047,10 @@ class Diffractometer34ID(Diffractometer):
 
         :param setup: the experimental setup: Class Setup
         :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+         - 'scan_number': the scan number to load
+
         :return: a tuple of angular values in degrees, depending on stage_name:
 
          - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
@@ -3064,12 +3062,21 @@ class Diffractometer34ID(Diffractometer):
            outer to the most inner circle
 
         """
+        # load kwargs
+        logfile = kwargs["logfile"]
+        scan_number = kwargs["scan_number"]
+
         # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
         if stage_name not in {"bcdi", "sample", "detector"}:
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, delta, gamma, _ = self.motor_positions(setup=setup)
+        theta, phi, delta, gamma, _ = self.motor_positions(
+            setup=setup, logfile=logfile, scan_number=scan_number
+        )
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
@@ -3136,31 +3143,124 @@ class Diffractometer34ID(Diffractometer):
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
+        :param kwargs:
+         - 'logfile': the logfile created in Setup.create_logfile()
+         - 'scan_number': the scan number to load
+
         :return: (theta, phi, delta, gamma, energy) values
         """
+        # load and check kwargs
+        logfile = kwargs["logfile"]
+        scan_number = kwargs["scan_number"]
+
+        energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
+
         if not setup.custom_scan:
-            raise NotImplementedError("Only custom_scan implemented for 34ID")
-        theta = setup.custom_motors["theta"]
-        phi = setup.custom_motors["phi"]
-        gamma = setup.custom_motors["gamma"]
-        delta = setup.custom_motors["delta"]
-        return theta, phi, delta, gamma, setup.energy
+            motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
+            motor_values = logfile[str(scan_number) + ".1"].motor_positions
+            # positioners
+            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+
+            names_table = {
+                "theta": "Theta",
+                "chi": "Chi",
+                "phi": "Phi",
+                "gamma": "Gamma",
+                "delta": "Delta",
+                "energy": "Energy",
+            }
+
+            if names_table["theta"] in labels:  # scanned
+                theta = labels_data[labels.index(names_table["theta"]), :]
+            else:  # positioner
+                theta = motor_values[motor_names.index(names_table["theta"])]
+
+            # uncomment this after updating the diffractometer
+            # if names_table["chi"] in labels:  # scanned
+            #     chi = labels_data[labels.index(names_table["chi"]), :]
+            # else:  # positioner
+            #     chi = motor_values[motor_names.index(names_table["chi"])]
+
+            if names_table["phi"] in labels:  # scanned
+                phi = labels_data[labels.index(names_table["phi"]), :]
+            else:  # positioner
+                phi = motor_values[motor_names.index(names_table["phi"])]
+
+            if names_table["delta"] in labels:  # scanned
+                delta = labels_data[labels.index(names_table["delta"]), :]
+            else:  # positioner
+                delta = motor_values[motor_names.index(names_table["delta"])]
+
+            if names_table["gamma"] in labels:  # scanned
+                gamma = labels_data[labels.index(names_table["gamma"]), :]
+            else:  # positioner
+                gamma = motor_values[motor_names.index(names_table["gamma"])]
+
+            if names_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+                # energy scanned, override the user-defined energy
+                energy = raw_energy * 1000.0  # switch to eV
+
+            # remove user-defined sample offsets (sample: mu, eta, phi)
+            theta = theta - self.sample_offsets[0]
+            # chi = chi - self.sample_offsets[1]  # after updating the diffractometer
+            phi = phi - self.sample_offsets[1]  # [2] after updating the diffractometer
+
+        else:  # manually defined custom scan
+            theta = setup.custom_motors["theta"]
+            phi = setup.custom_motors["phi"]
+            gamma = setup.custom_motors["gamma"]
+            delta = setup.custom_motors["delta"]
+
+        return theta, phi, delta, gamma, energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
         """
-        Extract the device positions/values during the scan at 34ID-C beamline.
+        Extract the scanned device positions/values at 34ID-C beamline.
 
         :param logfile: the logfile created in Setup.create_logfile()
-        :param device_name: name of the device
-        """
-        raise NotImplementedError("'read_device' not implemented for 34ID-C")
+        :param device_name: name of the scanned device
+        :param kwargs:
+         - 'scan_number': int, the scan number to load
 
-    @staticmethod
-    def read_monitor(logfile, **kwargs):
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+        print(f"Trying to load values for {device_name}...", end="")
+        try:
+            device_values = list(labels_data[labels.index(device_name), :])
+            print("found!")
+        except ValueError:  # device not in the list
+            print(f"no device {device_name} in the logfile")
+            device_values = []
+        return np.asarray(device_values)
+
+    def read_monitor(self, logfile, **kwargs):
         """
         Load the default monitor for a dataset measured at 34ID-C.
 
         :param logfile: the logfile created in Setup.create_logfile()
+        :param kwargs:
+         - 'scan_number': int, the scan number to load
+         - 'actuators': dictionary defining the entries corresponding to actuators
+           in the spec file
+
+        :return: the default monitor values
         """
-        raise NotImplementedError("'read_monitor' not implemented for 34ID-C")
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        actuators = kwargs.get("actuators")
+        if actuators is not None:
+            monitor_name = actuators.get("monitor", "Monitor")
+            return self.read_device(
+                logfile=logfile, scan_number=scan_number, device_name=monitor_name
+            )
+        return None
