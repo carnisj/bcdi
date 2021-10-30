@@ -1266,30 +1266,34 @@ def run(prm):
         f"(threshold={isosurface_strain}): {phase.max()-phase.min():.2f} rad, "
         f"{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad"
     )
-    piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
-    print(
-        f"phase.max() = {phase[np.nonzero(bulk)].max():.2f} "
-        f"at voxel ({piz}, {piy}, {pix})"
-    )
-    strain[bulk == 0] = np.nan
-    phase[bulk == 0] = np.nan
+    position_max = np.unravel_index(phase.argmax(), phase.shape)
+    if len(position_max) == 3:
+        piz, piy, pix = position_max
+        print(
+            f"phase.max() = {phase[np.nonzero(bulk)].max():.2f} "
+            f"at voxel ({piz}, {piy}, {pix})"
+        )
+        strain[bulk == 0] = np.nan
+        phase[bulk == 0] = np.nan
 
-    # plot the slice at the maximum phase
-    gu.combined_plots(
-        (phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]),
-        tuple_sum_frames=False,
-        tuple_sum_axis=0,
-        tuple_width_v=None,
-        tuple_width_h=None,
-        tuple_colorbar=True,
-        tuple_vmin=np.nan,
-        tuple_vmax=np.nan,
-        tuple_title=("phase at max in xy", "phase at max in xz", "phase at max in yz"),
-        tuple_scale="linear",
-        cmap=my_cmap,
-        is_orthogonal=True,
-        reciprocal_space=False,
-    )
+        # plot the slice at the maximum phase
+        gu.combined_plots(
+            (phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]),
+            tuple_sum_frames=False,
+            tuple_sum_axis=0,
+            tuple_width_v=None,
+            tuple_width_h=None,
+            tuple_colorbar=True,
+            tuple_vmin=np.nan,
+            tuple_vmax=np.nan,
+            tuple_title=(
+                "phase at max in xy", "phase at max in xz", "phase at max in yz"
+            ),
+            tuple_scale="linear",
+            cmap=my_cmap,
+            is_orthogonal=True,
+            reciprocal_space=False,
+        )
 
     # bulk support
     fig, _, _ = gu.multislices_plot(

@@ -1042,21 +1042,25 @@ def run(prm):
             plt.disconnect(cid)
         plt.close(fig)
 
-        piz, piy, pix = np.unravel_index(data.argmax(), data.shape)
-        fig = gu.combined_plots(
-            (data[piz, :, :], data[:, piy, :], data[:, :, pix]),
-            tuple_sum_frames=False,
-            tuple_sum_axis=0,
-            tuple_width_v=None,
-            tuple_width_h=None,
-            tuple_colorbar=True,
-            tuple_vmin=0,
-            tuple_vmax=np.nan,
-            tuple_scale="log",
-            tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
-            is_orthogonal=not use_rawdata,
-            reciprocal_space=False,
-        )
+        position_max = np.unravel_index(data.argmax(), data.shape)
+        if len(position_max) == 3:
+            piz, piy, pix = position_max
+            fig = gu.combined_plots(
+                (data[piz, :, :], data[:, piy, :], data[:, :, pix]),
+                tuple_sum_frames=False,
+                tuple_sum_axis=0,
+                tuple_width_v=None,
+                tuple_width_h=None,
+                tuple_colorbar=True,
+                tuple_vmin=0,
+                tuple_vmax=np.nan,
+                tuple_scale="log",
+                tuple_title=(
+                    "data at max in xy", "data at max in xz", "data at max in yz"
+                ),
+                is_orthogonal=not use_rawdata,
+                reciprocal_space=False,
+            )
         if debug:
             plt.savefig(
                 detector.savedir
