@@ -634,7 +634,6 @@ def run(prm):
             root_folder=root_folder,
             save_dir=save_dir,
             save_dirname=save_dirname,
-            verbose=True,
             specfile_name=prm["specfile_name"],
             template_imagefile=prm["template_imagefile"],
         )
