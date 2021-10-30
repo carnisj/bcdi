@@ -210,6 +210,7 @@ class ConfigParser:
 
     @staticmethod
     def _check_args(dic: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply some validation on each parameter."""
         checked_keys = []
         for key, value in dic.items():
             value, is_valid = valid_param(key, value)
