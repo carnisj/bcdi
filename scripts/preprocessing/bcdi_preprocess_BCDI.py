@@ -460,7 +460,7 @@ def run(prm):
     fix_size = prm["fix_size"]
     sample_name = prm["sample_name"]
     debug = prm["debug"]
-    comment = prm["comment"]
+    user_comment = prm["comment"]
     root_folder = prm["root_folder"]
     align_q = prm["align_q"]
     ref_axis_q = prm["ref_axis_q"]
@@ -503,7 +503,7 @@ def run(prm):
         loading_threshold = 0
 
     if prm["reload_previous"]:
-        comment += "_reloaded"
+        user_comment += "_reloaded"
     else:
         preprocessing_binning = (1, 1, 1)
         reload_orthogonal = False
@@ -543,7 +543,7 @@ def run(prm):
         sample_name = (sample_name,) * len(scans)
 
     if align_q:
-        comment += f"_align-q-{ref_axis_q}"
+        user_comment += f"_align-q-{ref_axis_q}"
         if ref_axis_q not in {"x", "y", "z"}:
             raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
     else:
@@ -622,7 +622,7 @@ def run(prm):
     for scan_idx, scan_nb in enumerate(scans, start=1):
         plt.ion()
 
-        comment = comment  # re-initialize comment
+        comment = user_comment  # re-initialize comment
         tmp_str = f"Scan {scan_idx}/{len(scans)}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
