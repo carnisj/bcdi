@@ -86,13 +86,13 @@ Usage:
      minimum correlation between two arrays to average them
 
     Parameters related to centering:
-    
+
     :param centering_method: e.g. "max_com"
     'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
     :param roll_modes: e.g. [0, 0, 0]
     correct a roll of few pixels after the decomposition into modes in PyNX
     axis=(0, 1, 2)
-    
+
     Prameters relative to the FFT window and voxel sizes:
 
     :param original_size: e.g. [150, 256, 500]
@@ -123,7 +123,7 @@ Usage:
      - 'laboratory' if the data was interpolated into the laboratory frame using
        the transformation matrix (align_q: False)
      - 'detector' if the data is still in the detector frame
-   
+
     :param ref_axis_q: e.g. "y"
      axis along which q will be aligned (data_frame= 'detector' or 'laboratory') or is
      already aligned (data_frame='crystal')
@@ -136,7 +136,7 @@ Usage:
        angles rotated back to 0. The rotations for 'laboratory' and 'lab_flat_sample'
        are realized after the strain calculation (which is always done in the crystal
        frame along ref_axis_q)
-       
+
     :param isosurface_strain: e.g. 0.2
      threshold use for removing the outer layer (the strain is undefined at the exact
      surface voxel)

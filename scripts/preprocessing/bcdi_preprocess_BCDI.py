@@ -114,13 +114,13 @@ Usage:
     mask pixels where the sum along the rocking curve is zero may be dead pixels
     :param median_filter: e.g. "skip"
      which filter to apply, available filters:
-     
+
      - 'median': to apply a med2filter [3,3]
      - 'interp_isolated': to interpolate isolated empty pixels based on 'medfilt_order'
        parameter
      - 'mask_isolated': mask isolated empty pixels
      - 'skip': skip filtering
-     
+
     :param median_filter_order: e.g. 7
      minimum number of non-zero neighboring pixels to apply filtering
 
