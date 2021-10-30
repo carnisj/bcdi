@@ -60,7 +60,7 @@ Usage:
 
  - command line: `python path_to/bcdi_preprocess_BCDI.py --config path_to/config.yml`
  - directly from a code editor: update the constant CONFIG_FILE at the top of the file
- 
+
     Parameters related to path names:
 
     :param scans: e.g. 11
