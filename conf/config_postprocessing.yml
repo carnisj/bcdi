@@ -96,10 +96,12 @@ sample_offsets: None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name: None
-# root_folder + 'alias_dict_2021.txt'
-# template for ID01 or 34ID-C: name of the spec file without '.spec'
-# template for SIXS_2018: full path of the alias dictionnary,
-# typically root_folder + 'alias_dict_2019.txt'
+# template for ID01 and 34ID: name of the spec file if it is at the default location
+# (in root_folder) or full path to the spec file
+# template for SIXS: full path of the alias dictionnary or None to use the one in the
+# package folder
+# for P10, either None (if you are using the same directory structure as the beamline)
+# or the full path to the .fio file
 # template for all other beamlines: None
 ##########################
 # setup for custom scans #

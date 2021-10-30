@@ -33,9 +33,7 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
-CONFIG_FILE = (
-    "C:/Users/Jerome/Documents/myscripts/clement/bcdi/conf/config_postprocessing.yml"
-)
+CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_postprocessing.yml"
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
@@ -184,12 +182,15 @@ Usage:
     :param inplane_angle: e.g. -0.5783
      detector angle in deg(rotation around y vertical up, typically gamma), corrected
      for the direct beam position. Leave None to use the uncorrected position.
-    :param specfile_name: e.g. "l5"
+    :param specfile_name: e.g. "l5.spec"
      beamline-dependent parameter, use the following template:
 
-     - template for ID01 and 34ID-C: name of the spec file without '.spec'
+     - template for ID01 and 34ID: name of the spec file if it is at the default
+      location (in root_folder) or full path to the spec file
      - template for SIXS: full path of the alias dictionnary or None to use the one in
-       the package folder
+      the package folder
+     - for P10, either None (if you are using the same directory structure as the
+      beamline) or the full path to the .fio file
      - template for all other beamlines: None
 
     Parameters for custom scans:
