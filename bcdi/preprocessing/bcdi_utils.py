@@ -555,46 +555,46 @@ def center_fft(
         if fix_size:
             if len(fix_size) != 6:
                 raise ValueError("fix_bragg should be a list of 3 integers")
-            else:
-                # take binning into account
-                fix_size[2] = int(fix_size[2] // detector.binning[1])
-                fix_size[3] = int(fix_size[3] // detector.binning[1])
-                fix_size[4] = int(fix_size[4] // detector.binning[2])
-                fix_size[5] = int(fix_size[5] // detector.binning[2])
-                # size of output array defined
-                nbz, nby, nbx = np.shape(data)
-                z_span = fix_size[1] - fix_size[0]
-                y_span = fix_size[3] - fix_size[2]
-                x_span = fix_size[5] - fix_size[4]
-                if (
-                    z_span > nbz
-                    or y_span > nby
-                    or x_span > nbx
-                    or fix_size[1] > nbz
-                    or fix_size[3] > nby
-                    or fix_size[5] > nbx
-                ):
-                    raise ValueError("Predefined fix_size uncorrect")
-                data = data[
-                    fix_size[0] : fix_size[1],
-                    fix_size[2] : fix_size[3],
-                    fix_size[4] : fix_size[5],
-                ]
-                mask = mask[
-                    fix_size[0] : fix_size[1],
-                    fix_size[2] : fix_size[3],
-                    fix_size[4] : fix_size[5],
-                ]
 
-                if fix_size[0] > 0:  # if 0, the first frame is used
-                    frames_logical[0 : fix_size[0]] = 0
-                if fix_size[1] < nbz:  # if nbz, the last frame is used
-                    frames_logical[fix_size[1] :] = 0
+            # take binning into account
+            fix_size[2] = int(fix_size[2] // detector.binning[1])
+            fix_size[3] = int(fix_size[3] // detector.binning[1])
+            fix_size[4] = int(fix_size[4] // detector.binning[2])
+            fix_size[5] = int(fix_size[5] // detector.binning[2])
+            # size of output array defined
+            nbz, nby, nbx = np.shape(data)
+            z_span = fix_size[1] - fix_size[0]
+            y_span = fix_size[3] - fix_size[2]
+            x_span = fix_size[5] - fix_size[4]
+            if (
+                z_span > nbz
+                or y_span > nby
+                or x_span > nbx
+                or fix_size[1] > nbz
+                or fix_size[3] > nby
+                or fix_size[5] > nbx
+            ):
+                raise ValueError("Predefined fix_size uncorrect")
+            data = data[
+                fix_size[0] : fix_size[1],
+                fix_size[2] : fix_size[3],
+                fix_size[4] : fix_size[5],
+            ]
+            mask = mask[
+                fix_size[0] : fix_size[1],
+                fix_size[2] : fix_size[3],
+                fix_size[4] : fix_size[5],
+            ]
 
-                if len(q_values) != 0:
-                    qx = qx[fix_size[0] : fix_size[1]]
-                    qy = qy[fix_size[4] : fix_size[5]]
-                    qz = qz[fix_size[2] : fix_size[3]]
+            if fix_size[0] > 0:  # if 0, the first frame is used
+                frames_logical[0 : fix_size[0]] = 0
+            if fix_size[1] < nbz:  # if nbz, the last frame is used
+                frames_logical[fix_size[1] :] = 0
+
+            if len(q_values) != 0:
+                qx = qx[fix_size[0] : fix_size[1]]
+                qy = qy[fix_size[4] : fix_size[5]]
+                qz = qz[fix_size[2] : fix_size[3]]
     else:
         raise ValueError("Incorrect value for 'fft_option'")
 
