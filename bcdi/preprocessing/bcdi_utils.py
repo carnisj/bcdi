@@ -88,8 +88,8 @@ def center_fft(
         allowed_kwargs={"fix_bragg", "fix_size", "pad_size", "q_values"},
         name="kwargs",
     )
-    fix_bragg = kwargs.get("fix_bragg", [])
-    fix_size = kwargs.get("fix_size", [])
+    fix_bragg = kwargs.get("fix_bragg")
+    fix_size = kwargs.get("fix_size")
     pad_size = kwargs.get("pad_size", [])
     q_values = kwargs.get("q_values", [])
 
@@ -120,7 +120,7 @@ def center_fft(
     else:
         raise ValueError("Incorrect value for 'centering' parameter")
 
-    if len(fix_bragg) != 0:
+    if fix_bragg:
         if len(fix_bragg) != 3:
             raise ValueError("fix_bragg should be a list of 3 integers")
         z0, y0, x0 = fix_bragg
@@ -552,7 +552,10 @@ def center_fft(
         pad_width = np.zeros(
             6, dtype=int
         )  # do nothing or crop the data, starting_frame should be 0
-        if len(fix_size) == 6:
+        if fix_size:
+            if len(fix_size) != 6:
+                raise ValueError("fix_bragg should be a list of 3 integers")
+
             # take binning into account
             fix_size[2] = int(fix_size[2] // detector.binning[1])
             fix_size[3] = int(fix_size[3] // detector.binning[1])

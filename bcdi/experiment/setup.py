@@ -193,7 +193,7 @@ class Setup:
     def beam_direction(self, value):
         valid.valid_container(
             value,
-            container_types=(tuple, list),
+            container_types=(tuple, list, np.ndarray),
             length=3,
             item_types=Real,
             name="Setup.beam_direction",
@@ -645,8 +645,7 @@ class Setup:
         """Wavelength in meters."""
         if self.energy:
             return 12.398 * 1e-7 / self.energy  # in m
-        else:
-            return None
+        return None
 
     def __repr__(self):
         """Representation string of the Setup instance."""
