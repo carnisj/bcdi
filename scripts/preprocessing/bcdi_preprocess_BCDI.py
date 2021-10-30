@@ -1052,9 +1052,7 @@ def run(prm):
             tuple_vmin=0,
             tuple_vmax=np.nan,
             tuple_scale="log",
-            tuple_title=(
-                "data at max in xy", "data at max in xz", "data at max in yz"
-            ),
+            tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
             is_orthogonal=not use_rawdata,
             reciprocal_space=False,
         )

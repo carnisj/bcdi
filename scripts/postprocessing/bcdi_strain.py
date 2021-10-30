@@ -1285,9 +1285,7 @@ def run(prm):
         tuple_colorbar=True,
         tuple_vmin=np.nan,
         tuple_vmax=np.nan,
-        tuple_title=(
-            "phase at max in xy", "phase at max in xz", "phase at max in yz"
-        ),
+        tuple_title=("phase at max in xy", "phase at max in xz", "phase at max in yz"),
         tuple_scale="linear",
         cmap=my_cmap,
         is_orthogonal=True,
