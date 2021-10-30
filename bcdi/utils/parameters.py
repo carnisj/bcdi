@@ -379,7 +379,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             min_excluded=0,
             name=key,
         )
-    elif key == "ref_axis_q" or key == "ref_axis":
+    elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
