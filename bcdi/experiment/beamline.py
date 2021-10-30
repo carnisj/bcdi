@@ -1516,7 +1516,7 @@ class BeamlineP10(Beamline):
 
         """
         specfile = kwargs.get("specfile_name")
-        if specfile is not None and not os.path.isfile(specfile):
+        if specfile is None or not os.path.isfile(specfile):
             # default to the usual position of .fio at P10
             specfile = sample_name + "_{:05d}".format(scan_number)
 
