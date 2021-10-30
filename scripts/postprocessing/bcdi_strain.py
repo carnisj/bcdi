@@ -323,7 +323,7 @@ Usage:
 
     Parameters related to saving:
 
-    :param save_rawdata: e.g. False  
+    :param save_rawdata: e.g. False
      True to save the amp-phase.vti before orthogonalization
     :param save_support: e.g. False
      True to save the non-orthogonal support for later phase retrieval
