@@ -140,6 +140,14 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
         value = np.asarray(value)
+    elif key == "backend":
+        allowed = {
+            "Agg",
+            "Qt5Agg",
+            "module://matplotlib_inline.backend_inline"
+        }
+        if value not in allowed:
+            raise ParameterError(key, value, allowed)
     elif key == "background_file":
         valid.valid_container(
             value, container_types=str, min_length=1, allow_none=True, name=key
@@ -183,7 +191,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startwith("_"):
             value += "_"
-    elif key == "config":
+    elif key == "config_file":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
         if not os.path.isfile(value):
             raise ValueError(f"The directory {value} does not exist")
@@ -378,6 +386,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             item_types=int,
             min_excluded=0,
             name=key,
+        )
+    elif key == "reconstruction_file":
+        valid.valid_container(
+            value, container_types=str, min_length=1, allow_none=True, name=key
         )
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}

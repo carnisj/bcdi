@@ -85,6 +85,11 @@ Usage:
     :param background_plot: e.g. "0.5"
      background color for the GUI in level of grey in [0,1], 0 being dark. For visual
      comfort during interactive masking.
+    :param backend: e.g. "Qt5Agg"
+     Backend used in script, change to "Agg" to make sure the figures are saved, not
+     compaticle with interactive masking. Other possibilities are 
+     'module://matplotlib_inline.backend_inline'
+     default value is "Qt5Agg"
 
     Parameters related to data cropping/padding/centering #
 
@@ -554,6 +559,20 @@ def run(prm):
         "y": np.array([0, 1, 0]),
         "z": np.array([0, 0, 1]),
     }  # in xyz order
+
+    ###############
+    # Set backend #
+    ###############
+    try:
+        if isinstance(prm["backend"], str):
+            try:    
+                plt.switch_backend(prm["backend"])
+            except ModuleNotFoundError:
+                print("This backend does not exist.")
+        # else:
+        #     plt.switch_backend('Qt5Agg')
+    except KeyError:
+        pass
 
     ###################
     # define colormap #
@@ -1547,8 +1566,8 @@ if __name__ == "__main__":
     cli_args = vars(ap.parse_args())
 
     # load the config file
-    file = cli_args.get("config") or CONFIG_FILE
-    parser = ConfigParser(CONFIG_FILE, cli_args)
+    file = cli_args.get("config_file") or CONFIG_FILE
+    parser = ConfigParser(file, cli_args)
     args = parser.load_arguments()
     args["time"] = f"{datetime.now()}"
     run(prm=args)

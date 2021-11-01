@@ -75,6 +75,16 @@ Usage:
     :param comment: string use in filenames when saving
     :param debug: e.g. False
      True to see plots
+    :param reconstruction_file: e.g. "modes.h5"
+     path to reconstruction file 
+
+    Parameters used in the interactive masking GUI:
+
+    :param backend: e.g. "Qt5Agg"
+     Backend used in script, change to "Agg" to make sure the figures are saved, not
+     compaticle with interactive masking. Other possibilities are 
+     'module://matplotlib_inline.backend_inline'
+     default value is "Qt5Agg"
 
     Parameters used when averaging several reconstruction:
 
@@ -399,6 +409,20 @@ def run(prm):
         "z": np.array([0, 0, 1]),
     }  # in xyz order
 
+    ###############
+    # Set backend #
+    ###############
+    try:
+        if isinstance(prm["backend"], str):
+            try:    
+                plt.switch_backend(prm["backend"])
+            except ModuleNotFoundError:
+                print("This backend does not exist.")
+        # else:
+        #     plt.switch_backend('Qt5Agg')
+    except KeyError:
+        pass
+
     ###################
     # define colormap #
     ###################
@@ -476,17 +500,21 @@ def run(prm):
     ################
     # preload data #
     ################
-    root = tk.Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilenames(
-        initialdir=detector.scandir,
-        filetypes=[
-            ("NPZ", "*.npz"),
-            ("NPY", "*.npy"),
-            ("CXI", "*.cxi"),
-            ("HDF5", "*.h5"),
-        ],
-    )
+    if isinstance(prm["reconstruction_file"], str):
+        file_path = prm["reconstruction_file"],
+
+    else:
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilenames(
+            initialdir=detector.scandir,
+            filetypes=[
+                ("NPZ", "*.npz"),
+                ("NPY", "*.npy"),
+                ("CXI", "*.cxi"),
+                ("HDF5", "*.h5"),
+            ],
+        )
     nbfiles = len(file_path)
     plt.ion()
 
@@ -566,7 +594,7 @@ def run(prm):
                 plot_colorbar=True,
                 title="1st mode after centering",
             )
-            fig.waitforbuttonpress()
+            # fig.waitforbuttonpress()
             plt.close(fig)
         # use the range of interest defined above
         obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
@@ -1453,7 +1481,7 @@ if __name__ == "__main__":
     cli_args = vars(ap.parse_args())
 
     # load the config file
-    file = cli_args.get("config") or CONFIG_FILE
+    file = cli_args.get("config_file") or CONFIG_FILE
     parser = ConfigParser(file, cli_args)
     args = parser.load_arguments()
     args["time"] = f"{datetime.now()}"
