@@ -503,14 +503,13 @@ def run(prm):
     ################
     # preload data #
     ################
-    if isinstance(prm["reconstruction_file"], str):
-        file_path = prm["reconstruction_file"],
-
+    if prm.get("reconstruction_file") is not None:
+        file_path = (prm["reconstruction_file"],)
     else:
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilenames(
-            initialdir=detector.scandir,
+        initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
             filetypes=[
                 ("NPZ", "*.npz"),
                 ("NPY", "*.npy"),
@@ -518,6 +517,7 @@ def run(prm):
                 ("HDF5", "*.h5"),
             ],
         )
+
     nbfiles = len(file_path)
     plt.ion()
 
