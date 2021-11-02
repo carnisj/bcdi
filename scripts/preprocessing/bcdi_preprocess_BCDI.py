@@ -569,7 +569,7 @@ def run(prm):
         try:    
             plt.switch_backend(prm["backend"])
         except ModuleNotFoundError:
-            print(f"{prm["backend"]} backend is not supported.")
+            print(f"{prm['backend']} backend is not supported.")
 
     ###################
     # define colormap #
