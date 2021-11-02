@@ -56,8 +56,10 @@ where the data is.
 
 Usage:
 
- - command line: `python path_to/bcdi_preprocess_BCDI.py --config path_to/config.yml`
- - directly from a code editor: update the constant CONFIG_FILE at the top of the file
+ - command line:
+   `python path_to/bcdi_preprocess_BCDI.py --config_file path_to/config.yml`
+ - directly from a code editor:
+   update the constant CONFIG_FILE at the top of the file
 
     Parameters related to path names:
 

@@ -55,8 +55,10 @@ qy] for reciprocal space, or data[z, y, x] for real space
 
 Usage:
 
- - from the command line: `python path_to/bcdi_strain.py --config path_to/config.yml`
- - directly from a code editor: update the constant CONFIG_FILE at the top of the file
+ - from the command line:
+   `python path_to/bcdi_strain.py --config_file path_to/config.yml`
+ - directly from a code editor:
+   update the constant CONFIG_FILE at the top of the file
 
     Parameters related to path names:
 
