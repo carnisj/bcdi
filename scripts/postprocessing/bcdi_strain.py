@@ -78,13 +78,13 @@ Usage:
     :param debug: e.g. False
      True to see plots
     :param reconstruction_file: e.g. "modes.h5"
-     path to reconstruction file 
+     path to a reconstruction file, to avoid opening a pop-up window
 
     Parameters used in the interactive masking GUI:
 
     :param backend: e.g. "Qt5Agg"
      Backend used in script, change to "Agg" to make sure the figures are saved, not
-     compaticle with interactive masking. Other possibilities are 
+     compaticle with interactive masking. Other possibilities are
      'module://matplotlib_inline.backend_inline'
      default value is "Qt5Agg"
 
@@ -414,16 +414,11 @@ def run(prm):
     ###############
     # Set backend #
     ###############
-    try:
-        if isinstance(prm["backend"], str):
-            try:    
-                plt.switch_backend(prm["backend"])
-            except ModuleNotFoundError:
-                print("This backend does not exist.")
-        # else:
-        #     plt.switch_backend('Qt5Agg')
-    except KeyError:
-        pass
+    if prm.get("backend") is not None:
+        try:
+            plt.switch_backend(prm["backend"])
+        except ModuleNotFoundError:
+            print(f"{prm["backend"]} backend is not supported.")
 
     ###################
     # define colormap #
@@ -509,7 +504,7 @@ def run(prm):
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilenames(
-        initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
+            initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
             filetypes=[
                 ("NPZ", "*.npz"),
                 ("NPY", "*.npy"),
