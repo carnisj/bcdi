@@ -89,7 +89,7 @@ Usage:
      comfort during interactive masking.
     :param backend: e.g. "Qt5Agg"
      Backend used in script, change to "Agg" to make sure the figures are saved, not
-     compaticle with interactive masking. Other possibilities are 
+     compaticle with interactive masking. Other possibilities are
      'module://matplotlib_inline.backend_inline'
      default value is "Qt5Agg"
 
@@ -565,16 +565,11 @@ def run(prm):
     ###############
     # Set backend #
     ###############
-    try:
-        if isinstance(prm["backend"], str):
-            try:    
-                plt.switch_backend(prm["backend"])
-            except ModuleNotFoundError:
-                print("This backend does not exist.")
-        # else:
-        #     plt.switch_backend('Qt5Agg')
-    except KeyError:
-        pass
+    if prm.get("backend") is not None:
+        try:    
+            plt.switch_backend(prm["backend"])
+        except ModuleNotFoundError:
+            print(f"{prm["backend"]} backend is not supported.")
 
     ###################
     # define colormap #
