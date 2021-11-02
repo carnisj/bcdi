@@ -1547,8 +1547,8 @@ if __name__ == "__main__":
     cli_args = vars(ap.parse_args())
 
     # load the config file
-    file = cli_args.get("config") or CONFIG_FILE
-    parser = ConfigParser(CONFIG_FILE, cli_args)
+    file = cli_args.get("config_file") or CONFIG_FILE
+    parser = ConfigParser(file, cli_args)
     args = parser.load_arguments()
     args["time"] = f"{datetime.now()}"
     run(prm=args)
