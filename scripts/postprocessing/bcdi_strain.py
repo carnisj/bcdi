@@ -449,6 +449,7 @@ def run(prm):
         sample_name=sample_name,
         scan_number=scan,
         root_folder=root_folder,
+        data_dir=prm["data_dir"],
         save_dir=prm["save_dir"],
         specfile_name=prm["specfile_name"],
         template_imagefile=prm["template_imagefile"],
