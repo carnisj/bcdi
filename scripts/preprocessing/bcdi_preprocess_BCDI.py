@@ -566,7 +566,7 @@ def run(prm):
     # Set backend #
     ###############
     if prm.get("backend") is not None:
-        try:    
+        try:
             plt.switch_backend(prm["backend"])
         except ModuleNotFoundError:
             print(f"{prm['backend']} backend is not supported.")
