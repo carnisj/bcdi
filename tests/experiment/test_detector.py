@@ -202,14 +202,13 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         with self.assertRaises(ValueError):
             Maxipix(name="Maxipix", datadir="this directory does not exist")
 
-    def test_linearity_function_not_callable(self):
+    def test_linearity_function_wrong_type(self):
         with self.assertRaises(TypeError):
             Maxipix("Maxipix", linearity_func=0)
 
-    def test_linearity_function_callable(self):
-        func = lambda x: x ** 2
-        det = Maxipix("Maxipix", linearity_func=func)
-        self.assertEqual(det.linearity_func, func)
+    def test_linearity_function_none(self):
+        det = Maxipix("Maxipix", linearity_func=None)
+        self.assertEqual(det.linearity_func, None)
 
     def test_name(self):
         self.assertEqual(self.det.name, "Maxipix")
@@ -548,12 +547,34 @@ class TestDetector(fake_filesystem_unittest.TestCase):
 
     def test_linearity_correction_correct(self):
         data = np.ones((3, 3))
-        self.det.linearity_func = lambda x: x ** 2
+        self.det.linearity_func = [0, 0, 1, 0, 0]
         self.assertTrue(np.all(np.isclose(self.det._linearity_correction(data), data)))
+
+    def test_linearity_correction_correct_2(self):
+        data = np.ones((3, 3))
+        self.det.linearity_func = [5, 4, 3, 2, 1]
+        self.assertTrue(
+            np.all(np.isclose(self.det._linearity_correction(data), 15 * data))
+        )
+
+    def test_linearity_correction_correct_3(self):
+        np.random.seed(0)
+        data = np.random.rand(3, 3)
+        correct = np.array(
+            [
+                [0.47218707, 0.86316156, 0.55738783],
+                [0.4674014, 0.40471678, 0.65317796],
+                [0.40416385, 1.75428095, 2.28272669],
+            ]
+        )
+        self.det.linearity_func = [-0.23, 4.12, -0.3, -2, 1]
+        self.assertTrue(
+            np.all(np.isclose(self.det._linearity_correction(data), correct))
+        )
 
     def test_linearity_correction_zero(self):
         data = np.ones((3, 3))
-        self.det.linearity_func = lambda x: x - x
+        self.det.linearity_func = [0, 0, 0, 0, 0]
         self.assertTrue(
             np.all(np.isclose(self.det._linearity_correction(data), np.zeros((3, 3))))
         )
@@ -565,7 +586,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
 
     def test_linearity_correction_wrong_ndim(self):
         data = np.ones((3, 3, 3))
-        self.det.linearity_func = lambda x: x ** 2
+        self.det.linearity_func = [3, 5, 6, 1, 2]
         with self.assertRaises(ValueError):
             self.det._linearity_correction(data)
 
@@ -578,7 +599,7 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         self.assertTrue(np.all(np.isclose(output[1], mask)))
 
     def test_mask_detector_linearity_correction(self):
-        det = Timepix("Timepix", linearity_func=lambda x: 2 * x)
+        det = Timepix("Timepix", linearity_func=[0, 0, 0, 2, 0])
         data = np.ones(det.unbinned_pixel_number)
         mask = np.zeros(det.unbinned_pixel_number)
         output = det.mask_detector(data, mask, nb_frames=1)
