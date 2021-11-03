@@ -141,11 +141,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
         value = np.asarray(value)
     elif key == "backend":
-        allowed = {
-            "Agg",
-            "Qt5Agg",
-            "module://matplotlib_inline.backend_inline"
-        }
+        allowed = {"Agg", "Qt5Agg", "module://matplotlib_inline.backend_inline"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "background_file":
@@ -301,7 +297,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             length=5,
             item_types=Real,
             allow_none=True,
-            name=key
+            name=key,
         )
     elif key == "median_filter":
         allowed = {"median", "interp_isolated", "mask_isolated", "skip"}

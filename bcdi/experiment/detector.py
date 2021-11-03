@@ -278,7 +278,6 @@ class Detector(ABC):
 
     @linearity_func.setter
     def linearity_func(self, value):
-
         def poly4(array_1d, coeffs):
             """
             Define a 4th order polynomial and apply it on a 1D array.
@@ -288,8 +287,13 @@ class Detector(ABC):
              of the polynomial ax^4 + bx^3 + cx^2 + dx + e
             :return: the updated 1D array
             """
-            return (coeffs[0] * array_1d ** 4 + coeffs[1] * array_1d ** 3 +
-                    coeffs[2] * array_1d ** 2 + coeffs[3] * array_1d + coeffs[4])
+            return (
+                coeffs[0] * array_1d ** 4
+                + coeffs[1] * array_1d ** 3
+                + coeffs[2] * array_1d ** 2
+                + coeffs[3] * array_1d
+                + coeffs[4]
+            )
 
         if value is None:
             self._linearity_func = None
@@ -300,7 +304,7 @@ class Detector(ABC):
             container_types=(tuple, list, np.ndarray),
             length=5,
             item_types=Real,
-            name="linearity_func"
+            name="linearity_func",
         )
         self._linearity_func = partial(poly4, coeffs=value)
 

@@ -504,7 +504,9 @@ def run(prm):
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilenames(
-            initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
+            initialdir=detector.scandir
+            if prm["data_dir"] is None
+            else detector.datadir,
             filetypes=[
                 ("NPZ", "*.npz"),
                 ("NPY", "*.npy"),

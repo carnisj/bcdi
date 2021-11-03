@@ -1348,7 +1348,7 @@ class Facets:
         with h5py.File(path_to_data, mode="a") as f:
             try:
                 facets = f.create_group("entry_1/process_4/")
-                f["entry_1"]["process_4"].attrs['NX_class'] = 'NXprocess'
+                f["entry_1"]["process_4"].attrs["NX_class"] = "NXprocess"
                 facets.create_dataset("path_to_data", data=self.path_to_data)
                 facets.create_dataset("nb_facets", data=self.nb_facets)
                 facets.create_dataset("comment", data=self.comment)
@@ -1364,7 +1364,7 @@ class Facets:
                 facets.create_dataset("rotation_matrix", data=self.rotation_matrix)
                 facets.create_dataset("hkl_reference", data=self.hkl_reference)
                 facets.create_dataset("planar_dist", data=self.planar_dist)
-                facets["planar_dist"].attrs['units'] = 'Angstrom'
+                facets["planar_dist"].attrs["units"] = "Angstrom"
                 facets.create_dataset("ref_normal", data=self.ref_normal)
                 print("Saved Facets class attributes")
 
@@ -1386,7 +1386,7 @@ class Facets:
                 f["/entry_1/process_4/rotation_matrix"][...] = self.rotation_matrix
                 f["/entry_1/process_4/hkl_reference"][...] = self.hkl_reference
                 f["/entry_1/process_4/planar_dist"][...] = self.planar_dist
-                f["/entry_1/process_4/planar_dist"].attrs['units'] = 'Angstrom'
+                f["/entry_1/process_4/planar_dist"].attrs["units"] = "Angstrom"
                 f["/entry_1/process_4/ref_normal"][...] = self.ref_normal
                 print("Saved Facets class attributes")
 
