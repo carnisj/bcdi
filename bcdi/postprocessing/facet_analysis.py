@@ -1347,8 +1347,8 @@ class Facets:
         # Save attributes
         with h5py.File(path_to_data, mode="a") as f:
             try:
-                facets = f.create_group("/data/facets")
-
+                facets = f.create_group("entry_1/process_4/")
+                f["entry_1"]["process_4"].attrs['NX_class'] = 'NXprocess'
                 facets.create_dataset("path_to_data", data=self.path_to_data)
                 facets.create_dataset("nb_facets", data=self.nb_facets)
                 facets.create_dataset("comment", data=self.comment)
@@ -1364,29 +1364,33 @@ class Facets:
                 facets.create_dataset("rotation_matrix", data=self.rotation_matrix)
                 facets.create_dataset("hkl_reference", data=self.hkl_reference)
                 facets.create_dataset("planar_dist", data=self.planar_dist)
+                facets["planar_dist"].attrs['units'] = 'Angstrom'
                 facets.create_dataset("ref_normal", data=self.ref_normal)
+                print("Saved Facets class attributes")
 
             except ValueError:
                 print("Data already exists, overwriting ...")
 
-                f["/data/facets/path_to_data"][...] = self.path_to_data
-                f["/data/facets/nb_facets"][...] = self.nb_facets
-                f["/data/facets/comment"][...] = self.comment
-                f["/data/facets/lattice"][...] = self.lattice
-                f["/data/facets/u0"][...] = self.u0
-                f["/data/facets/v0"][...] = self.v0
-                f["/data/facets/w0"][...] = self.w0
-                f["/data/facets/u"][...] = self.u
-                f["/data/facets/v"][...] = self.v
-                f["/data/facets/norm_u"][...] = self.norm_u
-                f["/data/facets/norm_v"][...] = self.norm_v
-                f["/data/facets/norm_w"][...] = self.norm_w
-                f["/data/facets/rotation_matrix"][...] = self.rotation_matrix
-                f["/data/facets/hkl_reference"][...] = self.hkl_reference
-                f["/data/facets/planar_dist"][...] = self.planar_dist
-                f["/data/facets/ref_normal"][...] = self.ref_normal
+                f["/entry_1/process_4/path_to_data"][...] = self.path_to_data
+                f["/entry_1/process_4/nb_facets"][...] = self.nb_facets
+                f["/entry_1/process_4/comment"][...] = self.comment
+                f["/entry_1/process_4/lattice"][...] = self.lattice
+                f["/entry_1/process_4/u0"][...] = self.u0
+                f["/entry_1/process_4/v0"][...] = self.v0
+                f["/entry_1/process_4/w0"][...] = self.w0
+                f["/entry_1/process_4/u"][...] = self.u
+                f["/entry_1/process_4/v"][...] = self.v
+                f["/entry_1/process_4/norm_u"][...] = self.norm_u
+                f["/entry_1/process_4/norm_v"][...] = self.norm_v
+                f["/entry_1/process_4/norm_w"][...] = self.norm_w
+                f["/entry_1/process_4/rotation_matrix"][...] = self.rotation_matrix
+                f["/entry_1/process_4/hkl_reference"][...] = self.hkl_reference
+                f["/entry_1/process_4/planar_dist"][...] = self.planar_dist
+                f["/entry_1/process_4/planar_dist"].attrs['units'] = 'Angstrom'
+                f["/entry_1/process_4/ref_normal"][...] = self.ref_normal
+                print("Saved Facets class attributes")
 
-            except AttributeError:
+            except (AttributeError, TypeError):
                 print("Particle not rotated, some attributes could not be saved ...")
                 facets.create_dataset("u0", data=np.zeros(3))
                 facets.create_dataset("v0", data=np.zeros(3))
@@ -1405,12 +1409,14 @@ class Facets:
         try:
             self.field_data.to_hdf(
                 path_to_data,
-                key="data/facets/tables/field_data",
+                key="entry_1/process_4/tables/field_data",
                 mode="a",
                 append=True,
                 format="table",
                 data_columns=True,
             )
+            print("Saved field data")
+
         except Exception as e:
             raise e
 
@@ -1426,12 +1432,14 @@ class Facets:
             )
             df.to_hdf(
                 path_to_data,
-                key="data/facets/tables/theoretical_angles",
+                key="entry_1/process_4/tables/theoretical_angles",
                 mode="a",
                 append=True,
                 format="table",
                 data_columns=True,
             )
+            print("Saved theoretical angles")
+
         except AttributeError:
             print("Facets has no attribute theoretical_angles yet")
         except Exception as e:

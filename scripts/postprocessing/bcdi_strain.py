@@ -77,6 +77,16 @@ Usage:
     :param comment: string use in filenames when saving
     :param debug: e.g. False
      True to see plots
+    :param reconstruction_file: e.g. "modes.h5"
+     path to a reconstruction file, to avoid opening a pop-up window
+
+    Parameters used in the interactive masking GUI:
+
+    :param backend: e.g. "Qt5Agg"
+     Backend used in script, change to "Agg" to make sure the figures are saved, not
+     compaticle with interactive masking. Other possibilities are
+     'module://matplotlib_inline.backend_inline'
+     default value is "Qt5Agg"
 
     Parameters used when averaging several reconstruction:
 
@@ -118,8 +128,8 @@ Usage:
     :param data_frame: e.g. "detector"
      in which frame is defined the input data, available options:
 
-     - 'crystal' if the data was interpolated into the crystal frame using (xrayutilities)
-       or (transformation matrix + align_q=True)
+     - 'crystal' if the data was interpolated into the crystal frame using
+       xrayutilities or (transformation matrix + align_q=True)
      - 'laboratory' if the data was interpolated into the laboratory frame using
        the transformation matrix (align_q: False)
      - 'detector' if the data is still in the detector frame
@@ -401,6 +411,15 @@ def run(prm):
         "z": np.array([0, 0, 1]),
     }  # in xyz order
 
+    ###############
+    # Set backend #
+    ###############
+    if prm.get("backend") is not None:
+        try:
+            plt.switch_backend(prm["backend"])
+        except ModuleNotFoundError:
+            print(f"{prm['backend']} backend is not supported.")
+
     ###################
     # define colormap #
     ###################
@@ -479,17 +498,21 @@ def run(prm):
     ################
     # preload data #
     ################
-    root = tk.Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilenames(
-        initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
-        filetypes=[
-            ("NPZ", "*.npz"),
-            ("NPY", "*.npy"),
-            ("CXI", "*.cxi"),
-            ("HDF5", "*.h5"),
-        ],
-    )
+    if prm.get("reconstruction_file") is not None:
+        file_path = (prm["reconstruction_file"],)
+    else:
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilenames(
+            initialdir=detector.scandir if prm["data_dir"] is None else detector.datadir,
+            filetypes=[
+                ("NPZ", "*.npz"),
+                ("NPY", "*.npy"),
+                ("CXI", "*.cxi"),
+                ("HDF5", "*.h5"),
+            ],
+        )
+
     nbfiles = len(file_path)
     plt.ion()
 
@@ -569,8 +592,7 @@ def run(prm):
                 plot_colorbar=True,
                 title="1st mode after centering",
             )
-            fig.waitforbuttonpress()
-            plt.close(fig)
+
         # use the range of interest defined above
         obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 

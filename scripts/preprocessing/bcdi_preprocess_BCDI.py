@@ -87,6 +87,11 @@ Usage:
     :param background_plot: e.g. "0.5"
      background color for the GUI in level of grey in [0,1], 0 being dark. For visual
      comfort during interactive masking.
+    :param backend: e.g. "Qt5Agg"
+     Backend used in script, change to "Agg" to make sure the figures are saved, not
+     compaticle with interactive masking. Other possibilities are
+     'module://matplotlib_inline.backend_inline'
+     default value is "Qt5Agg"
 
     Parameters related to data cropping/padding/centering #
 
@@ -556,6 +561,15 @@ def run(prm):
         "y": np.array([0, 1, 0]),
         "z": np.array([0, 0, 1]),
     }  # in xyz order
+
+    ###############
+    # Set backend #
+    ###############
+    if prm.get("backend") is not None:
+        try:
+            plt.switch_backend(prm["backend"])
+        except ModuleNotFoundError:
+            print(f"{prm['backend']} backend is not supported.")
 
     ###################
     # define colormap #
