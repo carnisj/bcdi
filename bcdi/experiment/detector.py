@@ -59,6 +59,7 @@ API Reference
 """
 
 from abc import ABC, abstractmethod
+from functools import partial
 import numpy as np
 from numbers import Real, Integral
 import os
@@ -277,9 +278,31 @@ class Detector(ABC):
 
     @linearity_func.setter
     def linearity_func(self, value):
-        if value is not None and not callable(value):
-            raise TypeError(f"linearity_func should be a function, got {type(value)}")
-        self._linearity_func = value
+
+        def poly4(array_1d, value):
+            """
+            Define a 4th order polynomial and apply it on a 1D array.
+
+            :param array_1d: a numpy 1D array
+            :param value: a sequence of 5 Real numbers, the coefficients [a, b, c, d, e]
+             of the polynomial ax^4 + bx^3 + cx^2 + dx + e
+            :return: the updated 1D array
+            """
+            nonlocal value
+            return (value[0] * array_1d ** 4 + value[1] * array_1d ** 3 +
+                    value[2] * array_1d ** 2 + value[3] * array_1d + value[4])
+
+        if value is None:
+            self._linearity_func = None
+
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=5,
+            item_types=Real,
+            name="linearity_func"
+        )
+        self._linearity_func = partial(poly4, value=value)
 
     @property
     def name(self):
@@ -607,7 +630,7 @@ class Detector(ABC):
             valid.valid_ndarray(data, ndim=2)
             data = data.astype(float)
             nby, nbx = data.shape
-            return self.linearity_func(data.flatten()).reshape((nby, nbx))
+            return self.linearity_func(array_1d=data.flatten()).reshape((nby, nbx))
         return data
 
     def mask_detector(

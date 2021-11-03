@@ -191,7 +191,9 @@ Usage:
     :param phasing_binning: e.g. [1, 2, 2]
      binning to apply to the data (stacking dimension, detector vertical axis, detector
      horizontal axis)
-    :param linearity_func: name of the linearity correction for the detector, leave None
+    :param linearity_func: e.g. [1, -2, -0.0021, 32.0, 1.232]
+     coefficients of the 4th order polynomial ax^4 + bx^3 + cx^2 + dx + e which it used
+     to correct the non-linearity of the detector at high intensities. Leave None
      otherwise.
     :param x_bragg: e.g. 1577
      horizontal pixel number of the Bragg peak, used for the definition of roi_detector

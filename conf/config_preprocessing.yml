@@ -103,7 +103,10 @@ detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
 phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
-# name of the linearity correction for the detector, leave None otherwise.
+# [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
+# polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
+# the detector at high intensities. Leave None otherwise.
+# polynomial a0linearity correction for the detector, leave None otherwise.
 x_bragg: None  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg: None  # vertical pixel number of the Bragg peak,
