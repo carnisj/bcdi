@@ -279,21 +279,21 @@ class Detector(ABC):
     @linearity_func.setter
     def linearity_func(self, value):
 
-        def poly4(array_1d, value):
+        def poly4(array_1d, coeffs):
             """
             Define a 4th order polynomial and apply it on a 1D array.
 
             :param array_1d: a numpy 1D array
-            :param value: a sequence of 5 Real numbers, the coefficients [a, b, c, d, e]
+            :param coeffs: sequence of 5 Real numbers, the coefficients [a, b, c, d, e]
              of the polynomial ax^4 + bx^3 + cx^2 + dx + e
             :return: the updated 1D array
             """
-            nonlocal value
-            return (value[0] * array_1d ** 4 + value[1] * array_1d ** 3 +
-                    value[2] * array_1d ** 2 + value[3] * array_1d + value[4])
+            return (coeffs[0] * array_1d ** 4 + coeffs[1] * array_1d ** 3 +
+                    coeffs[2] * array_1d ** 2 + coeffs[3] * array_1d + coeffs[4])
 
         if value is None:
             self._linearity_func = None
+            return
 
         valid.valid_container(
             value,
@@ -302,7 +302,7 @@ class Detector(ABC):
             item_types=Real,
             name="linearity_func"
         )
-        self._linearity_func = partial(poly4, value=value)
+        self._linearity_func = partial(poly4, coeffs=value)
 
     @property
     def name(self):
