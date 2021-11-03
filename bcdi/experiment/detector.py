@@ -630,7 +630,7 @@ class Detector(ABC):
         :param data: a 2D numpy array
         :return: the corrected data array
         """
-        if self.linearity_func is not None:
+        if self.linearity_func is not None and callable(self.linearity_func):
             valid.valid_ndarray(data, ndim=2)
             data = data.astype(float)
             nby, nbx = data.shape
