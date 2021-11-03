@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Update the parameter "linearity_function" in preprocessing. Now this can be None (if
+  unused) or a sequence of 5 real numbers corresponding to the coefficients of a 4th
+  order polynomial.
+
 * Implement a parser for YAML config files. Now the scripts ``bcdi_strain.py`` and
   ``bcdi_preprocess_BCDI.py`` can be run like scripts, from the command line, with
   optional command line arguments.
