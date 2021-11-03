@@ -128,8 +128,8 @@ Usage:
     :param data_frame: e.g. "detector"
      in which frame is defined the input data, available options:
 
-     - 'crystal' if the data was interpolated into the crystal frame using (xrayutilities)
-       or (transformation matrix + align_q=True)
+     - 'crystal' if the data was interpolated into the crystal frame using
+       xrayutilities or (transformation matrix + align_q=True)
      - 'laboratory' if the data was interpolated into the laboratory frame using
        the transformation matrix (align_q: False)
      - 'detector' if the data is still in the detector frame
@@ -592,8 +592,7 @@ def run(prm):
                 plot_colorbar=True,
                 title="1st mode after centering",
             )
-            # fig.waitforbuttonpress()
-            plt.close(fig)
+
         # use the range of interest defined above
         obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
 
