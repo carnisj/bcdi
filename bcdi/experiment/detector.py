@@ -59,6 +59,7 @@ API Reference
 """
 
 from abc import ABC, abstractmethod
+from functools import partial
 import numpy as np
 from numbers import Real, Integral
 import os
@@ -277,9 +278,35 @@ class Detector(ABC):
 
     @linearity_func.setter
     def linearity_func(self, value):
-        if value is not None and not callable(value):
-            raise TypeError(f"linearity_func should be a function, got {type(value)}")
-        self._linearity_func = value
+        def poly4(array_1d, coeffs):
+            """
+            Define a 4th order polynomial and apply it on a 1D array.
+
+            :param array_1d: a numpy 1D array
+            :param coeffs: sequence of 5 Real numbers, the coefficients [a, b, c, d, e]
+             of the polynomial ax^4 + bx^3 + cx^2 + dx + e
+            :return: the updated 1D array
+            """
+            return (
+                coeffs[0] * array_1d ** 4
+                + coeffs[1] * array_1d ** 3
+                + coeffs[2] * array_1d ** 2
+                + coeffs[3] * array_1d
+                + coeffs[4]
+            )
+
+        if value is None:
+            self._linearity_func = None
+            return
+
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            length=5,
+            item_types=Real,
+            name="linearity_func",
+        )
+        self._linearity_func = partial(poly4, coeffs=value)
 
     @property
     def name(self):
@@ -603,11 +630,11 @@ class Detector(ABC):
         :param data: a 2D numpy array
         :return: the corrected data array
         """
-        if self.linearity_func is not None:
+        if self.linearity_func is not None and callable(self.linearity_func):
             valid.valid_ndarray(data, ndim=2)
             data = data.astype(float)
             nby, nbx = data.shape
-            return self.linearity_func(data.flatten()).reshape((nby, nbx))
+            return self.linearity_func(array_1d=data.flatten()).reshape((nby, nbx))
         return data
 
     def mask_detector(
