@@ -1,7 +1,7 @@
-scans: 11  # scan number or list of scan numbers
-root_folder: "C:/Users/Jerome/Documents/data/dataset_ID01/"
+scans: 622  # scan number or list of scan numbers
+root_folder: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/dataset_ID01/test/"
+save_dir: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/test/"
 # images will be saved here, leave it to None otherwise
 data_dir: None  # leave None to use the beamline default,
 # '' empty string when there is no subfolder
@@ -67,7 +67,7 @@ save_as_int: False
 ######################################
 # define beamline related parameters #
 ######################################
-beamline: "ID01"
+beamline: "34ID"
 # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
 # 'NANOMAX', '34ID'
@@ -76,9 +76,9 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series: True  # specific to series measurement at P10
-rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
+rocking_angle: "inplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
-specfile_name: "l5.spec"
+specfile_name: "Dmitry1120c.spec"
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS: full path of the alias dictionnary or None to use the one in the
@@ -99,14 +99,13 @@ custom_monitor: None
 ###############################
 # detector related parameters #
 ###############################
-detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-phasing_binning: [1, 2, 2]  # binning to apply to the data
+detector: "Timepix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+phasing_binning: [1, 1, 1]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
 # polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
 # the detector at high intensities. Leave None otherwise.
-# polynomial a0linearity correction for the detector, leave None otherwise.
 x_bragg: None  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
 y_bragg: None  # vertical pixel number of the Bragg peak,
@@ -134,7 +133,7 @@ frames_pattern: None
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
-template_imagefile: "data_mpx4_%05d.edf.gz"
+template_imagefile: "Dmitry1120c_S0622_%05d.tif"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -149,10 +148,10 @@ use_rawdata: True  # False for using data gridded in laboratory frame
 # True for using data in detector frame
 interpolation_method: "xrayutilities"  # 'xrayutilities' or 'linearization'
 fill_value_mask: 0  # 0 (not masked) or 1 (masked).
-# It will define how the pixels outside of the data range are
+# It will define how the pixels outside the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
 # phase retrieval converges better if the pixels are not masked (0 intensity
-# imposed). The data is by default set to 0 outside of the defined range.
+# imposed). The data is by default set to 0 outside the defined range.
 beam_direction: [1, 0, 0]
 # beam direction in the laboratory frame (downstream, vertical up, outboard)
 sample_offsets: None
