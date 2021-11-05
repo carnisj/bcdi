@@ -3136,7 +3136,83 @@ class Diffractometer34ID(Diffractometer):
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
         """
-        raise NotImplementedError("'load_data' not implemented for 34ID-C")
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+        data_stack = None
+        if not setup.custom_scan:
+            # create the template for the image files
+            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+
+            # find the number of images
+            try:
+                nb_img = len(labels_data[labels.index("Monitor"), :])
+            except ValueError:
+                try:
+                    print("'Monitor' not in the list, trying 'Detector'")
+                    nb_img = len(labels_data[labels.index("Detector"), :])
+                except ValueError:
+                    raise ValueError(
+                        "'Detector' not in the list, can't retrieve "
+                        "the number of frames",
+                    )
+        else:
+            # create the template for the image files
+            if len(setup.custom_images) == 0:
+                raise ValueError("No image number provided in 'custom_images'")
+
+            if len(setup.custom_images) > 1:
+                nb_img = len(setup.custom_images)
+            else:  # the data is stacked into a single file
+                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
+                data_stack = npzfile[list(npzfile.files)[0]]
+                nb_img = data_stack.shape[0]
+
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
+            detector=detector,
+            setup=setup,
+            logfile=logfile,
+            normalize=normalize,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
+        )
+
+        # loop over frames, mask the detector and normalize / bin
+        for idx in range(nb_img):
+            if data_stack is not None:
+                # custom scan with a stacked data loaded
+                ccdraw = data_stack[idx, :, :]
+            else:
+                if setup.custom_scan:
+                    # custom scan with one file per frame
+                    i = int(setup.custom_images[idx])
+                else:
+                    i = idx
+                ccdraw = util.image_to_ndarray(
+                    filename=ccdfiletmp % i, convert_grey=True, cmap="gray", debug=False
+                )
+
+            data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
+                frame=ccdraw,
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=detector,
+                loading_roi=loading_roi,
+                flatfield=flatfield,
+                background=background,
+                hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
+            sys.stdout.flush()
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
