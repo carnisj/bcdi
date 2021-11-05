@@ -838,8 +838,8 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
         print("converting image to gray")
         array = rgb2gray(array)
 
-    print(f"Image shape after conversion to ndarray: {array.shape}")
     if debug:
+        print(f"Image shape after conversion to ndarray: {array.shape}")
         gu.imshow_plot(
             array, sum_axis=2, plot_colorbar=True, cmap=cmap, reciprocal_space=False
         )
