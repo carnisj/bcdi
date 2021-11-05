@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 from numbers import Real, Integral
 import numpy as np
 import os
+from PIL import Image
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
@@ -827,8 +828,6 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     :param debug: True to see plots
     :return:
     """
-    from PIL import Image
-
     if cmap is None:
         cmap = gu.Colormap(bad_color="1.0").cmap
 
