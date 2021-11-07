@@ -33,11 +33,11 @@ Supported beamlines: ESRF ID01, PETRAIII P10, SOLEIL SIXS, SOLEIL CRISTAL.
 Input: direct beam and Bragg peak position, sample to detector distance, energy.
 Output: corrected inplane, out-of-plane detector angles for the Bragg peak.
 """
-scan = 76
-root_folder = "C:/Users/Jerome/Documents/data/dataset_P10/"
-data_dir = None
+scan = 622
+root_folder = "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
+data_dir = "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/S622/data/"
 # leave None to use the beamline default. It will look for the data at this location
-sample_name = "B15_syn_S1_2"
+sample_name = "S"
 filtered_data = False  # set to True if the data is already a 3D array, False otherwise
 # Should be the same shape as in specfile
 peak_method = "maxcom"  # Bragg peak determination: 'max', 'com' or 'maxcom'.
@@ -48,77 +48,70 @@ debug = False  # True to see more plots
 ######################################
 # define beamline related parameters #
 ######################################
-beamline = "P10"
+beamline = "34ID"
 # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10'
-actuators = None  # {'rocking_angle': 'actuator_1_3'}
+actuators = None
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files
 # (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-is_series = True  # specific to series measurement at P10
-
+is_series = False  # specific to series measurement at P10
 custom_scan = False  # True for a stack of images acquired without scan,
 # e.g. with ct in a macro (no info in spec file)
-custom_images = np.arange(11353, 11453, 1)  # list of image numbers for the custom_scan
-custom_monitor = np.ones(
-    len(custom_images)
-)  # monitor values for normalization for the custom_scan
-custom_motors = {
-    "eta": np.linspace(16.989, 18.989, num=100, endpoint=False),
-    "phi": 0,
-    "nu": -0.75,
-    "delta": 36.65,
-}
+custom_images = None
+# list of image numbers for the custom_scan
+custom_monitor = None
+# monitor values for normalization for the custom_scan
+custom_motors = None
 # ID01: eta, phi, nu, delta
 # CRISTAL: mgomega, gamma, delta
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
-
-rocking_angle = "outofplane"  # "outofplane" or "inplane"
-specfile_name = ""
-# template for ID01: name of the spec file without '.spec'
+rocking_angle = "inplane"  # "outofplane" or "inplane"
+specfile_name = "C:/Users/Jerome/Documents/data/dataset_34ID/Dmitry1120c.spec"
+# template for ID01 and 34ID: name of the spec file if it is at the default location
+# (in root_folder) or full path to the spec file
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
 # typically: root_folder + 'alias_dict.txt'
 # template for all other beamlines: ''
 #############################################################
 # define detector related parameters and region of interest #
 #############################################################
-detector = "Eiger4M"  # "Eiger2M" or "Maxipix" or "Eiger4M"
-x_bragg = 1355  # horizontal pixel number of the Bragg peak,
+detector = "Timepix"  # detector name
+x_bragg = None  # horizontal pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-y_bragg = 796  # vertical pixel number of the Bragg peak,
+y_bragg = None  # vertical pixel number of the Bragg peak,
 # can be used for the definition of the ROI
-roi_detector = [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]  #
+roi_detector = None  # [y_bragg - 400, y_bragg + 400, x_bragg - 400, x_bragg + 400]  #
 # leave it as None to use the full detector.
 # Use with center_fft='do_nothing' if you want this exact size.
-high_threshold = 1000000  # everything above will be considered as hotpixel
+high_threshold = 500000  # everything above will be considered as hotpixel
 hotpixels_file = None
 # non empty file path or None
-flatfield_file = (
-    None  # root_folder + "flatfield_maxipix_8kev.npz"  # non empty file path or None
-)
-template_imagefile = "_master.h5"
+flatfield_file = None
+# non empty file path or None
+template_imagefile = "Dmitry1120c_S0622_%05d.tif"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
 # template for P10: '_master.h5'
 # template for NANOMAX: '%06d.h5'
-# template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+# template for 34ID: "Dmitry1120c_S0622_%05d.tif"
 ###################################
 # define setup related parameters #
 ###################################
 beam_direction = (1, 0, 0)  # beam along z
-sample_offsets = (0, 0, 90, 0)
+sample_offsets = None
 # tuple of offsets in degrees of the sample around (downstream, vertical up, outboard)
 # convention: the sample offsets will be subtracted to the motor values
-directbeam_x = 913.64  # x horizontal,  cch2 in xrayutilities
-directbeam_y = 1055  # y vertical,  cch1 in xrayutilities
+directbeam_x = 0  # x horizontal,  cch2 in xrayutilities
+directbeam_y = 0  # y vertical,  cch1 in xrayutilities
 direct_inplane = 0.0  # outer angle in xrayutilities
 direct_outofplane = 0.0
-sdd = 1.83  # sample to detector distance in m
-energy = 8170  # in eV, offset of 6eV at ID01
+sdd = 0.5002125  # sample to detector distance in m
+energy = 9000  # in eV, offset of 6eV at ID01
 ################################################
 # parameters related to temperature estimation #
 ################################################
@@ -130,9 +123,9 @@ reference_spacing = None  # for calibrating the thermal expansion,
 # if None it is fixed to Pt 3.9236/norm(reflection)
 reference_temperature = None
 # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-##########################################################
-# end of user parameters
-##########################################################
+##########################
+# end of user parameters #
+##########################
 
 plt.ion()
 #######################
