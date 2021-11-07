@@ -69,7 +69,7 @@ custom_motors = None
 # P10: om, phi, chi, mu, gamma, delta
 # SIXS: beta, mu, gamma, delta
 rocking_angle = "inplane"  # "outofplane" or "inplane"
-specfile_name = "C:/Users/Jerome/Documents/data/dataset_34ID/Dmitry1120c.spec"
+specfile_name = "Dmitry1120c.spec"
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS_2018: full path of the alias dictionnary 'alias_dict.txt',
