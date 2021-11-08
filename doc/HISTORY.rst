@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Support APS 34ID-C for data preprocessing (loading of TIFF images)
+
 * Update the parameter "linearity_function" in preprocessing. Now this can be None (if
   unused) or a sequence of 5 real numbers corresponding to the coefficients of a 4th
   order polynomial.

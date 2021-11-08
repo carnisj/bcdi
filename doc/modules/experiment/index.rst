@@ -52,7 +52,7 @@ The geometry of the following beamlines is implemented:
  * CRISTAL (SOLEIL)
  * SIXS (SOLEIL)
  * NANOMAX (MAX IV)
- * 34ID-C (APS): only for postprocessing
+ * 34ID-C (APS)
 
 The following detectors are implemented:
 

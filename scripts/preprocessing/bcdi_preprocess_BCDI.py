@@ -235,7 +235,7 @@ Usage:
      - template for Cristal: 'S%d.nxs'
      - template for P10: '_master.h5'
      - template for NANOMAX: '%06d.h5'
-     - template for 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+     - template for 34ID: 'some_name_%05d.tif'
 
     Parameters below if you want to orthogonalize the data before phasing:
 
