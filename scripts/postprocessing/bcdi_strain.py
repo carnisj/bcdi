@@ -882,7 +882,7 @@ def run(prm):
             del phase
             gc.collect()
 
-        obj_ortho, voxel_size = setup.ortho_directspace(
+        obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,
             q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
             initial_shape=original_size,
@@ -892,7 +892,7 @@ def run(prm):
             debugging=True,
             title="amplitude",
         )
-
+        prm["transformation_matrix"] = transfer_matrix
     else:  # data already orthogonalized using xrayutilities
         # or the linearized transformation matrix
         obj_ortho = avg_obj
