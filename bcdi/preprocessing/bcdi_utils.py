@@ -826,7 +826,7 @@ def grid_bcdi_labframe(
             reciprocal_space=True,
         )
 
-    return interp_data, interp_mask, q_values
+    return interp_data, interp_mask, q_values, transfer_matrix
 
 
 def grid_bcdi_xrayutil(
