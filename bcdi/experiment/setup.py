@@ -1754,6 +1754,8 @@ class Setup:
          - an array (if a single array was provided) or a tuple of arrays interpolated
            on an orthogonal grid (same length as the number of input arrays)
          - a tuple of three 1D vectors of q values (qx, qz, qy)
+         - a numpy array of shape (3, 3): transformation matrix from the detector
+           frame to the laboratory/crystal frame
 
         """
         valid.valid_ndarray(arrays, ndim=3)
@@ -2102,7 +2104,7 @@ class Setup:
 
         if nb_arrays == 1:
             output_arrays = output_arrays[0]  # return the array instead of the tuple
-        return output_arrays, (qx, qz, qy)
+        return output_arrays, (qx, qz, qy), transfer_matrix
 
     def orthogonalize_vector(
         self, vector, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False
