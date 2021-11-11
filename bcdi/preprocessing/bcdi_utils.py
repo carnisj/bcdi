@@ -724,7 +724,7 @@ def grid_bcdi_labframe(
         " the result will be in the laboratory frame"
     )
     string = "linmat_reciprocal_space_"
-    (interp_data, interp_mask), q_values = setup.ortho_reciprocal(
+    (interp_data, interp_mask), q_values, transfer_matrix = setup.ortho_reciprocal(
         arrays=(data, mask),
         verbose=True,
         debugging=debugging,
