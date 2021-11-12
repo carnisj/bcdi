@@ -935,7 +935,7 @@ def run(prm):
                     # (qx downstream, qy outboard, qz vertical up)
                     # for reference_axis, the frame is z downstream, y vertical up,
                     # x outboard but the order must be x,y,z
-                    data, mask, q_values = bu.grid_bcdi_labframe(
+                    data, mask, q_values, transfer_matrix = bu.grid_bcdi_labframe(
                         data=data,
                         mask=mask,
                         detector=detector,
@@ -945,6 +945,7 @@ def run(prm):
                         debugging=debug,
                         fill_value=(0, prm["fill_value_mask"]),
                     )
+                    prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
                 print(
                     "\nData size after interpolation into an orthonormal frame:"

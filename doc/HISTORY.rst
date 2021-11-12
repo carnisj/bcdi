@@ -1,6 +1,9 @@
 Future:
 -------
 
+* The methods setup.ortho_directspace and setup.ortho_reciprocal now return also the
+  transformation matrix from the detector frame to the laboratory frame
+
 * Support APS 34ID-C for data preprocessing (loading of TIFF images)
 
 * Update the parameter "linearity_function" in preprocessing. Now this can be None (if

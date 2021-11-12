@@ -684,8 +684,14 @@ def grid_bcdi_labframe(
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
 
-    :return: the data and mask interpolated in the laboratory frame, q values
-     (downstream, vertical up, outboard). q values are in inverse angstroms.
+    :return:
+
+     - the data interpolated in the laboratory frame
+     - the mask interpolated in the laboratory frame
+     - a tuple of three 1D vectors of q values (qx, qz, qy)
+     - a numpy array of shape (3, 3): transformation matrix from the detector
+       frame to the laboratory/crystal frame
+
     """
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
@@ -724,7 +730,7 @@ def grid_bcdi_labframe(
         " the result will be in the laboratory frame"
     )
     string = "linmat_reciprocal_space_"
-    (interp_data, interp_mask), q_values = setup.ortho_reciprocal(
+    (interp_data, interp_mask), q_values, transfer_matrix = setup.ortho_reciprocal(
         arrays=(data, mask),
         verbose=True,
         debugging=debugging,
@@ -826,7 +832,7 @@ def grid_bcdi_labframe(
             reciprocal_space=True,
         )
 
-    return interp_data, interp_mask, q_values
+    return interp_data, interp_mask, q_values, transfer_matrix
 
 
 def grid_bcdi_xrayutil(
