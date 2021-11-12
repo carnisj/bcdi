@@ -2,6 +2,7 @@
 
 import coverage
 import os
+from pathlib import Path
 import shutil
 
 # Generic functions go here
@@ -146,11 +147,17 @@ def task_mypy():
     }
 
 
+def task_check_links_doc():
+    """Check external links in the doc using sphinx."""
+    make = Path(get_path()) / "doc/make"
+    return {
+        "actions": [f"{make} linkcheck"],
+        "verbosity": 1,
+    }
+
+
 def task_build_doc():
     """Build the documentation with sphinx."""
-    # import pathlib
-    # documentation_sources = list(pathlib.Path("doc").glob("**/*"))
-    # print(documentation_sources)
     return {
         "actions": ["sphinx-build doc doc/doc_html"],
         "targets": ["docs/"],
