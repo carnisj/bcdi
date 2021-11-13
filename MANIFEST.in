@@ -8,6 +8,7 @@ recursive-include doc *.rst
 include doc/conf.py
 include doc/make.bat
 include doc/Makefile
+include doc/example/modes_S11.h5
 include bcdi/preprocessing/alias_dict_2018.txt
 include bcdi/preprocessing/alias_dict_2019.txt
 include bcdi/preprocessing/alias_dict_2020.txt
