@@ -16,6 +16,11 @@
     
 .. include:: ../README.rst
 
+Example
+=======
+
+.. include:: EXAMPLE.rst
+
 Changelog
 =========
 
