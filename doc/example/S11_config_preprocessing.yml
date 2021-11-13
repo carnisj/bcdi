@@ -1,9 +1,10 @@
-scans: 622  # scan number or list of scan numbers
-root_folder: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
+scans: 11  # scan number or list of scan numbers
+root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/test/"
+save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4670/test/"
 # images will be saved here, leave it to None otherwise
-data_dir: None  # leave None to use the beamline default,
+data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
+# leave None to use the beamline default,
 # '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/
@@ -67,7 +68,7 @@ save_as_int: False
 ######################################
 # define beamline related parameters #
 ######################################
-beamline: "34ID"
+beamline: "ID01"
 # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
 # 'NANOMAX', '34ID'
@@ -75,10 +76,10 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-is_series: True  # specific to series measurement at P10
+is_series: False  # specific to series measurement at P10
 rocking_angle: "inplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
-specfile_name: "Dmitry1120c.spec"
+specfile_name: "l5.spec"
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS: full path of the alias dictionnary or None to use the one in the
@@ -99,8 +100,8 @@ custom_monitor: None
 ###############################
 # detector related parameters #
 ###############################
-detector: "Timepix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-phasing_binning: [1, 1, 1]  # binning to apply to the data
+detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
@@ -133,7 +134,7 @@ frames_pattern: None
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
-template_imagefile: "Dmitry1120c_S0622_%05d.tif"
+template_imagefile: "data_mpx4_%05d.edf.gz"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -146,7 +147,7 @@ template_imagefile: "Dmitry1120c_S0622_%05d.tif"
 ################################################################################
 use_rawdata: True  # False for using data gridded in laboratory frame
 # True for using data in detector frame
-interpolation_method: "xrayutilities"  # 'xrayutilities' or 'linearization'
+interpolation_method: "linearization"  # 'xrayutilities' or 'linearization'
 fill_value_mask: 0  # 0 (not masked) or 1 (masked).
 # It will define how the pixels outside the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
@@ -180,10 +181,10 @@ align_q: True  # used only when interp_method is 'linearization',
 # if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q: "y"  # q will be aligned along that axis
-outofplane_angle: 42.6093
+outofplane_angle: 35.3627
 # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle: -0.5783
+inplane_angle: 0.4864
 # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
