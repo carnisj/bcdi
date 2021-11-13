@@ -1,7 +1,7 @@
 scans: 11  # scan number or list of scan numbers
 root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4670/test/"
+save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
 # images will be saved here, leave it to None otherwise
 data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
 # leave None to use the beamline default,
