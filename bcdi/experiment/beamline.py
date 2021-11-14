@@ -2379,7 +2379,7 @@ class Beamline34ID(Beamline):
         """
         Horizontal detector orientation expressed in the laboratory frame.
 
-        We look at the detector from upstream, detector X is opposite to the outboard
+        We look at the detector from downstream, detector X is along the outboard
         direction. The laboratory frame convention is (z downstream, y vertical,
         x outboard).
         """
