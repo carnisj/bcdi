@@ -100,7 +100,7 @@ The following third-party packages are required:
 * pytables: to load the devices dictionnary for SIXS data
 
 * moviepy, `imagemagick <https://imagemagick.org>`_ or
-  `ffmpeg <http://ffmpeg.zeranoe.com/builds/>`_ for creating movies
+  `ffmpeg <https://ffmpeg.org/download.html>`_ for creating movies
 
 Download & Installation
 =======================

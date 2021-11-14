@@ -4,6 +4,8 @@ Future:
 * Implement the chi circle at 34ID-C and update the calculation of the transformation
   matrix.
 
+* Add a task in `doit` to check for broken external links in the documentation.
+
 * The methods setup.ortho_directspace and setup.ortho_reciprocal now return also the
   transformation matrix from the detector frame to the laboratory frame.
 
