@@ -2582,13 +2582,11 @@ class Beamline34ID(Beamline):
             )
 
         elif rocking_angle == "outofplane":
-            if isinstance(grazing_angle, Real):
-                grazing_angle = (grazing_angle,)
             valid.valid_container(
                 grazing_angle,
                 container_types=(tuple, list),
                 item_types=Real,
-                length=1,
+                length=2,
                 name="grazing_angle",
             )
             if verbose:
