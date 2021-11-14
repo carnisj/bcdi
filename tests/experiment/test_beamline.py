@@ -97,12 +97,12 @@ class TestBeamline(unittest.TestCase):
 
     def test_find_inplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
+        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
         self.assertTrue(beamline.find_inplane(diffractometer) == 0)
 
     def test_find_outofplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
+        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
         self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
 
 
@@ -1158,7 +1158,7 @@ class TestBeamline34ID(unittest.TestCase):
         self.template_imagefile = None
         self.specfile_name = "test_spec"
         self.beamline = create_beamline("34ID")
-        self.diffractometer = Diffractometer34ID(sample_offsets=(0, 0))
+        self.diffractometer = Diffractometer34ID(sample_offsets=None)
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -1226,7 +1226,7 @@ class TestBeamline34ID(unittest.TestCase):
             self.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
-        self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
+        self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
         self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
@@ -1274,7 +1274,7 @@ class TestBeamline34ID(unittest.TestCase):
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
-            grazing_angle=(4.5,),
+            grazing_angle=(4.5, 89),
             rocking_angle="outofplane",
             **self.params,
         )
@@ -1283,9 +1283,9 @@ class TestBeamline34ID(unittest.TestCase):
                 matrix,
                 np.array(
                     [
-                        [2.88286898e05, 5.16236394e04, 8.31952065e-03],
-                        [-0.00000000e00, 3.32652707e05, 1.19402761e-02],
-                        [-1.90559381e05, 7.80985893e04, 1.79403169e-03],
+                        [2.88286898e05, 5.16236394e04, 3.60537340e-02],
+                        [-0.00000000e00, 3.32652707e05, -3.03047179e-02],
+                        [-1.90559381e05, 7.80985893e04, -6.96460831e-03],
                     ]
                 ),
                 rtol=1e-09,
@@ -1309,34 +1309,12 @@ class TestBeamline34ID(unittest.TestCase):
             )
 
     def test_transformation_matrix_outofplane_grazing_float(self):
-        matrix, q_offset = self.beamline.transformation_matrix(
-            grazing_angle=4.5,
-            rocking_angle="outofplane",
-            **self.params,
-        )
-        self.assertTrue(
-            np.allclose(
-                matrix,
-                np.array(
-                    [
-                        [2.88286898e05, 5.16236394e04, 8.31952065e-03],
-                        [-0.00000000e00, 3.32652707e05, 1.19402761e-02],
-                        [-1.90559381e05, 7.80985893e04, 1.79403169e-03],
-                    ]
-                ),
-                rtol=1e-09,
-                atol=1e-09,
+        with self.assertRaises(TypeError):
+            self.beamline.transformation_matrix(
+                grazing_angle=4.5,
+                rocking_angle="outofplane",
+                **self.params,
             )
-        )
-
-        self.assertTrue(
-            np.allclose(
-                q_offset,
-                np.array([-3.33515597, 1.70215127, -11.32876093]),
-                rtol=1e-09,
-                atol=1e-09,
-            )
-        )
 
     def test_transformation_matrix_energy_scan(self):
         with self.assertRaises(NotImplementedError):
