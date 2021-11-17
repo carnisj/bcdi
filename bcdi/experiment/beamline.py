@@ -2379,7 +2379,7 @@ class Beamline34ID(Beamline):
         """
         Horizontal detector orientation expressed in the laboratory frame.
 
-        We look at the detector from upstream, detector X is opposite to the outboard
+        We look at the detector from downstream, detector X is along the outboard
         direction. The laboratory frame convention is (z downstream, y vertical,
         x outboard).
         """
@@ -2531,7 +2531,7 @@ class Beamline34ID(Beamline):
                     "Circle below theta not implemented for 34ID-C"
                 )
             if verbose:
-                print("rocking angle is theta, no grazing angle (phi above theta)")
+                print("rocking angle is theta, no grazing angle (chi, phi above theta)")
             # rocking theta angle anti-clockwise around y
             mymatrix[:, 0] = (
                 2
@@ -2582,19 +2582,18 @@ class Beamline34ID(Beamline):
             )
 
         elif rocking_angle == "outofplane":
-            if isinstance(grazing_angle, Real):
-                grazing_angle = (grazing_angle,)
             valid.valid_container(
                 grazing_angle,
                 container_types=(tuple, list),
                 item_types=Real,
-                length=1,
+                length=2,
                 name="grazing_angle",
             )
             if verbose:
                 print(
                     "rocking angle is phi,"
-                    f" theta={grazing_angle[0] * 180 / np.pi:.3f} deg"
+                    f" theta={grazing_angle[0] * 180 / np.pi:.3f} deg,"
+                    f" chi={grazing_angle[1] * 180 / np.pi:.3f} deg"
                 )
             # rocking phi angle anti-clockwise around x
             mymatrix[:, 0] = (
@@ -2627,15 +2626,33 @@ class Beamline34ID(Beamline):
                 * distance
                 * np.array(
                     [
-                        -np.sin(grazing_angle[0]) * np.sin(outofplane),
-                        np.cos(grazing_angle[0])
-                        * (np.cos(inplane) * np.cos(outofplane) - 1),
-                        -np.cos(grazing_angle[0]) * np.sin(outofplane),
+                        (
+                            np.cos(grazing_angle[1])
+                            * (1 - np.cos(inplane) * np.cos(outofplane))
+                            - np.sin(grazing_angle[0])
+                            * np.sin(grazing_angle[1])
+                            * np.sin(outofplane)
+                        ),
+                        np.sin(grazing_angle[1])
+                        * (
+                            np.cos(grazing_angle[0])
+                            * (np.cos(inplane) * np.cos(outofplane) - 1)
+                            + np.sin(grazing_angle[0]) * np.sin(inplane)
+                            * np.cos(outofplane)
+                        ),
+                        (
+                            np.cos(grazing_angle[1])
+                            * np.sin(inplane)
+                            * np.cos(outofplane)
+                            - np.sin(grazing_angle[1])
+                            * np.cos(grazing_angle[0])
+                            * np.sin(outofplane)
+                        ),
                     ]
                 )
             )
             q_offset[0] = (
-                2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
+                2 * np.pi / lambdaz * distance * np.sin(inplane) * np.cos(outofplane)
             )
             q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
             q_offset[2] = (

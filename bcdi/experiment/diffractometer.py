@@ -3031,14 +3031,16 @@ class Diffractometer34ID(Diffractometer):
 
     """
 
-    sample_rotations = ["y+", "x+"]
+    sample_rotations = ["y+", "z-", "y+"]
     detector_rotations = ["y+", "x-"]
+    default_offsets = (0, 90, 0)
 
     def __init__(self, sample_offsets):
         super().__init__(
             sample_circles=self.sample_rotations,
             detector_circles=self.detector_rotations,
             sample_offsets=sample_offsets,
+            default_offsets=self.default_offsets,
         )
 
     def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
@@ -3074,31 +3076,25 @@ class Diffractometer34ID(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, phi, delta, gamma, _ = self.motor_positions(
+        theta, chi, phi, delta, gamma, _ = self.motor_positions(
             setup=setup, logfile=logfile, scan_number=scan_number
         )
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
-            grazing = None  # phi is above theta at 34ID
-            tilt, inplane, outofplane = (
-                theta,
-                delta,
-                gamma,
-            )  # theta is the rotation around the vertical axis
+            # theta is the inplane rotation around the vertical axis at 34ID
+            grazing = None  # theta (inplane) is below phi
+            tilt, inplane, outofplane = (theta, delta, gamma)
         elif setup.rocking_angle == "outofplane":
-            grazing = (theta,)
-            tilt, inplane, outofplane = (
-                phi,
-                delta,
-                gamma,
-            )  # phi is the incident angle at 34ID
+            # phi is the incident angle (out of plane rotation) at 34ID
+            grazing = (theta, chi)
+            tilt, inplane, outofplane = (phi, delta, gamma)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        # 34ID-C goniometer, 2S+2D (sample: theta (inplane),
+        # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
         # phi (out of plane)   detector: delta (inplane), gamma)
-        sample_angles = (theta, phi)
+        sample_angles = (theta, chi, phi)
         detector_angles = (delta, gamma)
 
         if stage_name == "sample":
@@ -3252,11 +3248,10 @@ class Diffractometer34ID(Diffractometer):
             else:  # positioner
                 theta = motor_values[motor_names.index(names_table["theta"])]
 
-            # uncomment this after updating the diffractometer
-            # if names_table["chi"] in labels:  # scanned
-            #     chi = labels_data[labels.index(names_table["chi"]), :]
-            # else:  # positioner
-            #     chi = motor_values[motor_names.index(names_table["chi"])]
+            if names_table["chi"] in labels:  # scanned
+                chi = labels_data[labels.index(names_table["chi"]), :]
+            else:  # positioner
+                chi = motor_values[motor_names.index(names_table["chi"])]
 
             if names_table["phi"] in labels:  # scanned
                 phi = labels_data[labels.index(names_table["phi"]), :]
@@ -3285,11 +3280,12 @@ class Diffractometer34ID(Diffractometer):
 
         else:  # manually defined custom scan
             theta = setup.custom_motors["theta"]
+            chi = setup.custom_motors["chi"]
             phi = setup.custom_motors["phi"]
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
 
-        return theta, phi, delta, gamma, energy
+        return theta, chi, phi, delta, gamma, energy
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):

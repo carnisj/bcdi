@@ -1,12 +1,15 @@
 Future:
 -------
 
+* Implement the chi circle at 34ID-C and update the calculation of the transformation
+  matrix.
+
 * Add a task in `doit` to check for broken external links in the documentation.
 
 * The methods setup.ortho_directspace and setup.ortho_reciprocal now return also the
-  transformation matrix from the detector frame to the laboratory frame
+  transformation matrix from the detector frame to the laboratory frame.
 
-* Support APS 34ID-C for data preprocessing (loading of TIFF images)
+* Support APS 34ID-C for data preprocessing (loading of TIFF images).
 
 * Update the parameter "linearity_function" in preprocessing. Now this can be None (if
   unused) or a sequence of 5 real numbers corresponding to the coefficients of a 4th
@@ -20,7 +23,7 @@ Version 0.1.7
 -------------
 
 * Bug: apply correctly the non-linearity correction function to the detector frames
-  (typo in the function name)
+  (typo in the function name).
 
 * Modify the behavior of the parameter `specfile_name`: for beamlines relying on a
   separate file for logging motor positions (specfiles at ID01 and 34ID, fio file at
@@ -28,7 +31,7 @@ Version 0.1.7
 
 * Implement loading motor positions from a specfile at 34ID.
 
-* Add mypy for type checking in doit and GitHub workflows
+* Add mypy for type checking in doit and GitHub workflows.
 
 * Bug: correct the detector horizontal direction in Beamline34ID, it was flipped.
 
@@ -45,30 +48,30 @@ Version 0.1.7
   polygons. Lengths can be defined either in pixels or in nanometers.
 
 * Merge the subpackage facet_recognition into postprocessing and rename the module
-  ``facet_utils.py`` to ``facet_recognition.py``
+  ``facet_utils.py`` to ``facet_recognition.py``.
 
-* Add the list of publications related to the package in the documentation
+* Add the list of publications related to the package in the documentation.
 
-* Add class diagrams in the documentation using sphinxcontrib-mermaid
+* Add class diagrams in the documentation using sphinxcontrib-mermaid.
 
 * Solve issues with numpy when building the documentation (enable *Use system packages*
-  in ReadTheDocs advanced settings)
+  in ReadTheDocs advanced settings).
 
 Version 0.1.6
 -------------
 
 * Write unit tests for ``experiment.detector.py``, now coverage is > 99% for this
-  module
+  module.
 
-* move forward CDI gridding function to ``Setup``
+* move forward CDI gridding function to ``Setup``.
 
 * implement ``DiffractometerP10SAXS`` and ``BeamlineP10SAXS`` classes for forward CDI
-  experiments at P10
+  experiments at P10.
 
 * split the module ``preprocessing_utils`` in two modules, ``bcdi_utils`` and
-  ``cdi_utils``
+  ``cdi_utils``.
 
-* Move generic functions from ``preprocessing_utils`` to ``utilities``
+* Move generic functions from ``preprocessing_utils`` to ``utilities``.
 
 * Create new validations functions ``valid_ndarray`` and ``valid_1d_array``, implement
   the corresponding unit tests.
@@ -80,7 +83,7 @@ Version 0.1.6
 Version 0.1.5
 -------------
 
-* Bug: convert arrays to a tuple before checking the length in Setup.ortho_directspace
+* Bug: convert arrays to a tuple before checking the length in Setup.ortho_directspace.
 
 Version 0.1.4
 -------------
@@ -99,69 +102,69 @@ Version 0.1.3
 -------------
 
 * Refactor: allow the user to not provide a mask in the BCDI PRTF calculations (3D and
-  2D)
+  2D).
 
-* Refractor: split bcdi.experiment.experiment_utils module into smaller modules
+* Refractor: split bcdi.experiment.experiment_utils module into smaller modules.
 
-* Refactor: enforce project's guidelines for the code style and the docstrings
+* Refactor: enforce project's guidelines for the code style and the docstrings.
 
 * Create a dodo.py file (doit package) to simplify the life of contributors: now they
   just need to run doit at the same level as setup.py and verify that all checks pass
-  before sending their pull request
+  before sending their pull request.
 
-* Create a CONTRIBUTING.md file
+* Create a CONTRIBUTING.md file.
 
 Version 0.1.2
 -------------
 
-* Refactor: remove circular imports from modules
+* Refactor: remove circular imports from modules.
 
 * Refactor: ``move crop_pad``, ``bin_data`` and ``gaussian_window functions`` from
-  ``postprocessing_utils.py`` to another module in order to avoid circular imports
+  ``postprocessing_utils.py`` to another module in order to avoid circular imports.
 
 * Feature: create a Diffractometer class with one child class for each beamline, move
-  all functions related to the goniometer positions in the class
+  all functions related to the goniometer positions in the class.
 
 * Feature: add an option in ``strain.py`` to put back the sample in the laboratory
-  frame with all sample circles rotated back to 0 deg
+  frame with all sample circles rotated back to 0 deg.
 
-* Refactor: show only necessary plots and console output in ``strain.py``
+* Refactor: show only necessary plots and console output in ``strain.py``.
 
 * Refactor: create Setup calculated properties and transfer calculations in scripts to
-  these properties
+  these properties.
 
 * Refactor: perform the geometrical transformation and rotation of the reconstructed
-  crystal in a single step
+  crystal in a single step.
 
 * Refactor: perform the geometrical transformation and rotation of the diffraction
-  pattern in a single step
+  pattern in a single step.
 
 * Bug: provide voxel sizes in the correct order when rotating the diffraction pattern
-  in ``preprocess_bcdi.py``
+  in ``preprocess_bcdi.py``.
 
 Version 0.1.1
 -------------
 
-* code cleaning
+* code cleaning.
 
 Version 0.1.0
 -------------
 
 * Feature: implement ``publication/bcdi_diffpattern_from_reconstruction.py``, to
-  compare with the experimental measurement in the crystal frame
+  compare with the experimental measurement in the crystal frame.
 
-* Refactor: simplify PRTF calculations
+* Refactor: simplify PRTF calculations.
 
-* Feature: implement the inplane rocking curve at CRISTAL
+* Feature: implement the inplane rocking curve at CRISTAL.
 
 * Feature: implement ``graph_utils.savefig`` to save figures for publication with and
-  without labels
+  without labels.
 
 * Feature: implement ``angular_profile.py`` to calculate the width of linecuts through
-  the center of mass of a 2D object at different angles
+  the center of mass of a 2D object at different angles.
 
 * Feature: implement ``line_profile.py`` to calculate line profiles along particular
-  directions in 2D or 3D objects
+  directions in 2D or 3D objects.
 
 Version 0.0.10a2
 ----------------
