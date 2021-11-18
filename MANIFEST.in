@@ -11,6 +11,8 @@ include doc/Makefile
 include doc/example/modes_S11.h5
 include doc/example/S11_config_preprocessing.yml
 include doc/example/S11_config_postprocessing.yml
+include doc/example/alien_removal.PNG
+include doc/example/hotpixel_removal.PNG
 include bcdi/preprocessing/alias_dict_2018.txt
 include bcdi/preprocessing/alias_dict_2019.txt
 include bcdi/preprocessing/alias_dict_2020.txt
