@@ -23,6 +23,7 @@ dependencies:
   - pillow
   - pandas
   - pytables
+  - pyqt
   - ipywidgets
   - pyyaml
   - black

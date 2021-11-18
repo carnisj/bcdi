@@ -15,6 +15,7 @@ moviepy
 pillow
 tables
 pandas
+pyqt5
 ipywidgets
 pyyaml
 black
