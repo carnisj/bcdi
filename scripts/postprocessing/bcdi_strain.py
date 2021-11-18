@@ -17,6 +17,7 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
+import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -426,7 +427,10 @@ def run(prm):
     #########################
     # Check some parameters #
     #########################
-    if prm.get("simulation", False):
+    if not prm.get("backend"):
+        prm["backend"] = "Qt5Agg"
+    matplotlib.use(prm["backend"])
+    if prm["simulation"]:
         invert_phase = False
         correct_refraction = 0
     if invert_phase:
