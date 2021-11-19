@@ -1,5 +1,5 @@
-Postprocessing
---------------
+Example: postprocessing
+-----------------------
 
 This example will guide you throught the post-processing of an experimental BCDI dataset
 measured at the European Synchrotron Radiation Facility, beamline ID01. Postprocessing
