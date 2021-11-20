@@ -28,9 +28,9 @@ centering_method: "max_com"
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size: [150, 256, 500]  # size of the FFT array before binning.
-# It will be modified to take into account binning
-# during phasing automatically. Leave it to () if the shape did not change.
+original_size: [150, 256, 500]  # size of the FFT array sent to phase retrieval.
+# It will be modified to take into account binning during phasing automatically.
+# Leave it to () if the shape did not change.
 phasing_binning: [1, 1, 1]  # binning factor applied during phase retrieval
 preprocessing_binning: [1, 2, 2]
 # binning factors in each dimension used in preprocessing (not phase retrieval)
