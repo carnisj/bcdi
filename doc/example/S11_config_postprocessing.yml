@@ -1,13 +1,13 @@
-scan: 76  # spec scan number
-root_folder: "C:/Users/Jerome/Documents/data/dataset_P10/"
+scan: 11  # spec scan number
+root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/dataset_P10/test/"
+save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-data_dir: None
+data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
 # leave None to use the beamline default, or provide the full path to the output of the
 # phase retrieval.
-sample_name: "B15_syn_S1_2"
+sample_name: "S"
 # string in front of the scan number in the folder name.
 comment: ""  # comment in filenames, should start with _
 #########################################################
@@ -27,9 +27,9 @@ centering_method: "max_com"
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size: [150, 256, 500]  # size of the FFT array before binning.
-# It will be modified to take into account binning
-# during phasing automatically. Leave it to () if the shape did not change.
+original_size: [256, 256, 256]  # size of the FFT array sent to phase retrieval.
+# It will be modified to take into account binning during phasing automatically.
+# Leave it to () if the shape did not change.
 phasing_binning: [1, 1, 1]  # binning factor applied during phase retrieval
 preprocessing_binning: [1, 2, 2]
 # binning factors in each dimension used in preprocessing (not phase retrieval)
@@ -37,7 +37,7 @@ output_size: [100, 100, 100]
 # (z, y, x) Fix the size of the output array, leave None to use the object size
 keep_size: False  # True to keep the initial array size for orthogonalization (slower)
 # it will be cropped otherwise
-fix_voxel: 10  # voxel size in nm for the interpolation during the geometrical
+fix_voxel: 6  # voxel size in nm for the interpolation during the geometrical
 # transformation. If a single value is provided, the voxel size will be identical is
 # all 3 directions. Set it to None to use the default voxel size
 # (calculated from q values, it will be different in each dimension).
@@ -53,14 +53,14 @@ data_frame: "detector"
 ref_axis_q: "y"
 # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
-save_frame: "laboratory"  # 'crystal', 'laboratory' or 'lab_flat_sample'
+save_frame: "crystal"  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # 'crystal' to save the data with q aligned along ref_axis_q
 # 'laboratory' to save the data in the laboratory frame (experimental geometry)
 # 'lab_flat_sample' to save the data in the laboratory frame,
 # with all sample angles rotated back to 0. The rotations for 'laboratory' and
 # 'lab_flat_sample' are realized after the strain calculation
 # (which is done in the crystal frame along ref_axis_q)
-isosurface_strain: 0.2  # threshold use for removing the outer layer
+isosurface_strain: 0.3  # threshold use for removing the outer layer
 # (strain is undefined at the exact surface voxel)
 strain_method: "default"  # 'default' or 'defect'.
 # If 'defect', will offset the phase in a loop and keep the smallest
@@ -69,7 +69,7 @@ strain_method: "default"  # 'default' or 'defect'.
 ######################################
 # define beamline related parameters #
 ######################################
-beamline: "P10"  # name of the beamline, used for data loading and normalization
+beamline: "ID01"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 actuators: None
@@ -81,17 +81,17 @@ rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outbo
 # "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd: 1.84  # 1.26  # sample to detector distance in m
-energy: 8170  # x-ray energy in eV, 6eV offset at ID01
+sdd: 0.50678  # 1.26  # sample to detector distance in m
+energy: 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction: [1, 0, 0]
 # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-outofplane_angle: 42.6093  # detector angle in deg (rotation around x outboard):
+outofplane_angle: 35.3627  # detector angle in deg (rotation around x outboard):
 # delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle: -0.5783  # detector angle in deg(rotation around y vertical up):
+inplane_angle: 0.4864  # detector angle in deg(rotation around y vertical up):
 # nu ID01, gamma SIXS, delta 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle: 0.00537  # angular step size for rocking angle, eta ID01, mu SIXS,
+tilt_angle: 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
 sample_offsets: None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
@@ -119,10 +119,10 @@ custom_motors: {
 ###############################
 # detector related parameters #
 ###############################
-detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
+detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 pixel_size: None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile: "_master.h5"
+template_imagefile: "data_mpx4_%05d.edf.gz"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -133,17 +133,17 @@ template_imagefile: "_master.h5"
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction: False  # True for correcting the phase shift due to refraction
+correct_refraction: True  # True for correcting the phase shift due to refraction
 optical_path_method: "threshold"
 # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove
 # only outer layers even if
 # the amplitude is lower than isosurface_strain inside the crystal
-dispersion: 5.0328e-05  # delta
+dispersion: 4.1184E-05  # delta
 # Pt:  3.0761E-05 @ 10300eV, 5.0328E-05 @ 8170eV
 # 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV,
 # 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
-absorption: 4.1969e-06  # beta
+absorption: 3.4298E-06  # beta
 # Pt:  2.0982E-06 @ 10300eV, 4.8341E-06 @ 8170eV
 # 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_unwrap_refraction: 0.05  # threshold used to calculate the optical path
