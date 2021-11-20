@@ -4,7 +4,7 @@ root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
-data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
+data_dir: "C:/Users/Jerome/Documents/myscripts/bcdi/doc/example/"
 # leave None to use the beamline default, or provide the full path to the output of the
 # phase retrieval.
 sample_name: "S"
@@ -93,10 +93,10 @@ inplane_angle: 0.4864  # detector angle in deg(rotation around y vertical up):
 # this is the true angle, corrected for the direct beam position
 tilt_angle: 0.01015  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
-sample_offsets: None
+sample_offsets: [90, 0, 0]
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
-specfile_name: None
+specfile_name: "l5.spec"
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS: full path of the alias dictionnary or None to use the one in the
@@ -133,7 +133,7 @@ template_imagefile: "data_mpx4_%05d.edf.gz"
 ###################################################
 # parameters related to the refraction correction #
 ###################################################
-correct_refraction: True  # True for correcting the phase shift due to refraction
+correct_refraction: False  # True for correcting the phase shift due to refraction
 optical_path_method: "threshold"
 # 'threshold' or 'defect', if 'threshold' it uses isosurface_strain to define the
 # support  for the optical path calculation, if 'defect' (holes) it tries to remove
