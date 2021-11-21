@@ -1631,8 +1631,8 @@ class DiffractometerCRISTAL(Diffractometer):
             mgomega = setup.custom_motors["mgomega"]
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
-            mgphi = setup.custom_motors.get("mgphi", None)
-            energy = setup.custom_motors["energy", setup.energy]
+            mgphi = setup.custom_motors.get("mgphi", 0)
+            energy = setup.energy
 
         # check if mgomega needs to be divided by 1e6
         # (data taken before the implementation of the correction)
@@ -1982,7 +1982,6 @@ class DiffractometerID01(Diffractometer):
         logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
-        energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
         old_names = False
         if not setup.custom_scan:
             motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
@@ -2033,6 +2032,8 @@ class DiffractometerID01(Diffractometer):
                 raw_energy = labels_data[labels.index(motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
+            else:  # positioner
+                energy = motor_values[motor_names.index(self.motor_table["energy"])]
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
@@ -2045,6 +2046,7 @@ class DiffractometerID01(Diffractometer):
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
+            energy = setup.energy
 
         return mu, eta, phi, nu, delta, energy, setup.distance
 
@@ -2311,7 +2313,7 @@ class DiffractometerNANOMAX(Diffractometer):
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
-            energy = setup.custom_motors["energy"]
+            energy = setup.energy
 
         return theta, phi, gamma, delta, energy, setup.distance
 
@@ -3296,8 +3298,6 @@ class Diffractometer34ID(Diffractometer):
         logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
-        energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
-
         if not setup.custom_scan:
             motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
             motor_values = logfile[str(scan_number) + ".1"].motor_positions
@@ -3330,10 +3330,12 @@ class Diffractometer34ID(Diffractometer):
             else:  # positioner
                 gamma = motor_values[motor_names.index(self.motor_table["gamma"])]
 
-            if self.motor_table["energy"] in labels:
+            if self.motor_table["energy"] in labels:  # scanned
                 raw_energy = labels_data[labels.index(self.motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
+            else:  # positioner
+                energy = motor_values[motor_names.index(self.motor_table["energy"])]
 
             detector_distance = motor_values[motor_names.index(
                 self.motor_table["detector_distance"]
@@ -3351,6 +3353,7 @@ class Diffractometer34ID(Diffractometer):
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
             detector_distance = setup.distance
+            energy = setup.energy
 
         return theta, chi, phi, delta, gamma, energy, detector_distance
 
