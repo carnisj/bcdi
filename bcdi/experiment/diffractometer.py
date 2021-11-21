@@ -1640,7 +1640,7 @@ class DiffractometerCRISTAL(Diffractometer):
         ):
             mgomega = mgomega / 1e6
 
-        return mgomega, mgphi, gamma, delta, energy, None
+        return mgomega, mgphi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def cristal_load_motor(datafile, root, actuator_name, field_name):
@@ -2040,7 +2040,7 @@ class DiffractometerID01(Diffractometer):
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
 
-        return mu, eta, phi, nu, delta, energy, None
+        return mu, eta, phi, nu, delta, energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2304,7 +2304,7 @@ class DiffractometerNANOMAX(Diffractometer):
             gamma = setup.custom_motors["gamma"]
             energy = setup.custom_motors["energy"]
 
-        return theta, phi, gamma, delta, energy, None
+        return theta, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2666,7 +2666,7 @@ class DiffractometerP10(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return mu, om, chi, phi, gamma, delta, setup.energy, None
+        return mu, om, chi, phi, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2817,7 +2817,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
             phi = np.asarray(phi, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
-        return phi, setup.energy, None
+        return phi, setup.energy, setup.distance
 
 
 class DiffractometerSIXS(Diffractometer):
@@ -3016,7 +3016,7 @@ class DiffractometerSIXS(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return beta, mu, gamma, delta, setup.energy, None
+        return beta, mu, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
