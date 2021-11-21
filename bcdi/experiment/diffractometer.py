@@ -1640,7 +1640,7 @@ class DiffractometerCRISTAL(Diffractometer):
         ):
             mgomega = mgomega / 1e6
 
-        return mgomega, mgphi, gamma, delta, energy
+        return mgomega, mgphi, gamma, delta, energy, None
 
     @staticmethod
     def cristal_load_motor(datafile, root, actuator_name, field_name):
@@ -2040,7 +2040,7 @@ class DiffractometerID01(Diffractometer):
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
 
-        return mu, eta, phi, nu, delta, energy
+        return mu, eta, phi, nu, delta, energy, None
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2304,7 +2304,7 @@ class DiffractometerNANOMAX(Diffractometer):
             gamma = setup.custom_motors["gamma"]
             energy = setup.custom_motors["energy"]
 
-        return theta, phi, gamma, delta, energy
+        return theta, phi, gamma, delta, energy, None
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2666,7 +2666,7 @@ class DiffractometerP10(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return mu, om, chi, phi, gamma, delta, setup.energy
+        return mu, om, chi, phi, gamma, delta, setup.energy, None
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2817,7 +2817,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
             phi = np.asarray(phi, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
-        return phi, setup.energy
+        return phi, setup.energy, None
 
 
 class DiffractometerSIXS(Diffractometer):
@@ -3016,7 +3016,7 @@ class DiffractometerSIXS(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return beta, mu, gamma, delta, setup.energy
+        return beta, mu, gamma, delta, setup.energy, None
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -3316,6 +3316,10 @@ class Diffractometer34ID(Diffractometer):
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
 
+            detector_distance = motor_values[motor_names.index(
+                self.motor_table["detector_distance"]
+            )]
+
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
             # chi = chi - self.sample_offsets[1]  # after updating the diffractometer
@@ -3327,8 +3331,9 @@ class Diffractometer34ID(Diffractometer):
             phi = setup.custom_motors["phi"]
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
+            detector_distance = setup.distance
 
-        return theta, chi, phi, delta, gamma, energy
+        return theta, chi, phi, delta, gamma, energy, detector_distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
