@@ -95,7 +95,7 @@ class Setup:
     def __init__(
         self,
         beamline,
-        detector=create_detector("Dummy"),
+        detector=None,
         beam_direction=(1, 0, 0),
         energy=None,
         distance=None,
@@ -144,7 +144,12 @@ class Setup:
         self.is_series = kwargs.get("is_series", False)  # boolean
         # load positional arguments corresponding to instance properties
         self.beamline = beamline
-        self.detector = detector
+        # create the Diffractometer instance
+        self._diffractometer = create_diffractometer(
+            beamline=self.beamline,
+            sample_offsets=sample_offsets,
+        )
+        self.detector = detector or create_detector("Dummy")
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
@@ -154,11 +159,6 @@ class Setup:
         self.rocking_angle = rocking_angle
         self.grazing_angle = grazing_angle
 
-        # create the Diffractometer instance
-        self._diffractometer = create_diffractometer(
-            beamline=self.beamline,
-            sample_offsets=sample_offsets,
-        )
 
     @property
     def actuators(self):

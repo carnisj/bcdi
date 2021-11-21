@@ -258,7 +258,8 @@ Usage:
     :param sdd: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
-     X-ray energy in eV, it can be a number or a list in case of energy scans.
+     X-ray energy in eV, it can be a number or a list in case of energy scans. Leave
+     None to use the default from the log file.
     :param custom_motors: e.g. {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0,
      "delta": -0.5685, "gamma": 33.3147}
      use this to declare motor positions if there is not log file, None otherwise
@@ -598,7 +599,7 @@ def run(prm):
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
-        energy=prm["energy"],
+        energy=prm.get("energy"),
         rocking_angle=rocking_angle,
         distance=prm["sdd"],
         beam_direction=prm["beam_direction"],
@@ -874,7 +875,7 @@ def run(prm):
                     hxrd = xu.experiment.HXRD(
                         prm["sample_inplane"],
                         prm["sample_outofplane"],
-                        en=prm["energy"],
+                        en=setup.energy,
                         qconv=qconv,
                     )
                     # the first 2 arguments in HXRD are the inplane reference direction

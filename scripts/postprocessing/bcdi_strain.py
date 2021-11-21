@@ -179,7 +179,7 @@ Usage:
     :param sdd: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
-     X-ray energy in eV
+     X-ray energy in eV, leave None to use the default from the log file.
     :param beam_direction: e.g. [1, 0, 0]
      beam direction in the laboratory frame (downstream, vertical up, outboard)
     :param sample_offsets: e.g. None
@@ -449,7 +449,7 @@ def run(prm):
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
-        energy=prm["energy"],
+        energy=prm.get("energy"),
         outofplane_angle=prm["outofplane_angle"],
         inplane_angle=prm["inplane_angle"],
         tilt_angle=tilt_angle,
