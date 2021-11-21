@@ -1420,7 +1420,7 @@ class DiffractometerCRISTAL(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mgomega, mgphi, gamma, delta, _ = self.motor_positions(
+        mgomega, mgphi, gamma, delta, energy, detector_distance = self.motor_positions(
             setup=setup, logfile=logfile
         )
 
@@ -1753,6 +1753,21 @@ class DiffractometerID01(Diffractometer):
 
     sample_rotations = ["y-", "x-", "y-"]
     detector_rotations = ["y-", "x-"]
+    motor_table = {"old_names": {
+        "mu": "Mu",
+        "eta": "Eta",
+        "phi": "Phi",
+        "nu": "Nu",
+        "delta": "Delta",
+        "energy": "Energy",
+    }, "new_names": {
+                    "mu": "mu",
+                    "eta": "eta",
+                    "phi": "phi",
+                    "nu": "nu",
+                    "delta": "del",
+                    "energy": "energy",
+                }}
 
     def __init__(self, sample_offsets):
         super().__init__(
@@ -1794,7 +1809,7 @@ class DiffractometerID01(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
-        mu, eta, phi, nu, delta, _ = self.motor_positions(
+        mu, eta, phi, nu, delta, energy, detector_distance = self.motor_positions(
             setup=setup,
             logfile=logfile,
             scan_number=scan_number,
@@ -1970,51 +1985,37 @@ class DiffractometerID01(Diffractometer):
                 old_names = True
 
             if old_names:
-                names_table = {
-                    "mu": "Mu",
-                    "eta": "Eta",
-                    "phi": "Phi",
-                    "nu": "Nu",
-                    "delta": "Delta",
-                    "energy": "Energy",
-                }
+                motor_table = self.motor_table["old_names"]
             else:
-                names_table = {
-                    "mu": "mu",
-                    "eta": "eta",
-                    "phi": "phi",
-                    "nu": "nu",
-                    "delta": "del",
-                    "energy": "energy",
-                }
+                motor_table = self.motor_table["new_names"]
 
-            if names_table["mu"] in labels:
-                mu = labels_data[labels.index(names_table["mu"]), :]  # scanned
+            if motor_table["mu"] in labels:
+                mu = labels_data[labels.index(motor_table["mu"]), :]  # scanned
             else:
-                mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
+                mu = motor_values[motor_names.index(motor_table["mu"])]  # positioner
 
-            if names_table["eta"] in labels:
-                eta = labels_data[labels.index(names_table["eta"]), :]  # scanned
+            if motor_table["eta"] in labels:
+                eta = labels_data[labels.index(motor_table["eta"]), :]  # scanned
             else:
-                eta = motor_values[motor_names.index(names_table["eta"])]  # positioner
+                eta = motor_values[motor_names.index(motor_table["eta"])]  # positioner
 
-            if names_table["phi"] in labels:
-                phi = labels_data[labels.index(names_table["phi"]), :]  # scanned
+            if motor_table["phi"] in labels:
+                phi = labels_data[labels.index(motor_table["phi"]), :]  # scanned
             else:
-                phi = motor_values[motor_names.index(names_table["phi"])]  # positioner
+                phi = motor_values[motor_names.index(motor_table["phi"])]  # positioner
 
-            if names_table["delta"] in labels:
-                delta = labels_data[labels.index(names_table["delta"]), :]  # scanned
+            if motor_table["delta"] in labels:
+                delta = labels_data[labels.index(motor_table["delta"]), :]  # scanned
             else:  # positioner
-                delta = motor_values[motor_names.index(names_table["delta"])]
+                delta = motor_values[motor_names.index(motor_table["delta"])]
 
-            if names_table["nu"] in labels:
-                nu = labels_data[labels.index(names_table["nu"]), :]  # scanned
+            if motor_table["nu"] in labels:
+                nu = labels_data[labels.index(motor_table["nu"]), :]  # scanned
             else:  # positioner
-                nu = motor_values[motor_names.index(names_table["nu"])]
+                nu = motor_values[motor_names.index(motor_table["nu"])]
 
-            if names_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+            if motor_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
 
@@ -2136,7 +2137,8 @@ class DiffractometerNANOMAX(Diffractometer):
             phi,
             gamma,
             delta,
-            _,
+            energy,
+            detector_distance
         ) = self.motor_positions(setup=setup, logfile=logfile)
 
         # define the circles of interest for BCDI
@@ -2370,9 +2372,16 @@ class DiffractometerP10(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        mu, om, chi, phi, gamma, delta, _ = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        (
+            mu,
+            om,
+            chi,
+            phi,
+            gamma,
+            delta,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup, logfile=logfile)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # om rocking curve
@@ -2730,7 +2739,9 @@ class DiffractometerP10SAXS(DiffractometerP10):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        phi, _ = self.motor_positions(setup=setup, logfile=logfile)
+        phi, energy, detector_distance = self.motor_positions(
+            setup=setup, logfile=logfile
+        )
 
         # define the circles of interest for CDI
         # no circle yet below phi at P10
@@ -2836,7 +2847,9 @@ class DiffractometerSIXS(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        beta, mu, gamma, delta, _ = self.motor_positions(setup=setup, logfile=logfile)
+        beta, mu, gamma, delta, energy, detector_distance = self.motor_positions(
+            setup=setup, logfile=logfile
+        )
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
             grazing = (beta,)  # beta below the whole diffractomter at SIXS
@@ -3034,6 +3047,14 @@ class Diffractometer34ID(Diffractometer):
     sample_rotations = ["y+", "z-", "y+"]
     detector_rotations = ["y+", "x-"]
     default_offsets = (0, 90, 0)
+    motor_table = {
+        "theta": "Theta",
+        "chi": "Chi",
+        "phi": "Phi",
+        "gamma": "Gamma",
+        "delta": "Delta",
+        "energy": "Energy",
+    }
 
     def __init__(self, sample_offsets):
         super().__init__(
@@ -3076,7 +3097,7 @@ class Diffractometer34ID(Diffractometer):
             raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, chi, phi, delta, gamma, _ = self.motor_positions(
+        theta, chi, phi, delta, gamma, energy, detector_distance = self.motor_positions(
             setup=setup, logfile=logfile, scan_number=scan_number
         )
 
@@ -3234,42 +3255,33 @@ class Diffractometer34ID(Diffractometer):
             labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
             labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
 
-            names_table = {
-                "theta": "Theta",
-                "chi": "Chi",
-                "phi": "Phi",
-                "gamma": "Gamma",
-                "delta": "Delta",
-                "energy": "Energy",
-            }
-
-            if names_table["theta"] in labels:  # scanned
-                theta = labels_data[labels.index(names_table["theta"]), :]
+            if self.motor_table["theta"] in labels:  # scanned
+                theta = labels_data[labels.index(self.motor_table["theta"]), :]
             else:  # positioner
-                theta = motor_values[motor_names.index(names_table["theta"])]
+                theta = motor_values[motor_names.index(self.motor_table["theta"])]
 
-            if names_table["chi"] in labels:  # scanned
-                chi = labels_data[labels.index(names_table["chi"]), :]
+            if self.motor_table["chi"] in labels:  # scanned
+                chi = labels_data[labels.index(self.motor_table["chi"]), :]
             else:  # positioner
-                chi = motor_values[motor_names.index(names_table["chi"])]
+                chi = motor_values[motor_names.index(self.motor_table["chi"])]
 
-            if names_table["phi"] in labels:  # scanned
-                phi = labels_data[labels.index(names_table["phi"]), :]
+            if self.motor_table["phi"] in labels:  # scanned
+                phi = labels_data[labels.index(self.motor_table["phi"]), :]
             else:  # positioner
-                phi = motor_values[motor_names.index(names_table["phi"])]
+                phi = motor_values[motor_names.index(self.motor_table["phi"])]
 
-            if names_table["delta"] in labels:  # scanned
-                delta = labels_data[labels.index(names_table["delta"]), :]
+            if self.motor_table["delta"] in labels:  # scanned
+                delta = labels_data[labels.index(self.motor_table["delta"]), :]
             else:  # positioner
-                delta = motor_values[motor_names.index(names_table["delta"])]
+                delta = motor_values[motor_names.index(self.motor_table["delta"])]
 
-            if names_table["gamma"] in labels:  # scanned
-                gamma = labels_data[labels.index(names_table["gamma"]), :]
+            if self.motor_table["gamma"] in labels:  # scanned
+                gamma = labels_data[labels.index(self.motor_table["gamma"]), :]
             else:  # positioner
-                gamma = motor_values[motor_names.index(names_table["gamma"])]
+                gamma = motor_values[motor_names.index(self.motor_table["gamma"])]
 
-            if names_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+            if self.motor_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(self.motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
 
