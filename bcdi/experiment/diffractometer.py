@@ -1168,7 +1168,8 @@ class Diffractometer(ABC):
         :param kwargs: beamline_specific parameters, see the documentation for the
          child class.
         :return: the diffractometer motors positions for the particular setup. The
-         energy (1D array or number) is expected to be the last element of the tuple.
+         energy (1D array or number) and the sample to detector distance are expected to
+         be the last elements of the tuple in this order.
         """
 
     @staticmethod
@@ -1423,6 +1424,10 @@ class DiffractometerCRISTAL(Diffractometer):
         mgomega, mgphi, gamma, delta, energy, detector_distance = self.motor_positions(
             setup=setup, logfile=logfile
         )
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
@@ -1815,6 +1820,10 @@ class DiffractometerID01(Diffractometer):
             scan_number=scan_number,
         )
 
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             grazing = (mu,)  # mu below eta but not used at ID01
@@ -2141,6 +2150,10 @@ class DiffractometerNANOMAX(Diffractometer):
             detector_distance
         ) = self.motor_positions(setup=setup, logfile=logfile)
 
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             grazing = None  # nothing below theta at NANOMAX
@@ -2382,6 +2395,10 @@ class DiffractometerP10(Diffractometer):
             energy,
             detector_distance,
         ) = self.motor_positions(setup=setup, logfile=logfile)
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # om rocking curve
@@ -2743,6 +2760,10 @@ class DiffractometerP10SAXS(DiffractometerP10):
             setup=setup, logfile=logfile
         )
 
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+
         # define the circles of interest for CDI
         # no circle yet below phi at P10
         if setup.rocking_angle == "inplane":  # phi rocking curve
@@ -2850,6 +2871,11 @@ class DiffractometerSIXS(Diffractometer):
         beta, mu, gamma, delta, energy, detector_distance = self.motor_positions(
             setup=setup, logfile=logfile
         )
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
             grazing = (beta,)  # beta below the whole diffractomter at SIXS
@@ -3054,6 +3080,7 @@ class Diffractometer34ID(Diffractometer):
         "gamma": "Gamma",
         "delta": "Delta",
         "energy": "Energy",
+        "detector_distance": "camdist"
     }
 
     def __init__(self, sample_offsets):
@@ -3100,6 +3127,10 @@ class Diffractometer34ID(Diffractometer):
         theta, chi, phi, delta, gamma, energy, detector_distance = self.motor_positions(
             setup=setup, logfile=logfile, scan_number=scan_number
         )
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
