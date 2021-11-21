@@ -159,7 +159,6 @@ class Setup:
         self.rocking_angle = rocking_angle
         self.grazing_angle = grazing_angle
 
-
     @property
     def actuators(self):
         """
