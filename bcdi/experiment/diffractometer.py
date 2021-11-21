@@ -1425,10 +1425,6 @@ class DiffractometerCRISTAL(Diffractometer):
             setup=setup, logfile=logfile
         )
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             grazing = None  # nothing below mgomega at CRISTAL
@@ -1438,6 +1434,13 @@ class DiffractometerCRISTAL(Diffractometer):
             tilt, inplane, outofplane = mgphi, gamma[0], delta[0]
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or delta
+        setup.inplane_angle = setup.inplane_angle or gamma
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
         sample_angles = (mgomega, mgphi)
@@ -1820,10 +1823,6 @@ class DiffractometerID01(Diffractometer):
             scan_number=scan_number,
         )
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             grazing = (mu,)  # mu below eta but not used at ID01
@@ -1833,6 +1832,13 @@ class DiffractometerID01(Diffractometer):
             tilt, inplane, outofplane = phi, nu, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or delta
+        setup.inplane_angle = setup.inplane_angle or nu
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
         sample_angles = (mu, eta, phi)
@@ -2150,10 +2156,6 @@ class DiffractometerNANOMAX(Diffractometer):
             detector_distance
         ) = self.motor_positions(setup=setup, logfile=logfile)
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             grazing = None  # nothing below theta at NANOMAX
@@ -2163,6 +2165,13 @@ class DiffractometerNANOMAX(Diffractometer):
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or delta
+        setup.inplane_angle = setup.inplane_angle or gamma
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
         sample_angles = (theta, phi)
@@ -2396,10 +2405,6 @@ class DiffractometerP10(Diffractometer):
             detector_distance,
         ) = self.motor_positions(setup=setup, logfile=logfile)
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # om rocking curve
             grazing = (mu,)
@@ -2409,6 +2414,13 @@ class DiffractometerP10(Diffractometer):
             tilt, inplane, outofplane = phi, gamma, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or delta
+        setup.inplane_angle = setup.inplane_angle or gamma
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
         sample_angles = (mu, om, chi, phi)
@@ -2760,10 +2772,6 @@ class DiffractometerP10SAXS(DiffractometerP10):
             setup=setup, logfile=logfile
         )
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for CDI
         # no circle yet below phi at P10
         if setup.rocking_angle == "inplane":  # phi rocking curve
@@ -2771,6 +2779,11 @@ class DiffractometerP10SAXS(DiffractometerP10):
             tilt = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
         sample_angles = (phi,)
@@ -2872,10 +2885,6 @@ class DiffractometerSIXS(Diffractometer):
             setup=setup, logfile=logfile
         )
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
             grazing = (beta,)  # beta below the whole diffractomter at SIXS
@@ -2886,6 +2895,13 @@ class DiffractometerSIXS(Diffractometer):
             )
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or delta
+        setup.inplane_angle = setup.inplane_angle or gamma
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
         sample_angles = (beta, mu)
@@ -3128,10 +3144,6 @@ class Diffractometer34ID(Diffractometer):
             setup=setup, logfile=logfile, scan_number=scan_number
         )
 
-        # update the energy and the detector distance if not provided by the user
-        setup.energy = setup.energy or energy
-        setup.distance = setup.distance or detector_distance
-
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
             # theta is the inplane rotation around the vertical axis at 34ID
@@ -3143,6 +3155,13 @@ class Diffractometer34ID(Diffractometer):
             tilt, inplane, outofplane = (phi, delta, gamma)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        # update the energy and the detector distance if not provided by the user
+        setup.energy = setup.energy or energy
+        setup.distance = setup.distance or detector_distance
+        setup.outofplane_angle = setup.outofplane_angle or gamma
+        setup.inplane_angle = setup.inplane_angle or delta
+        setup.tilt_angle = setup.tilt_angle or (tilt[1:]-tilt[0:-1]).mean()
 
         # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
         # phi (out of plane)   detector: delta (inplane), gamma)
