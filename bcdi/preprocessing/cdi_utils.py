@@ -434,7 +434,8 @@ def grid_cdi(
             else:
                 cdi_angle, _, _ = setup.diffractometer.motor_positions(
                     setup=setup, logfile=logfile
-                )  # second return value is the X-ray energy
+                )
+                # second return value is the X-ray energy, third the detector distance
         else:
             raise ValueError(
                 "out-of-plane rotation not yet implemented for forward CDI data"
