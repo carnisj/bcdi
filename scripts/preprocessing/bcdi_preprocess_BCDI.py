@@ -668,25 +668,10 @@ def run(prm):
                 comment += "_lin"
                 # load the goniometer positions needed in the calculation
                 # of the transformation matrix
-                (
-                    tilt_angle,
-                    setup.grazing_angle,
-                    inplane,
-                    outofplane,
-                ) = setup.diffractometer.goniometer_values(
+                setup.diffractometer.goniometer_values(
                     logfile=logfile,
                     scan_number=scan_nb,
                     setup=setup,
-                )
-                setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
-                # override detector motor positions if the corrected values
-                # (taking into account the direct beam position)
-                # are provided by the user
-                setup.inplane_angle = (
-                    inplane_angle if inplane_angle is not None else inplane
-                )
-                setup.outofplane_angle = (
-                    outofplane_angle if outofplane_angle is not None else outofplane
                 )
             else:  # 'xrayutilities'
                 comment += "_xrutil"

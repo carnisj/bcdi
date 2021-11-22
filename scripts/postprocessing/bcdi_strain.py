@@ -476,6 +476,14 @@ def run(prm):
         scan_number=scan, root_folder=root_folder, filename=detector.specfile
     )
 
+    # load the goniometer positions needed in the calculation
+    # of the transformation matrix
+    setup.diffractometer.goniometer_values(
+        logfile=logfile,
+        scan_number=scan,
+        setup=setup,
+    )
+
     ###################
     # print instances #
     ###################
