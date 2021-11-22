@@ -448,15 +448,15 @@ def run(prm):
         beamline=prm["beamline"],
         detector=detector,
         energy=prm.get("energy"),
-        outofplane_angle=prm["outofplane_angle"],
-        inplane_angle=prm["inplane_angle"],
+        outofplane_angle=prm.get("outofplane_angle"),
+        inplane_angle=prm.get("inplane_angle"),
         tilt_angle=prm.get("tilt_angle"),
         rocking_angle=prm["rocking_angle"],
-        distance=prm["sdd"],
-        sample_offsets=prm["sample_offsets"],
-        actuators=prm["actuators"],
-        custom_scan=prm["custom_scan"],
-        custom_motors=prm["custom_motors"],
+        distance=prm.get("sdd"),
+        sample_offsets=prm.get("sample_offsets"),
+        actuators=prm.get("actuators"),
+        custom_scan=prm.get("custom_scan", False),
+        custom_motors=prm.get("custom_motors"),
     )
 
     ########################################
@@ -797,7 +797,11 @@ def run(prm):
         # voxel sizes in the detector frame
         voxel_z, voxel_y, voxel_x = setup.voxel_sizes_detector(
             array_shape=original_size,
-            tilt_angle=tilt_angle,
+            tilt_angle=(
+                    prm.get("tilt_angle")
+                    * detector.preprocessing_binning[0]
+                    * detector.binning[0]
+            ),
             pixel_x=detector.pixelsize_x,
             pixel_y=detector.pixelsize_y,
             verbose=True,
