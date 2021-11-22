@@ -1435,6 +1435,8 @@ class DiffractometerCRISTAL(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.grazing_angle = grazing
+
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
         setup.distance = setup.distance or detector_distance
@@ -1587,19 +1589,6 @@ class DiffractometerCRISTAL(Diffractometer):
                     actuator_name="i06-c-c07-ex-mg_phi",
                     field_name="position",
                 )
-                delta = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-DELTA",
-                    field_name="position",
-                )
-                gamma = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
-                    field_name="position",
-                )
-
             elif setup.rocking_angle == "inplane":
                 mgphi = scanned_motor  # mgphi is scanned
                 mgomega = self.cristal_load_motor(
@@ -1608,20 +1597,21 @@ class DiffractometerCRISTAL(Diffractometer):
                     actuator_name="i06-c-c07-ex-mg_omega",
                     field_name="position",
                 )
-                delta = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-DELTA",
-                    field_name="position",
-                )
-                gamma = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
-                    field_name="position",
-                )
             else:
                 raise ValueError('Wrong value for "rocking_angle" parameter')
+
+            delta = self.cristal_load_motor(
+                datafile=logfile,
+                root="/" + group_key + "/CRISTAL/Diffractometer/",
+                actuator_name="I06-C-C07-EX-DIF-DELTA",
+                field_name="position",
+            )
+            gamma = self.cristal_load_motor(
+                datafile=logfile,
+                root="/" + group_key + "/CRISTAL/Diffractometer/",
+                actuator_name="I06-C-C07-EX-DIF-GAMMA",
+                field_name="position",
+            )
 
             # remove user-defined sample offsets (sample: mgomega, mgphi)
             mgomega = mgomega - self.sample_offsets[0]
@@ -1832,6 +1822,8 @@ class DiffractometerID01(Diffractometer):
             tilt, inplane, outofplane = phi, nu, delta
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.grazing_angle = grazing
 
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
@@ -2168,6 +2160,8 @@ class DiffractometerNANOMAX(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.grazing_angle = grazing
+
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
         setup.distance = setup.distance or detector_distance
@@ -2417,6 +2411,8 @@ class DiffractometerP10(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.grazing_angle = grazing
+
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
         setup.distance = setup.distance or detector_distance
@@ -2608,6 +2604,7 @@ class DiffractometerP10(Diffractometer):
                 mu = None
                 gamma = None
                 delta = None
+                energy = None
 
                 fio_lines = fio.readlines()
                 for line in fio_lines:
@@ -2652,6 +2649,10 @@ class DiffractometerP10(Diffractometer):
                         "mu" in words and "=" in words
                     ):  # template for positioners: 'mu = 0.0\n'
                         mu = float(words[2])
+                    if (
+                        "fmbenergy" in words and "=" in words
+                    ):  # template for positioners: 'mu = 0.0\n'
+                        energy = float(words[2])
 
                     if index_om is not None and util.is_float(words[0]):
                         # reading data and index_om is defined (outofplane case)
@@ -2680,7 +2681,9 @@ class DiffractometerP10(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return mu, om, chi, phi, gamma, delta, setup.energy, setup.distance
+            energy = setup.energy
+
+        return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2781,6 +2784,8 @@ class DiffractometerP10SAXS(DiffractometerP10):
             tilt = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.grazing_angle = grazing
 
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
@@ -2897,6 +2902,8 @@ class DiffractometerSIXS(Diffractometer):
             )
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
+
+        setup.grazing_angle = grazing
 
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
@@ -3157,6 +3164,8 @@ class Diffractometer34ID(Diffractometer):
             tilt, inplane, outofplane = (phi, delta, gamma)
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.grazing_angle = grazing
 
         # update the energy and the detector distance if not provided by the user
         setup.energy = setup.energy or energy
