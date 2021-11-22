@@ -1474,9 +1474,15 @@ class Setup:
         # calculate the direct space voxel sizes in nm          #
         # based on the FFT window shape used in phase retrieval #
         #########################################################
+        tilt = (
+                self.tilt_angle
+                * self.detector.preprocessing_binning[0]
+                * self.detector.binning[0]
+        )
+
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
             initial_shape,
-            tilt_angle=abs(self.tilt_angle),
+            tilt_angle=abs(tilt),
             pixel_x=self.detector.unbinned_pixel_size[1],
             pixel_y=self.detector.unbinned_pixel_size[0],
         )
@@ -1490,7 +1496,7 @@ class Setup:
 
         if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
+            tilt *= initial_shape[0] / input_shape[0]
             pixel_y = (
                 self.detector.unbinned_pixel_size[0] * initial_shape[1] / input_shape[1]
             )
@@ -1518,7 +1524,6 @@ class Setup:
                     f" {dx_realspace:.2f} nm)",
                 )
         else:
-            tilt = self.tilt_angle
             pixel_y = self.detector.unbinned_pixel_size[0]
             pixel_x = self.detector.unbinned_pixel_size[1]
 
@@ -1851,7 +1856,7 @@ class Setup:
         ##########################################################
         transfer_matrix, q_offset = self.transformation_bcdi(
             array_shape=(nbz, nby, nbx),
-            tilt_angle=self.tilt_angle,
+            tilt_angle=self.tilt_angle * self.detector.preprocessing_binning[0],
             direct_space=False,
             verbose=verbose,
             pixel_x=self.detector.unbinned_pixel_size[1],

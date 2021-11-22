@@ -444,15 +444,13 @@ def run(prm):
     ####################################
     # define the experimental geometry #
     ####################################
-    # correct the tilt_angle for binning
-    tilt_angle = prm["tilt_angle"] * preprocessing_binning[0] * phasing_binning[0]
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
         energy=prm.get("energy"),
         outofplane_angle=prm["outofplane_angle"],
         inplane_angle=prm["inplane_angle"],
-        tilt_angle=tilt_angle,
+        tilt_angle=prm.get("tilt_angle"),
         rocking_angle=prm["rocking_angle"],
         distance=prm["sdd"],
         sample_offsets=prm["sample_offsets"],
