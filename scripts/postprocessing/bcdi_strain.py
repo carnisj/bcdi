@@ -476,14 +476,6 @@ def run(prm):
         scan_number=scan, root_folder=root_folder, filename=detector.specfile
     )
 
-    #########################################################
-    # get the motor position of goniometer circles which    #
-    # are below the rocking angle (e.g., mu for eta/omega)  #
-    #########################################################
-    _, setup.grazing_angle, _, _ = setup.diffractometer.goniometer_values(
-        logfile=logfile, scan_number=scan, setup=setup
-    )
-
     ###################
     # print instances #
     ###################
