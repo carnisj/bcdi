@@ -449,11 +449,24 @@ class Diffractometer(ABC):
         detector_circles=(),
         **kwargs,
     ):
+        self.sample_angles = None
         self.sample_circles = sample_circles
+        self.detector_angles = None
         self.detector_circles = detector_circles
         if sample_offsets is None:
             sample_offsets = kwargs.get("default_offsets")
         self.sample_offsets = sample_offsets
+
+    @property
+    def detector_angles(self):
+        """Tuple of goniometer angular values for the detector stages."""
+        return self._detector_angles
+
+    @detector_angles.setter
+    def detector_angles(self, value):
+        valid.valid_container(value, container_types=tuple, item_types=Real,
+                              allow_none=True, name="detector_angles")
+        self._detector_angles = value
 
     @property
     def detector_circles(self):
@@ -483,6 +496,17 @@ class Diffractometer(ABC):
                 f" valid are {self.valid_circles}"
             )
         self._detector_circles = list(value)
+
+    @property
+    def sample_angles(self):
+        """Tuple of goniometer angular values for the sample stages."""
+        return self._sample_angles
+
+    @sample_angles.setter
+    def sample_angles(self, value):
+        valid.valid_container(value, container_types=tuple, item_types=Real,
+                              allow_none=True, name="sample_angles")
+        self._sample_angles = value
 
     @property
     def sample_circles(self):
@@ -569,7 +593,6 @@ class Diffractometer(ABC):
         self,
         arrays,
         voxel_size,
-        angles,
         q_com,
         rocking_angle,
         central_angle=None,
@@ -588,8 +611,6 @@ class Diffractometer(ABC):
         :param arrays: tuple of 3D real arrays of the same shape.
         :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
          (CXI convention)
-        :param angles: tuple of angular values in degrees, one for each circle
-         of the sample stage
         :param q_com: diffusion vector of the center of mass of the Bragg peak,
          expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in
@@ -634,14 +655,15 @@ class Diffractometer(ABC):
         )
         if np.linalg.norm(q_com) == 0:
             raise ValueError("the norm of q_com is zero")
-        nb_circles = len(self._sample_circles)
-        valid.valid_container(
-            angles, container_types=(tuple, list), length=nb_circles, name="angles"
-        )
+        if self.sample_angles is None:
+            raise ValueError(
+                "call diffractometer.goniometer_values before calling this method"
+            )
         valid.valid_item(
             central_angle, allowed_types=Real, allow_none=True, name="central_angle"
         )
         # find the index of the circle which corresponds to the rocking angle
+        angles = self.sample_angles
         rocking_circle = self.get_rocking_circle(
             rocking_angle=rocking_angle, stage_name="sample", angles=angles
         )
@@ -763,16 +785,17 @@ class Diffractometer(ABC):
         return index_circle
 
     @abstractmethod
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer values.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs: beamline_specific parameters
-        :return: a list of motor positions
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
 
     def init_data_mask(
@@ -1395,30 +1418,19 @@ class DiffractometerCRISTAL(Diffractometer):
             f"and pattern={pattern}"
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         (mgomega, mgphi, inplane_angle, outofplane_angle, energy, detector_distance) = self.motor_positions(
@@ -1445,10 +1457,9 @@ class DiffractometerCRISTAL(Diffractometer):
         )
 
         # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
-        if stage_name == "sample":
-            return mgomega, mgphi
-        if stage_name == "detector":
-            return inplane_angle, outofplane_angle
+        self.sample_angles = (mgomega, mgphi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
 
     def load_data(
@@ -1771,26 +1782,18 @@ class DiffractometerID01(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
         logfile = kwargs["logfile"]
@@ -1800,8 +1803,6 @@ class DiffractometerID01(Diffractometer):
         valid.valid_item(
             scan_number, allowed_types=int, min_excluded=0, name="scan_number"
         )
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
         (mu, eta, phi, inplane_angle, outofplane_angle, energy, detector_distance) = self.motor_positions(
@@ -1830,10 +1831,9 @@ class DiffractometerID01(Diffractometer):
         )
 
         # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
-        if stage_name == "sample":
-            return mu, eta, phi
-        if stage_name == "detector":
-            return inplane_angle, outofplane_angle
+        self.sample_angles = (mu, eta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
@@ -2114,25 +2114,14 @@ class DiffractometerNANOMAX(Diffractometer):
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         (
@@ -2164,10 +2153,9 @@ class DiffractometerNANOMAX(Diffractometer):
         )
 
         # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
-        if stage_name == "sample":
-            return theta, phi
-        if stage_name == "detector":
-            return inplane_angle, outofplane_angle
+        self.sample_angles = (theta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
@@ -2355,30 +2343,19 @@ class DiffractometerP10(Diffractometer):
             default_offsets=self.default_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         (
@@ -2412,10 +2389,9 @@ class DiffractometerP10(Diffractometer):
         )
 
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
-        if stage_name == "sample":
-            return mu, om, chi, phi
-        if stage_name == "detector":
-            return inplane_angle, outofplane_angle
+        self.sample_angles = (mu, om, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
@@ -2736,30 +2712,19 @@ class DiffractometerP10SAXS(DiffractometerP10):
     def __init__(self):
         super().__init__(sample_offsets=(0,))
 
-    def goniometer_values(self, setup, stage_name="cdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a CDI tomographic scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'cdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'cdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"cdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         phi, energy, detector_distance = self.motor_positions(
@@ -2784,10 +2749,9 @@ class DiffractometerP10SAXS(DiffractometerP10):
         )
 
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
-        if stage_name == "sample":
-            return phi,
-        if stage_name == "detector":
-            return None
+        self.sample_angles = phi,
+        self.detector_angles = (0, 0)
+
         return tilt_angle, grazing, 0, 0
 
     def motor_positions(self, setup, **kwargs):
@@ -2851,30 +2815,19 @@ class DiffractometerSIXS(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         logfile = kwargs["logfile"]
-        # check some parameters
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         beta, mu, inplane_angle, outofplane_angle, energy, detector_distance = self.motor_positions(
@@ -2902,10 +2855,9 @@ class DiffractometerSIXS(Diffractometer):
         )
 
         # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
-        if stage_name == "sample":
-            return beta, mu
-        if stage_name == "detector":
-            return beta, inplane_angle, outofplane_angle
+        self.sample_angles = (beta, mu)
+        self.detector_angles = (beta, inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
@@ -3102,26 +3054,18 @@ class Diffractometer34ID(Diffractometer):
             default_offsets=self.default_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
          - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer
-           to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
         logfile = kwargs["logfile"]
@@ -3131,8 +3075,6 @@ class Diffractometer34ID(Diffractometer):
         valid.valid_item(
             scan_number, allowed_types=int, min_excluded=0, name="scan_number"
         )
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
         theta, chi, phi, inplane_angle, outofplane_angle, energy, detector_distance = self.motor_positions(
@@ -3162,10 +3104,9 @@ class Diffractometer34ID(Diffractometer):
 
         # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
         # phi (out of plane)   detector: delta (inplane), gamma)
-        if stage_name == "sample":
-            return theta, chi, phi
-        if stage_name == "detector":
-            return inplane_angle, outofplane_angle
+        self.sample_angles = (theta, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
