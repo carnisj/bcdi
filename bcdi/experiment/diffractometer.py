@@ -2402,7 +2402,7 @@ class DiffractometerP10(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
