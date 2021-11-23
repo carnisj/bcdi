@@ -17,11 +17,12 @@ beamline-dependent information from the child classes.
 from collections.abc import Sequence
 import datetime
 import multiprocessing as mp
-from numbers import Real, Integral
+from numbers import Integral, Real
 import numpy as np
 from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
+from typing import Tuple, Union
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -730,6 +731,45 @@ class Setup:
         )
         print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
         return qx, qz, qy, frames_logical
+
+    def check_setup(
+            self,
+            grazing_angle: Union[Tuple[Real, ...], None],
+            inplane_angle: Union[Real, np.ndarray],
+            outofplane_angle: Union[Real, np.ndarray],
+            tilt_angle: Union[np.ndarray, None],
+            detector_distance: Real,
+            energy: Union[Real, np.ndarray]
+    ) -> None:
+        """
+        Check if the required parameters are correctly defined.
+
+        :param grazing_angle:
+        :param inplane_angle:
+        :param outofplane_angle:
+        :param tilt_angle:
+        :param detector_distance:
+        :param energy:
+        :return:
+        """
+        self.grazing_angle = grazing_angle
+        self.energy = self.energy or energy
+        if not self.energy:
+            raise ValueError("the X-ray energy is not defined")
+        self.distance = self.distance or detector_distance
+        if not self.distance:
+            raise ValueError("the sample to detector distance is not defined")
+        self.outofplane_angle = self.outofplane_angle or outofplane_angle
+        if not self.outofplane_angle:
+            raise ValueError("the detector out-of-plane angle is not defined")
+        self.inplane_angle = self.inplane_angle or inplane_angle
+        if not self.inplane_angle:
+            raise ValueError("the detector in-plane angle is not defined")
+        self.tilt_angle = self.tilt_angle or (tilt_angle[1:]-tilt_angle[0:-1]).mean()
+        if not self.tilt_angle:
+            raise ValueError("the tilt angle is not defined")
+        elif not isinstance(self.tilt_angle, Real):
+            raise TypeError("the tilt angle should be a number")
 
     def create_logfile(self, scan_number, root_folder, filename):
         """
