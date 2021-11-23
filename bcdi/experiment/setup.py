@@ -754,19 +754,19 @@ class Setup:
         """
         self.grazing_angle = grazing_angle
         self.energy = self.energy or energy
-        if not self.energy:
+        if self.energy is None:
             raise ValueError("the X-ray energy is not defined")
         self.distance = self.distance or detector_distance
-        if not self.distance:
+        if self.distance is None:
             raise ValueError("the sample to detector distance is not defined")
         self.outofplane_angle = self.outofplane_angle or outofplane_angle
-        if not self.outofplane_angle:
+        if self.outofplane_angle is None:
             raise ValueError("the detector out-of-plane angle is not defined")
         self.inplane_angle = self.inplane_angle or inplane_angle
-        if not self.inplane_angle:
+        if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
         self.tilt_angle = self.tilt_angle or (tilt_angle[1:]-tilt_angle[0:-1]).mean()
-        if not self.tilt_angle:
+        if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         elif not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
