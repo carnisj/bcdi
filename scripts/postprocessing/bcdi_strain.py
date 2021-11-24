@@ -1155,7 +1155,7 @@ def run(prm):
             q_com=q_lab[::-1],  # q_com needs to be in xyz order
             is_orthogonal=True,
             reciprocal_space=False,
-            rocking_angle=prm["rocking_angle"],
+            rocking_angle=setup.rocking_angle,
             debugging=(True, False, False),
             title=("amp", "phase", "strain"),
         )
