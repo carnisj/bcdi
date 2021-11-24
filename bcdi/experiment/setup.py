@@ -160,6 +160,9 @@ class Setup:
         self.rocking_angle = rocking_angle
         self.grazing_angle = grazing_angle
 
+        # initialize other attributes
+        self.logfile = None
+
     @property
     def actuators(self):
         """
@@ -733,13 +736,13 @@ class Setup:
         return qx, qz, qy, frames_logical
 
     def check_setup(
-            self,
-            grazing_angle: Union[Tuple[Real, ...], None],
-            inplane_angle: Union[Real, np.ndarray],
-            outofplane_angle: Union[Real, np.ndarray],
-            tilt_angle: Union[np.ndarray, None],
-            detector_distance: Real,
-            energy: Union[Real, np.ndarray]
+        self,
+        grazing_angle: Union[Tuple[Real, ...], None],
+        inplane_angle: Union[Real, np.ndarray],
+        outofplane_angle: Union[Real, np.ndarray],
+        tilt_angle: Union[np.ndarray, None],
+        detector_distance: Real,
+        energy: Union[Real, np.ndarray],
     ) -> None:
         """
         Check if the required parameters are correctly defined.
@@ -765,7 +768,7 @@ class Setup:
         self.inplane_angle = self.inplane_angle or inplane_angle
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
-        self.tilt_angle = self.tilt_angle or (tilt_angle[1:]-tilt_angle[0:-1]).mean()
+        self.tilt_angle = self.tilt_angle or (tilt_angle[1:] - tilt_angle[0:-1]).mean()
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         elif not isinstance(self.tilt_angle, Real):
@@ -785,16 +788,19 @@ class Setup:
         :return: logfile
         """
         if self.custom_scan:
-            return None
+            logfile = None
+        else:
+            logfile = self._beamline.create_logfile(
+                scan_number=scan_number,
+                root_folder=root_folder,
+                filename=filename,
+                datadir=self.detector.datadir,
+                template_imagefile=self.detector.template_imagefile,
+                name=self.beamline,
+            )
+        self.logfile = logfile
 
-        return self._beamline.create_logfile(
-            scan_number=scan_number,
-            root_folder=root_folder,
-            filename=filename,
-            datadir=self.detector.datadir,
-            template_imagefile=self.detector.template_imagefile,
-            name=self.beamline,
-        )
+        return logfile
 
     def detector_frame(
         self,
@@ -1515,9 +1521,9 @@ class Setup:
         # based on the FFT window shape used in phase retrieval #
         #########################################################
         tilt = (
-                self.tilt_angle
-                * self.detector.preprocessing_binning[0]
-                * self.detector.binning[0]
+            self.tilt_angle
+            * self.detector.preprocessing_binning[0]
+            * self.detector.binning[0]
         )
 
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
@@ -2207,6 +2213,34 @@ class Setup:
             + ortho_imatrix[2, 2] * vector[0]
         )
         return new_z, new_y, new_x
+
+    def read_logfile(self, **kwargs):
+        """
+        Extract values of interest for the geometric transformation from the logfile.
+
+        This is the public interface of Diffractometer.goniometer_values
+
+        :param kwargs: beamline_specific parameters
+
+         - 'scan_number': int, the scan number to load
+
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        scan_number = kwargs.get("scan_number")
+        valid.valid_item(
+            scan_number,
+            allowed_types=int,
+            allow_none=True,
+            min_included=0,
+            name="scan_number",
+        )
+
+        return self.diffractometer.goniometer_values(
+            setup=self,
+            scan_number=scan_number,
+        )
 
     def transformation_bcdi(
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
