@@ -464,8 +464,13 @@ class Diffractometer(ABC):
 
     @detector_angles.setter
     def detector_angles(self, value):
-        valid.valid_container(value, container_types=tuple, item_types=Real,
-                              allow_none=True, name="detector_angles")
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="detector_angles",
+        )
         self._detector_angles = value
 
     @property
@@ -504,8 +509,13 @@ class Diffractometer(ABC):
 
     @sample_angles.setter
     def sample_angles(self, value):
-        valid.valid_container(value, container_types=tuple, item_types=Real,
-                              allow_none=True, name="sample_angles")
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="sample_angles",
+        )
         self._sample_angles = value
 
     @property
@@ -1423,19 +1433,20 @@ class DiffractometerCRISTAL(Diffractometer):
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: a tuple of angular values in degrees (rocking angular step, grazing
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
 
         # load the motor positions
-        (mgomega, mgphi, inplane_angle, outofplane_angle, energy, detector_distance) = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        (
+            mgomega,
+            mgphi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
@@ -1447,13 +1458,13 @@ class DiffractometerCRISTAL(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
@@ -1558,17 +1569,13 @@ class DiffractometerCRISTAL(Diffractometer):
         Setup.actuators, and use the default entry otherwise.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            group_key = list(logfile.keys())[0]
+            group_key = list(setup.logfile.keys())[0]
             energy = (
                 self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="Monochromator",
                     field_name="energy",
@@ -1583,7 +1590,7 @@ class DiffractometerCRISTAL(Diffractometer):
                 )
 
             scanned_motor = self.cristal_load_motor(
-                datafile=logfile,
+                datafile=setup.logfile,
                 root="/" + group_key,
                 actuator_name="scan_data",
                 field_name=setup.actuators.get("rocking_angle", "actuator_1_1"),
@@ -1592,7 +1599,7 @@ class DiffractometerCRISTAL(Diffractometer):
             if setup.rocking_angle == "outofplane":
                 mgomega = scanned_motor  # mgomega is scanned
                 mgphi = self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_phi",
                     field_name="position",
@@ -1600,7 +1607,7 @@ class DiffractometerCRISTAL(Diffractometer):
             elif setup.rocking_angle == "inplane":
                 mgphi = scanned_motor  # mgphi is scanned
                 mgomega = self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_omega",
                     field_name="position",
@@ -1609,13 +1616,13 @@ class DiffractometerCRISTAL(Diffractometer):
                 raise ValueError('Wrong value for "rocking_angle" parameter')
 
             delta = self.cristal_load_motor(
-                datafile=logfile,
+                datafile=setup.logfile,
                 root="/" + group_key + "/CRISTAL/Diffractometer/",
                 actuator_name="I06-C-C07-EX-DIF-DELTA",
                 field_name="position",
             )
             gamma = self.cristal_load_motor(
-                datafile=logfile,
+                datafile=setup.logfile,
                 root="/" + group_key + "/CRISTAL/Diffractometer/",
                 actuator_name="I06-C-C07-EX-DIF-GAMMA",
                 field_name="position",
@@ -1759,21 +1766,24 @@ class DiffractometerID01(Diffractometer):
 
     sample_rotations = ["y-", "x-", "y-"]
     detector_rotations = ["y-", "x-"]
-    motor_table = {"old_names": {
-        "mu": "Mu",
-        "eta": "Eta",
-        "phi": "Phi",
-        "nu": "Nu",
-        "delta": "Delta",
-        "energy": "Energy",
-    }, "new_names": {
-                    "mu": "mu",
-                    "eta": "eta",
-                    "phi": "phi",
-                    "nu": "nu",
-                    "delta": "del",
-                    "energy": "energy",
-                }}
+    motor_table = {
+        "old_names": {
+            "mu": "Mu",
+            "eta": "Eta",
+            "phi": "Phi",
+            "nu": "Nu",
+            "delta": "Delta",
+            "energy": "Energy",
+        },
+        "new_names": {
+            "mu": "mu",
+            "eta": "eta",
+            "phi": "phi",
+            "nu": "nu",
+            "delta": "del",
+            "energy": "energy",
+        },
+    }
 
     def __init__(self, sample_offsets):
         super().__init__(
@@ -1788,7 +1798,6 @@ class DiffractometerID01(Diffractometer):
 
         :param setup: the experimental setup: Class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: a tuple of angular values in degrees (rocking angular step, grazing
@@ -1796,7 +1805,6 @@ class DiffractometerID01(Diffractometer):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         # check some parameter
@@ -1805,9 +1813,16 @@ class DiffractometerID01(Diffractometer):
         )
 
         # load motor positions
-        (mu, eta, phi, inplane_angle, outofplane_angle, energy, detector_distance) = self.motor_positions(
+        (
+            mu,
+            eta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(
             setup=setup,
-            logfile=logfile,
             scan_number=scan_number,
         )
 
@@ -1821,13 +1836,13 @@ class DiffractometerID01(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
@@ -1959,22 +1974,21 @@ class DiffractometerID01(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         old_names = False
         if not setup.custom_scan:
-            motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_values = logfile[str(scan_number) + ".1"].motor_positions
+            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
             # positioners
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            # positioners
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             try:
                 _ = motor_values[motor_names.index("nu")]  # positioner
@@ -2109,20 +2123,15 @@ class DiffractometerNANOMAX(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: a tuple of angular values in degrees (rocking angular step, grazing
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-
         # load the motor positions
         (
             theta,
@@ -2130,8 +2139,8 @@ class DiffractometerNANOMAX(Diffractometer):
             inplane_angle,
             outofplane_angle,
             energy,
-            detector_distance
-        ) = self.motor_positions(setup=setup, logfile=logfile)
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
@@ -2143,13 +2152,13 @@ class DiffractometerNANOMAX(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
@@ -2243,39 +2252,35 @@ class DiffractometerNANOMAX(Diffractometer):
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (theta, phi, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             # Detector positions
-            group_key = list(logfile.keys())[0]  # currently 'entry'
+            group_key = list(setup.logfile.keys())[0]  # currently 'entry'
 
             # positionners
-            delta = logfile["/" + group_key + "/snapshot/delta"][:]
-            gamma = logfile["/" + group_key + "/snapshot/gamma"][:]
-            energy = logfile["/" + group_key + "/snapshot/energy"][:]
+            delta = setup.logfile["/" + group_key + "/snapshot/delta"][:]
+            gamma = setup.logfile["/" + group_key + "/snapshot/gamma"][:]
+            energy = setup.logfile["/" + group_key + "/snapshot/energy"][:]
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = logfile["/" + group_key + "/measurement/gonphi"][:]
+                    phi = setup.logfile["/" + group_key + "/measurement/gonphi"][:]
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = logfile["/" + group_key + "/snapshot/gontheta"][:]
+                theta = setup.logfile["/" + group_key + "/snapshot/gontheta"][:]
             else:
                 try:
-                    theta = logfile["/" + group_key + "/measurement/gontheta"][:]
+                    theta = setup.logfile["/" + group_key + "/measurement/gontheta"][:]
                 except KeyError:
                     raise KeyError(
                         "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                phi = logfile["/" + group_key + "/snapshot/gonphi"][:]
+                phi = setup.logfile["/" + group_key + "/snapshot/gonphi"][:]
 
             # remove user-defined sample offsets (sample: theta, phi)
             theta = theta - self.sample_offsets[0]
@@ -2348,15 +2353,10 @@ class DiffractometerP10(Diffractometer):
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: a tuple of angular values in degrees (rocking angular step, grazing
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-
         # load the motor positions
         (
             mu,
@@ -2367,7 +2367,7 @@ class DiffractometerP10(Diffractometer):
             outofplane_angle,
             energy,
             detector_distance,
-        ) = self.motor_positions(setup=setup, logfile=logfile)
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # om rocking curve
@@ -2385,7 +2385,7 @@ class DiffractometerP10(Diffractometer):
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
@@ -2553,14 +2553,10 @@ class DiffractometerP10(Diffractometer):
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            with open(logfile, "r") as fio:
+            with open(setup.logfile, "r") as fio:
                 index_om = None
                 index_phi = None
                 om = []
@@ -2717,19 +2713,12 @@ class DiffractometerP10SAXS(DiffractometerP10):
         Retrieve goniometer motor positions for a CDI tomographic scan.
 
         :param setup: the experimental setup: Class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: a tuple of angular values in degrees (rocking angular step, grazing
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-
         # load the motor positions
-        phi, energy, detector_distance = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        phi, energy, detector_distance = self.motor_positions(setup=setup)
 
         # define the circles of interest for CDI
         # no circle yet below phi at P10
@@ -2739,17 +2728,17 @@ class DiffractometerP10SAXS(DiffractometerP10):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=0,
             outofplane_angle=0,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
-        self.sample_angles = phi,
+        self.sample_angles = (phi,)
         self.detector_angles = (0, 0)
 
         return tilt_angle, grazing, 0, 0
@@ -2759,12 +2748,8 @@ class DiffractometerP10SAXS(DiffractometerP10):
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (phi, energy) values
         """
-        logfile = kwargs["logfile"]
         if setup.rocking_angle != "inplane":
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -2772,7 +2757,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
             index_phi = None
             phi = []
 
-            with open(logfile, "r") as fio:
+            with open(setup.logfile, "r") as fio:
                 fio_lines = fio.readlines()
                 for line in fio_lines:
                     this_line = line.strip()
@@ -2820,19 +2805,19 @@ class DiffractometerSIXS(Diffractometer):
         Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
 
         :param setup: the experimental setup: Class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: a tuple of angular values in degrees (rocking angular step, grazing
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-
         # load the motor positions
-        beta, mu, inplane_angle, outofplane_angle, energy, detector_distance = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        (
+            beta,
+            mu,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
@@ -2845,13 +2830,13 @@ class DiffractometerSIXS(Diffractometer):
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
@@ -2951,21 +2936,17 @@ class DiffractometerSIXS(Diffractometer):
         Load the scan data and extract motor positions at SIXS.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (beta, mu, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            mu = logfile.mu[:]  # scanned
-            delta = logfile.delta[0]  # not scanned
-            gamma = logfile.gamma[0]  # not scanned
+            mu = setup.logfile.mu[:]  # scanned
+            delta = setup.logfile.delta[0]  # not scanned
+            gamma = setup.logfile.gamma[0]  # not scanned
             try:
-                beta = logfile.basepitch[0]  # not scanned
+                beta = setup.logfile.basepitch[0]  # not scanned
             except AttributeError:  # data recorder changed after 11/03/2019
                 try:
-                    beta = logfile.beta[0]  # not scanned
+                    beta = setup.logfile.beta[0]  # not scanned
                 except AttributeError:
                     # the alias dictionnary was probably not provided
                     beta = 0
@@ -3043,7 +3024,7 @@ class Diffractometer34ID(Diffractometer):
         "gamma": "Gamma",
         "delta": "Delta",
         "energy": "Energy",
-        "detector_distance": "camdist"
+        "detector_distance": "camdist",
     }
 
     def __init__(self, sample_offsets):
@@ -3060,7 +3041,6 @@ class Diffractometer34ID(Diffractometer):
 
         :param setup: the experimental setup: Class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: a tuple of angular values in degrees (rocking angular step, grazing
@@ -3068,7 +3048,6 @@ class Diffractometer34ID(Diffractometer):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         # check some parameter
@@ -3077,9 +3056,15 @@ class Diffractometer34ID(Diffractometer):
         )
 
         # load the motor positions
-        theta, chi, phi, inplane_angle, outofplane_angle, energy, detector_distance = self.motor_positions(
-            setup=setup, logfile=logfile, scan_number=scan_number
-        )
+        (
+            theta,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup, scan_number=scan_number)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
@@ -3093,13 +3078,13 @@ class Diffractometer34ID(Diffractometer):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_goniometer(
+        setup.check_setup(
             grazing_angle=grazing,
             inplane_angle=inplane_angle,
             outofplane_angle=outofplane_angle,
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
-            energy=energy
+            energy=energy,
         )
 
         # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
@@ -3222,21 +3207,20 @@ class Diffractometer34ID(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: (theta, phi, delta, gamma, energy) values
         """
         # load and check kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         if not setup.custom_scan:
-            motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_values = logfile[str(scan_number) + ".1"].motor_positions
+            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
             # positioners
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            # positioners
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             if self.motor_table["theta"] in labels:  # scanned
                 theta = labels_data[labels.index(self.motor_table["theta"]), :]
@@ -3270,9 +3254,9 @@ class Diffractometer34ID(Diffractometer):
             else:  # positioner
                 energy = motor_values[motor_names.index(self.motor_table["energy"])]
 
-            detector_distance = motor_values[motor_names.index(
-                self.motor_table["detector_distance"]
-            )]
+            detector_distance = motor_values[
+                motor_names.index(self.motor_table["detector_distance"])
+            ]
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
