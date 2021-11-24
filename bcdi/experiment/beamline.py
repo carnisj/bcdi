@@ -2637,7 +2637,8 @@ class Beamline34ID(Beamline):
                         * (
                             np.cos(grazing_angle[0])
                             * (np.cos(inplane) * np.cos(outofplane) - 1)
-                            + np.sin(grazing_angle[0]) * np.sin(inplane)
+                            + np.sin(grazing_angle[0])
+                            * np.sin(inplane)
                             * np.cos(outofplane)
                         ),
                         (
