@@ -812,7 +812,6 @@ class Diffractometer(ABC):
         self,
         detector,
         setup,
-        logfile,
         normalize,
         nb_frames,
         bin_during_loading,
@@ -823,7 +822,6 @@ class Diffractometer(ABC):
 
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
          return a monitor based on the integrated intensity in the region of interest
          defined by detector.sum_roi, 'skip' to do nothing
@@ -891,7 +889,6 @@ class Diffractometer(ABC):
         monitor = self.init_monitor(
             normalize=normalize,
             nb_frames=nb_frames,
-            logfile=logfile,
             setup=setup,
             **kwargs,
         )
@@ -903,7 +900,7 @@ class Diffractometer(ABC):
             loading_roi,
         )
 
-    def init_monitor(self, normalize, nb_frames, logfile, setup, **kwargs):
+    def init_monitor(self, normalize, nb_frames, setup, **kwargs):
         """
         Initialize the monitor for normalization.
 
@@ -911,7 +908,6 @@ class Diffractometer(ABC):
          return a monitor based on the integrated intensity in the region of interest
          defined by detector.sum_roi, 'skip' to do nothing
         :param nb_frames: number of data points (not including series at each point)
-        :param logfile: the logfile created in Setup.create_logfile()
         :param setup: an instance of the class Setup
         :param kwargs:
 
@@ -926,12 +922,7 @@ class Diffractometer(ABC):
             if setup.custom_scan:
                 monitor = setup.custom_monitor
             else:
-                monitor = self.read_monitor(
-                    logfile=logfile,
-                    beamline=setup.beamline,
-                    actuators=setup.actuators,
-                    **kwargs,
-                )
+                monitor = self.read_monitor(setup=setup, **kwargs)
         if monitor is None:
             monitor = np.ones(nb_frames)
             print("Cannot retrieve the monitor, use `actuators` to define it.")
@@ -939,7 +930,6 @@ class Diffractometer(ABC):
 
     def load_check_dataset(
         self,
-        logfile,
         scan_number,
         detector,
         setup,
@@ -954,7 +944,6 @@ class Diffractometer(ABC):
         """
         Load data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
@@ -1001,7 +990,6 @@ class Diffractometer(ABC):
             )
         else:
             data, mask2d, monitor, loading_roi = self.load_data(
-                logfile=logfile,
                 setup=setup,
                 scan_number=scan_number,
                 detector=detector,
@@ -1085,7 +1073,6 @@ class Diffractometer(ABC):
     @abstractmethod
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1099,7 +1086,6 @@ class Diffractometer(ABC):
         """
         Load data including detector/background corrections.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1116,8 +1102,6 @@ class Diffractometer(ABC):
          totality of the following keys:
 
           - 'scan_number': the scan number to load (e.g. for ID01)
-          - 'actuators': dictionary defining the entries corresponding to actuators
-            (e.g. for CRISTAL)
 
         :return: in this order
 
@@ -1223,18 +1207,14 @@ class Diffractometer(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_monitor(logfile, **kwargs):
+    def read_monitor(setup, **kwargs):
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
+        :param setup: an instance of the class Setup
+        :param kwargs: beamline_specific parameter
 
           - 'scan_number': int, number of the scan (e.g. for ID01)
-          - 'actuators': dictionary defining the entries corresponding to actuators
-            in the data file (at CRISTAL the location of data keeps changing)
-          - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
 
         :return: the default monitor values
         """
@@ -1475,7 +1455,6 @@ class DiffractometerCRISTAL(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1492,7 +1471,6 @@ class DiffractometerCRISTAL(Diffractometer):
         It will look for the correct entry 'detector' in the dictionary 'actuators',
         and look for a dataset with compatible shape otherwise.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1504,27 +1482,22 @@ class DiffractometerCRISTAL(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs:
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the data file (at CRISTAL the location of data keeps changing)
-
         :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
-        actuators = kwargs.get("actuators")
-        if actuators is None:
+        if setup.actuators is None:
             raise ValueError("'actuators' parameter required")
 
         # look for the detector entry (keep changing at CRISTAL)
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for CRISTAL")
-        group_key = list(logfile.keys())[0]
+        group_key = list(setup.logfile.keys())[0]
         tmp_data = self.find_detector(
-            logfile=logfile,
-            actuators=actuators,
+            logfile=setup.logfile,
+            actuators=setup.actuators,
             root=group_key,
             detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x),
         )
@@ -1535,7 +1508,6 @@ class DiffractometerCRISTAL(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -1734,21 +1706,16 @@ class DiffractometerCRISTAL(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs:
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the data file (at CRISTAL the location of data keeps changing)
-
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "data_04")
-            return self.read_device(logfile=logfile, device_name=monitor_name)
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "data_04")
+            return self.read_device(logfile=setup.logfile, device_name=monitor_name)
         return None
 
 
@@ -1853,7 +1820,6 @@ class DiffractometerID01(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1867,7 +1833,6 @@ class DiffractometerID01(Diffractometer):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1896,8 +1861,8 @@ class DiffractometerID01(Diffractometer):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1927,7 +1892,6 @@ class DiffractometerID01(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2077,26 +2041,23 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param kwargs:
          - 'scan_number': int, the scan number to load
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the spec file
 
         :return: the default monitor values
         """
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "exp1")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "exp1")
             return self.read_device(
-                logfile=logfile, scan_number=scan_number, device_name=monitor_name
+                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
             )
         return None
 
@@ -2169,7 +2130,6 @@ class DiffractometerNANOMAX(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2183,7 +2143,6 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         Load NANOMAX data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the calss Setup
         :param flatfield: the 2D flatfield array
@@ -2204,16 +2163,16 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         if debugging:
             print(
-                str(logfile["entry"]["description"][()])[3:-2]
+                str(setup.logfile["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
-        group_key = list(logfile.keys())[0]  # currently 'entry'
+        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
         try:
-            tmp_data = logfile["/" + group_key + "/measurement/merlin/frames"][:]
+            tmp_data = setup.logfile["/" + group_key + "/measurement/merlin/frames"][:]
         except KeyError:
-            tmp_data = logfile["/" + group_key + "measurement/Merlin/data"][()]
+            tmp_data = setup.logfile["/" + group_key + "measurement/Merlin/data"][()]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2221,7 +2180,6 @@ class DiffractometerNANOMAX(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2314,14 +2272,14 @@ class DiffractometerNANOMAX(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at NANOMAX.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        return self.read_device(logfile=logfile, device_name="alba2")
+        return self.read_device(logfile=setup.logfile, device_name="alba2")
 
 
 class DiffractometerP10(Diffractometer):
@@ -2396,7 +2354,6 @@ class DiffractometerP10(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2410,7 +2367,6 @@ class DiffractometerP10(Diffractometer):
         """
         Load P10 data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -2462,7 +2418,6 @@ class DiffractometerP10(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2678,16 +2633,16 @@ class DiffractometerP10(Diffractometer):
             print("found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at P10.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        monitor = self.read_device(logfile=logfile, device_name="ipetra")
+        monitor = self.read_device(logfile=setup.logfile, device_name="ipetra")
         if len(monitor) == 0:
-            monitor = self.read_device(logfile=logfile, device_name="curpetra")
+            monitor = self.read_device(logfile=setup.logfile, device_name="curpetra")
         return monitor
 
 
@@ -2847,7 +2802,6 @@ class DiffractometerSIXS(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2861,7 +2815,6 @@ class DiffractometerSIXS(Diffractometer):
         """
         Load data, apply filters and concatenate it for phasing at SIXS.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -2884,19 +2837,19 @@ class DiffractometerSIXS(Diffractometer):
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
         if detector.name == "Merlin":
-            tmp_data = logfile.merlin[:]
+            tmp_data = setup.logfile.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
-                tmp_data = logfile.mfilm[:]
+                tmp_data = setup.logfile.mfilm[:]
             else:
                 try:
-                    tmp_data = logfile.mpx_image[:]
+                    tmp_data = setup.logfile.mpx_image[:]
                 except AttributeError:
                     try:
-                        tmp_data = logfile.maxpix[:]
+                        tmp_data = setup.logfile.maxpix[:]
                     except AttributeError:
                         # the alias dictionnary was probably not provided
-                        tmp_data = logfile.image[:]
+                        tmp_data = setup.logfile.image[:]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2905,7 +2858,6 @@ class DiffractometerSIXS(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2980,25 +2932,21 @@ class DiffractometerSIXS(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at SIXS.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs:
-         - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
-
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        beamline = kwargs.get("beamline")
-        if beamline is None:
+        if setup.beamline is None:
             raise ValueError("'beamline' parameter required")
-        if beamline == "SIXS_2018":
-            return self.read_device(logfile=logfile, device_name="imon1")
+        if setup.beamline == "SIXS_2018":
+            return self.read_device(logfile=setup.logfile, device_name="imon1")
         # SIXS_2019
-        monitor = self.read_device(logfile=logfile, device_name="imon0")
+        monitor = self.read_device(logfile=setup.logfile, device_name="imon0")
         if len(monitor) == 0:  # the alias dictionnary was probably not provided
-            monitor = self.read_device(logfile=logfile, device_name="intensity")
+            monitor = self.read_device(logfile=setup.logfile, device_name="intensity")
         return monitor
 
 
@@ -3096,7 +3044,6 @@ class Diffractometer34ID(Diffractometer):
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -3110,7 +3057,6 @@ class Diffractometer34ID(Diffractometer):
         """
         Load 34ID-C data including detector/background corrections.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -3131,8 +3077,8 @@ class Diffractometer34ID(Diffractometer):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -3161,7 +3107,6 @@ class Diffractometer34ID(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -3301,25 +3246,22 @@ class Diffractometer34ID(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at 34ID-C.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param kwargs:
          - 'scan_number': int, the scan number to load
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the spec file
 
         :return: the default monitor values
         """
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "Monitor")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "Monitor")
             return self.read_device(
-                logfile=logfile, scan_number=scan_number, device_name=monitor_name
+                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
             )
         return None
