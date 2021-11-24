@@ -472,17 +472,13 @@ def run(prm):
         template_imagefile=prm["template_imagefile"],
     )
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan, root_folder=root_folder, filename=detector.specfile
     )
 
     # load the goniometer positions needed in the calculation
     # of the transformation matrix
-    setup.diffractometer.goniometer_values(
-        logfile=logfile,
-        scan_number=scan,
-        setup=setup,
-    )
+    setup.read_logfile(scan_number=scan)
 
     ###################
     # print instances #
@@ -798,9 +794,9 @@ def run(prm):
         voxel_z, voxel_y, voxel_x = setup.voxel_sizes_detector(
             array_shape=original_size,
             tilt_angle=(
-                    prm.get("tilt_angle")
-                    * detector.preprocessing_binning[0]
-                    * detector.binning[0]
+                prm.get("tilt_angle")
+                * detector.preprocessing_binning[0]
+                * detector.binning[0]
             ),
             pixel_x=detector.pixelsize_x,
             pixel_y=detector.pixelsize_y,

@@ -668,11 +668,7 @@ def run(prm):
                 comment += "_lin"
                 # load the goniometer positions needed in the calculation
                 # of the transformation matrix
-                setup.diffractometer.goniometer_values(
-                    logfile=logfile,
-                    scan_number=scan_nb,
-                    setup=setup,
-                )
+                setup.read_logfile(scan_number=scan_nb)
             else:  # 'xrayutilities'
                 comment += "_xrutil"
         if normalize_flux:
