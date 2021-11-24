@@ -223,10 +223,7 @@ if high_threshold != 0:
     setup.grazing_angle,
     setup.inplane_angle,
     setup.outofplane_angle,
-) = setup.diffractometer.goniometer_values(
-    logfile=logfile, scan_number=scan, setup=setup, frames_logical=frames_logical
-)
-setup.tilt_angle = (tilt_values[1:] - tilt_values[0:-1]).mean()
+) = setup.read_logfile(scan_number=scan)
 
 nb_frames = len(tilt_values)
 if numz != nb_frames:

@@ -220,9 +220,7 @@ if high_threshold != 0:
 # calculate rocking curve and fit it to get the FWHM #
 ######################################################
 if data.ndim == 3:
-    tilt, _, _, _ = setup.diffractometer.goniometer_values(
-        frames_logical=frames_logical, logfile=logfile, scan_number=scan, setup=setup
-    )
+    tilt, _, _, _ = setup.read_logfile(scan_number=scan)
     rocking_curve = np.zeros(numz)
 
     z0, y0, x0 = tuple(
