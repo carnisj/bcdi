@@ -231,11 +231,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "energy":
         if value is None or isinstance(value, Number):
             valid.valid_item(
-                value,
-                allowed_types=Real,
-                min_excluded=0,
-                allow_none=True,
-                name=key)
+                value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+            )
         else:
             valid.valid_container(
                 value,
@@ -486,11 +483,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
 
     elif key == "sdd":
         valid.valid_item(
-            value,
-            allowed_types=Real,
-            min_excluded=0,
-            allow_none=True,
-            name=key
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
         )
     elif key == "sort_method":
         allowed = {"mean_amplitude", "variance", "variance/mean", "volume"}
