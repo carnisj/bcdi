@@ -46,7 +46,7 @@ API Reference
 """
 from abc import ABC, abstractmethod
 import h5py
-from math import isclose
+from math import hypot, isclose
 import numpy as np
 from numbers import Real
 import os
@@ -1838,7 +1838,7 @@ class BeamlineP10SAXS(BeamlineP10):
             interp_angle[x_interp == 0]
         )
 
-        interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+        interp_radius = np.multiply(sign_array, hypot(x_interp, z_interp))
 
         if debugging:
             gu.imshow_plot(
