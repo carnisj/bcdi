@@ -40,6 +40,7 @@ class TestCheckSetup(unittest.TestCase):
         energy: Union[Real, np.ndarray],
     ) -> None:
     """
+
     def setUp(self) -> None:
         self.setup = Setup(beamline="ID01")
         self.params = {"grazing_angle": (1, 2),

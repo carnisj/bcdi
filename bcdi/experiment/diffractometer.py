@@ -1417,7 +1417,6 @@ class DiffractometerCRISTAL(Diffractometer):
          incidence angles, inplane detector angle, outofplane detector angle). The
          grazing incidence angles are the positions of circles below the rocking circle.
         """
-
         # load the motor positions
         (
             mgomega,
