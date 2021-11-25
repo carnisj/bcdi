@@ -485,8 +485,6 @@ def run(prm):
     rocking_angle = prm["rocking_angle"]
     photon_threshold = prm["photon_threshold"]
     reload_orthogonal = prm["reload_orthogonal"]
-    inplane_angle = prm["inplane_angle"]
-    outofplane_angle = prm["outofplane_angle"]
     roi_detector = create_roi(dic=prm)
     use_rawdata = prm["use_rawdata"]
     normalize_flux = prm["normalize_flux"]
@@ -601,7 +599,7 @@ def run(prm):
         detector=detector,
         energy=prm.get("energy"),
         rocking_angle=rocking_angle,
-        distance=prm["sdd"],
+        distance=prm.get("sdd"),
         beam_direction=prm["beam_direction"],
         sample_inplane=prm["sample_inplane"],
         sample_outofplane=prm["sample_outofplane"],
@@ -613,6 +611,8 @@ def run(prm):
         custom_motors=prm["custom_motors"],
         actuators=prm["actuators"],
         is_series=prm["is_series"],
+        outofplane_angle=prm.get("outofplane_angle"),
+        inplane_angle=prm.get("inplane_angle"),
     )
 
     ########################################
