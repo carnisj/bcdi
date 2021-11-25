@@ -468,35 +468,14 @@ class Setup:
 
     @grazing_angle.setter
     def grazing_angle(self, value):
-        if self.rocking_angle == "outofplane":
-            # only the mu angle (rotation around the vertical axis,
-            # below the rocking angle omega/om/eta) is needed
-            # mu is set to 0 if it does not exist
-            valid.valid_container(
-                value,
-                container_types=(tuple, list),
-                item_types=Real,
-                allow_none=True,
-                name="Setup.grazing_angle",
-            )
-            self._grazing_angle = value
-        elif self.rocking_angle == "inplane":
-            # one or more values needed, for example: mu angle,
-            # the omega/om/eta angle, the chi angle
-            # (rotations respectively around the vertical axis,
-            # outboard and downstream, below the rocking angle phi)
-            valid.valid_container(
-                value,
-                container_types=(tuple, list),
-                item_types=Real,
-                allow_none=True,
-                name="Setup.grazing_angle",
-            )
-            self._grazing_angle = value
-        else:  # self.rocking_angle == 'energy'
-            # there is no sample rocking for energy scans,
-            # hence the grazing angle value do not matter
-            self._grazing_angle = None
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            item_types=Real,
+            allow_none=True,
+            name="Setup.grazing_angle",
+        )
+        self._grazing_angle = value
 
     @property
     def incident_wavevector(self):
