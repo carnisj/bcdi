@@ -22,7 +22,7 @@ import numpy as np
 from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
-from typing import Tuple, Union
+from typing import List, Optional, Tuple, Union
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -737,10 +737,10 @@ class Setup:
 
     def check_setup(
         self,
-        grazing_angle: Union[Tuple[Real, ...], None],
+        grazing_angle: Optional[Tuple[Real, ...]],
         inplane_angle: Union[Real, np.ndarray],
         outofplane_angle: Union[Real, np.ndarray],
-        tilt_angle: Union[np.ndarray, None],
+        tilt_angle: np.ndarray,
         detector_distance: Real,
         energy: Union[Real, np.ndarray],
     ) -> None:
@@ -768,7 +768,7 @@ class Setup:
         self.inplane_angle = self.inplane_angle or inplane_angle
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
-        self.tilt_angle = self.tilt_angle or (tilt_angle[1:] - tilt_angle[0:-1]).mean()
+        self.tilt_angle = self.tilt_angle or np.mean(tilt_angle[1:] - tilt_angle[0:-1])
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         elif not isinstance(self.tilt_angle, Real):
