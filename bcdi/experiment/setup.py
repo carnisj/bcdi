@@ -735,22 +735,27 @@ class Setup:
         :return:
         """
         self.grazing_angle = grazing_angle
+
         self.energy = self.energy or energy
         if self.energy is None:
             raise ValueError("the X-ray energy is not defined")
+
         self.distance = self.distance or detector_distance
         if self.distance is None:
             raise ValueError("the sample to detector distance is not defined")
+
         self.outofplane_angle = self.outofplane_angle or outofplane_angle
         if self.outofplane_angle is None:
             raise ValueError("the detector out-of-plane angle is not defined")
+
         self.inplane_angle = self.inplane_angle or inplane_angle
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
+
         self.tilt_angle = self.tilt_angle or np.mean(tilt_angle[1:] - tilt_angle[0:-1])
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
-        elif not isinstance(self.tilt_angle, Real):
+        if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
     def create_logfile(self, scan_number, root_folder, filename):
