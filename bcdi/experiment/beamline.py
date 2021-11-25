@@ -820,12 +820,12 @@ class BeamlineID01(Beamline):
         if os.path.isfile(filename):
             # filename is already the full path to the .spec file
             return SpecFile(filename)
-        print(f"Could not find the spec file at {filename}")
+        print(f"Could not find the spec file at: {filename}")
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
         path = root_folder + filename
-        print(f"Trying to load the spec file at {path}")
+        print(f"Trying to load the spec file at: {path}")
         return SpecFile(path)
 
     @property
@@ -1463,14 +1463,14 @@ class BeamlineP10(Beamline):
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
             return filename
-        print(f"Could not find the spec file at {filename}")
+        print(f"Could not find the fio file at: {filename}")
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
 
         # return the path to the .fio file
         path = root_folder + filename + "/" + filename + ".fio"
-        print(f"Trying to load the fio file at {path}")
+        print(f"Trying to load the fio file at: {path}")
         return path
 
     @property
@@ -2366,12 +2366,12 @@ class Beamline34ID(Beamline):
         if os.path.isfile(filename):
             # filename is already the full path to the .spec file
             return SpecFile(filename)
-        print(f"Could not find the spec file at {filename}")
+        print(f"Could not find the spec file at: {filename}")
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
         path = root_folder + filename
-        print(f"Trying to load the spec file at {path}")
+        print(f"Trying to load the spec file at: {path}")
         return SpecFile(path)
 
     @property
