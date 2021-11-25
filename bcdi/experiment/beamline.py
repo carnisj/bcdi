@@ -1516,13 +1516,14 @@ class BeamlineP10(Beamline):
 
         """
         specfile = kwargs.get("specfile_name")
+        default_specfile = sample_name + "_{:05d}".format(scan_number)
         if specfile is None or not os.path.isfile(specfile):
             # default to the usual position of .fio at P10
-            specfile = sample_name + "_{:05d}".format(scan_number)
+            specfile = default_specfile
 
-        homedir = root_folder + specfile + "/"
+        homedir = root_folder + default_specfile + "/"
         default_dirname = "e4m/"
-        template_imagefile = specfile + template_imagefile
+        template_imagefile = default_specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     def process_positions(
