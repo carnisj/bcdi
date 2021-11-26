@@ -8,6 +8,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import os
+from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 from bcdi.experiment.diffractometer import (
@@ -706,7 +708,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             )
 
 
-class TestBeamlineP10(unittest.TestCase):
+class TestBeamlineP10(fake_filesystem_unittest.TestCase):
     """Tests related to P10 beamline instantiation."""
 
     def setUp(self):
@@ -775,6 +777,34 @@ class TestBeamlineP10(unittest.TestCase):
         self.assertEqual(
             specfile, self.sample_name + "_{:05d}".format(self.scan_number)
         )
+        self.assertEqual(template_imagefile, "S_00001_master.h5")
+
+    def test_init_paths_specfile_full_path(self):
+        self.setUpPyfakefs()
+        self.valid_path = "/gpfs/bcdi/data"
+        os.makedirs(self.valid_path)
+        with open(self.valid_path + "/dummy.fio", 'w') as f:
+            f.write('dummy')
+
+        params = {
+            "root_folder": self.root_dir,
+            "sample_name": self.sample_name,
+            "scan_number": self.scan_number,
+            "specfile_name": self.valid_path + "/dummy.fio",
+            "template_imagefile": self.template_imagefile,
+        }
+        (
+            homedir,
+            default_dirname,
+            specfile,
+            template_imagefile,
+        ) = self.beamline.init_paths(**params)
+        self.assertEqual(
+            homedir,
+            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
+        )
+        self.assertEqual(default_dirname, "e4m/")
+        self.assertEqual(specfile, params["specfile_name"])
         self.assertEqual(template_imagefile, "S_00001_master.h5")
 
     def test_init_qconversion(self):
