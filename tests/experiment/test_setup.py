@@ -51,6 +51,44 @@ class TestCheckSetup(unittest.TestCase):
                        "energy": 9000,
                        }
 
+    def test_check_setup_outofplane_angle_predefined(self):
+        self.setup.outofplane_angle = 2
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.outofplane_angle, 2)
+
+    def test_check_setup_outofplane_angle_none(self):
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.outofplane_angle, self.params["outofplane_angle"])
+
+    def test_check_setup_outofplane_angle_ndarray(self):
+        self.params["outofplane_angle"] = np.arange(10)
+        with self.assertRaises(TypeError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_outofplane_angle_undefined(self):
+        self.params["outofplane_angle"] = None
+        with self.assertRaises(ValueError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_inplane_angle_predefined(self):
+        self.setup.inplane_angle = 2
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.inplane_angle, 2)
+
+    def test_check_setup_inplane_angle_none(self):
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.inplane_angle, self.params["inplane_angle"])
+
+    def test_check_setup_inplane_angle_ndarray(self):
+        self.params["inplane_angle"] = np.arange(10)
+        with self.assertRaises(TypeError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_inplane_angle_undefined(self):
+        self.params["inplane_angle"] = None
+        with self.assertRaises(ValueError):
+            self.setup.check_setup(**self.params)
+
     def test_check_setup_grazing_angle_predefined(self):
         self.setup.grazing_angle = (0.1,)
         self.setup.check_setup(**self.params)
