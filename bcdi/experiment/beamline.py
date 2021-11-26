@@ -1523,7 +1523,9 @@ class BeamlineP10(Beamline):
 
         homedir = root_folder + default_specfile + "/"
         default_dirname = "e4m/"
-        template_imagefile = default_specfile + template_imagefile
+
+        if template_imagefile is not None:
+            template_imagefile = default_specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     def process_positions(

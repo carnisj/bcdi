@@ -1855,7 +1855,8 @@ class DiffractometerID01(Diffractometer):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
@@ -2384,6 +2385,8 @@ class DiffractometerP10(Diffractometer):
          - the monitor values for normalization
 
         """
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         is_series = setup.is_series
@@ -3071,7 +3074,8 @@ class Diffractometer34ID(Diffractometer):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:

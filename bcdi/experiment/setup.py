@@ -1109,7 +1109,7 @@ class Setup:
         valid.valid_container(
             template_imagefile,
             container_types=str,
-            min_length=1,
+            min_length=0,
             allow_none=True,
             name="template_imagefile",
         )

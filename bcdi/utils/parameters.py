@@ -503,7 +503,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "template_imagefile":
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value, container_types=str, min_length=0, allow_none=True, name=key
         )
     elif key == "threshold_gradient":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
