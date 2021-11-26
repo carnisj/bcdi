@@ -717,22 +717,25 @@ class Setup:
     def check_setup(
         self,
         grazing_angle: Optional[Tuple[Real, ...]],
-        inplane_angle: Union[Real, np.ndarray],
-        outofplane_angle: Union[Real, np.ndarray],
+        inplane_angle: Real,
+        outofplane_angle: Real,
         tilt_angle: np.ndarray,
         detector_distance: Real,
-        energy: Union[Real, np.ndarray],
+        energy: Real,
     ) -> None:
         """
         Check if the required parameters are correctly defined.
 
+        This method is called in Diffractometer.goniometer_value, which is used only for
+        the geometric transformation using the linearized transformation matrix. Hence,
+        arrays for detector angles and the energy are not allowed.
+
         :param grazing_angle:
-        :param inplane_angle:
-        :param outofplane_angle:
-        :param tilt_angle:
-        :param detector_distance:
-        :param energy:
-        :return:
+        :param inplane_angle: detector inplane angle in degrees
+        :param outofplane_angle: detector out-of-plane angle in degrees
+        :param tilt_angle: ndarray of shape (N,), values of the rocking angle
+        :param detector_distance: sample to detector distance in meters
+        :param energy: X-ray energy in eV
         """
         self.grazing_angle = grazing_angle
 
