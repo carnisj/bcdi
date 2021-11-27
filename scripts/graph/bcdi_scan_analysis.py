@@ -305,7 +305,6 @@ if scale not in {"linear", "log"}:
 # load data #
 #############
 data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
-    logfile=logfile,
     scan_number=scan,
     detector=detector,
     setup=setup,

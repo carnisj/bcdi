@@ -1075,7 +1075,6 @@ def load_bcdi_data(
     )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
-        logfile=logfile,
         scan_number=scan_number,
         detector=detector,
         setup=setup,
