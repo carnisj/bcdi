@@ -51,6 +51,44 @@ class TestCheckSetup(unittest.TestCase):
                        "energy": 9000,
                        }
 
+    def test_check_setup_distance_predefined(self):
+        self.setup.distance = 1.5
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.distance, 1.5)
+
+    def test_check_setup_distance_none(self):
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.distance, self.params["detector_distance"])
+
+    def test_check_setup_distance_undefined(self):
+        self.params["detector_distance"] = None
+        with self.assertRaises(ValueError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_distance_ndarray(self):
+        self.params["distance"] = np.array([1, 1.2, 1.4])
+        with self.assertRaises(TypeError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_energy_predefined(self):
+        self.setup.energy = 12000
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.energy, 12000)
+
+    def test_check_setup_energy_none(self):
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.energy, self.params["energy"])
+
+    def test_check_setup_energy_undefined(self):
+        self.params["energy"] = None
+        with self.assertRaises(ValueError):
+            self.setup.check_setup(**self.params)
+
+    def test_check_setup_energy_ndarray(self):
+        self.params["energy"] = np.array([10.005, 10.010, 10.015])
+        with self.assertRaises(TypeError):
+            self.setup.check_setup(**self.params)
+
     def test_check_setup_tilt_angle_predefined(self):
         self.setup.tilt_angle = 2
         self.setup.check_setup(**self.params)
