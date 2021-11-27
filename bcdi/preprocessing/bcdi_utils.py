@@ -1014,7 +1014,6 @@ def grid_bcdi_xrayutil(
 
 
 def load_bcdi_data(
-    logfile,
     scan_number,
     detector,
     setup,
@@ -1029,8 +1028,6 @@ def load_bcdi_data(
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
@@ -1132,7 +1129,6 @@ def load_bcdi_data(
 def reload_bcdi_data(
     data,
     mask,
-    logfile,
     scan_number,
     detector,
     setup,
@@ -1145,8 +1141,6 @@ def reload_bcdi_data(
 
     :param data: the 3D data array
     :param mask: the 3D mask array
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
@@ -1193,9 +1187,7 @@ def reload_bcdi_data(
     else:  # use the default monitor of the beamline
         monitor = setup.diffractometer.read_monitor(
             scan_number=scan_number,
-            logfile=logfile,
-            beamline=setup.beamline,
-            actuators=setup.actuators,
+            setup=setup,
         )
 
         print("Intensity normalization using " + normalize_method)
