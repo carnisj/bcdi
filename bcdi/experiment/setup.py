@@ -742,10 +742,14 @@ class Setup:
         self.energy = self.energy or energy
         if self.energy is None:
             raise ValueError("the X-ray energy is not defined")
+        if not isinstance(self.energy, Real):
+            raise TypeError("the X-ray energy should be fixed")
 
         self.distance = self.distance or detector_distance
         if self.distance is None:
             raise ValueError("the sample to detector distance is not defined")
+        if not isinstance(self.distance, Real):
+            raise TypeError("the sample to detector distance should be fixed")
 
         self.outofplane_angle = self.outofplane_angle or outofplane_angle
         if self.outofplane_angle is None:
