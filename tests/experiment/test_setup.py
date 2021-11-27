@@ -43,13 +43,14 @@ class TestCheckSetup(unittest.TestCase):
 
     def setUp(self) -> None:
         self.setup = Setup(beamline="ID01")
-        self.params = {"grazing_angle": (1, 2),
-                       "inplane_angle": 1.23,
-                       "outofplane_angle": 49.2,
-                       "tilt_angle": np.array([1, 1.005, 1.01, 1.015]),
-                       "detector_distance": 0.5,
-                       "energy": 9000,
-                       }
+        self.params = {
+            "grazing_angle": (1, 2),
+            "inplane_angle": 1.23,
+            "outofplane_angle": 49.2,
+            "tilt_angle": np.array([1, 1.005, 1.01, 1.015]),
+            "detector_distance": 0.5,
+            "energy": 9000,
+        }
 
     def test_check_setup_distance_predefined(self):
         self.setup.distance = 1.5

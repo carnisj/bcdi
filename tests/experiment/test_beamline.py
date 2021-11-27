@@ -783,8 +783,8 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
         self.valid_path = "/gpfs/bcdi/data"
         os.makedirs(self.valid_path)
-        with open(self.valid_path + "/dummy.fio", 'w') as f:
-            f.write('dummy')
+        with open(self.valid_path + "/dummy.fio", "w") as f:
+            f.write("dummy")
 
         params = {
             "root_folder": self.root_dir,
