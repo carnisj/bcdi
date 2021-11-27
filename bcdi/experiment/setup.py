@@ -755,8 +755,11 @@ class Setup:
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
 
-        tilt_angle = np.asarray(tilt_angle)
-        self.tilt_angle = self.tilt_angle or np.mean(tilt_angle[1:] - tilt_angle[0:-1])
+        if tilt_angle is not None:
+            tilt_angle = np.mean(
+                np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
+            )
+        self.tilt_angle = self.tilt_angle or tilt_angle
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
