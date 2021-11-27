@@ -51,6 +51,23 @@ class TestCheckSetup(unittest.TestCase):
                        "energy": 9000,
                        }
 
+    def test_check_setup_tilt_angle_predefined(self):
+        self.setup.tilt_angle = 2
+        self.setup.check_setup(**self.params)
+        self.assertEqual(self.setup.tilt_angle, 2)
+
+    def test_check_setup_tilt_angle_none(self):
+        self.setup.check_setup(**self.params)
+        correct = np.mean(
+            self.params["tilt_angle"][1:] - self.params["tilt_angle"][:-1]
+        )
+        self.assertEqual(self.setup.tilt_angle, correct)
+
+    def test_check_setup_tilt_angle_undefined(self):
+        self.params["tilt_angle"] = None
+        with self.assertRaises(ValueError):
+            self.setup.check_setup(**self.params)
+
     def test_check_setup_outofplane_angle_predefined(self):
         self.setup.outofplane_angle = 2
         self.setup.check_setup(**self.params)
