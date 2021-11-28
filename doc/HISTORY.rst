@@ -1,6 +1,11 @@
 Future:
 -------
 
+* Allow lazy loading of the experimental parameters: energy, detector distance, tilt
+  angle, detector inplane and out-of-plane angles. If not provided by the user, the
+  values will be looked for in the log/spec file. An exception is raised if they are
+  not available.
+
 * Implement the chi circle at 34ID-C and update the calculation of the transformation
   matrix.
 
