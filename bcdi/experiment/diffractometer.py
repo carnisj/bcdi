@@ -72,7 +72,7 @@ import re
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import List
+from typing import List, Optional
 
 from ..graph import graph_utils as gu
 from .rotation_matrix import RotationMatrix
@@ -2012,6 +2012,8 @@ class DiffractometerID01(Diffractometer):
             nu = setup.custom_motors["nu"]
             energy = setup.energy
 
+        detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+
         return mu, eta, phi, nu, delta, energy, setup.distance
 
     @staticmethod
@@ -2059,6 +2061,21 @@ class DiffractometerID01(Diffractometer):
             return self.read_device(
                 logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
             )
+        return None
+
+    @staticmethod
+    def retrieve_distance(setup) -> Optional[float]:
+        """
+        Load the spec file and retrieve the detector distance if it has been calibrated.
+
+        :param setup: an instance of the class Setup
+        :return: the detector distance in meters or None
+        """
+        path = util.find_file(
+            filename=setup.detector.specfile,
+            default_folder=setup.detector.rootdir
+        )
+
         return None
 
 
