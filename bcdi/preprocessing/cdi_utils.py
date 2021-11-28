@@ -432,9 +432,7 @@ def grid_cdi(
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle, _, _ = setup.diffractometer.motor_positions(
-                    setup=setup, logfile=logfile
-                )
+                cdi_angle, _, _ = setup.diffractometer.motor_positions(setup=setup)
                 # second return value is the X-ray energy, third the detector distance
         else:
             raise ValueError(

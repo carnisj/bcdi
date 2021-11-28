@@ -380,7 +380,6 @@ class Beamline(ABC):
         """
         motor_positions = setup.diffractometer.motor_positions(
             setup=setup,
-            logfile=logfile,
             scan_number=scan_number,
         )
         # remove the motor positions corresponding to deleted frames during data
