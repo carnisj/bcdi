@@ -243,7 +243,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
 
     data, mask, frames_logical, monitor = bu.load_bcdi_data(
-        logfile=logfile,
         scan_number=scan_nb,
         detector=detector,
         setup=setup,
