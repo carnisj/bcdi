@@ -2616,8 +2616,6 @@ class DiffractometerP10(Diffractometer):
                 else:  # phi
                     phi = np.asarray(phi, dtype=float)
 
-                fio.close()
-
                 # remove user-defined sample offsets (sample: mu, om, chi, phi)
                 mu = mu - self.sample_offsets[0]
                 om = om - self.sample_offsets[1]
