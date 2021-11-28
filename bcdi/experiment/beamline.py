@@ -816,10 +816,7 @@ class BeamlineID01(Beamline):
             name="filename",
         )
 
-        path = util.find_file(
-            filename=filename,
-            default_folder=root_folder
-        )
+        path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
 
     @property
@@ -2360,10 +2357,7 @@ class Beamline34ID(Beamline):
             name="filename",
         )
 
-        path = util.find_file(
-            filename=filename,
-            default_folder=root_folder
-        )
+        path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
 
     @property

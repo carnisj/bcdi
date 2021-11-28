@@ -45,9 +45,7 @@ class TestFindFile(fake_filesystem_unittest.TestCase):
         self.assertTrue(output == self.valid_path + "dummy.spec")
 
     def test_filename_file_name(self):
-        output = util.find_file(
-            filename="dummy.spec", default_folder=self.valid_path
-        )
+        output = util.find_file(filename="dummy.spec", default_folder=self.valid_path)
         self.assertTrue(output == self.valid_path + "dummy.spec")
 
     def test_filename_file_name_missing_backslash(self):

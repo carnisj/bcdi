@@ -42,10 +42,12 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
         self.valid_path = "/gpfs/bcdi/data/"
         os.makedirs(self.valid_path)
         with open(self.valid_path + "defined.spec", "w") as f:
-            f.write("test\n#UDETCALIB cen_pix_x=11.195,cen_pix_y=281.115,"
-                    "pixperdeg=455.257,"
-                    "det_distance_CC=1.434,det_distance_COM=1.193,"
-                    "timestamp=2021-02-28T13:01:16.615422")
+            f.write(
+                "test\n#UDETCALIB cen_pix_x=11.195,cen_pix_y=281.115,"
+                "pixperdeg=455.257,"
+                "det_distance_CC=1.434,det_distance_COM=1.193,"
+                "timestamp=2021-02-28T13:01:16.615422"
+            )
 
         with open(self.valid_path + "undefined.spec", "w") as f:
             f.write("test\n#this,is,bad")

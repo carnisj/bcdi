@@ -2072,8 +2072,7 @@ class DiffractometerID01(Diffractometer):
         :return: the detector distance in meters or None
         """
         path = util.find_file(
-            filename=setup.detector.specfile,
-            default_folder=setup.detector.rootdir
+            filename=setup.detector.specfile, default_folder=setup.detector.rootdir
         )
 
         distance = None
@@ -2089,8 +2088,10 @@ class DiffractometerID01(Diffractometer):
                             found_distance += 1
 
         if found_distance > 1:
-            print("multiple dectector distances found in the spec file, using"
-                  f"{distance} m.")
+            print(
+                "multiple dectector distances found in the spec file, using"
+                f"{distance} m."
+            )
         return distance
 
 
