@@ -1113,7 +1113,7 @@ class Setup:
         valid.valid_container(
             specfile_name,
             container_types=str,
-            min_length=1,
+            min_length=0,
             allow_none=True,
             name="specfile_name",
         )
