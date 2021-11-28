@@ -2014,7 +2014,7 @@ class DiffractometerID01(Diffractometer):
 
         detector_distance = self.retrieve_distance(setup=setup) or setup.distance
 
-        return mu, eta, phi, nu, delta, energy, setup.distance
+        return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2076,7 +2076,22 @@ class DiffractometerID01(Diffractometer):
             default_folder=setup.detector.rootdir
         )
 
-        return None
+        distance = None
+        found_distance = 0
+        with open(path, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if line.startswith("#UDETCALIB"):
+                    words = line.split(",")
+                    for word in words:
+                        if word.startswith("det_distance_COM"):
+                            distance = float(word[17:])
+                            found_distance += 1
+
+        if found_distance > 1:
+            print("multiple dectector distances found in the spec file, using"
+                  f"{distance} m.")
+        return distance
 
 
 class DiffractometerNANOMAX(Diffractometer):
