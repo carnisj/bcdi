@@ -35,7 +35,7 @@ import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
+CONFIG_FILE = "C:/Users/Jerome/Documents/data/dataset_ID01/config_preprocessing.yml"
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and

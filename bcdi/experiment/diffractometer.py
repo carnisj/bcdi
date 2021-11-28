@@ -1747,7 +1747,7 @@ class DiffractometerID01(Diffractometer):
             "phi": "phi",
             "nu": "nu",
             "delta": "del",
-            "energy": "energy",
+            "energy": "nrj",
         },
     }
 
@@ -1997,7 +1997,7 @@ class DiffractometerID01(Diffractometer):
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
             else:  # positioner
-                energy = motor_values[motor_names.index(self.motor_table["energy"])]
+                energy = motor_values[motor_names.index(motor_table["energy"])]
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
