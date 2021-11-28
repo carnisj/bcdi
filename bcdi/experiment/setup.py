@@ -46,10 +46,8 @@ class Setup:
     :param tilt_angle: angular step of the rocking curve, in degrees.
     :param rocking_angle: angle which is tilted during the rocking curve in
      {'outofplane', 'inplane', 'energy'}
-    :param grazing_angle: motor positions for the goniometer circles below the
-     rocking angle. It should be a list/tuple of lenght 1 for out-of-plane rocking
-     curves (the chi motor value) and length 2 for inplane rocking
-     curves (the chi and omega/om/eta motor values).
+    :param grazing_angle: tuple of motor positions for the goniometer circles below the
+     rocking angle. Leave None if there is no such circle.
     :param kwargs:
 
      - 'direct_beam': tuple of two real numbers indicating the position of the direct
@@ -460,9 +458,7 @@ class Setup:
         """
         Motor positions for the goniometer circles below the rocking angle.
 
-        It should be a list/tuple of lenght 1 for out-of-plane rocking curves (the
-        motor value for mu if it exists) and length 2 for inplane rocking curves (
-        e.g. mu and omega/om/eta motor values).
+        None if there is no such circle.
         """
         return self._grazing_angle
 
@@ -730,7 +726,8 @@ class Setup:
         the geometric transformation using the linearized transformation matrix. Hence,
         arrays for detector angles and the energy are not allowed.
 
-        :param grazing_angle:
+        :param grazing_angle: tuple of motor positions for the goniometer circles below
+         the rocking angle. Leave None if there is no such circle.
         :param inplane_angle: detector inplane angle in degrees
         :param outofplane_angle: detector out-of-plane angle in degrees
         :param tilt_angle: ndarray of shape (N,), values of the rocking angle
