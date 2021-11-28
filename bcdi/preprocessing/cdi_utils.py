@@ -388,7 +388,6 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
 def grid_cdi(
     data,
     mask,
-    logfile,
     detector,
     setup,
     frames_logical,
@@ -405,8 +404,6 @@ def grid_cdi(
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param detector: an instance of the class Detector.
      The detector orientation is supposed to follow the CXI convention: (z
      downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
