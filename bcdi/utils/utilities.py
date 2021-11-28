@@ -501,7 +501,8 @@ def find_file(filename: str, default_folder: str) -> str:
         raise ValueError(f"The directory {default_folder} does not exist")
     full_name = default_folder + filename
     if not os.path.isfile(full_name):
-        raise ValueError(f"Could not llocalize the file at {filename} or {full_name}")
+        raise ValueError(f"Could not localize the file at {filename} or {full_name}")
+    print(f"File localized at: {full_name}")
     return full_name
 
 
