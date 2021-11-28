@@ -781,7 +781,6 @@ def run(prm):
             background = util.load_background(prm["background_file"])
 
             data, mask, frames_logical, monitor = bu.load_bcdi_data(
-                logfile=logfile,
                 scan_number=scan_nb,
                 detector=detector,
                 setup=setup,

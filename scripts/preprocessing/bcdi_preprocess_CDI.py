@@ -564,7 +564,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = cdi.reload_cdi_data(
-                logfile=logfile,
                 scan_number=scan_nb,
                 data=data,
                 mask=mask,
