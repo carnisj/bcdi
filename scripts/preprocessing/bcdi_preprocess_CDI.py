@@ -581,7 +581,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         background = util.load_background(background_file)
 
         data, mask, frames_logical, monitor = cdi.load_cdi_data(
-            logfile=logfile,
             scan_number=scan_nb,
             detector=detector,
             setup=setup,
