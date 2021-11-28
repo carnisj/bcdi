@@ -492,10 +492,18 @@ def find_file(filename: str, default_folder: str) -> str:
      the full path.
     :return: str, the path to the file
     """
+    if not isinstance(filename, str):
+        raise TypeError("filename should be a string")
+
     if os.path.isfile(filename):
         # filename is already the full path to the file
         return filename
     print(f"Could not find the file at: {filename}")
+
+    if not isinstance(default_folder, str):
+        raise TypeError("default_folder should be a string")
+    if not default_folder.endswith("/"):
+        default_folder += "/"
 
     if not os.path.isdir(default_folder):
         raise ValueError(f"The directory {default_folder} does not exist")
