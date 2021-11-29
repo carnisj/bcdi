@@ -388,7 +388,6 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
 def grid_cdi(
     data,
     mask,
-    logfile,
     detector,
     setup,
     frames_logical,
@@ -405,8 +404,6 @@ def grid_cdi(
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param detector: an instance of the class Detector.
      The detector orientation is supposed to follow the CXI convention: (z
      downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
@@ -432,9 +429,8 @@ def grid_cdi(
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle, _ = setup.diffractometer.motor_positions(
-                    setup=setup, logfile=logfile
-                )  # second return value is the X-ray energy
+                cdi_angle, _, _ = setup.diffractometer.motor_positions(setup=setup)
+                # second return value is the X-ray energy, third the detector distance
         else:
             raise ValueError(
                 "out-of-plane rotation not yet implemented for forward CDI data"
@@ -583,7 +579,6 @@ def grid_cdi(
 
 
 def load_cdi_data(
-    logfile,
     scan_number,
     detector,
     setup,
@@ -601,8 +596,6 @@ def load_cdi_data(
     It applies beam stop correction and an optional photon threshold, normalization
     and binning.
 
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
@@ -648,7 +641,6 @@ def load_cdi_data(
     )
 
     rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
-        logfile=logfile,
         scan_number=scan_number,
         detector=detector,
         setup=setup,
@@ -713,7 +705,6 @@ def load_cdi_data(
 def reload_cdi_data(
     data,
     mask,
-    logfile,
     scan_number,
     detector,
     setup,
@@ -726,8 +717,6 @@ def reload_cdi_data(
 
     :param data: the 3D data array
     :param mask: the 3D mask array
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
     :param scan_number: the scan number to load
     :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
@@ -781,9 +770,7 @@ def reload_cdi_data(
         else:  # use the default monitor of the beamline
             monitor = setup.diffractometer.read_monitor(
                 scan_number=scan_number,
-                logfile=logfile,
-                beamline=setup.beamline,
-                actuators=setup.actuators,
+                setup=setup,
             )
 
         print("Intensity normalization using " + normalize_method)

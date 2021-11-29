@@ -243,7 +243,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
 
     data, mask, frames_logical, monitor = bu.load_bcdi_data(
-        logfile=logfile,
         scan_number=scan_nb,
         detector=detector,
         setup=setup,
@@ -253,9 +252,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         debugging=debug,
     )
 
-    tilt, grazing, inplane, outofplane = setup.diffractometer.goniometer_values(
-        frames_logical=frames_logical, logfile=logfile, scan_number=scan_nb, setup=setup
-    )
+    tilt, grazing, inplane, outofplane = setup.read_logfile(scan_number=scan_nb)
 
     nbz, nby, nbx = data.shape
     if peak_method == "max":

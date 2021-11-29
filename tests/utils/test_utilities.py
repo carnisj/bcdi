@@ -8,6 +8,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+import os
+from pyfakefs import fake_filesystem_unittest
 import unittest
 import bcdi.utils.utilities as util
 
@@ -16,6 +18,53 @@ def run_tests(test_class):
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
     runner = unittest.TextTestRunner(verbosity=2)
     return runner.run(suite)
+
+
+class TestFindFile(fake_filesystem_unittest.TestCase):
+    """
+    Tests on the function utilities.find_file.
+
+    def find_file(filename: str, default_folder: str) -> str:
+    """
+
+    def setUp(self):
+        self.setUpPyfakefs()
+        self.valid_path = "/gpfs/bcdi/data/"
+        os.makedirs(self.valid_path)
+        with open(self.valid_path + "dummy.spec", "w") as f:
+            f.write("dummy")
+
+    def test_filename_none(self):
+        with self.assertRaises(TypeError):
+            util.find_file(filename=None, default_folder=None)
+
+    def test_full_path_to_file(self):
+        output = util.find_file(
+            filename=self.valid_path + "dummy.spec", default_folder=None
+        )
+        self.assertTrue(output == self.valid_path + "dummy.spec")
+
+    def test_filename_file_name(self):
+        output = util.find_file(filename="dummy.spec", default_folder=self.valid_path)
+        self.assertTrue(output == self.valid_path + "dummy.spec")
+
+    def test_filename_file_name_missing_backslash(self):
+        output = util.find_file(
+            filename="dummy.spec", default_folder=self.valid_path[:-1]
+        )
+        self.assertTrue(output == self.valid_path + "dummy.spec")
+
+    def test_filename_file_name_default_dir_none(self):
+        with self.assertRaises(TypeError):
+            util.find_file(filename="dummy.spec", default_folder=None)
+
+    def test_filename_file_name_default_dir_inexisting(self):
+        with self.assertRaises(ValueError):
+            util.find_file(filename="dummy.spec", default_folder="/wrong/path")
+
+    def test_filename_file_name_inexisting_default_dir_existing(self):
+        with self.assertRaises(ValueError):
+            util.find_file(filename="dum.spec", default_folder=self.valid_path)
 
 
 class TestInRange(unittest.TestCase):
@@ -102,3 +151,4 @@ class TestIsFloat(unittest.TestCase):
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestIsFloat)
+    run_tests(TestFindFile)

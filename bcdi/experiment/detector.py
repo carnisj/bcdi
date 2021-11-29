@@ -534,7 +534,7 @@ class Detector(ABC):
             container_types=str,
             min_length=0,
             allow_none=True,
-            name="Detector.imagefile",
+            name="template_imagefile",
         )
         self._template_imagefile = value
 

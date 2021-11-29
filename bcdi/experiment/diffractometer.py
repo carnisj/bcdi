@@ -72,7 +72,7 @@ import re
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import List
+from typing import List, Optional
 
 from ..graph import graph_utils as gu
 from .rotation_matrix import RotationMatrix
@@ -449,11 +449,29 @@ class Diffractometer(ABC):
         detector_circles=(),
         **kwargs,
     ):
+        self.sample_angles = None
         self.sample_circles = sample_circles
+        self.detector_angles = None
         self.detector_circles = detector_circles
         if sample_offsets is None:
             sample_offsets = kwargs.get("default_offsets")
         self.sample_offsets = sample_offsets
+
+    @property
+    def detector_angles(self):
+        """Tuple of goniometer angular values for the detector stages."""
+        return self._detector_angles
+
+    @detector_angles.setter
+    def detector_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="detector_angles",
+        )
+        self._detector_angles = value
 
     @property
     def detector_circles(self):
@@ -483,6 +501,22 @@ class Diffractometer(ABC):
                 f" valid are {self.valid_circles}"
             )
         self._detector_circles = list(value)
+
+    @property
+    def sample_angles(self):
+        """Tuple of goniometer angular values for the sample stages."""
+        return self._sample_angles
+
+    @sample_angles.setter
+    def sample_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="sample_angles",
+        )
+        self._sample_angles = value
 
     @property
     def sample_circles(self):
@@ -569,7 +603,6 @@ class Diffractometer(ABC):
         self,
         arrays,
         voxel_size,
-        angles,
         q_com,
         rocking_angle,
         central_angle=None,
@@ -588,8 +621,6 @@ class Diffractometer(ABC):
         :param arrays: tuple of 3D real arrays of the same shape.
         :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
          (CXI convention)
-        :param angles: tuple of angular values in degrees, one for each circle
-         of the sample stage
         :param q_com: diffusion vector of the center of mass of the Bragg peak,
          expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in
@@ -634,14 +665,15 @@ class Diffractometer(ABC):
         )
         if np.linalg.norm(q_com) == 0:
             raise ValueError("the norm of q_com is zero")
-        nb_circles = len(self._sample_circles)
-        valid.valid_container(
-            angles, container_types=(tuple, list), length=nb_circles, name="angles"
-        )
+        if self.sample_angles is None:
+            raise ValueError(
+                "call diffractometer.goniometer_values before calling this method"
+            )
         valid.valid_item(
             central_angle, allowed_types=Real, allow_none=True, name="central_angle"
         )
         # find the index of the circle which corresponds to the rocking angle
+        angles = self.sample_angles
         rocking_circle = self.get_rocking_circle(
             rocking_angle=rocking_angle, stage_name="sample", angles=angles
         )
@@ -763,23 +795,23 @@ class Diffractometer(ABC):
         return index_circle
 
     @abstractmethod
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer values.
 
         This method is beamline dependent. It must be implemented in the child classes.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs: beamline_specific parameters
-        :return: a list of motor positions
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
 
     def init_data_mask(
         self,
         detector,
         setup,
-        logfile,
         normalize,
         nb_frames,
         bin_during_loading,
@@ -790,7 +822,6 @@ class Diffractometer(ABC):
 
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
          return a monitor based on the integrated intensity in the region of interest
          defined by detector.sum_roi, 'skip' to do nothing
@@ -858,7 +889,6 @@ class Diffractometer(ABC):
         monitor = self.init_monitor(
             normalize=normalize,
             nb_frames=nb_frames,
-            logfile=logfile,
             setup=setup,
             **kwargs,
         )
@@ -870,7 +900,7 @@ class Diffractometer(ABC):
             loading_roi,
         )
 
-    def init_monitor(self, normalize, nb_frames, logfile, setup, **kwargs):
+    def init_monitor(self, normalize, nb_frames, setup, **kwargs):
         """
         Initialize the monitor for normalization.
 
@@ -878,7 +908,6 @@ class Diffractometer(ABC):
          return a monitor based on the integrated intensity in the region of interest
          defined by detector.sum_roi, 'skip' to do nothing
         :param nb_frames: number of data points (not including series at each point)
-        :param logfile: the logfile created in Setup.create_logfile()
         :param setup: an instance of the class Setup
         :param kwargs:
 
@@ -893,12 +922,7 @@ class Diffractometer(ABC):
             if setup.custom_scan:
                 monitor = setup.custom_monitor
             else:
-                monitor = self.read_monitor(
-                    logfile=logfile,
-                    beamline=setup.beamline,
-                    actuators=setup.actuators,
-                    **kwargs,
-                )
+                monitor = self.read_monitor(setup=setup, **kwargs)
         if monitor is None:
             monitor = np.ones(nb_frames)
             print("Cannot retrieve the monitor, use `actuators` to define it.")
@@ -906,7 +930,6 @@ class Diffractometer(ABC):
 
     def load_check_dataset(
         self,
-        logfile,
         scan_number,
         detector,
         setup,
@@ -921,7 +944,6 @@ class Diffractometer(ABC):
         """
         Load data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param scan_number: the scan number to load
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
@@ -968,7 +990,6 @@ class Diffractometer(ABC):
             )
         else:
             data, mask2d, monitor, loading_roi = self.load_data(
-                logfile=logfile,
                 setup=setup,
                 scan_number=scan_number,
                 detector=detector,
@@ -1052,7 +1073,6 @@ class Diffractometer(ABC):
     @abstractmethod
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1066,7 +1086,6 @@ class Diffractometer(ABC):
         """
         Load data including detector/background corrections.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1083,8 +1102,6 @@ class Diffractometer(ABC):
          totality of the following keys:
 
           - 'scan_number': the scan number to load (e.g. for ID01)
-          - 'actuators': dictionary defining the entries corresponding to actuators
-            (e.g. for CRISTAL)
 
         :return: in this order
 
@@ -1168,7 +1185,8 @@ class Diffractometer(ABC):
         :param kwargs: beamline_specific parameters, see the documentation for the
          child class.
         :return: the diffractometer motors positions for the particular setup. The
-         energy (1D array or number) is expected to be the last element of the tuple.
+         energy (1D array or number) and the sample to detector distance are expected to
+         be the last elements of the tuple in this order.
         """
 
     @staticmethod
@@ -1189,18 +1207,14 @@ class Diffractometer(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_monitor(logfile, **kwargs):
+    def read_monitor(setup, **kwargs):
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
+        :param setup: an instance of the class Setup
+        :param kwargs: beamline_specific parameter
 
           - 'scan_number': int, number of the scan (e.g. for ID01)
-          - 'actuators': dictionary defining the entries corresponding to actuators
-            in the data file (at CRISTAL the location of data keeps changing)
-          - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
 
         :return: the default monitor values
         """
@@ -1394,59 +1408,52 @@ class DiffractometerCRISTAL(Diffractometer):
             f"and pattern={pattern}"
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
         # load the motor positions
-        mgomega, mgphi, gamma, delta, _ = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        (
+            mgomega,
+            mgphi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # mgomega rocking curve
             grazing = None  # nothing below mgomega at CRISTAL
-            tilt, inplane, outofplane = mgomega, gamma[0], delta[0]
+            tilt_angle = mgomega
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (mgomega[0],)
-            tilt, inplane, outofplane = mgphi, gamma[0], delta[0]
+            tilt_angle = mgphi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
-        sample_angles = (mgomega, mgphi)
-        detector_angles = (gamma, delta)
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
 
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
+        self.sample_angles = (mgomega, mgphi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1463,7 +1470,6 @@ class DiffractometerCRISTAL(Diffractometer):
         It will look for the correct entry 'detector' in the dictionary 'actuators',
         and look for a dataset with compatible shape otherwise.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1475,27 +1481,22 @@ class DiffractometerCRISTAL(Diffractometer):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs:
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the data file (at CRISTAL the location of data keeps changing)
-
         :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
-        actuators = kwargs.get("actuators")
-        if actuators is None:
+        if setup.actuators is None:
             raise ValueError("'actuators' parameter required")
 
         # look for the detector entry (keep changing at CRISTAL)
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for CRISTAL")
-        group_key = list(logfile.keys())[0]
+        group_key = list(setup.logfile.keys())[0]
         tmp_data = self.find_detector(
-            logfile=logfile,
-            actuators=actuators,
+            logfile=setup.logfile,
+            actuators=setup.actuators,
             root=group_key,
             detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x),
         )
@@ -1506,7 +1507,6 @@ class DiffractometerCRISTAL(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -1540,17 +1540,13 @@ class DiffractometerCRISTAL(Diffractometer):
         Setup.actuators, and use the default entry otherwise.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            group_key = list(logfile.keys())[0]
+            group_key = list(setup.logfile.keys())[0]
             energy = (
                 self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="Monochromator",
                     field_name="energy",
@@ -1565,7 +1561,7 @@ class DiffractometerCRISTAL(Diffractometer):
                 )
 
             scanned_motor = self.cristal_load_motor(
-                datafile=logfile,
+                datafile=setup.logfile,
                 root="/" + group_key,
                 actuator_name="scan_data",
                 field_name=setup.actuators.get("rocking_angle", "actuator_1_1"),
@@ -1574,46 +1570,34 @@ class DiffractometerCRISTAL(Diffractometer):
             if setup.rocking_angle == "outofplane":
                 mgomega = scanned_motor  # mgomega is scanned
                 mgphi = self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_phi",
                     field_name="position",
                 )
-                delta = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-DELTA",
-                    field_name="position",
-                )
-                gamma = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
-                    field_name="position",
-                )
-
             elif setup.rocking_angle == "inplane":
                 mgphi = scanned_motor  # mgphi is scanned
                 mgomega = self.cristal_load_motor(
-                    datafile=logfile,
+                    datafile=setup.logfile,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_omega",
                     field_name="position",
                 )
-                delta = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-DELTA",
-                    field_name="position",
-                )
-                gamma = self.cristal_load_motor(
-                    datafile=logfile,
-                    root="/" + group_key + "/CRISTAL/Diffractometer/",
-                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
-                    field_name="position",
-                )
             else:
                 raise ValueError('Wrong value for "rocking_angle" parameter')
+
+            delta = self.cristal_load_motor(
+                datafile=setup.logfile,
+                root="/" + group_key + "/CRISTAL/Diffractometer/",
+                actuator_name="I06-C-C07-EX-DIF-DELTA",
+                field_name="position",
+            )
+            gamma = self.cristal_load_motor(
+                datafile=setup.logfile,
+                root="/" + group_key + "/CRISTAL/Diffractometer/",
+                actuator_name="I06-C-C07-EX-DIF-GAMMA",
+                field_name="position",
+            )
 
             # remove user-defined sample offsets (sample: mgomega, mgphi)
             mgomega = mgomega - self.sample_offsets[0]
@@ -1623,8 +1607,8 @@ class DiffractometerCRISTAL(Diffractometer):
             mgomega = setup.custom_motors["mgomega"]
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
-            mgphi = setup.custom_motors.get("mgphi", None)
-            energy = setup.custom_motors["energy", setup.energy]
+            mgphi = setup.custom_motors.get("mgphi", 0)
+            energy = setup.energy
 
         # check if mgomega needs to be divided by 1e6
         # (data taken before the implementation of the correction)
@@ -1635,7 +1619,7 @@ class DiffractometerCRISTAL(Diffractometer):
         ):
             mgomega = mgomega / 1e6
 
-        return mgomega, mgphi, gamma, delta, energy
+        return mgomega, mgphi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def cristal_load_motor(datafile, root, actuator_name, field_name):
@@ -1721,21 +1705,16 @@ class DiffractometerCRISTAL(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs:
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the data file (at CRISTAL the location of data keeps changing)
-
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "data_04")
-            return self.read_device(logfile=logfile, device_name=monitor_name)
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "data_04")
+            return self.read_device(logfile=setup.logfile, device_name=monitor_name)
         return None
 
 
@@ -1753,6 +1732,24 @@ class DiffractometerID01(Diffractometer):
 
     sample_rotations = ["y-", "x-", "y-"]
     detector_rotations = ["y-", "x-"]
+    motor_table = {
+        "old_names": {
+            "mu": "Mu",
+            "eta": "Eta",
+            "phi": "Phi",
+            "nu": "Nu",
+            "delta": "Delta",
+            "energy": "Energy",
+        },
+        "new_names": {
+            "mu": "mu",
+            "eta": "eta",
+            "phi": "phi",
+            "nu": "nu",
+            "delta": "del",
+            "energy": "nrj",
+        },
+    }
 
     def __init__(self, sample_offsets):
         super().__init__(
@@ -1761,68 +1758,67 @@ class DiffractometerID01(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         # check some parameter
         valid.valid_item(
             scan_number, allowed_types=int, min_excluded=0, name="scan_number"
         )
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load motor positions
-        mu, eta, phi, nu, delta, _ = self.motor_positions(
+        (
+            mu,
+            eta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(
             setup=setup,
-            logfile=logfile,
             scan_number=scan_number,
         )
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # eta rocking curve
             grazing = (mu,)  # mu below eta but not used at ID01
-            tilt, inplane, outofplane = eta, nu, delta
+            tilt_angle = eta
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (mu, eta)  # mu below eta but not used at ID01
-            tilt, inplane, outofplane = phi, nu, delta
+            tilt_angle = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
-        sample_angles = (mu, eta, phi)
-        detector_angles = (nu, delta)
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
 
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
+        self.sample_angles = (mu, eta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -1836,7 +1832,6 @@ class DiffractometerID01(Diffractometer):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1860,13 +1855,14 @@ class DiffractometerID01(Diffractometer):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1896,7 +1892,6 @@ class DiffractometerID01(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -1943,23 +1938,21 @@ class DiffractometerID01(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
-        energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
         old_names = False
         if not setup.custom_scan:
-            motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_values = logfile[str(scan_number) + ".1"].motor_positions
+            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
             # positioners
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            # positioners
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             try:
                 _ = motor_values[motor_names.index("nu")]  # positioner
@@ -1970,53 +1963,41 @@ class DiffractometerID01(Diffractometer):
                 old_names = True
 
             if old_names:
-                names_table = {
-                    "mu": "Mu",
-                    "eta": "Eta",
-                    "phi": "Phi",
-                    "nu": "Nu",
-                    "delta": "Delta",
-                    "energy": "Energy",
-                }
+                motor_table = self.motor_table["old_names"]
             else:
-                names_table = {
-                    "mu": "mu",
-                    "eta": "eta",
-                    "phi": "phi",
-                    "nu": "nu",
-                    "delta": "del",
-                    "energy": "energy",
-                }
+                motor_table = self.motor_table["new_names"]
 
-            if names_table["mu"] in labels:
-                mu = labels_data[labels.index(names_table["mu"]), :]  # scanned
+            if motor_table["mu"] in labels:
+                mu = labels_data[labels.index(motor_table["mu"]), :]  # scanned
             else:
-                mu = motor_values[motor_names.index(names_table["mu"])]  # positioner
+                mu = motor_values[motor_names.index(motor_table["mu"])]  # positioner
 
-            if names_table["eta"] in labels:
-                eta = labels_data[labels.index(names_table["eta"]), :]  # scanned
+            if motor_table["eta"] in labels:
+                eta = labels_data[labels.index(motor_table["eta"]), :]  # scanned
             else:
-                eta = motor_values[motor_names.index(names_table["eta"])]  # positioner
+                eta = motor_values[motor_names.index(motor_table["eta"])]  # positioner
 
-            if names_table["phi"] in labels:
-                phi = labels_data[labels.index(names_table["phi"]), :]  # scanned
+            if motor_table["phi"] in labels:
+                phi = labels_data[labels.index(motor_table["phi"]), :]  # scanned
             else:
-                phi = motor_values[motor_names.index(names_table["phi"])]  # positioner
+                phi = motor_values[motor_names.index(motor_table["phi"])]  # positioner
 
-            if names_table["delta"] in labels:
-                delta = labels_data[labels.index(names_table["delta"]), :]  # scanned
+            if motor_table["delta"] in labels:
+                delta = labels_data[labels.index(motor_table["delta"]), :]  # scanned
             else:  # positioner
-                delta = motor_values[motor_names.index(names_table["delta"])]
+                delta = motor_values[motor_names.index(motor_table["delta"])]
 
-            if names_table["nu"] in labels:
-                nu = labels_data[labels.index(names_table["nu"]), :]  # scanned
+            if motor_table["nu"] in labels:
+                nu = labels_data[labels.index(motor_table["nu"]), :]  # scanned
             else:  # positioner
-                nu = motor_values[motor_names.index(names_table["nu"])]
+                nu = motor_values[motor_names.index(motor_table["nu"])]
 
-            if names_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+            if motor_table["energy"] in labels:
+                raw_energy = labels_data[labels.index(motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
+            else:  # positioner
+                energy = motor_values[motor_names.index(motor_table["energy"])]
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
@@ -2029,8 +2010,11 @@ class DiffractometerID01(Diffractometer):
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
+            energy = setup.energy
 
-        return mu, eta, phi, nu, delta, energy
+        detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+
+        return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2059,28 +2043,56 @@ class DiffractometerID01(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param kwargs:
          - 'scan_number': int, the scan number to load
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the spec file
 
         :return: the default monitor values
         """
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "exp1")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "exp1")
             return self.read_device(
-                logfile=logfile, scan_number=scan_number, device_name=monitor_name
+                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
             )
         return None
+
+    @staticmethod
+    def retrieve_distance(setup) -> Optional[float]:
+        """
+        Load the spec file and retrieve the detector distance if it has been calibrated.
+
+        :param setup: an instance of the class Setup
+        :return: the detector distance in meters or None
+        """
+        path = util.find_file(
+            filename=setup.detector.specfile, default_folder=setup.detector.rootdir
+        )
+
+        distance = None
+        found_distance = 0
+        with open(path, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if line.startswith("#UDETCALIB"):
+                    words = line.split(",")
+                    for word in words:
+                        if word.startswith("det_distance_COM"):
+                            distance = float(word[17:])
+                            found_distance += 1
+
+        if found_distance > 1:
+            print(
+                "multiple dectector distances found in the spec file, using"
+                f"{distance} m."
+            )
+        return distance
 
 
 class DiffractometerNANOMAX(Diffractometer):
@@ -2105,63 +2117,52 @@ class DiffractometerNANOMAX(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
         # load the motor positions
         (
             theta,
             phi,
-            gamma,
-            delta,
-            _,
-        ) = self.motor_positions(setup=setup, logfile=logfile)
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # theta rocking curve
             grazing = None  # nothing below theta at NANOMAX
-            tilt, inplane, outofplane = theta, gamma, delta
+            tilt_angle = theta
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (theta,)
-            tilt, inplane, outofplane = phi, gamma, delta
+            tilt_angle = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
-        sample_angles = (theta, phi)
-        detector_angles = (gamma, delta)
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
 
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
+        self.sample_angles = (theta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2175,7 +2176,6 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         Load NANOMAX data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the calss Setup
         :param flatfield: the 2D flatfield array
@@ -2196,16 +2196,16 @@ class DiffractometerNANOMAX(Diffractometer):
         """
         if debugging:
             print(
-                str(logfile["entry"]["description"][()])[3:-2]
+                str(setup.logfile["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
-        group_key = list(logfile.keys())[0]  # currently 'entry'
+        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
         try:
-            tmp_data = logfile["/" + group_key + "/measurement/merlin/frames"][:]
+            tmp_data = setup.logfile["/" + group_key + "/measurement/merlin/frames"][:]
         except KeyError:
-            tmp_data = logfile["/" + group_key + "measurement/Merlin/data"][()]
+            tmp_data = setup.logfile["/" + group_key + "measurement/Merlin/data"][()]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2213,7 +2213,6 @@ class DiffractometerNANOMAX(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2244,39 +2243,35 @@ class DiffractometerNANOMAX(Diffractometer):
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (theta, phi, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
             # Detector positions
-            group_key = list(logfile.keys())[0]  # currently 'entry'
+            group_key = list(setup.logfile.keys())[0]  # currently 'entry'
 
             # positionners
-            delta = logfile["/" + group_key + "/snapshot/delta"][:]
-            gamma = logfile["/" + group_key + "/snapshot/gamma"][:]
-            energy = logfile["/" + group_key + "/snapshot/energy"][:]
+            delta = setup.logfile["/" + group_key + "/snapshot/delta"][:]
+            gamma = setup.logfile["/" + group_key + "/snapshot/gamma"][:]
+            energy = setup.logfile["/" + group_key + "/snapshot/energy"][:]
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = logfile["/" + group_key + "/measurement/gonphi"][:]
+                    phi = setup.logfile["/" + group_key + "/measurement/gonphi"][:]
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = logfile["/" + group_key + "/snapshot/gontheta"][:]
+                theta = setup.logfile["/" + group_key + "/snapshot/gontheta"][:]
             else:
                 try:
-                    theta = logfile["/" + group_key + "/measurement/gontheta"][:]
+                    theta = setup.logfile["/" + group_key + "/measurement/gontheta"][:]
                 except KeyError:
                     raise KeyError(
                         "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                phi = logfile["/" + group_key + "/snapshot/gonphi"][:]
+                phi = setup.logfile["/" + group_key + "/snapshot/gonphi"][:]
 
             # remove user-defined sample offsets (sample: theta, phi)
             theta = theta - self.sample_offsets[0]
@@ -2287,9 +2282,9 @@ class DiffractometerNANOMAX(Diffractometer):
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
-            energy = setup.custom_motors["energy"]
+            energy = setup.energy
 
-        return theta, phi, gamma, delta, energy
+        return theta, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2310,14 +2305,14 @@ class DiffractometerNANOMAX(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at NANOMAX.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        return self.read_device(logfile=logfile, device_name="alba2")
+        return self.read_device(logfile=setup.logfile, device_name="alba2")
 
 
 class DiffractometerP10(Diffractometer):
@@ -2344,58 +2339,54 @@ class DiffractometerP10(Diffractometer):
             default_offsets=self.default_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
         # load the motor positions
-        mu, om, chi, phi, gamma, delta, _ = self.motor_positions(
-            setup=setup, logfile=logfile
-        )
+        (
+            mu,
+            om,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "outofplane":  # om rocking curve
             grazing = (mu,)
-            tilt, inplane, outofplane = om, gamma, delta
+            tilt_angle = om
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (mu, om, chi)
-            tilt, inplane, outofplane = phi, gamma, delta
+            tilt_angle = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
-        sample_angles = (mu, om, chi, phi)
-        detector_angles = (gamma, delta)
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        self.sample_angles = (mu, om, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2409,7 +2400,6 @@ class DiffractometerP10(Diffractometer):
         """
         Load P10 data, apply filters and concatenate it for phasing.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -2428,6 +2418,8 @@ class DiffractometerP10(Diffractometer):
          - the monitor values for normalization
 
         """
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         # template for the master file
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         is_series = setup.is_series
@@ -2461,7 +2453,6 @@ class DiffractometerP10(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2552,14 +2543,10 @@ class DiffractometerP10(Diffractometer):
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            with open(logfile, "r") as fio:
+            with open(setup.logfile, "r") as fio:
                 index_om = None
                 index_phi = None
                 om = []
@@ -2568,6 +2555,7 @@ class DiffractometerP10(Diffractometer):
                 mu = None
                 gamma = None
                 delta = None
+                energy = None
 
                 fio_lines = fio.readlines()
                 for line in fio_lines:
@@ -2612,6 +2600,10 @@ class DiffractometerP10(Diffractometer):
                         "mu" in words and "=" in words
                     ):  # template for positioners: 'mu = 0.0\n'
                         mu = float(words[2])
+                    if (
+                        "fmbenergy" in words and "=" in words
+                    ):  # template for positioners: 'mu = 0.0\n'
+                        energy = float(words[2])
 
                     if index_om is not None and util.is_float(words[0]):
                         # reading data and index_om is defined (outofplane case)
@@ -2624,8 +2616,6 @@ class DiffractometerP10(Diffractometer):
                     om = np.asarray(om, dtype=float)
                 else:  # phi
                     phi = np.asarray(phi, dtype=float)
-
-                fio.close()
 
                 # remove user-defined sample offsets (sample: mu, om, chi, phi)
                 mu = mu - self.sample_offsets[0]
@@ -2640,7 +2630,9 @@ class DiffractometerP10(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return mu, om, chi, phi, gamma, delta, setup.energy
+            energy = setup.energy
+
+        return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2674,16 +2666,16 @@ class DiffractometerP10(Diffractometer):
             print("found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at P10.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        monitor = self.read_device(logfile=logfile, device_name="ipetra")
+        monitor = self.read_device(logfile=setup.logfile, device_name="ipetra")
         if len(monitor) == 0:
-            monitor = self.read_device(logfile=logfile, device_name="curpetra")
+            monitor = self.read_device(logfile=setup.logfile, device_name="curpetra")
         return monitor
 
 
@@ -2704,62 +2696,48 @@ class DiffractometerP10SAXS(DiffractometerP10):
     def __init__(self):
         super().__init__(sample_offsets=(0,))
 
-    def goniometer_values(self, setup, stage_name="cdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a CDI tomographic scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'cdi', 'sample' or 'detector'
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'cdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-        # check some parameter
-        if stage_name not in {"cdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
         # load the motor positions
-        phi, _ = self.motor_positions(setup=setup, logfile=logfile)
+        phi, energy, detector_distance = self.motor_positions(setup=setup)
 
         # define the circles of interest for CDI
         # no circle yet below phi at P10
         if setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (0,)
-            tilt = phi
+            tilt_angle = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=0,
+            outofplane_angle=0,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
-        sample_angles = (phi,)
-        detector_angles = None
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, None, None
+        self.sample_angles = (phi,)
+        self.detector_angles = (0, 0)
+
+        return tilt_angle, grazing, 0, 0
 
     def motor_positions(self, setup, **kwargs):
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (phi, energy) values
         """
-        logfile = kwargs["logfile"]
         if setup.rocking_angle != "inplane":
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -2767,7 +2745,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
             index_phi = None
             phi = []
 
-            with open(logfile, "r") as fio:
+            with open(setup.logfile, "r") as fio:
                 fio_lines = fio.readlines()
                 for line in fio_lines:
                     this_line = line.strip()
@@ -2785,7 +2763,7 @@ class DiffractometerP10SAXS(DiffractometerP10):
             phi = np.asarray(phi, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
-        return phi, setup.energy
+        return phi, setup.energy, setup.distance
 
 
 class DiffractometerSIXS(Diffractometer):
@@ -2810,37 +2788,29 @@ class DiffractometerSIXS(Diffractometer):
             sample_offsets=sample_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most
-           outer to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        logfile = kwargs["logfile"]
-        # check some parameters
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
-
         # load the motor positions
-        beta, mu, gamma, delta, _ = self.motor_positions(setup=setup, logfile=logfile)
+        (
+            beta,
+            mu,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup)
+
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":  # mu rocking curve
             grazing = (beta,)  # beta below the whole diffractomter at SIXS
-            tilt, inplane, outofplane = mu, gamma, delta
+            tilt_angle = mu
         elif setup.rocking_angle == "outofplane":
             raise NotImplementedError(
                 "outofplane rocking curve not implemented for SIXS"
@@ -2848,19 +2818,23 @@ class DiffractometerSIXS(Diffractometer):
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
 
-        # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
-        sample_angles = (beta, mu)
-        detector_angles = (beta, gamma, delta)
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
 
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
+        self.sample_angles = (beta, mu)
+        self.detector_angles = (beta, inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -2874,7 +2848,6 @@ class DiffractometerSIXS(Diffractometer):
         """
         Load data, apply filters and concatenate it for phasing at SIXS.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -2897,19 +2870,19 @@ class DiffractometerSIXS(Diffractometer):
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
         if detector.name == "Merlin":
-            tmp_data = logfile.merlin[:]
+            tmp_data = setup.logfile.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
-                tmp_data = logfile.mfilm[:]
+                tmp_data = setup.logfile.mfilm[:]
             else:
                 try:
-                    tmp_data = logfile.mpx_image[:]
+                    tmp_data = setup.logfile.mpx_image[:]
                 except AttributeError:
                     try:
-                        tmp_data = logfile.maxpix[:]
+                        tmp_data = setup.logfile.maxpix[:]
                     except AttributeError:
                         # the alias dictionnary was probably not provided
-                        tmp_data = logfile.image[:]
+                        tmp_data = setup.logfile.image[:]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2918,7 +2891,6 @@ class DiffractometerSIXS(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -2949,21 +2921,17 @@ class DiffractometerSIXS(Diffractometer):
         Load the scan data and extract motor positions at SIXS.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
-
         :return: (beta, mu, gamma, delta, energy) values
         """
-        logfile = kwargs["logfile"]
         if not setup.custom_scan:
-            mu = logfile.mu[:]  # scanned
-            delta = logfile.delta[0]  # not scanned
-            gamma = logfile.gamma[0]  # not scanned
+            mu = setup.logfile.mu[:]  # scanned
+            delta = setup.logfile.delta[0]  # not scanned
+            gamma = setup.logfile.gamma[0]  # not scanned
             try:
-                beta = logfile.basepitch[0]  # not scanned
+                beta = setup.logfile.basepitch[0]  # not scanned
             except AttributeError:  # data recorder changed after 11/03/2019
                 try:
-                    beta = logfile.beta[0]  # not scanned
+                    beta = setup.logfile.beta[0]  # not scanned
                 except AttributeError:
                     # the alias dictionnary was probably not provided
                     beta = 0
@@ -2977,7 +2945,7 @@ class DiffractometerSIXS(Diffractometer):
             delta = setup.custom_motors["delta"]
             gamma = setup.custom_motors["gamma"]
             mu = setup.custom_motors["mu"]
-        return beta, mu, gamma, delta, setup.energy
+        return beta, mu, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -2997,25 +2965,21 @@ class DiffractometerSIXS(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at SIXS.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param kwargs:
-         - 'beamline': str, name of the beamline. E.g. "SIXS_2018"
-
+        :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        beamline = kwargs.get("beamline")
-        if beamline is None:
+        if setup.beamline is None:
             raise ValueError("'beamline' parameter required")
-        if beamline == "SIXS_2018":
-            return self.read_device(logfile=logfile, device_name="imon1")
+        if setup.beamline == "SIXS_2018":
+            return self.read_device(logfile=setup.logfile, device_name="imon1")
         # SIXS_2019
-        monitor = self.read_device(logfile=logfile, device_name="imon0")
+        monitor = self.read_device(logfile=setup.logfile, device_name="imon0")
         if len(monitor) == 0:  # the alias dictionnary was probably not provided
-            monitor = self.read_device(logfile=logfile, device_name="intensity")
+            monitor = self.read_device(logfile=setup.logfile, device_name="intensity")
         return monitor
 
 
@@ -3034,6 +2998,15 @@ class Diffractometer34ID(Diffractometer):
     sample_rotations = ["y+", "z-", "y+"]
     detector_rotations = ["y+", "x-"]
     default_offsets = (0, 90, 0)
+    motor_table = {
+        "theta": "Theta",
+        "chi": "Chi",
+        "phi": "Phi",
+        "gamma": "Gamma",
+        "delta": "Delta",
+        "energy": "Energy",
+        "detector_distance": "camdist",
+    }
 
     def __init__(self, sample_offsets):
         super().__init__(
@@ -3043,69 +3016,67 @@ class Diffractometer34ID(Diffractometer):
             default_offsets=self.default_offsets,
         )
 
-    def goniometer_values(self, setup, stage_name="bcdi", **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
         Retrieve goniometer motor positions for a BCDI rocking scan.
 
         :param setup: the experimental setup: Class Setup
-        :param stage_name: supported stage name, 'bcdi', 'sample' or 'detector'
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
-        :return: a tuple of angular values in degrees, depending on stage_name:
-
-         - 'bcdi': (rocking angular step, grazing incidence angles, inplane detector
-           angle, outofplane detector angle). The grazing incidence angles are the
-           positions of circles below the rocking circle.
-         - 'sample': tuple of angular values for the sample circles, from the most outer
-           to the most inner circle
-         - 'detector': tuple of angular values for the detector circles, from the most
-           outer to the most inner circle
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
         # check some parameter
         valid.valid_item(
             scan_number, allowed_types=int, min_excluded=0, name="scan_number"
         )
-        if stage_name not in {"bcdi", "sample", "detector"}:
-            raise ValueError(f"Invalid value {stage_name} for 'stage_name' parameter")
 
         # load the motor positions
-        theta, chi, phi, delta, gamma, _ = self.motor_positions(
-            setup=setup, logfile=logfile, scan_number=scan_number
-        )
+        (
+            theta,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.motor_positions(setup=setup, scan_number=scan_number)
 
         # define the circles of interest for BCDI
         if setup.rocking_angle == "inplane":
             # theta is the inplane rotation around the vertical axis at 34ID
             grazing = None  # theta (inplane) is below phi
-            tilt, inplane, outofplane = (theta, delta, gamma)
+            tilt_angle = theta
         elif setup.rocking_angle == "outofplane":
             # phi is the incident angle (out of plane rotation) at 34ID
             grazing = (theta, chi)
-            tilt, inplane, outofplane = (phi, delta, gamma)
+            tilt_angle = phi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
         # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
         # phi (out of plane)   detector: delta (inplane), gamma)
-        sample_angles = (theta, chi, phi)
-        detector_angles = (delta, gamma)
+        self.sample_angles = (theta, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
-        if stage_name == "sample":
-            return sample_angles
-        if stage_name == "detector":
-            return detector_angles
-        return tilt, grazing, inplane, outofplane
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def load_data(
         self,
-        logfile,
         detector,
         setup,
         flatfield=None,
@@ -3119,7 +3090,6 @@ class Diffractometer34ID(Diffractometer):
         """
         Load 34ID-C data including detector/background corrections.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -3135,13 +3105,14 @@ class Diffractometer34ID(Diffractometer):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-
+        if detector.template_imagefile is None:
+            raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -3170,7 +3141,6 @@ class Diffractometer34ID(Diffractometer):
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=detector,
             setup=setup,
-            logfile=logfile,
             normalize=normalize,
             nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
@@ -3216,62 +3186,56 @@ class Diffractometer34ID(Diffractometer):
 
         :param setup: an instance of the class Setup
         :param kwargs:
-         - 'logfile': the logfile created in Setup.create_logfile()
          - 'scan_number': the scan number to load
 
         :return: (theta, phi, delta, gamma, energy) values
         """
         # load and check kwargs
-        logfile = kwargs["logfile"]
         scan_number = kwargs["scan_number"]
 
-        energy = setup.energy  # will be overridden if setup.rocking_angle is 'energy'
-
         if not setup.custom_scan:
-            motor_names = logfile[str(scan_number) + ".1"].motor_names  # positioners
-            motor_values = logfile[str(scan_number) + ".1"].motor_positions
+            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
             # positioners
-            labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            # positioners
+            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
 
-            names_table = {
-                "theta": "Theta",
-                "chi": "Chi",
-                "phi": "Phi",
-                "gamma": "Gamma",
-                "delta": "Delta",
-                "energy": "Energy",
-            }
-
-            if names_table["theta"] in labels:  # scanned
-                theta = labels_data[labels.index(names_table["theta"]), :]
+            if self.motor_table["theta"] in labels:  # scanned
+                theta = labels_data[labels.index(self.motor_table["theta"]), :]
             else:  # positioner
-                theta = motor_values[motor_names.index(names_table["theta"])]
+                theta = motor_values[motor_names.index(self.motor_table["theta"])]
 
-            if names_table["chi"] in labels:  # scanned
-                chi = labels_data[labels.index(names_table["chi"]), :]
+            if self.motor_table["chi"] in labels:  # scanned
+                chi = labels_data[labels.index(self.motor_table["chi"]), :]
             else:  # positioner
-                chi = motor_values[motor_names.index(names_table["chi"])]
+                chi = motor_values[motor_names.index(self.motor_table["chi"])]
 
-            if names_table["phi"] in labels:  # scanned
-                phi = labels_data[labels.index(names_table["phi"]), :]
+            if self.motor_table["phi"] in labels:  # scanned
+                phi = labels_data[labels.index(self.motor_table["phi"]), :]
             else:  # positioner
-                phi = motor_values[motor_names.index(names_table["phi"])]
+                phi = motor_values[motor_names.index(self.motor_table["phi"])]
 
-            if names_table["delta"] in labels:  # scanned
-                delta = labels_data[labels.index(names_table["delta"]), :]
+            if self.motor_table["delta"] in labels:  # scanned
+                delta = labels_data[labels.index(self.motor_table["delta"]), :]
             else:  # positioner
-                delta = motor_values[motor_names.index(names_table["delta"])]
+                delta = motor_values[motor_names.index(self.motor_table["delta"])]
 
-            if names_table["gamma"] in labels:  # scanned
-                gamma = labels_data[labels.index(names_table["gamma"]), :]
+            if self.motor_table["gamma"] in labels:  # scanned
+                gamma = labels_data[labels.index(self.motor_table["gamma"]), :]
             else:  # positioner
-                gamma = motor_values[motor_names.index(names_table["gamma"])]
+                gamma = motor_values[motor_names.index(self.motor_table["gamma"])]
 
-            if names_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(names_table["energy"]), :]
+            if self.motor_table["energy"] in labels:  # scanned
+                raw_energy = labels_data[labels.index(self.motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
                 energy = raw_energy * 1000.0  # switch to eV
+            else:  # positioner
+                energy = motor_values[motor_names.index(self.motor_table["energy"])]
+
+            detector_distance = motor_values[
+                motor_names.index(self.motor_table["detector_distance"])
+            ]
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
@@ -3284,8 +3248,10 @@ class Diffractometer34ID(Diffractometer):
             phi = setup.custom_motors["phi"]
             gamma = setup.custom_motors["gamma"]
             delta = setup.custom_motors["delta"]
+            detector_distance = setup.distance
+            energy = setup.energy
 
-        return theta, chi, phi, delta, gamma, energy
+        return theta, chi, phi, delta, gamma, energy, detector_distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -3314,25 +3280,22 @@ class Diffractometer34ID(Diffractometer):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, logfile, **kwargs):
+    def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at 34ID-C.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param kwargs:
          - 'scan_number': int, the scan number to load
-         - 'actuators': dictionary defining the entries corresponding to actuators
-           in the spec file
 
         :return: the default monitor values
         """
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        actuators = kwargs.get("actuators")
-        if actuators is not None:
-            monitor_name = actuators.get("monitor", "Monitor")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "Monitor")
             return self.read_device(
-                logfile=logfile, scan_number=scan_number, device_name=monitor_name
+                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
             )
         return None

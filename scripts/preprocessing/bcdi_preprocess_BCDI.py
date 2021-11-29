@@ -258,7 +258,8 @@ Usage:
     :param sdd: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
-     X-ray energy in eV, it can be a number or a list in case of energy scans.
+     X-ray energy in eV, it can be a number or a list in case of energy scans. Leave
+     None to use the default from the log file.
     :param custom_motors: e.g. {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0,
      "delta": -0.5685, "gamma": 33.3147}
      use this to declare motor positions if there is not log file, None otherwise
@@ -484,8 +485,6 @@ def run(prm):
     rocking_angle = prm["rocking_angle"]
     photon_threshold = prm["photon_threshold"]
     reload_orthogonal = prm["reload_orthogonal"]
-    inplane_angle = prm["inplane_angle"]
-    outofplane_angle = prm["outofplane_angle"]
     roi_detector = create_roi(dic=prm)
     use_rawdata = prm["use_rawdata"]
     normalize_flux = prm["normalize_flux"]
@@ -598,9 +597,9 @@ def run(prm):
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
-        energy=prm["energy"],
+        energy=prm.get("energy"),
         rocking_angle=rocking_angle,
-        distance=prm["sdd"],
+        distance=prm.get("sdd"),
         beam_direction=prm["beam_direction"],
         sample_inplane=prm["sample_inplane"],
         sample_outofplane=prm["sample_outofplane"],
@@ -612,6 +611,8 @@ def run(prm):
         custom_motors=prm["custom_motors"],
         actuators=prm["actuators"],
         is_series=prm["is_series"],
+        outofplane_angle=prm.get("outofplane_angle"),
+        inplane_angle=prm.get("inplane_angle"),
     )
 
     ########################################
@@ -667,26 +668,7 @@ def run(prm):
                 comment += "_lin"
                 # load the goniometer positions needed in the calculation
                 # of the transformation matrix
-                (
-                    tilt_angle,
-                    setup.grazing_angle,
-                    inplane,
-                    outofplane,
-                ) = setup.diffractometer.goniometer_values(
-                    logfile=logfile,
-                    scan_number=scan_nb,
-                    setup=setup,
-                )
-                setup.tilt_angle = (tilt_angle[1:] - tilt_angle[0:-1]).mean()
-                # override detector motor positions if the corrected values
-                # (taking into account the direct beam position)
-                # are provided by the user
-                setup.inplane_angle = (
-                    inplane_angle if inplane_angle is not None else inplane
-                )
-                setup.outofplane_angle = (
-                    outofplane_angle if outofplane_angle is not None else outofplane
-                )
+                setup.read_logfile(scan_number=scan_nb)
             else:  # 'xrayutilities'
                 comment += "_xrutil"
         if normalize_flux:
@@ -799,7 +781,6 @@ def run(prm):
             background = util.load_background(prm["background_file"])
 
             data, mask, frames_logical, monitor = bu.load_bcdi_data(
-                logfile=logfile,
                 scan_number=scan_nb,
                 detector=detector,
                 setup=setup,
@@ -874,7 +855,7 @@ def run(prm):
                     hxrd = xu.experiment.HXRD(
                         prm["sample_inplane"],
                         prm["sample_outofplane"],
-                        en=prm["energy"],
+                        en=setup.energy,
                         qconv=qconv,
                     )
                     # the first 2 arguments in HXRD are the inplane reference direction

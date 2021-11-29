@@ -46,7 +46,7 @@ API Reference
 """
 from abc import ABC, abstractmethod
 import h5py
-from math import isclose
+from math import hypot, isclose
 import numpy as np
 from numbers import Real
 import os
@@ -380,7 +380,6 @@ class Beamline(ABC):
         """
         motor_positions = setup.diffractometer.motor_positions(
             setup=setup,
-            logfile=logfile,
             scan_number=scan_number,
         )
         # remove the motor positions corresponding to deleted frames during data
@@ -817,15 +816,7 @@ class BeamlineID01(Beamline):
             name="filename",
         )
 
-        if os.path.isfile(filename):
-            # filename is already the full path to the .spec file
-            return SpecFile(filename)
-        print(f"Could not find the spec file at {filename}")
-
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-        path = root_folder + filename
-        print(f"Trying to load the spec file at {path}")
+        path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
 
     @property
@@ -1463,14 +1454,14 @@ class BeamlineP10(Beamline):
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
             return filename
-        print(f"Could not find the spec file at {filename}")
+        print(f"Could not find the fio file at: {filename}")
 
         if not os.path.isdir(root_folder):
             raise ValueError(f"The directory {root_folder} does not exist")
 
         # return the path to the .fio file
         path = root_folder + filename + "/" + filename + ".fio"
-        print(f"Trying to load the fio file at {path}")
+        print(f"Trying to load the fio file at: {path}")
         return path
 
     @property
@@ -1516,13 +1507,16 @@ class BeamlineP10(Beamline):
 
         """
         specfile = kwargs.get("specfile_name")
+        default_specfile = sample_name + "_{:05d}".format(scan_number)
         if specfile is None or not os.path.isfile(specfile):
             # default to the usual position of .fio at P10
-            specfile = sample_name + "_{:05d}".format(scan_number)
+            specfile = default_specfile
 
-        homedir = root_folder + specfile + "/"
+        homedir = root_folder + default_specfile + "/"
         default_dirname = "e4m/"
-        template_imagefile = specfile + template_imagefile
+
+        if template_imagefile is not None:
+            template_imagefile = default_specfile + template_imagefile
         return homedir, default_dirname, specfile, template_imagefile
 
     def process_positions(
@@ -1837,7 +1831,7 @@ class BeamlineP10SAXS(BeamlineP10):
             interp_angle[x_interp == 0]
         )
 
-        interp_radius = np.multiply(sign_array, np.sqrt(x_interp ** 2 + z_interp ** 2))
+        interp_radius = np.multiply(sign_array, hypot(x_interp, z_interp))
 
         if debugging:
             gu.imshow_plot(
@@ -2363,15 +2357,7 @@ class Beamline34ID(Beamline):
             name="filename",
         )
 
-        if os.path.isfile(filename):
-            # filename is already the full path to the .spec file
-            return SpecFile(filename)
-        print(f"Could not find the spec file at {filename}")
-
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-        path = root_folder + filename
-        print(f"Trying to load the spec file at {path}")
+        path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
 
     @property
@@ -2637,7 +2623,8 @@ class Beamline34ID(Beamline):
                         * (
                             np.cos(grazing_angle[0])
                             * (np.cos(inplane) * np.cos(outofplane) - 1)
-                            + np.sin(grazing_angle[0]) * np.sin(inplane)
+                            + np.sin(grazing_angle[0])
+                            * np.sin(inplane)
                             * np.cos(outofplane)
                         ),
                         (

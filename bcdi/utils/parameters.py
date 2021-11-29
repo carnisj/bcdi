@@ -229,8 +229,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "dispersion":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "energy":
-        if isinstance(value, Number):
-            valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+        if value is None or isinstance(value, Number):
+            valid.valid_item(
+                value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+            )
         else:
             valid.valid_container(
                 value,
@@ -283,7 +285,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value, container_types=str, min_length=1, allow_none=True, name=key
         )
     elif key == "inplane_angle":
-        valid.valid_item(value, allowed_types=Real, name=key)
+        valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "interpolation_method":
         allowed = {"xrayutilities", "linearization"}
         if value not in allowed:
@@ -330,7 +332,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "outofplane_angle":
-        valid.valid_item(value, allowed_types=Real, name=key)
+        valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "output_size":
         valid.valid_container(
             value,
@@ -480,7 +482,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
 
     elif key == "sdd":
-        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
+        valid.valid_item(
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+        )
     elif key == "sort_method":
         allowed = {"mean_amplitude", "variance", "variance/mean", "volume"}
         if value not in allowed:
@@ -499,7 +503,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "template_imagefile":
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value, container_types=str, min_length=0, allow_none=True, name=key
         )
     elif key == "threshold_gradient":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
@@ -516,7 +520,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "tick_width":
         valid.valid_item(value, allowed_types=int, min_included=1, name=key)
     elif key == "tilt_angle":
-        valid.valid_item(value, allowed_types=Real, name=key)
+        valid.valid_item(value, allowed_types=Real, allow_none=True, name=key)
     elif key == "tiltazimuth":
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "tilt_detector":

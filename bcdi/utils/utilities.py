@@ -480,6 +480,40 @@ def dos2unix(input_file, output_file):
             output.write(row + str.encode("\n"))
 
 
+def find_file(filename: str, default_folder: str) -> str:
+    """
+    Localize a file.
+
+    The filename can be either the name of the file (including the extension) or the
+    full path to the file.
+
+    :param filename: the name or full path to the file
+    :param default_folder: it will look for the file in that folder if filename is not
+     the full path.
+    :return: str, the path to the file
+    """
+    if not isinstance(filename, str):
+        raise TypeError("filename should be a string")
+
+    if os.path.isfile(filename):
+        # filename is already the full path to the file
+        return filename
+    print(f"Could not find the file at: {filename}")
+
+    if not isinstance(default_folder, str):
+        raise TypeError("default_folder should be a string")
+    if not default_folder.endswith("/"):
+        default_folder += "/"
+
+    if not os.path.isdir(default_folder):
+        raise ValueError(f"The directory {default_folder} does not exist")
+    full_name = default_folder + filename
+    if not os.path.isfile(full_name):
+        raise ValueError(f"Could not localize the file at {filename} or {full_name}")
+    print(f"File localized at: {full_name}")
+    return full_name
+
+
 def find_nearest(reference_array, test_values, width=None):
     """
     Find the indices where original_array is nearest to array_values.

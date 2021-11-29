@@ -17,11 +17,12 @@ beamline-dependent information from the child classes.
 from collections.abc import Sequence
 import datetime
 import multiprocessing as mp
-from numbers import Real, Integral
+from numbers import Integral, Real
 import numpy as np
 from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
+from typing import List, Optional, Tuple, Union
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
@@ -45,10 +46,8 @@ class Setup:
     :param tilt_angle: angular step of the rocking curve, in degrees.
     :param rocking_angle: angle which is tilted during the rocking curve in
      {'outofplane', 'inplane', 'energy'}
-    :param grazing_angle: motor positions for the goniometer circles below the
-     rocking angle. It should be a list/tuple of lenght 1 for out-of-plane rocking
-     curves (the chi motor value) and length 2 for inplane rocking
-     curves (the chi and omega/om/eta motor values).
+    :param grazing_angle: tuple of motor positions for the goniometer circles below the
+     rocking angle. Leave None if there is no such circle.
     :param kwargs:
 
      - 'direct_beam': tuple of two real numbers indicating the position of the direct
@@ -95,7 +94,7 @@ class Setup:
     def __init__(
         self,
         beamline,
-        detector=create_detector("Dummy"),
+        detector=None,
         beam_direction=(1, 0, 0),
         energy=None,
         distance=None,
@@ -144,7 +143,12 @@ class Setup:
         self.is_series = kwargs.get("is_series", False)  # boolean
         # load positional arguments corresponding to instance properties
         self.beamline = beamline
-        self.detector = detector
+        # create the Diffractometer instance
+        self._diffractometer = create_diffractometer(
+            beamline=self.beamline,
+            sample_offsets=sample_offsets,
+        )
+        self.detector = detector or create_detector("Dummy")
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
@@ -154,11 +158,8 @@ class Setup:
         self.rocking_angle = rocking_angle
         self.grazing_angle = grazing_angle
 
-        # create the Diffractometer instance
-        self._diffractometer = create_diffractometer(
-            beamline=self.beamline,
-            sample_offsets=sample_offsets,
-        )
+        # initialize other attributes
+        self.logfile = None
 
     @property
     def actuators(self):
@@ -457,43 +458,20 @@ class Setup:
         """
         Motor positions for the goniometer circles below the rocking angle.
 
-        It should be a list/tuple of lenght 1 for out-of-plane rocking curves (the
-        motor value for mu if it exists) and length 2 for inplane rocking curves (
-        e.g. mu and omega/om/eta motor values).
+        None if there is no such circle.
         """
         return self._grazing_angle
 
     @grazing_angle.setter
     def grazing_angle(self, value):
-        if self.rocking_angle == "outofplane":
-            # only the mu angle (rotation around the vertical axis,
-            # below the rocking angle omega/om/eta) is needed
-            # mu is set to 0 if it does not exist
-            valid.valid_container(
-                value,
-                container_types=(tuple, list),
-                item_types=Real,
-                allow_none=True,
-                name="Setup.grazing_angle",
-            )
-            self._grazing_angle = value
-        elif self.rocking_angle == "inplane":
-            # one or more values needed, for example: mu angle,
-            # the omega/om/eta angle, the chi angle
-            # (rotations respectively around the vertical axis,
-            # outboard and downstream, below the rocking angle phi)
-            valid.valid_container(
-                value,
-                container_types=(tuple, list),
-                item_types=Real,
-                allow_none=True,
-                name="Setup.grazing_angle",
-            )
-            self._grazing_angle = value
-        else:  # self.rocking_angle == 'energy'
-            # there is no sample rocking for energy scans,
-            # hence the grazing angle value do not matter
-            self._grazing_angle = None
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            item_types=Real,
+            allow_none=True,
+            name="Setup.grazing_angle",
+        )
+        self._grazing_angle = value
 
     @property
     def incident_wavevector(self):
@@ -732,6 +710,62 @@ class Setup:
         print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
         return qx, qz, qy, frames_logical
 
+    def check_setup(
+        self,
+        grazing_angle: Optional[Tuple[Real, ...]],
+        inplane_angle: Real,
+        outofplane_angle: Real,
+        tilt_angle: np.ndarray,
+        detector_distance: Real,
+        energy: Real,
+    ) -> None:
+        """
+        Check if the required parameters are correctly defined.
+
+        This method is called in Diffractometer.goniometer_value, which is used only for
+        the geometric transformation using the linearized transformation matrix. Hence,
+        arrays for detector angles and the energy are not allowed.
+
+        :param grazing_angle: tuple of motor positions for the goniometer circles below
+         the rocking angle. Leave None if there is no such circle.
+        :param inplane_angle: detector inplane angle in degrees
+        :param outofplane_angle: detector out-of-plane angle in degrees
+        :param tilt_angle: ndarray of shape (N,), values of the rocking angle
+        :param detector_distance: sample to detector distance in meters
+        :param energy: X-ray energy in eV
+        """
+        self.grazing_angle = grazing_angle
+
+        self.energy = self.energy or energy
+        if self.energy is None:
+            raise ValueError("the X-ray energy is not defined")
+        if not isinstance(self.energy, Real):
+            raise TypeError("the X-ray energy should be fixed")
+
+        self.distance = self.distance or detector_distance
+        if self.distance is None:
+            raise ValueError("the sample to detector distance is not defined")
+        if not isinstance(self.distance, Real):
+            raise TypeError("the sample to detector distance should be fixed")
+
+        self.outofplane_angle = self.outofplane_angle or outofplane_angle
+        if self.outofplane_angle is None:
+            raise ValueError("the detector out-of-plane angle is not defined")
+
+        self.inplane_angle = self.inplane_angle or inplane_angle
+        if self.inplane_angle is None:
+            raise ValueError("the detector in-plane angle is not defined")
+
+        if tilt_angle is not None:
+            tilt_angle = np.mean(
+                np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
+            )
+        self.tilt_angle = self.tilt_angle or tilt_angle
+        if self.tilt_angle is None:
+            raise ValueError("the tilt angle is not defined")
+        if not isinstance(self.tilt_angle, Real):
+            raise TypeError("the tilt angle should be a number")
+
     def create_logfile(self, scan_number, root_folder, filename):
         """
         Create the logfile, which can be a log/spec file or the data itself.
@@ -746,16 +780,19 @@ class Setup:
         :return: logfile
         """
         if self.custom_scan:
-            return None
+            logfile = None
+        else:
+            logfile = self._beamline.create_logfile(
+                scan_number=scan_number,
+                root_folder=root_folder,
+                filename=filename,
+                datadir=self.detector.datadir,
+                template_imagefile=self.detector.template_imagefile,
+                name=self.beamline,
+            )
+        self.logfile = logfile
 
-        return self._beamline.create_logfile(
-            scan_number=scan_number,
-            root_folder=root_folder,
-            filename=filename,
-            datadir=self.detector.datadir,
-            template_imagefile=self.detector.template_imagefile,
-            name=self.beamline,
-        )
+        return logfile
 
     def detector_frame(
         self,
@@ -1073,14 +1110,14 @@ class Setup:
         valid.valid_container(
             specfile_name,
             container_types=str,
-            min_length=1,
+            min_length=0,
             allow_none=True,
             name="specfile_name",
         )
         valid.valid_container(
             template_imagefile,
             container_types=str,
-            min_length=1,
+            min_length=0,
             allow_none=True,
             name="template_imagefile",
         )
@@ -1475,9 +1512,15 @@ class Setup:
         # calculate the direct space voxel sizes in nm          #
         # based on the FFT window shape used in phase retrieval #
         #########################################################
+        tilt = (
+            self.tilt_angle
+            * self.detector.preprocessing_binning[0]
+            * self.detector.binning[0]
+        )
+
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
             initial_shape,
-            tilt_angle=abs(self.tilt_angle),
+            tilt_angle=abs(tilt),
             pixel_x=self.detector.unbinned_pixel_size[1],
             pixel_y=self.detector.unbinned_pixel_size[0],
         )
@@ -1491,7 +1534,7 @@ class Setup:
 
         if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            tilt = self.tilt_angle * initial_shape[0] / input_shape[0]
+            tilt *= initial_shape[0] / input_shape[0]
             pixel_y = (
                 self.detector.unbinned_pixel_size[0] * initial_shape[1] / input_shape[1]
             )
@@ -1519,7 +1562,6 @@ class Setup:
                     f" {dx_realspace:.2f} nm)",
                 )
         else:
-            tilt = self.tilt_angle
             pixel_y = self.detector.unbinned_pixel_size[0]
             pixel_x = self.detector.unbinned_pixel_size[1]
 
@@ -1852,7 +1894,7 @@ class Setup:
         ##########################################################
         transfer_matrix, q_offset = self.transformation_bcdi(
             array_shape=(nbz, nby, nbx),
-            tilt_angle=self.tilt_angle,
+            tilt_angle=self.tilt_angle * self.detector.preprocessing_binning[0],
             direct_space=False,
             verbose=verbose,
             pixel_x=self.detector.unbinned_pixel_size[1],
@@ -2163,6 +2205,34 @@ class Setup:
             + ortho_imatrix[2, 2] * vector[0]
         )
         return new_z, new_y, new_x
+
+    def read_logfile(self, **kwargs):
+        """
+        Extract values of interest for the geometric transformation from the logfile.
+
+        This is the public interface of Diffractometer.goniometer_values
+
+        :param kwargs: beamline_specific parameters
+
+         - 'scan_number': int, the scan number to load
+
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        scan_number = kwargs.get("scan_number")
+        valid.valid_item(
+            scan_number,
+            allowed_types=int,
+            allow_none=True,
+            min_included=0,
+            name="scan_number",
+        )
+
+        return self.diffractometer.goniometer_values(
+            setup=self,
+            scan_number=scan_number,
+        )
 
     def transformation_bcdi(
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True

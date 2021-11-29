@@ -179,7 +179,7 @@ Usage:
     :param sdd: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
-     X-ray energy in eV
+     X-ray energy in eV, leave None to use the default from the log file.
     :param beam_direction: e.g. [1, 0, 0]
      beam direction in the laboratory frame (downstream, vertical up, outboard)
     :param sample_offsets: e.g. None
@@ -444,21 +444,19 @@ def run(prm):
     ####################################
     # define the experimental geometry #
     ####################################
-    # correct the tilt_angle for binning
-    tilt_angle = prm["tilt_angle"] * preprocessing_binning[0] * phasing_binning[0]
     setup = Setup(
         beamline=prm["beamline"],
         detector=detector,
-        energy=prm["energy"],
-        outofplane_angle=prm["outofplane_angle"],
-        inplane_angle=prm["inplane_angle"],
-        tilt_angle=tilt_angle,
+        energy=prm.get("energy"),
+        outofplane_angle=prm.get("outofplane_angle"),
+        inplane_angle=prm.get("inplane_angle"),
+        tilt_angle=prm.get("tilt_angle"),
         rocking_angle=prm["rocking_angle"],
-        distance=prm["sdd"],
-        sample_offsets=prm["sample_offsets"],
-        actuators=prm["actuators"],
-        custom_scan=prm["custom_scan"],
-        custom_motors=prm["custom_motors"],
+        distance=prm.get("sdd"),
+        sample_offsets=prm.get("sample_offsets"),
+        actuators=prm.get("actuators"),
+        custom_scan=prm.get("custom_scan", False),
+        custom_motors=prm.get("custom_motors"),
     )
 
     ########################################
@@ -474,17 +472,13 @@ def run(prm):
         template_imagefile=prm["template_imagefile"],
     )
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan, root_folder=root_folder, filename=detector.specfile
     )
 
-    #########################################################
-    # get the motor position of goniometer circles which    #
-    # are below the rocking angle (e.g., chi for eta/omega) #
-    #########################################################
-    _, setup.grazing_angle, _, _ = setup.diffractometer.goniometer_values(
-        logfile=logfile, scan_number=scan, setup=setup
-    )
+    # load the goniometer positions needed in the calculation
+    # of the transformation matrix
+    setup.read_logfile(scan_number=scan)
 
     ###################
     # print instances #
@@ -799,7 +793,11 @@ def run(prm):
         # voxel sizes in the detector frame
         voxel_z, voxel_y, voxel_x = setup.voxel_sizes_detector(
             array_shape=original_size,
-            tilt_angle=tilt_angle,
+            tilt_angle=(
+                prm.get("tilt_angle")
+                * detector.preprocessing_binning[0]
+                * detector.binning[0]
+            ),
             pixel_x=detector.pixelsize_x,
             pixel_y=detector.pixelsize_y,
             verbose=True,
@@ -1151,17 +1149,13 @@ def run(prm):
     if save_frame == "lab_flat_sample":
         comment = comment + "_flat"
         print("\nSending sample stage circles to 0")
-        sample_angles = setup.diffractometer.goniometer_values(
-            logfile=logfile, scan_number=scan, setup=setup, stage_name="sample"
-        )
         (amp, phase, strain), q_final = setup.diffractometer.flatten_sample(
             arrays=(amp, phase, strain),
             voxel_size=voxel_size,
-            angles=sample_angles,
             q_com=q_lab[::-1],  # q_com needs to be in xyz order
             is_orthogonal=True,
             reciprocal_space=False,
-            rocking_angle=prm["rocking_angle"],
+            rocking_angle=setup.rocking_angle,
             debugging=(True, False, False),
             title=("amp", "phase", "strain"),
         )

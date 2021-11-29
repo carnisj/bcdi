@@ -347,7 +347,6 @@ if not reconstructed_data:  # load reciprocal space data
     )
 
     data, mask, frames_logical, monitor = bu.load_bcdi_data(
-        logfile=logfile,
         scan_number=scan,
         detector=detector,
         setup=setup,
