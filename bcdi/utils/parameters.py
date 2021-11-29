@@ -222,6 +222,24 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "dirbeam_detector_angles":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=2,
+            allow_none=True,
+            name=key
+        )
+    elif key == "direct_beam":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=2,
+            allow_none=True,
+            name=key
+        )
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "detrot":
