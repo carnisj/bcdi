@@ -1,5 +1,5 @@
-Future:
--------
+Version 0.2.1:
+--------------
 
 * Allow lazy loading of the experimental parameters: energy, detector distance, tilt
   angle, detector inplane and out-of-plane angles. If not provided by the user, the
