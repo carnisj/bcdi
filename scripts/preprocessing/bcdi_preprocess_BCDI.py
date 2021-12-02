@@ -636,8 +636,9 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    root = tk.Tk()
-    root.withdraw()
+    if flag_interact:
+        root = tk.Tk()
+        root.withdraw()
 
     for scan_idx, scan_nb in enumerate(scans, start=1):
         plt.ion()
