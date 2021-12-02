@@ -520,6 +520,8 @@ def run(prm):
 
     if prm["reload_previous"]:
         user_comment += "_reloaded"
+        root = tk.Tk()
+        root.withdraw()
     else:
         preprocessing_binning = (1, 1, 1)
         reload_orthogonal = False
@@ -643,9 +645,6 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    root = tk.Tk()
-    root.withdraw()
-
     for scan_idx, scan_nb in enumerate(scans, start=1):
         plt.ion()
 
