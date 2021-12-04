@@ -161,6 +161,16 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = np.asarray(value)
     elif key == "beamline":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "bragg_peak":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            item_types=int,
+            min_included=0,
+            length=3,
+            allow_none=True,
+            name=key,
+        )
     elif key == "cch1":
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "cch2":
