@@ -100,7 +100,7 @@ class TestInitFacetsAttributes(unittest.TestCase):
         self.assertIsInstance(self.facets.vtk_data, dict)
         self.assertTrue(
             all(
-                key in self.facets.vtk_data.keys()
+                key in self.facets.vtk_data.
                 for key in {
                     "x",
                     "y",
