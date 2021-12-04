@@ -165,7 +165,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_container(
             value,
             container_types=(tuple, list),
-            item_types=int,
+            item_types=Real,
             min_included=0,
             length=3,
             allow_none=True,
