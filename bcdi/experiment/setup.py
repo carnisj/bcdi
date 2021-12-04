@@ -127,7 +127,8 @@ class Setup:
         )
 
         # kwargs for loading and preprocessing data
-        sample_offsets = kwargs.get("sample_offsets")  # sequence
+        self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
+        self.direct_beam = kwargs.get("direct_beam")
         self.filtered_data = kwargs.get("filtered_data", False)  # boolean
         self.custom_scan = kwargs.get("custom_scan", False)  # boolean
         self.custom_images = kwargs.get("custom_images")  # list or tuple
@@ -145,14 +146,12 @@ class Setup:
         # create the Diffractometer instance
         self._diffractometer = create_diffractometer(
             beamline=self.beamline,
-            sample_offsets=sample_offsets,
+            sample_offsets=kwargs.get("sample_offsets"),
         )
         self.detector = detector or create_detector("Dummy")
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
-        self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
-        self.direct_beam = self.correct_direct_beam(kwargs.get("direct_beam"))
         self.outofplane_angle = outofplane_angle
         self.inplane_angle = inplane_angle
         self.tilt_angle = tilt_angle
@@ -380,6 +379,28 @@ class Setup:
                 name="Setup.dirbeam_detector_angles",
             )
         self._dirbeam_detector_angles = value
+
+    @property
+    def direct_beam(self):
+        """
+        Direct beam position in pixels.
+
+        Tuple of two real numbers indicating the position of the direct beam in pixels
+        at zero detector angles.
+        """
+        return self._direct_beam
+
+    @direct_beam.setter
+    def direct_beam(self, value):
+        if value is not None:
+            valid.valid_container(
+                value,
+                container_types=(tuple, list),
+                length=2,
+                item_types=Real,
+                name="Setup.direct_beam",
+            )
+        self._direct_beam = value
 
     @property
     def distance(self):
@@ -771,32 +792,20 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_direct_beam(
-            self, direct_beam: Optional[List[Real]]
-    ) -> Optional[Tuple[Real, ...]]:
+    def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
         Calculate the direct beam position in pixels at zero detector angles.
 
-        :param direct_beam: [vertical, horizontal] direct beam position on the unbinned,
-         full detector measured with detector angles given by dirbeam_detector_angles.
         :return: a tuple representing the direct beam position at zero detector angles
         """
-        if direct_beam is not None:
-            valid.valid_container(
-                direct_beam,
-                container_types=(tuple, list),
-                length=2,
-                item_types=Real,
-                name="Setup.direct_beam",
-            )
-        else:
+        if self.direct_beam is None:
             return None
 
         if self.dirbeam_detector_angles is None:
-            return tuple(direct_beam)
+            return tuple(self.direct_beam)
 
         ver_direct = (
-                direct_beam[0]
+                self.direct_beam[0]
                 - self.outofplane_coeff
                 * self.dirbeam_detector_angles[0]
                 * np.pi
@@ -805,7 +814,7 @@ class Setup:
                 / self.detector.pixelsize_y
         )  # outofplane_coeff is +1 or -1
 
-        hor_direct = direct_beam[1] + self.inplane_coeff * (
+        hor_direct = self.direct_beam[1] + self.inplane_coeff * (
                 self.dirbeam_detector_angles[1]
                 * np.pi / 180
                 * self.distance / self.detector.pixelsize_x
