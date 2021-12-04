@@ -156,6 +156,54 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.grazing_angle, None)
 
 
+class TestCorrectDirectBeam(unittest.TestCase):
+    """
+    Tests related to correct_direct_beam.
+
+    def correct_direct_beam(
+            self, direct_beam: Optional[List[Real]]
+    ) -> Optional[Tuple[Real, ...]]:
+    """
+
+    def setUp(self) -> None:
+        self.setup = Setup(beamline="ID01")
+        self.params = {
+            "direct_beam": [12, 324],
+            "dirbeam_detector_angles": [34, 1],
+            "distance": 1.23,
+        }
+
+    def test_direct_beam_none(self):
+        self.assertTrue(self.setup.correct_direct_beam(direct_beam=None) is None)
+
+    def test_direct_beam_wrong_length(self):
+        with self.assertRaises(ValueError):
+            self.setup.correct_direct_beam(direct_beam=[1, 2, 3])
+
+    def test_direct_beam_wrong_type(self):
+        with self.assertRaises(TypeError):
+            self.setup.correct_direct_beam(direct_beam=[1, 2+1j])
+
+    def test_dirbeam_detector_angles_none(self):
+        self.setup.dirbeam_detector_angles = None
+        self.assertEqual(
+            self.setup.correct_direct_beam(direct_beam=self.params["direct_beam"]),
+            tuple(self.params["direct_beam"])
+        )
+
+    def test_dirbeam_detector_angles_not_none(self):
+        self.setup.dirbeam_detector_angles = self.params["dirbeam_detector_angles"]
+        self.setup.distance = self.params["distance"]
+        print(self.setup.correct_direct_beam(direct_beam=self.params["direct_beam"]))
+        self.assertTrue(
+            np.allclose(
+                self.setup.correct_direct_beam(direct_beam=self.params["direct_beam"]),
+                (-13258.848966982338, -66.31908726418641),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
 if __name__ == "__main__":
     run_tests(Test)
     run_tests(TestCheckSetup)
