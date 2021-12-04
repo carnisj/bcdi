@@ -183,11 +183,11 @@ ref_axis_q: "y"  # q will be aligned along that axis
 bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
 # and full-sized detector. It will be used to calculate the real detector angles for the
 # measured Bragg peak. Leave None to determine the Bragg peak position automatically.
-direct_beam: [125, 362]  # [horizontal, vertical]
+direct_beam: [125, 362]  # [vertical, horizontal]
 # direct beam position on the unbinned, full detector measured
 # with detector angles given by dirbeam_detector_angles. It will be used to calculate
 # the real detector angles for the measured Bragg peak. Leave None for no correction.
-dirbeam_detector_angles: [1, 25]  # [inplane, outofplane] detector angles in degrees
+dirbeam_detector_angles: [1, 25]  # [outofplane, inplane] detector angles in degrees
 # for the direct beam measurement. Leave None for no correction.
 outofplane_angle: 42.6093
 # detector angle in deg (rotation around x outboard, typically delta),

@@ -49,9 +49,9 @@ class Setup:
      rocking angle. Leave None if there is no such circle.
     :param kwargs:
 
-     - 'direct_beam': [horizontal, vertical] list of two real numbers indicating the
+     - 'direct_beam': [vertical, horizontal] list of two real numbers indicating the
        position of the direct beam in pixels in the unbinned, full detector
-     - 'dirbeam_detector_angles': [inplane, outofplane] detector angles in degrees
+     - 'dirbeam_detector_angles': [outofplane, inplane] detector angles in degrees
        for the direct beam measurement.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were
        already preprocessed.
@@ -362,10 +362,9 @@ class Setup:
     @property
     def dirbeam_detector_angles(self):
         """
-        Direct beam position in pixels.
+        Detector angles in degrees for the measurement of the direct beam.
 
-        Tuple of two real numbers indicating the detector angles in degree for the
-        measurement of the direct beam.
+        [outofplane, inplane]
         """
         return self._dirbeam_detector_angles
 
@@ -385,10 +384,9 @@ class Setup:
     @property
     def direct_beam(self):
         """
-        Direct beam position in pixels.
+        Direct beam position in pixels at zero detector angles.
 
-        Tuple of two real numbers indicating the position of the direct beam in pixels
-        at zero detector angles.
+        [vertical, horizontal]
         """
         return self._direct_beam
 
@@ -405,21 +403,23 @@ class Setup:
         if self.dirbeam_detector_angles is None:
             self._direct_beam = value
         else:
-            hor_direct = value[0] + self.inplane_coeff * (
-                    self.dirbeam_detector_angles[0]
-                    * np.pi / 180
-                    * self.distance / self.detector.pixelsize_x
-            )  # inplane_coeff is +1 or -1
             ver_direct = (
-                    value[1]
+                    value[0]
                     - self.outofplane_coeff
-                    * self.dirbeam_detector_angles[1]
+                    * self.dirbeam_detector_angles[0]
                     * np.pi
                     / 180
                     * self.distance
                     / self.detector.pixelsize_y
             )  # outofplane_coeff is +1 or -1
-            self._direct_beam = (hor_direct, ver_direct)
+
+            hor_direct = value[1] + self.inplane_coeff * (
+                    self.dirbeam_detector_angles[1]
+                    * np.pi / 180
+                    * self.distance / self.detector.pixelsize_x
+            )  # inplane_coeff is +1 or -1
+
+            self._direct_beam = (ver_direct, hor_direct)
 
     @property
     def distance(self):
