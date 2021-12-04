@@ -382,14 +382,14 @@ def combined_plots(
                 tmp_array[
                     np.isinf(tmp_array)
                 ] = np.inf  # set -inf to +inf to find the min
-                vmin = tmp_array.min(initial=None)
+                vmin = tmp_array.min()
             if np.isnan(vmax):
                 tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = (
                     -1 * np.inf
                 )  # set +inf to -inf to find the max
-                vmax = tmp_array.max(initial=None)
+                vmax = tmp_array.max()
                 if np.isclose(vmax, vmin):
                     vmax = vmin + 1
 
@@ -496,14 +496,14 @@ def combined_plots(
                 tmp_array[
                     np.isinf(tmp_array)
                 ] = np.inf  # set -inf to +inf to find the min
-                vmin = tmp_array.min(initial=None)
+                vmin = tmp_array.min()
             if np.isnan(vmax):
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = -1 * np.inf
                 tmp_array[np.isinf(tmp_array)] = (
                     -1 * np.inf
                 )  # set +inf to -inf to find the max
-                vmax = tmp_array.max(initial=None)
+                vmax = tmp_array.max()
                 if np.isclose(vmax, vmin):
                     vmax = vmin + 1
             plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
@@ -1227,14 +1227,14 @@ def imshow_plot(
             tmp_array = np.copy(array)
             tmp_array[np.isnan(array)] = np.inf
             tmp_array[np.isinf(tmp_array)] = np.inf  # set -inf to +inf to find the min
-            vmin = tmp_array.min(initial=None)
+            vmin = tmp_array.min()
         if np.isnan(vmax):
             tmp_array = np.copy(array)
             tmp_array[np.isnan(array)] = -1 * np.inf
             tmp_array[np.isinf(tmp_array)] = (
                 -1 * np.inf
             )  # set +inf to -inf to find the max
-            vmax = tmp_array.max(initial=None)
+            vmax = tmp_array.max()
         plot = axis.imshow(array, vmin=vmin, vmax=vmax, cmap=cmap)
     else:  # 'log'
         if np.isnan(vmin):
@@ -2274,7 +2274,7 @@ def save_to_vti(
     try:
         index_first = tuple_fieldnames.index("amp")
         first_array = tuple_array[index_first]
-        first_array = first_array / first_array.max(initial=None)
+        first_array = first_array / first_array.max()
         first_array[
             first_array < amplitude_threshold
         ] = 0  # theshold low amplitude values in order to save disk space
