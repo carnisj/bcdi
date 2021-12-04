@@ -590,6 +590,8 @@ class Setup:
             "Class": self.__class__.__name__,
             "beamline": self.beamline,
             "detector": self.detector.name,
+            "direct_beam": self.direct_beam,
+            "dirbeam_detector_angles": self.dirbeam_detector_angles,
             "pixel_size_m": self.detector.unbinned_pixel_size,
             "beam_direction": self.beam_direction,
             "energy_eV": self.energy,
@@ -672,6 +674,8 @@ class Setup:
             f"{self.__class__.__name__}(beamline='{self.beamline}', "
             f"detector='{self.detector.name}',"
             f" beam_direction={self.beam_direction}, "
+            f"direct_beam={self.direct_beam}, "
+            f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
             f"energy={self.energy}, distance={self.distance}, "
             f"outofplane_angle={self.outofplane_angle},\n"
             f"inplane_angle={self.inplane_angle}, "
