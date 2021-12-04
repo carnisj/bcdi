@@ -272,9 +272,10 @@ Usage:
      only when interp_method is 'linearization'
     :param ref_axis_q: e.g. "y"  # q will be aligned along that axis
     :param direct_beam: e.g. [125, 362]
-     direct beam position measured with detector angles given by the parameter
-     `dirbeam_detector_angles`. It will be used to calculate the real detector angles
-     for the measured Bragg peak. Leave None for no correction.
+     [horizontal, vertical], direct beam position on the unbinned, full detector
+     measured with detector angles given by `dirbeam_detector_angles`. It will be used
+     to calculate the real detector angles for the measured Bragg peak. Leave None for
+     no correction.
     :param dirbeam_detector_angles: e.g. [1, 25]
      [inplane, outofplane] detector angles in degrees for the direct beam measurement.
      Leave None for no correction

@@ -87,7 +87,8 @@ beam_direction: [1, 0, 0]
 bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
 # and full-sized detector. It will be used to calculate the real detector angles for the
 # measured Bragg peak. Leave None to determine the Bragg peak position automatically.
-direct_beam: [125, 362]  # direct beam position on the unbinned, full detector measured
+direct_beam: [125, 362]  # [horizontal, vertical]
+# direct beam position on the unbinned, full detector measured
 # with detector angles given by dirbeam_detector_angles. It will be used to calculate
 # the real detector angles for the measured Bragg peak. Leave None for no correction.
 dirbeam_detector_angles: [1, 25]  # [inplane, outofplane] detector angles in degrees
