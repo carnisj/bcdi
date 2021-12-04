@@ -50,7 +50,9 @@ class Setup:
     :param kwargs:
 
      - 'direct_beam': tuple of two real numbers indicating the position of the direct
-       beam in pixels at zero detector angles.
+       beam in pixels in the unbinned, full detector
+     - 'dirbeam_detector_angles': [inplane, outofplane] detector angles in degrees
+       for the direct beam measurement.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were
        already preprocessed.
      - 'custom_scan': boolean, True is the scan does not follow the beamline's usual
@@ -125,6 +127,7 @@ class Setup:
         )
 
         # kwargs for preprocessing forward CDI data
+        self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
         self.direct_beam = kwargs.get("direct_beam")
         # kwargs for loading and preprocessing data
         sample_offsets = kwargs.get("sample_offsets")  # sequence
@@ -358,6 +361,29 @@ class Setup:
         return self._diffractometer
 
     @property
+    def dirbeam_detector_angles(self):
+        """
+        Direct beam position in pixels.
+
+        Tuple of two real numbers indicating the detector angles in degree for the
+        measurement of the direct beam.
+        """
+        return self._dirbeam_detector_angles
+
+    @dirbeam_detector_angles.setter
+    def dirbeam_detector_angles(self, value):
+        if value is not None:
+            valid.valid_container(
+                value,
+                container_types=(tuple, list),
+                length=2,
+                item_types=Real,
+                allow_none=True,
+                name="Setup.dirbeam_detector_angles",
+            )
+        self._dirbeam_detector_angles = value
+
+    @property
     def direct_beam(self):
         """
         Direct beam position in pixels.
@@ -377,7 +403,10 @@ class Setup:
                 item_types=Real,
                 name="Setup.direct_beam",
             )
-        self._direct_beam = value
+        self._direct_beam = self.diffractometer.correct_direct_beam(
+                    direct_beam=value,
+                    dirbeam_detector_angles=self.dirbeam_detector_angles
+                )
 
     @property
     def distance(self):
