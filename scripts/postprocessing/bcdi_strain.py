@@ -365,7 +365,6 @@ def run(prm):
     # assign often used parameters #
     ################################
     bragg_peak = prm.get("bragg_peak")
-    direct_beam = prm.get("direct_beam")
     debug = prm["debug"]
     comment = prm["comment"]
     centering_method = prm["centering_method"]
@@ -466,6 +465,8 @@ def run(prm):
         actuators=prm.get("actuators"),
         custom_scan=prm.get("custom_scan", False),
         custom_motors=prm.get("custom_motors"),
+        dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
+        direct_beam=prm.get("direct_beam"),
     )
 
     ########################################

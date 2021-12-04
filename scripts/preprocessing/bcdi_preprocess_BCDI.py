@@ -475,7 +475,6 @@ def run(prm):
     # assign often used parameters #
     ################################
     bragg_peak = prm.get("bragg_peak")
-    direct_beam = prm.get("direct_beam")
     scans = prm["scans"]
     fix_size = prm["fix_size"]
     sample_name = prm["sample_name"]
@@ -624,6 +623,8 @@ def run(prm):
         is_series=prm["is_series"],
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
+        dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
+        direct_beam=prm.get("direct_beam"),
     )
 
     ########################################
