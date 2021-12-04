@@ -19,7 +19,6 @@ from numbers import Real
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches
-import gc
 import sys
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
