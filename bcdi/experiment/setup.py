@@ -771,7 +771,9 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_direct_beam(self, direct_beam):
+    def correct_direct_beam(
+            self, direct_beam: Optional[List[Real]]
+    ) -> Optional[Tuple[Real, ...]]:
         """
         Calculate the direct beam position in pixels at zero detector angles.
 
@@ -787,8 +789,11 @@ class Setup:
                 item_types=Real,
                 name="Setup.direct_beam",
             )
+        else:
+            return None
+
         if self.dirbeam_detector_angles is None:
-            return direct_beam
+            return tuple(direct_beam)
 
         ver_direct = (
                 direct_beam[0]
