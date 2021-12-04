@@ -474,6 +474,8 @@ def run(prm):
     ################################
     # assign often used parameters #
     ################################
+    bragg_peak = prm.get("bragg_peak")
+    direct_beam = prm.get("direct_beam")
     scans = prm["scans"]
     fix_size = prm["fix_size"]
     sample_name = prm["sample_name"]

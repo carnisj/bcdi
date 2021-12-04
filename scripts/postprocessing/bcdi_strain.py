@@ -364,6 +364,8 @@ def run(prm):
     ################################
     # assign often used parameters #
     ################################
+    bragg_peak = prm.get("bragg_peak")
+    direct_beam = prm.get("direct_beam")
     debug = prm["debug"]
     comment = prm["comment"]
     centering_method = prm["centering_method"]
