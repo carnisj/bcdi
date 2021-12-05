@@ -386,8 +386,7 @@ class Setup:
         """
         Direct beam position in pixels.
 
-        Tuple of two real numbers indicating the position of the direct beam in pixels
-        at zero detector angles.
+        Tuple of two real numbers indicating the position of the direct beam in pixels.
         """
         return self._direct_beam
 
@@ -792,6 +791,32 @@ class Setup:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
+
+    def correct_detector_angles(self, direct_beam_zero : Optional[Tuple[Real, Real]], bragg_peak_position : Tuple[Real, Real]) -> None:
+        """
+        Correct the detector angles using the direct beam position.
+
+        :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
+         in the unbinned, full detector
+        :param direct_beam_zero: [vertical, horizontal] position of the direct beam at
+         zero detector angles in the unbinned, full detector
+        """
+        if direct_beam_zero is not None:
+            self.inplane_angle = self.inplane_angle + self.inplane_coeff * (
+                    self.detector.pixelsize_x
+                    * (bragg_peak_position[1] - direct_beam_zero[1])
+                    / self.distance * 180 / np.pi
+            )  # inplane_coeff is +1 or -1
+            #  TODO include the calculation of the direct beam inthere
+            self.outofplane_angle = (
+                    self.outofplane_angle
+                    - self.outofplane_coeff
+                    * self.detector.pixelsize_y
+                    * (bragg_peak_position[0] - direct_beam_zero[0])
+                    / self.distance
+                    * 180
+                    / np.pi
+            )  # outofplane_coeff is +1 or -1
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
