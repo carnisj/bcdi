@@ -801,32 +801,40 @@ class Setup:
         :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
          in the unbinned, full detector
         """
-        if self.direct_beam is not None:
-            self.inplane_angle = (
-                self.inplane_angle
-                + self.inplane_coeff
-                * (
-                    self.detector.pixelsize_x
-                    / self.distance
-                    * 180
-                    / np.pi
-                    * (bragg_peak_position[1] - self.direct_beam[1])
-                )
-                - self.dirbeam_detector_angles[1]
-            )
-            # inplane_coeff is +1 or -1
+        if self.direct_beam is None or self.dirbeam_detector_angles is None:
+            print("direct beam position not defined, can't correct detector angles")
+            return
 
-            self.outofplane_angle = (
-                self.outofplane_angle
-                - self.outofplane_coeff
-                * self.detector.pixelsize_y
+        if any(val is None for val in {
+            self.inplane_angle, self.outofplane_angle, self.distance
+        }):
+            raise ValueError("call setup.read_logfile before calling this method")
+
+        self.inplane_angle = (
+            self.inplane_angle
+            + self.inplane_coeff
+            * (
+                self.detector.pixelsize_x
                 / self.distance
                 * 180
                 / np.pi
-                * (bragg_peak_position[0] - self.direct_beam[0])
-                - self.dirbeam_detector_angles[0]
+                * (bragg_peak_position[1] - self.direct_beam[1])
             )
-            # outofplane_coeff is +1 or -1
+            - self.dirbeam_detector_angles[1]
+        )
+        # inplane_coeff is +1 or -1
+
+        self.outofplane_angle = (
+            self.outofplane_angle
+            - self.outofplane_coeff
+            * self.detector.pixelsize_y
+            / self.distance
+            * 180
+            / np.pi
+            * (bragg_peak_position[0] - self.direct_beam[0])
+            - self.dirbeam_detector_angles[0]
+        )
+        # outofplane_coeff is +1 or -1
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
@@ -835,9 +843,11 @@ class Setup:
         :return: a tuple representing the direct beam position at zero detector angles
         """
         if self.direct_beam is None:
+            print("direct beam position not defined")
             return None
 
         if self.dirbeam_detector_angles is None:
+            print("detector angles for the direct beam measurement not defined")
             return tuple(self.direct_beam)
 
         ver_direct = (
