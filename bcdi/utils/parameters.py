@@ -239,7 +239,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             item_types=Real,
             length=2,
             allow_none=True,
-            name=key
+            name=key,
         )
     elif key == "direct_beam":
         valid.valid_container(
@@ -248,7 +248,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             item_types=Real,
             length=2,
             allow_none=True,
-            name=key
+            name=key,
         )
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
