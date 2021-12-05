@@ -792,31 +792,41 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_detector_angles(self, direct_beam_zero : Optional[Tuple[Real, Real]], bragg_peak_position : Tuple[Real, Real]) -> None:
+    def correct_detector_angles(self, bragg_peak_position: Tuple[Real, Real]) -> None:
         """
-        Correct the detector angles using the direct beam position.
+        Correct the detector angles given the direct beam position.
+
+        The detector angles for the direct beam measurement can be non-zero.
 
         :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
          in the unbinned, full detector
-        :param direct_beam_zero: [vertical, horizontal] position of the direct beam at
-         zero detector angles in the unbinned, full detector
         """
-        if direct_beam_zero is not None:
-            self.inplane_angle = self.inplane_angle + self.inplane_coeff * (
+        if self.direct_beam is not None:
+            self.inplane_angle = (
+                self.inplane_angle
+                + self.inplane_coeff
+                * (
                     self.detector.pixelsize_x
-                    * (bragg_peak_position[1] - direct_beam_zero[1])
-                    / self.distance * 180 / np.pi
-            )  # inplane_coeff is +1 or -1
-            #  TODO include the calculation of the direct beam inthere
-            self.outofplane_angle = (
-                    self.outofplane_angle
-                    - self.outofplane_coeff
-                    * self.detector.pixelsize_y
-                    * (bragg_peak_position[0] - direct_beam_zero[0])
                     / self.distance
                     * 180
                     / np.pi
-            )  # outofplane_coeff is +1 or -1
+                    * (bragg_peak_position[1] - self.direct_beam[1])
+                )
+                - self.dirbeam_detector_angles[1]
+            )
+            # inplane_coeff is +1 or -1
+
+            self.outofplane_angle = (
+                self.outofplane_angle
+                - self.outofplane_coeff
+                * self.detector.pixelsize_y
+                / self.distance
+                * 180
+                / np.pi
+                * (bragg_peak_position[0] - self.direct_beam[0])
+                - self.dirbeam_detector_angles[0]
+            )
+            # outofplane_coeff is +1 or -1
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
@@ -831,19 +841,21 @@ class Setup:
             return tuple(self.direct_beam)
 
         ver_direct = (
-                self.direct_beam[0]
-                - self.outofplane_coeff
-                * self.dirbeam_detector_angles[0]
-                * np.pi
-                / 180
-                * self.distance
-                / self.detector.pixelsize_y
+            self.direct_beam[0]
+            - self.outofplane_coeff
+            * self.dirbeam_detector_angles[0]
+            * np.pi
+            / 180
+            * self.distance
+            / self.detector.pixelsize_y
         )  # outofplane_coeff is +1 or -1
 
         hor_direct = self.direct_beam[1] + self.inplane_coeff * (
-                self.dirbeam_detector_angles[1]
-                * np.pi / 180
-                * self.distance / self.detector.pixelsize_x
+            self.dirbeam_detector_angles[1]
+            * np.pi
+            / 180
+            * self.distance
+            / self.detector.pixelsize_x
         )  # inplane_coeff is +1 or -1
 
         return ver_direct, hor_direct
