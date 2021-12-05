@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to the validation of input parameters."""
 
-from collections import Sequence
 from numbers import Real, Number
 import numpy as np
 

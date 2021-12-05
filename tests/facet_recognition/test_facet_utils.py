@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-import bcdi.postprocessing.facet_recognition as fu
 
 
 def run_tests(test_class):
