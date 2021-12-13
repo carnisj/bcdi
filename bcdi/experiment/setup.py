@@ -792,7 +792,7 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_detector_angles(self, bragg_peak_position: Tuple[Real, Real]) -> None:
+    def correct_detector_angles(self, bragg_peak_position: Tuple[int, int]) -> None:
         """
         Correct the detector angles given the direct beam position.
 
