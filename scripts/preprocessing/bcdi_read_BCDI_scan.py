@@ -222,9 +222,7 @@ if data.ndim == 3:
     tilt, _, _, _ = setup.read_logfile(scan_number=scan)
     rocking_curve = np.zeros(numz)
 
-    z0, y0, x0 = tuple(
-        map(lambda x: int(np.rint(x)), bu.find_bragg(data, peak_method=peak_method))
-    )
+    z0, y0, x0 = bu.find_bragg(data, peak_method=peak_method)
 
     if x_bragg is None:  # Bragg peak position not defined by the user, use the max
         x_bragg = x0
@@ -286,7 +284,7 @@ if data.ndim == 3:
     data = data.sum(axis=0)  # concatenate along the axis of the rocking curve
     title = f"data.sum(axis=0)   peak method={peak_method}\n"
 else:  # 2D
-    _, y0, x0 = bu.find_bragg(data, peak_method=peak_method)
+    y0, x0 = bu.find_bragg(data, peak_method=peak_method)
     peak_int = int(data[y0, x0])
     print(
         f"Bragg peak (indices in the eventually binned ROI) at (y, x): {y0}, {x0},"

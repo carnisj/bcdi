@@ -233,15 +233,6 @@ if numz != nb_frames:
 # Find the Bragg peak #
 #######################
 z0, y0, x0 = bu.find_bragg(data, peak_method=peak_method)
-z0 = np.rint(z0).astype(int)
-y0 = np.rint(y0).astype(int)
-x0 = np.rint(x0).astype(int)
-
-print(f"Bragg peak at (z, y, x): {z0}, {y0}, {x0}")
-print(
-    f"Bragg peak (full detector) at (z, y, x): {z0},"
-    f" {y0+detector.roi[0]}, {x0+detector.roi[2]}"
-)
 
 ######################################################
 # calculate rocking curve and fit it to get the FWHM #
