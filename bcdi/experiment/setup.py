@@ -792,7 +792,7 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_detector_angles(self, bragg_peak_position: Tuple[int, int]) -> None:
+    def correct_detector_angles(self, bragg_peak_position: Tuple[int, ...]) -> None:
         """
         Correct the detector angles given the direct beam position.
 
@@ -801,6 +801,7 @@ class Setup:
         :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
          in the unbinned, full detector
         """
+        # check parameters
         if self.direct_beam is None or self.dirbeam_detector_angles is None:
             print("direct beam position not defined, can't correct detector angles")
             return
@@ -809,6 +810,15 @@ class Setup:
             self.inplane_angle, self.outofplane_angle, self.distance
         }):
             raise ValueError("call setup.read_logfile before calling this method")
+        if len(bragg_peak_position) == 3:
+            bragg_peak_position = bragg_peak_position[-2:]
+        valid.valid_container(
+            bragg_peak_position,
+            container_types=(tuple, list, np.ndarray),
+            item_types=Real,
+            length=2,
+            name="bragg_peak_position"
+        )
 
         self.inplane_angle = (
             self.inplane_angle
