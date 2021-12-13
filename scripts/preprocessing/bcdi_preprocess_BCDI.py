@@ -933,7 +933,7 @@ def run(prm):
                             roi=detector.roi,
                             binning=detector.binning
                         )
-                    setup.correct_detector_angles(bragg_peak_position=bragg_peak[1:])
+                    setup.correct_detector_angles(bragg_peak_position=bragg_peak)
                     data, mask, q_values, transfer_matrix = bu.grid_bcdi_labframe(
                         data=data,
                         mask=mask,
