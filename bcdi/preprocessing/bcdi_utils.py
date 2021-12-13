@@ -674,7 +674,7 @@ def find_bragg(
         position[-2] = position[-2] + roi[0]
 
     print(f"Bragg peak (full unbinned detector) at: {position}")
-    return position
+    return tuple(position)
 
 
 def grid_bcdi_labframe(
