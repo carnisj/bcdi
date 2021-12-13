@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
+from operator import mul
 from scipy.ndimage.measurements import center_of_mass
+from typing import Optional, Tuple
 import xrayutilities as xu
 
 from ..experiment import diffractometer as diff
@@ -605,52 +607,74 @@ def center_fft(
     return data, mask, pad_width, q_values, frames_logical
 
 
-def find_bragg(data, peak_method):
+def find_bragg(
+        data: np.ndarray,
+        peak_method: str,
+        roi: Optional[Tuple[int, int, int, int]] = None,
+        binning: Optional[Tuple[int, ...]] = None,
+) -> Tuple[int, ...]:
     """
     Find the Bragg peak position in data based on the centering method.
+
+    It compensates for a ROI in the detector and an eventual binning.
 
     :param data: 2D or 3D array. If complex, Bragg peak position is calculated for
      abs(array)
     :param peak_method: 'max', 'com' or 'maxcom'. For 'maxcom', it uses method 'max'
      for the first axis and 'com' for the other axes.
-    :return: the centered data
+    :param roi: tuple of integers of length 4, region of interest used to generate data
+     from the full sized detector.
+    :param binning: tuple of integers of length data.ndim, binning applied to the data
+     in each dimension.
+    :return: the Bragg peak position in the unbinned, full size detector as a tuple of
+     data.ndim elements
     """
+    # check parameters
     valid.valid_ndarray(arrays=data, ndim=(2, 3))
-    if all((peak_method != val for val in {"max", "com", "maxcom"})):
-        raise ValueError('Incorrect value for "centering_method" parameter')
+    valid.valid_container(
+        roi,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=4,
+        allow_none=True,
+        name="roi"
+    )
+    valid.valid_container(
+        binning,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=data.ndim,
+        allow_none=True,
+        name="binning"
+    )
+    if peak_method not in {"max", "com", "maxcom"}:
+        raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
 
-    if data.ndim == 2:
-        z0 = 0
-        if peak_method == "max":
-            y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print(f"Max at (y, x): ({y0}, {x0})  Max = {int(data[y0, x0])}")
-        else:  # 'com'
-            y0, x0 = center_of_mass(data)
-            print(
-                f"Center of mass at (y, x): ({y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(y0), int(x0)])}"
-            )
-    else:  # 3D
-        if peak_method == "max":
-            z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print(
-                f"Max at (z, y, x): ({z0}, {y0}, {x0})  Max = {int(data[z0, y0, x0])}"
-            )
-        elif peak_method == "com":
-            z0, y0, x0 = center_of_mass(data)
-            print(
-                f"Center of mass at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(z0), int(y0), int(x0)])}"
-            )
-        else:  # 'maxcom'
-            z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
-            y0, x0 = center_of_mass(data[z0, :, :])
-            print(
-                f"MaxCom at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(z0), int(y0), int(x0)])}"
-            )
+    if peak_method == "max":
+        position = np.unravel_index(abs(data).argmax(), data.shape)
+        print(f"Max at: {position}, Max = {int(data[position])}")
+    elif peak_method == "com":
+        position = center_of_mass(data)
+        position = list(map(lambda x: int(np.rint(x)), position))
+        print(f"Center of mass at: {position}, COM = {int(data[position])}")
+    else:  # 'maxcom'
+        valid.valid_ndarray(arrays=data, ndim=3)
+        position = np.unravel_index(abs(data).argmax(), data.shape)
+        position[1:] = center_of_mass(data[position[0], :, :])
+        position = list(map(lambda x: int(np.rint(x)), position))
+        print(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
 
-    return z0, y0, x0
+    # unbin
+    if binning is not None:
+        position = [a*b for a, b in zip(position, binning)]
+
+    # add the offset due to the region of interest
+    if roi is not None:
+        position[-1] = position[-1] + roi[1]
+        position[-2] = position[-2] + roi[0]
+
+    print(f"Bragg peak (full unbinned detector) at: {position}")
+    return position
 
 
 def grid_bcdi_labframe(
