@@ -891,30 +891,30 @@ def run(prm):
             )
             del phase
             gc.collect()
-        if (
-                bragg_peak is None
-                and not prm.get("outofplane_angle")
-                and not prm.get("inplane_angle")
-        ):  # no choice but to reload the data and find the Bragg peak position
-            # TODO: put this in a try except block (templateimagefile not defined)
-            data, _, _, _ = setup.diffractometer.load_check_dataset(
-                scan_number=scan,
-                detector=detector,
-                setup=setup,
-                frames_pattern=prm.get("frames_pattern"),
-                bin_during_loading=False,
-                flatfield=prm.get("flatfield"),
-                hotpixels=prm.get("hotpix_array"),
-                background=prm.get("background"),
-                normalize=prm.get("normalize_flux"),
-            )
-            bragg_peak = bu.find_bragg(
-                data=data,
-                peak_method='maxcom',
-                roi=detector.roi,
-                binning=None,
-            )
-        setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+
+        if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+            # corrected detector angles not provided
+            if bragg_peak is None:
+                # Bragg peak position not provided, find it from the data
+                # TODO: put this in a try except block (templateimagefile not defined)
+                data, _, _, _ = setup.diffractometer.load_check_dataset(
+                    scan_number=scan,
+                    detector=detector,
+                    setup=setup,
+                    frames_pattern=prm.get("frames_pattern"),
+                    bin_during_loading=False,
+                    flatfield=prm.get("flatfield"),
+                    hotpixels=prm.get("hotpix_array"),
+                    background=prm.get("background"),
+                    normalize=prm.get("normalize_flux"),
+                )
+                bragg_peak = bu.find_bragg(
+                    data=data,
+                    peak_method='maxcom',
+                    roi=detector.roi,
+                    binning=None,
+                )
+            setup.correct_detector_angles(bragg_peak_position=bragg_peak)
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,

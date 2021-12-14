@@ -926,14 +926,18 @@ def run(prm):
                     # (qx downstream, qy outboard, qz vertical up)
                     # for reference_axis, the frame is z downstream, y vertical up,
                     # x outboard but the order must be x,y,z
-                    if bragg_peak is None:
-                        bragg_peak = bu.find_bragg(
-                            data=data,
-                            peak_method='maxcom',
-                            roi=detector.roi,
-                            binning=detector.binning
-                        )
-                    setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+
+                    if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+                        # corrected detector angles not provided
+                        if bragg_peak is None:
+                            # Bragg peak position not provided, find it from the data
+                            bragg_peak = bu.find_bragg(
+                                data=data,
+                                peak_method='maxcom',
+                                roi=detector.roi,
+                                binning=detector.binning
+                            )
+                        setup.correct_detector_angles(bragg_peak_position=bragg_peak)
                     data, mask, q_values, transfer_matrix = bu.grid_bcdi_labframe(
                         data=data,
                         mask=mask,
