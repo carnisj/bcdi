@@ -673,6 +673,10 @@ def run(prm):
             scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile
         )
 
+        # load the goniometer positions needed for the calculation of the corrected
+        # detector angles
+        setup.read_logfile(scan_number=scan_nb)
+
         if not use_rawdata:
             comment += "_ortho"
             if interpolation_method == "linearization":
