@@ -655,13 +655,13 @@ def find_bragg(
         print(f"Max at: {position}, Max = {int(data[position])}")
     elif peak_method == "com":
         position = center_of_mass(data)
-        position = list(map(lambda x: int(np.rint(x)), position))
+        position = tuple(map(lambda x: int(np.rint(x)), position))
         print(f"Center of mass at: {position}, COM = {int(data[position])}")
     else:  # 'maxcom'
         valid.valid_ndarray(arrays=data, ndim=3)
-        position = np.unravel_index(abs(data).argmax(), data.shape)
+        position = list(np.unravel_index(abs(data).argmax(), data.shape))
         position[1:] = center_of_mass(data[position[0], :, :])
-        position = list(map(lambda x: int(np.rint(x)), position))
+        position = tuple(map(lambda x: int(np.rint(x)), position))
         print(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
 
     # unbin
