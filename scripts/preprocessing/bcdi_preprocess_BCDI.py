@@ -15,6 +15,7 @@ try:
 except ModuleNotFoundError:
     pass
 import gc
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -813,6 +814,26 @@ def run(prm):
             f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
         )
 
+        ##############################################################
+        # correct detector angles and save values for postprocessing #
+        ##############################################################
+        if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+            # corrected detector angles not provided
+            if bragg_peak is None:
+                # Bragg peak position not provided, find it from the data
+                bragg_peak = bu.find_bragg(
+                    data=data,
+                    peak_method='maxcom',
+                    roi=detector.roi,
+                    binning=detector.binning
+                )
+            setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+            prm["outofplane_angle"] = setup.outofplane_angle
+            prm["inplane_angle"] = setup.inplane_angle
+
+        ##############################################################
+        # optional interpolation of the data onto an orthogonal grid #
+        ##############################################################
         if not reload_orthogonal:
             if prm["save_rawdata"]:
                 np.savez_compressed(
@@ -926,18 +947,6 @@ def run(prm):
                     # (qx downstream, qy outboard, qz vertical up)
                     # for reference_axis, the frame is z downstream, y vertical up,
                     # x outboard but the order must be x,y,z
-
-                    if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
-                        # corrected detector angles not provided
-                        if bragg_peak is None:
-                            # Bragg peak position not provided, find it from the data
-                            bragg_peak = bu.find_bragg(
-                                data=data,
-                                peak_method='maxcom',
-                                roi=detector.roi,
-                                binning=detector.binning
-                            )
-                        setup.correct_detector_angles(bragg_peak_position=bragg_peak)
                     data, mask, q_values, transfer_matrix = bu.grid_bcdi_labframe(
                         data=data,
                         mask=mask,
@@ -1521,6 +1530,18 @@ def run(prm):
                 detector.savedir + f"S{scan_nb}_mask.mat",
                 {"data": np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])},
             )
+
+        # save results in hdf5 file
+        with h5py.File(
+            f"{detector.savedir}S{scan_nb}_preprocessing{comment}.h5", "w"
+        ) as hf:
+            out = hf.create_group("output")
+            par = hf.create_group("params")
+            out.create_dataset("data", data=data)
+            out.create_dataset("mask", data=mask)
+            par.create_dataset("detector", data=str(detector.params))
+            par.create_dataset("setup", data=str(setup.params))
+            par.create_dataset("parameters", data=str(prm))
 
         ############################
         # plot final data and mask #
