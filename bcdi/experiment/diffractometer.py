@@ -924,7 +924,7 @@ class Diffractometer(ABC):
                 monitor = self.read_monitor(setup=setup, **kwargs)
         if monitor is None:
             monitor = np.ones(nb_frames)
-            print("Cannot retrieve the monitor, use `actuators` to define it.")
+            print("Skipping intensity normalization.")
         return monitor
 
     def load_check_dataset(
