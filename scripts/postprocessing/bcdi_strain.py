@@ -162,6 +162,9 @@ Usage:
 
     :param beamline: e.g. "ID01"
      name of the beamline, used for data loading and normalization by monitor
+    :param is_series: e.g. True
+     specific to series measurement at P10, only needed when reloading the data when the
+     Bragg peak or the corrected detector angles are not provided
     :param actuators: e.g. {'rocking_angle': 'actuator_1_1'}
      optional dictionary that can be used to define the entries corresponding to
      actuators in data files (useful at CRISTAL where the location of data keeps
@@ -906,7 +909,7 @@ def run(prm):
                     flatfield=prm.get("flatfield"),
                     hotpixels=prm.get("hotpix_array"),
                     background=prm.get("background"),
-                    normalize=prm.get("normalize_flux"),
+                    normalize=prm.get("normalize_flux", "skip"),
                 )
                 bragg_peak = bu.find_bragg(
                     data=data,

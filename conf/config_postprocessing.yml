@@ -71,6 +71,7 @@ strain_method: "default"  # 'default' or 'defect'.
 beamline: "P10"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+is_series: True  # specific to series measurement at P10
 actuators: None
 # Optional dictionary that can be used to define the entries
 # corresponding to actuators in data files
@@ -87,19 +88,19 @@ beam_direction: [1, 0, 0]
 bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
 # and full-sized detector. It will be used to calculate the real detector angles for the
 # measured Bragg peak. Leave None to determine the Bragg peak position automatically.
-direct_beam: [125, 362]  # [vertical, horizontal]
+direct_beam: [1055, 1339.5]  # [vertical, horizontal]
 # direct beam position on the unbinned, full detector measured
 # with detector angles given by dirbeam_detector_angles. It will be used to calculate
 # the real detector angles for the measured Bragg peak. Leave None for no correction.
-dirbeam_detector_angles: [1, 25]  # [outofplane, inplane] detector angles in degrees
+dirbeam_detector_angles: [0, 0]  # [outofplane, inplane] detector angles in degrees
 # for the direct beam measurement. Leave None for no correction
-outofplane_angle: 42.6093  # detector angle in deg (rotation around x outboard):
+outofplane_angle: None # 42.6093  # detector angle in deg (rotation around x outboard):
 # delta ID01, delta SIXS, gamma 34ID
 # this is the true angle, corrected for the direct beam position
-inplane_angle: -0.5783  # detector angle in deg(rotation around y vertical up):
+inplane_angle: None # -0.5783  # detector angle in deg(rotation around y vertical up):
 # nu ID01, gamma SIXS, delta 34ID
 # this is the true angle, corrected for the direct beam position
-tilt_angle: 0.00537  # angular step size for rocking angle, eta ID01, mu SIXS,
+tilt_angle: None # 0.00537  # angular step size for rocking angle, eta ID01, mu SIXS,
 # does not matter for energy scan
 sample_offsets: None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
@@ -130,7 +131,7 @@ custom_motors: {
 detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 pixel_size: None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-template_imagefile: None
+template_imagefile: '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
