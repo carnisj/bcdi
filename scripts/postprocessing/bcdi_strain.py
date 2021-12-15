@@ -472,6 +472,7 @@ def run(prm):
         custom_motors=prm.get("custom_motors"),
         dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
         direct_beam=prm.get("direct_beam"),
+        is_series=prm.get("is_series", False),
     )
 
     ########################################

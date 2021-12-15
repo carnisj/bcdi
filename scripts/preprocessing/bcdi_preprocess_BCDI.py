@@ -622,7 +622,7 @@ def run(prm):
         custom_monitor=prm["custom_monitor"],
         custom_motors=prm["custom_motors"],
         actuators=prm["actuators"],
-        is_series=prm["is_series"],
+        is_series=prm.get("is_series", False),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
         dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
