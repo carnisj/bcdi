@@ -2524,10 +2524,14 @@ class DiffractometerP10(Diffractometer):
                 sys.stdout.write("\rSeries: loading frame {:d}".format(point_idx + 1))
                 sys.stdout.flush()
             else:
-                tempdata_length = len(series_data)
-                data[start_index : start_index + tempdata_length, :, :] = np.asarray(
-                    series_data
-                )
+                try:
+                    tempdata_length = len(series_data)
+                    data[start_index : start_index + tempdata_length, :, :] = np.asarray(
+                        series_data
+                    )
+                except ValueError as ex:
+                    print(f"Check the parameter 'is_series', current value {is_series}")
+                    raise ex
                 if normalize == "sum_roi":
                     monitor[start_index : start_index + tempdata_length] = np.asarray(
                         series_monitor
