@@ -845,6 +845,9 @@ class Setup:
             - self.dirbeam_detector_angles[0]
         )
         # outofplane_coeff is +1 or -1
+        print(
+            f"Corrected detector angles: inplane {self.inplane_angle}deg, "
+            f"outofplane {self.outofplane_angle}deg")
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
