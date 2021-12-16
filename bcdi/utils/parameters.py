@@ -193,6 +193,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"com", "max", "max_com", "do_nothing"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "center_roi_x":
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
+    elif key == "center_roi_y":
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     elif key == "comment":
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startwith("_"):
@@ -274,15 +278,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = (0, 1)
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "fix_bragg":
-        valid.valid_container(
-            value,
-            container_types=(tuple, list),
-            length=3,
-            item_types=int,
-            allow_none=True,
-            name=key,
-        )
     elif key == "fix_size":
         valid.valid_container(
             value,
@@ -553,10 +548,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "tilt_detector":
         valid.valid_item(value, allowed_types=Real, name=key)
-    elif key == "x_bragg":
-        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
-    elif key == "y_bragg":
-        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     else:
         # this key is not in the known parameters
         is_valid = False

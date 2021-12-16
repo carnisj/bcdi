@@ -98,10 +98,7 @@ Usage:
 
     :param centering_method: e.g. "max"
      Bragg peak determination: 'max' or 'com', 'max' is better usually. It will be
-     overridden by 'fix_bragg' if not empty
-    :param fix_bragg: e.g. [121, 321, 256]
-     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector.
-     It is useful if hotpixels or intense aliens. Leave None otherwise.
+     overridden by 'bragg_peak' if not empty
     :param fix_size: e.g. [0, 256, 10, 240, 50, 350]
      crop the array to that predefined size considering the full detector.
      [zstart, zstop, ystart, ystop, xstart, xstop], ROI will be defaulted to [] if
@@ -196,19 +193,20 @@ Usage:
      coefficients of the 4th order polynomial ax^4 + bx^3 + cx^2 + dx + e which it used
      to correct the non-linearity of the detector at high intensities. Leave None
      otherwise.
-    :param x_bragg: e.g. 1577
-     horizontal pixel number of the Bragg peak, used for the definition of roi_detector
-     (see below). Leave None otherwise.
-    :param y_bragg: e.g. 833
-     vertical pixel number of the Bragg peak, used for the definition of roi_detector
-     (see below). Leave None otherwise.
+    :param center_roi_x: e.g. 1577
+     horizontal pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param center_roi_y: e.g. 833
+     vertical pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
     :param roi_detector: e.g.[0, 250, 10, 210]
-     region of interest of the detector to load. If "x_bragg" or "y_bragg" are not None,
-     it will consider that the current values in roi_detector define a window around the
-     Bragg peak position and the final output will be:
-     [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
-     x_bragg - roi_detector[2], x_bragg + roi_detector[3]]. Leave None to use the full
-     detector. Use with center_fft='skip' if you want this exact size for the output.
+     region of interest of the detector to load. If "center_roi_x" or "center_roi_y" are
+     not None, it will consider that the current values in roi_detector define a window
+     around the pixel [center_roi_y, center_roi_x] and the final output will be
+     [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+     center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+     Leave None to use the full detector. Use with center_fft='skip' if you want this
+     exact size for the output.
     :param normalize_flux: e.g. "monitor"
      'monitor' to normalize the intensity by the default monitor values,
      'skip' to do nothing
@@ -280,6 +278,11 @@ Usage:
     :param dirbeam_detector_angles: e.g. [1, 25]
      [outofplane, inplane] detector angles in degrees for the direct beam measurement.
      Leave None for no correction
+    :param bragg_peak: e.g. [121, 321, 256]
+     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the unbinned full
+     detector. If 'outofplane_angle' and 'inplane_angle' are None and the direct beam
+     position is provided, it will be used to calculate the correct detector angles.
+     It is useful if there are hotpixels or intense aliens. Leave None otherwise.
     :param outofplane_angle: e.g. 42.6093
      detector angle in deg (rotation around x outboard, typically delta), corrected for
      the direct beam position. Leave None to use the uncorrected position.
@@ -1023,10 +1026,10 @@ def run(prm):
             mask=mask,
             detector=detector,
             frames_logical=frames_logical,
-            centering=prm["centering_method"],
+            centering=prm.get("centering_method", "max"),
             fft_option=center_fft,
-            pad_size=prm["pad_size"],
-            fix_bragg=prm["fix_bragg"],
+            pad_size=prm.get("pad_size"),
+            fix_bragg=prm.get("bragg_peak"),
             fix_size=fix_size,
             q_values=q_values,
         )

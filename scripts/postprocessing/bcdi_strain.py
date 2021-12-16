@@ -163,8 +163,7 @@ Usage:
     :param beamline: e.g. "ID01"
      name of the beamline, used for data loading and normalization by monitor
     :param is_series: e.g. True
-     specific to series measurement at P10, only needed when reloading the data when the
-     Bragg peak or the corrected detector angles are not provided
+     specific to series measurement at P10.
     :param actuators: e.g. {'rocking_angle': 'actuator_1_1'}
      optional dictionary that can be used to define the entries corresponding to
      actuators in data files (useful at CRISTAL where the location of data keeps
@@ -200,6 +199,11 @@ Usage:
     :param dirbeam_detector_angles: e.g. [1, 25]
      [outofplane, inplane] detector angles in degrees for the direct beam measurement.
      Leave None for no correction
+    :param bragg_peak: e.g. [121, 321, 256]
+     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the unbinned full
+     detector. If 'outofplane_angle' and 'inplane_angle' are None and the direct beam
+     position is provided, it will be used to calculate the correct detector angles.
+     It is useful if there are hotpixels or intense aliens. Leave None otherwise.
     :param outofplane_angle: e.g. 42.6093
      detector angle in deg (rotation around x outboard, typically delta), corrected for
      the direct beam position. Leave None to use the uncorrected position.
@@ -231,6 +235,20 @@ Usage:
      name of the detector
     :param pixel_size: e.g. 100e-6
      use this to declare the pixel size of the "Dummy" detector if different from 55e-6
+    :param center_roi_x: e.g. 1577
+     horizontal pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param center_roi_y: e.g. 833
+     vertical pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param roi_detector: e.g.[0, 250, 10, 210]
+     region of interest of the detector to load. If "center_roi_x" or "center_roi_y" are
+     not None, it will consider that the current values in roi_detector define a window
+     around the pixel [center_roi_y, center_roi_x] and the final output will be
+     [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+     center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+     Leave None to use the full detector. Use with center_fft='skip' if you want this
+     exact size for the output.
     :param template_imagefile: e.g. "data_mpx4_%05d.edf.gz"
      use one of the following template:
 
@@ -372,7 +390,7 @@ def run(prm):
     bragg_peak = prm.get("bragg_peak")
     debug = prm["debug"]
     comment = prm["comment"]
-    centering_method = prm["centering_method"]
+    centering_method = prm.get("centering_method", "max_com")
     original_size = prm["original_size"]
     phasing_binning = prm["phasing_binning"]
     preprocessing_binning = prm["preprocessing_binning"]
