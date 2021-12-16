@@ -14,6 +14,7 @@ comment: ""  # comment in filenames, should start with _
 #########################################################
 sort_method: "variance/mean"
 # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
+averaging_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
 correlation_threshold: 0.90
 ###################################
 # parameters related to centering #
@@ -214,11 +215,6 @@ reference_spacing: None  # for calibrating the thermal expansion,
 # if None it is fixed to 3.9236/norm(reflection) Pt
 reference_temperature: None
 # used to calibrate the thermal expansion, if None it is fixed to 293.15K (RT)
-##########################################################
-# parameters for averaging several reconstructed objects #
-##########################################################
-averaging_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
-threshold_avg: 0.90  # minimum correlation within reconstructed object for averaging
 #################################################
 # parameters for phase averaging or apodization #
 #################################################
