@@ -206,7 +206,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         if not os.path.isfile(value):
             raise ValueError(f"The directory {value} does not exist")
     elif key == "correlation_threshold":
-        valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, max_included=1, name=key
+        )
     elif key == "custom_images":
         valid.valid_container(
             value,
@@ -520,10 +522,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "strain_range":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
-    elif key == "threshold_avg":
-        valid.valid_item(
-            value, allowed_types=Real, min_included=0, max_included=1, name=key
-        )
     elif key == "template_imagefile":
         valid.valid_container(
             value, container_types=str, min_length=0, allow_none=True, name=key
