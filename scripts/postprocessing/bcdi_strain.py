@@ -419,7 +419,7 @@ def run(prm):
         root_folder = prm["root_folder"]
     except KeyError as ex:
         print("Required parameter not defined")
-        raise
+        raise ex
 
     prm["sample"] = (f"{sample_name}+{scan}",)
     #########################
