@@ -670,8 +670,9 @@ def find_bragg(
 
     # add the offset due to the region of interest
     if roi is not None:
+        # roi = [y_start, y_stop, x_start, x_stop]
         position = list(position)
-        position[-1] = position[-1] + roi[1]
+        position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
 
     print(f"Bragg peak (full unbinned roi) at: {position}")
