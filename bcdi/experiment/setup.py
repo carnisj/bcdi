@@ -792,7 +792,11 @@ class Setup:
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
 
-    def correct_detector_angles(self, bragg_peak_position: Tuple[int, ...]) -> None:
+    def correct_detector_angles(
+            self,
+            bragg_peak_position: Tuple[int, ...],
+            verbose: bool = False,
+    ) -> None:
         """
         Correct the detector angles given the direct beam position.
 
@@ -800,6 +804,7 @@ class Setup:
 
         :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
          in the unbinned, full detector
+        :param verbose: True to print more comments
         """
         # check parameters
         if self.direct_beam is None or self.dirbeam_detector_angles is None:
@@ -819,6 +824,7 @@ class Setup:
             length=2,
             name="bragg_peak_position"
         )
+        valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
         self.inplane_angle = (
             self.inplane_angle
@@ -845,9 +851,10 @@ class Setup:
             - self.dirbeam_detector_angles[0]
         )
         # outofplane_coeff is +1 or -1
-        print(
-            f"Corrected detector angles: inplane {self.inplane_angle}deg, "
-            f"outofplane {self.outofplane_angle}deg")
+        if verbose:
+            print(
+                f"Corrected detector angles: inplane {self.inplane_angle:.2f}deg, "
+                f"outofplane {self.outofplane_angle:.2f}deg")
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
