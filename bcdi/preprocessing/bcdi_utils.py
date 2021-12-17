@@ -674,7 +674,7 @@ def find_bragg(
         position[-1] = position[-1] + roi[1]
         position[-2] = position[-2] + roi[0]
 
-    print(f"Bragg peak (full unbinned detector) at: {position}")
+    print(f"Bragg peak (full unbinned roi) at: {position}")
     return tuple(position)
 
 
