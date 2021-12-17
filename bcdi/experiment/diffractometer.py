@@ -843,9 +843,9 @@ class Diffractometer(ABC):
         # detector size
         if (
             detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[1] > detector.unbinned_pixel_number[0]
             or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
+            or detector.roi[3] > detector.unbinned_pixel_number[1]
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -853,9 +853,9 @@ class Diffractometer(ABC):
             )
         loading_roi = [
             max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
+            min(detector.unbinned_pixel_number[0], detector.roi[1]),
             max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
+            min(detector.unbinned_pixel_number[1], detector.roi[3]),
         ]
 
         # initialize the data array, the mask is binned afterwards in load_check_dataset
@@ -974,13 +974,13 @@ class Diffractometer(ABC):
         )
         print(
             "Detector physical size without binning (VxH):",
-            detector.nb_pixel_y,
-            detector.nb_pixel_x,
+            detector.unbinned_pixel_number[0],
+            detector.unbinned_pixel_number[1],
         )
         print(
             "Detector size with binning (VxH):",
-            detector.nb_pixel_y // detector.binning[1],
-            detector.nb_pixel_x // detector.binning[2],
+            detector.unbinned_pixel_number[0] // detector.binning[1],
+            detector.unbinned_pixel_number[1] // detector.binning[2],
         )
 
         if setup.filtered_data:
