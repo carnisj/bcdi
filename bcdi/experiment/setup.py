@@ -795,7 +795,7 @@ class Setup:
     def correct_detector_angles(
             self,
             bragg_peak_position: Tuple[int, ...],
-            verbose: bool = False,
+            verbose: bool = True,
     ) -> None:
         """
         Correct the detector angles given the direct beam position.
@@ -826,11 +826,21 @@ class Setup:
         )
         valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
+        if verbose:
+            print(
+                f"\nDirect beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
+                f"out-of-plane {self.dirbeam_detector_angles[0]} deg)"
+                f"(X, Y): {self.direct_beam[1]}, {self.direct_beam[0]}"
+            )
+            print(
+                f"Detector angles before correction: inplane {self.inplane_angle:.2f}"
+                f" deg, outofplane {self.outofplane_angle:.2f} deg")
+
         self.inplane_angle = (
             self.inplane_angle
             + self.inplane_coeff
             * (
-                self.detector.pixelsize_x
+                self.detector.unbinned_pixel_size[1]
                 / self.distance
                 * 180
                 / np.pi
@@ -843,7 +853,7 @@ class Setup:
         self.outofplane_angle = (
             self.outofplane_angle
             - self.outofplane_coeff
-            * self.detector.pixelsize_y
+            * self.detector.unbinned_pixel_size[0]
             / self.distance
             * 180
             / np.pi
@@ -853,8 +863,8 @@ class Setup:
         # outofplane_coeff is +1 or -1
         if verbose:
             print(
-                f"Corrected detector angles: inplane {self.inplane_angle:.2f}deg, "
-                f"outofplane {self.outofplane_angle:.2f}deg")
+                f"Corrected detector angles: inplane {self.inplane_angle:.2f} deg, "
+                f"outofplane {self.outofplane_angle:.2f} deg")
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """
@@ -877,7 +887,7 @@ class Setup:
             * np.pi
             / 180
             * self.distance
-            / self.detector.pixelsize_y
+            / self.detector.unbinned_pixel_size[0]
         )  # outofplane_coeff is +1 or -1
 
         hor_direct = self.direct_beam[1] + self.inplane_coeff * (
@@ -885,7 +895,7 @@ class Setup:
             * np.pi
             / 180
             * self.distance
-            / self.detector.pixelsize_x
+            / self.detector.unbinned_pixel_size[1]
         )  # inplane_coeff is +1 or -1
 
         return ver_direct, hor_direct
