@@ -94,15 +94,16 @@ def create_roi(dic: Dict[str, Any]) -> Any:
     """
     Load "roi_detector" from the dictionary of parameters and update it.
 
-    If the keys "x_bragg" or "y_bragg" are defined, it will consider that the current
-    values in roi_detector define a window around the Bragg peak position and the final
-    output will be:
-    [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
-    x_bragg - roi_detector[2], x_bragg + roi_detector[3]].
+    If the keys "center_roi_x" or "center_roi_y" are defined, it will consider that the
+    current values in roi_detector define a window around the Bragg peak position and
+    the final output will be:
+    [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+    center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
 
     If a key is not defined, it will consider that the values of roi_detector are
-    absolute pixels positions, e.g. if only "y_bragg" is defined, the output will be
-    [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
+    absolute pixels positions, e.g. if only "center_roi_y" is defined, the output will
+    be: 
+    [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
     roi_detector[2], roi_detector[3]].
 
     Accordingly, if none of the keys are defined, the output will be:
@@ -124,17 +125,17 @@ def create_roi(dic: Dict[str, Any]) -> Any:
 
     # update the ROI
     if roi is not None:
-        y_bragg = dic.get("y_bragg")
-        if y_bragg is not None:
-            valid.valid_item(y_bragg, allowed_types=int, name="y_bragg")
-            roi[0] = y_bragg - roi[0]
-            roi[1] = y_bragg + roi[1]
+        center_roi_y = dic.get("center_roi_y")
+        if center_roi_y is not None:
+            valid.valid_item(center_roi_y, allowed_types=int, name="center_roi_y")
+            roi[0] = center_roi_y - roi[0]
+            roi[1] = center_roi_y + roi[1]
 
-        x_bragg = dic.get("x_bragg")
-        if x_bragg is not None:
-            valid.valid_item(x_bragg, allowed_types=int, name="x_bragg")
-            roi[2] = x_bragg - roi[2]
-            roi[3] = x_bragg + roi[3]
+        center_roi_x = dic.get("center_roi_x")
+        if center_roi_x is not None:
+            valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
+            roi[2] = center_roi_x - roi[2]
+            roi[3] = center_roi_x + roi[3]
     return roi
 
 
