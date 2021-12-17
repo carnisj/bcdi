@@ -25,7 +25,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
+from bcdi.experiment.detector import create_detector, create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -404,6 +404,7 @@ def run(prm):
     offset_origin = prm.get("phase_offset_origin")
     sort_method = prm.get("sort_method", "variance/mean")
     correlation_threshold = prm.get("correlation_threshold", 0.90)
+    roi_detector = create_roi(dic=prm)
 
     # parameters below must be provided
     try:
@@ -477,6 +478,7 @@ def run(prm):
     detector = create_detector(
         name=detector_name,
         template_imagefile=prm.get("template_imagefile"),
+        roi=roi_detector,
         binning=phasing_binning,
         preprocessing_binning=preprocessing_binning,
         pixel_size=prm.get("pixel_size"),
@@ -901,7 +903,7 @@ def run(prm):
     #######################
     #  orthogonalize data #
     #######################
-    print("\nShape before orthogonalization", avg_obj.shape)
+    print("\nShape before orthogonalization", avg_obj.shape, "\n")
     if data_frame == "detector":
         if debug:
             phase, _ = pu.unwrap(
@@ -926,6 +928,7 @@ def run(prm):
             gc.collect()
 
         if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+            print("Trying to correct detector angles using the direct beam")
             # corrected detector angles not provided
             if bragg_peak is None:
                 # Bragg peak position not provided, find it from the data
