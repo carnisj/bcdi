@@ -479,28 +479,42 @@ def run(prm):
     ################################
     # assign often used parameters #
     ################################
+    background_plot = prm.get("background_plot", 0.5)
     bragg_peak = prm.get("bragg_peak")
-    scans = prm["scans"]
-    fix_size = prm["fix_size"]
-    sample_name = prm["sample_name"]
-    debug = prm["debug"]
-    user_comment = prm["comment"]
-    root_folder = prm["root_folder"]
-    align_q = prm["align_q"]
-    ref_axis_q = prm["ref_axis_q"]
-    phasing_binning = prm["phasing_binning"]
-    preprocessing_binning = prm["preprocessing_binning"]
-    interpolation_method = prm["interpolation_method"]
-    save_dir = prm["save_dir"]
-    flag_interact = prm["flag_interact"]
-    center_fft = prm["center_fft"]
-    median_filter = prm["median_filter"]
-    rocking_angle = prm["rocking_angle"]
-    photon_threshold = prm["photon_threshold"]
-    reload_orthogonal = prm["reload_orthogonal"]
+    fix_size = prm.get("fix_size")
+    debug = prm.get("debug", False),
+    user_comment = prm.get("comment", "")
+    align_q = prm.get("align_q", True)
+    ref_axis_q = prm.get("ref_axis_q", "y")
+    preprocessing_binning = prm.get("preprocessing_binning", (1, 1, 1))
+    interpolation_method = prm.get("interpolation_method", 'linearization')
+    save_dir = prm.get("save_dir", None)
+    flag_interact = prm.get("flag_interact", True)
+    center_fft = prm.get("center_fft", "skip")
+    median_filter = prm.get("median_filter", "skip")
+    photon_threshold = prm.get("photon_threshold", 0)
+    reload_orthogonal = prm.get("reload_orthogonal", False)
     roi_detector = create_roi(dic=prm)
-    use_rawdata = prm["use_rawdata"]
-    normalize_flux = prm["normalize_flux"]
+    normalize_flux = prm.get("normalize_flux", False)
+    sample_inplane = prm.get("sample_inplane", [1, 0, 0])
+    sample_outofplane = prm.get("sample_outofplane", [0, 0, 1])
+    save_to_mat = prm.get("save_to_mat", False)
+    save_to_npz = prm.get("save_to_npz", True)
+
+    # parameters below must be provided
+    try:
+        beamline_name = prm["beamline"]
+        detector_name = prm["detector"]
+        phasing_binning = prm["phasing_binning"]
+        rocking_angle = prm["rocking_angle"]
+        root_folder = prm["root_folder"]
+        sample_name = prm["sample_name"]
+        scans = prm["scans"]
+        use_rawdata = prm["use_rawdata"]
+
+    except KeyError as ex:
+        print("Required parameter not defined")
+        raise ex
     #########################
     # check some parameters #
     #########################
@@ -519,12 +533,12 @@ def run(prm):
         print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
         center_fft = "skip"
 
-    if prm["photon_filter"] == "loading":
+    if prm.get("photon_filter", "loading") == "loading":
         loading_threshold = photon_threshold
     else:
         loading_threshold = 0
 
-    if prm["reload_previous"]:
+    if prm.get("reload_previous"):
         user_comment += "_reloaded"
         root = tk.Tk()
         root.withdraw()
@@ -598,33 +612,33 @@ def run(prm):
     # Initialize detector #
     #######################
     detector = create_detector(
-        name=prm["detector"],
-        template_imagefile=prm["template_imagefile"],
+        name=detector_name,
+        template_imagefile=prm.get("template_imagefile"),
         roi=roi_detector,
         binning=phasing_binning,
         preprocessing_binning=preprocessing_binning,
-        linearity_func=prm["linearity_func"],
+        linearity_func=prm.get("linearity_func"),
     )
 
     ####################
     # Initialize setup #
     ####################
     setup = Setup(
-        beamline=prm["beamline"],
+        beamline=beamline_name,
         detector=detector,
         energy=prm.get("energy"),
         rocking_angle=rocking_angle,
         distance=prm.get("sdd"),
-        beam_direction=prm["beam_direction"],
-        sample_inplane=prm["sample_inplane"],
-        sample_outofplane=prm["sample_outofplane"],
-        offset_inplane=prm["offset_inplane"],
-        custom_scan=prm["custom_scan"],
-        custom_images=prm["custom_images"],
-        sample_offsets=prm["sample_offsets"],
-        custom_monitor=prm["custom_monitor"],
-        custom_motors=prm["custom_motors"],
-        actuators=prm["actuators"],
+        beam_direction=prm.get("beam_direction", [1, 0, 0]),
+        sample_inplane=sample_inplane,
+        sample_outofplane=sample_outofplane,
+        offset_inplane=prm.get("offset_inplane", 0),
+        custom_scan=prm.get("custom_scan", False),
+        custom_images=prm.get("custom_images"),
+        sample_offsets=prm.get("sample_offsets"),
+        custom_monitor=prm.get("custom_monitor"),
+        custom_motors=prm.get("custom_motors"),
+        actuators=prm.get("actuators"),
         is_series=prm.get("is_series", False),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
@@ -664,12 +678,12 @@ def run(prm):
         setup.init_paths(
             sample_name=sample_name[scan_idx - 1],
             scan_number=scan_nb,
-            data_dir=prm["data_dir"],
+            data_dir=prm.get("data_dir"),
             root_folder=root_folder,
             save_dir=save_dir,
             save_dirname=save_dirname,
-            specfile_name=prm["specfile_name"],
-            template_imagefile=prm["template_imagefile"],
+            specfile_name=prm.get("specfile_name"),
+            template_imagefile=prm.get("template_imagefile"),
         )
 
         logfile = setup.create_logfile(
@@ -695,7 +709,7 @@ def run(prm):
         #############
         # Load data #
         #############
-        if prm["reload_previous"]:  # resume previous masking
+        if prm.get("reload_previous", False):  # resume previous masking
             print("Resuming previous masking")
             file_path = filedialog.askopenfilename(
                 initialdir=detector.scandir,
@@ -794,16 +808,16 @@ def run(prm):
 
         else:  # new masking process
             reload_orthogonal = False  # the data is in the detector plane
-            flatfield = util.load_flatfield(prm["flatfield_file"])
-            hotpix_array = util.load_hotpixels(prm["hotpixels_file"])
-            background = util.load_background(prm["background_file"])
+            flatfield = util.load_flatfield(prm.get("flatfield_file"))
+            hotpix_array = util.load_hotpixels(prm.get("hotpixels_file"))
+            background = util.load_background(prm.get("background_file"))
 
             data, mask, frames_logical, monitor = bu.load_bcdi_data(
                 scan_number=scan_nb,
                 detector=detector,
                 setup=setup,
-                frames_pattern=prm["frames_pattern"],
-                bin_during_loading=prm["bin_during_loading"],
+                frames_pattern=prm.get("frames_pattern"),
+                bin_during_loading=prm.get("bin_during_loading", False),
                 flatfield=flatfield,
                 hotpixels=hotpix_array,
                 background=background,
@@ -842,12 +856,12 @@ def run(prm):
         # optional interpolation of the data onto an orthogonal grid #
         ##############################################################
         if not reload_orthogonal:
-            if prm["save_rawdata"]:
+            if prm.get("save_rawdata", False):
                 np.savez_compressed(
                     detector.savedir + f"S{scan_nb}" + "_data_before_masking_stack",
                     data=data,
                 )
-                if prm["save_to_mat"]:
+                if prm.get("save_to_mat", False):
                     # save to .mat, the new order is x y z
                     # (outboard, vertical up, downstream)
                     savemat(
@@ -891,8 +905,8 @@ def run(prm):
                     qconv, offsets = setup.init_qconversion()
                     detector.offsets = offsets
                     hxrd = xu.experiment.HXRD(
-                        prm["sample_inplane"],
-                        prm["sample_outofplane"],
+                        sample_inplane,
+                        sample_outofplane,
                         en=setup.energy,
                         qconv=qconv,
                     )
@@ -962,7 +976,7 @@ def run(prm):
                         align_q=align_q,
                         reference_axis=axis_to_array_xyz[ref_axis_q],
                         debugging=debug,
-                        fill_value=(0, prm["fill_value_mask"]),
+                        fill_value=(0, prm.get("fill_value_mask", 0)),
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -1046,7 +1060,7 @@ def run(prm):
         ##########################################
         # optional masking of zero photon events #
         ##########################################
-        if prm["mask_zero_event"]:
+        if prm.get("mask_zero_event", False):
             # mask points when there is no intensity along the whole rocking curve
             # probably dead pixels
             temp_mask = np.zeros((ny, nx))
@@ -1141,7 +1155,7 @@ def run(prm):
             qz = q_values[1]
             qy = q_values[2]
 
-            if prm["save_to_vti"]:
+            if prm.get("save_to_vti", False):
                 # save diffraction pattern to vti
                 (
                     nqx,
@@ -1220,7 +1234,7 @@ def run(prm):
             fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
-            fig_mask.set_facecolor(prm["background_plot"])
+            fig_mask.set_facecolor(background_plot)
             plt.show()
             del fig_mask, original_data, original_mask
             gc.collect()
@@ -1319,7 +1333,7 @@ def run(prm):
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
             plt.connect("button_press_event", on_click)
-            fig_mask.set_facecolor(prm["background_plot"])
+            fig_mask.set_facecolor(background_plot)
             plt.show()
 
             mask[np.nonzero(updated_mask)] = 1
@@ -1342,7 +1356,7 @@ def run(prm):
             ):  # filter only frames whith data (not padded)
                 data[idx, :, :], processed_pix, mask[idx, :, :] = util.mean_filter(
                     data=data[idx, :, :],
-                    nb_neighbours=prm["median_filter_order"],
+                    nb_neighbours=prm.get("median_filter_order", 7),
                     mask=mask[idx, :, :],
                     interpolate=median_filter,
                     min_count=3,
@@ -1481,21 +1495,21 @@ def run(prm):
         # save final data and mask #
         ############################
         print("\nSaving directory:", detector.savedir)
-        if prm["save_as_int"]:
+        if prm.get("save_as_int", False):
             data = data.astype(int)
         print("Data type before saving:", data.dtype)
         mask[np.nonzero(mask)] = 1
         mask = mask.astype(int)
         print("Mask type before saving:", mask.dtype)
         if not use_rawdata and len(q_values) != 0:
-            if prm["save_to_npz"]:
+            if save_to_npz:
                 np.savez_compressed(
                     detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
                     qx=qx,
                     qz=qz,
                     qy=qy,
                 )
-            if prm["save_to_mat"]:
+            if save_to_mat:
                 savemat(detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
                 savemat(detector.savedir + f"S{scan_nb}_qz.mat", {"qz": qz})
                 savemat(detector.savedir + f"S{scan_nb}_qy.mat", {"qy": qy})
@@ -1519,7 +1533,7 @@ def run(prm):
             )
             plt.close(fig)
 
-        if prm["save_to_npz"]:
+        if save_to_npz:
             np.savez_compressed(
                 detector.savedir + f"S{scan_nb}_pynx" + comment, data=data
             )
@@ -1527,7 +1541,7 @@ def run(prm):
                 detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
             )
 
-        if prm["save_to_mat"]:
+        if save_to_mat:
             # save to .mat, the new order is x y z (outboard, vertical up, downstream)
             savemat(
                 detector.savedir + f"S{scan_nb}_data.mat",
