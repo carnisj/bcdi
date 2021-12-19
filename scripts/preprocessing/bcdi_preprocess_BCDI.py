@@ -848,7 +848,16 @@ def run(prm):
                     roi=detector.roi,
                     binning=detector.binning
                 )
-            bu.show_rocking_curve(data, roi_center=bragg_peak, savedir=detector.savedir)
+            roi_center = (
+                bragg_peak[0],
+                (bragg_peak[1] - roi_detector[0]) // 2,
+                (bragg_peak[2] - roi_detector[2]) // 2
+            )
+            bu.show_rocking_curve(
+                data,
+                roi_center=roi_center,
+                savedir=detector.savedir
+            )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
