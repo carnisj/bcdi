@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
-from operator import mul
+from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 from typing import Optional, Tuple
 import xrayutilities as xu
@@ -1275,6 +1275,91 @@ def reload_bcdi_data(
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor
+
+
+def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None):
+    """
+    Calculate the integrated intensity along a rocking curve and plot it.
+
+    The data is expected to be stacked, the first axis corresponding to the rocking
+    angle and axes 1 and 2 to the detector plane (vertical, horizontal)
+    :param data: the stacked rocking curve data
+    :param roi_center: the position of the center of the region of interest. Most often
+     this will be the position of the Bragg peak.
+    :param integration_roi: the region of interest where to integrate the intensity
+    :param tilt_values: the angular values along the rocking curve
+    :return: handles to the figure and axes
+    """
+    # check parameters
+    valid.valid_ndarray(data, ndim=3, name="data")
+    nb_frames = data.shape[0]
+    valid.valid_container(
+        roi_center,
+        container_types=(tuple, list, np.ndarray),
+        length=3,
+        item_types=Real,
+        name="roi_center"
+    )
+    valid.valid_container(
+        integration_roi,
+        container_types=(tuple, list, np.ndarray),
+        length=2,
+        item_types=int,
+        allow_none=True,
+        name="integration_roi"
+    )
+    if integration_roi is None:
+        integration_roi = (data.shape[1], data.shape[2])
+    elif (
+            integration_roi[0] > data.shape[1]
+            or integration_roi[1] > data.shape[2]
+    ):
+        print("integration_roi larger than the frame size, using the full frame"
+              "instead")
+        integration_roi = (data.shape[1], data.shape[2])
+
+    valid.valid_container(
+        tilt_values,
+        container_types=(tuple, list, np.ndarray),
+        length=nb_frames,
+        item_types=Real,
+        allow_none=True,
+        name="tilt_values"
+    )
+
+    # calculate the integrated intensity per frame
+    rocking_curve = data[
+                    :,
+                    roi_center[1]-integration_roi[0]:roi_center[1]+integration_roi[0],
+                    roi_center[2] - integration_roi[1]:roi_center[2] + integration_roi[
+                        1],
+                    ].sum(axis=(1, 2))
+
+    interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
+    interp_points = 5 * nb_frames
+    interp_tilt = np.linspace(tilt_values.min(), tilt_values.max(), interp_points)
+    interp_curve = interpolation(interp_tilt)
+    interp_fwhm = (
+            len(np.argwhere(interp_curve >= interp_curve.max() / 2))
+            * (tilt_values.max() - tilt_values.min())
+            / (interp_points - 1)
+    )
+    print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
+
+    fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
+    ax0.plot(tilt_values, rocking_curve, ".")
+    ax0.plot(interp_tilt, interp_curve)
+    ax0.set_ylabel("Integrated intensity")
+    ax0.legend(("data", "interpolation"))
+    ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
+    ax1.plot(tilt_values, np.log10(rocking_curve), ".")
+    ax1.plot(interp_tilt, np.log10(interp_curve))
+    ax1.set_xlabel("Rocking angle (deg)")
+    ax1.set_ylabel("Log(integrated intensity)")
+    ax0.legend(("data", "interpolation"))
+    plt.pause(0.1)
+
+    return fig, (ax0, ax1)
 
 
 def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
