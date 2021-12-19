@@ -161,6 +161,7 @@ class Setup:
 
         # initialize other attributes
         self.logfile = None
+        self.incident_angles = None
 
     @property
     def actuators(self):
@@ -782,6 +783,7 @@ class Setup:
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
 
+        self.incident_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
