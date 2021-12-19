@@ -1333,7 +1333,11 @@ def show_rocking_curve(
         allow_none=True,
         name="tilt_values"
     )
-    tilt_values = tilt_values or np.arange(nb_frames)
+    if tilt_values is None:
+        tilt_values = np.arange(nb_frames)
+        x_label = "Frame number"
+    else:
+        x_label = "Rocking angle (deg)"
 
     valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
     if savedir is not None:
@@ -1367,11 +1371,12 @@ def show_rocking_curve(
     ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
     ax1.plot(tilt_values, np.log10(rocking_curve), ".")
     ax1.plot(interp_tilt, np.log10(interp_curve))
-    ax1.set_xlabel("Rocking angle (deg)")
+    ax1.set_xlabel(x_label)
     ax1.set_ylabel("Log(integrated intensity)")
     ax0.legend(("data", "interpolation"))
     plt.pause(0.1)
     fig.savefig(savedir + "rocking_curve.png")
+    plt.close(fig)
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
     plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
@@ -1379,6 +1384,7 @@ def show_rocking_curve(
     plt.colorbar()
     plt.pause(0.1)
     fig.savefig(savedir + "central_slice.png")
+    plt.close(fig)
     plt.ioff()
 
 
