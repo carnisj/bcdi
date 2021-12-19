@@ -856,6 +856,7 @@ def run(prm):
             bu.show_rocking_curve(
                 data,
                 roi_center=roi_center,
+                tilt_values=setup.incident_angles,
                 savedir=detector.savedir
             )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
