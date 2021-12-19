@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
+import pathlib
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 from typing import Optional, Tuple
@@ -1277,7 +1278,13 @@ def reload_bcdi_data(
     return data, mask, frames_logical, monitor
 
 
-def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None):
+def show_rocking_curve(
+        data,
+        roi_center,
+        integration_roi=None,
+        tilt_values=None,
+        savedir=None,
+):
     """
     Calculate the integrated intensity along a rocking curve and plot it.
 
@@ -1288,7 +1295,7 @@ def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None)
      this will be the position of the Bragg peak.
     :param integration_roi: the region of interest where to integrate the intensity
     :param tilt_values: the angular values along the rocking curve
-    :return: handles to the figure and axes
+    :param savedir: path to the saving directory
     """
     # check parameters
     valid.valid_ndarray(data, ndim=3, name="data")
@@ -1326,13 +1333,18 @@ def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None)
         allow_none=True,
         name="tilt_values"
     )
+    tilt_values = tilt_values or np.arange(nb_frames)
+
+    valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
+    if savedir is not None:
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
     # calculate the integrated intensity per frame
     rocking_curve = data[
                     :,
-                    roi_center[1]-integration_roi[0]:roi_center[1]+integration_roi[0],
-                    roi_center[2] - integration_roi[1]:roi_center[2] + integration_roi[
-                        1],
+                    roi_center[1]-integration_roi[0]//2:roi_center[1]+integration_roi[0]//2,
+                    roi_center[2] - integration_roi[1]//2:roi_center[2] + integration_roi[
+                        1]//2,
                     ].sum(axis=(1, 2))
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
@@ -1346,6 +1358,7 @@ def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None)
     )
     print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
 
+    plt.ion()
     fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
     ax0.plot(tilt_values, rocking_curve, ".")
     ax0.plot(interp_tilt, interp_curve)
@@ -1358,8 +1371,15 @@ def show_rocking_curve(data, roi_center, integration_roi=None, tilt_values=None)
     ax1.set_ylabel("Log(integrated intensity)")
     ax0.legend(("data", "interpolation"))
     plt.pause(0.1)
+    fig.savefig(savedir + "rocking_curve.png")
 
-    return fig, (ax0, ax1)
+    fig, _ = plt.subplots(1, 1, figsize=(10, 5))
+    plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
+    plt.title(f"Slice at frame {roi_center[0]}")
+    plt.colorbar()
+    plt.pause(0.1)
+    fig.savefig(savedir + "central_slice.png")
+    plt.ioff()
 
 
 def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
