@@ -482,7 +482,7 @@ def run(prm):
     background_plot = prm.get("background_plot", 0.5)
     bragg_peak = prm.get("bragg_peak")
     fix_size = prm.get("fix_size")
-    debug = prm.get("debug", False),
+    debug = prm.get("debug", False)
     user_comment = prm.get("comment", "")
     align_q = prm.get("align_q", True)
     ref_axis_q = prm.get("ref_axis_q", "y")
@@ -848,6 +848,7 @@ def run(prm):
                     roi=detector.roi,
                     binning=detector.binning
                 )
+            bu.show_rocking_curve(data, roi_center=bragg_peak, savedir=detector.savedir)
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
