@@ -8,7 +8,7 @@
 
 import numpy as np
 import unittest
-from bcdi.experiment.setup import Setup
+from bcdi.experiment.setup import Setup, Detector
 
 
 def run_tests(test_class):
@@ -213,18 +213,20 @@ class TestCorrectDetectorAngles(unittest.TestCase):
 
     def test_direct_beam_none(self):
         self.setup.direct_beam = None
-        self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+        output = self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
         self.assertTrue(
             np.isclose(self.setup.inplane_angle, 12.2)
             and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
         )
 
     def test_dirbeam_detector_angles_none(self):
         self.setup.dirbeam_detector_angles = None
-        self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+        output = self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
         self.assertTrue(
             np.isclose(self.setup.inplane_angle, 12.2)
             and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
         )
 
     def test_distance_undefined(self):
