@@ -8,7 +8,7 @@
 
 import numpy as np
 import unittest
-from bcdi.experiment.setup import Setup, Detector
+from bcdi.experiment.setup import Setup
 
 
 def run_tests(test_class):
