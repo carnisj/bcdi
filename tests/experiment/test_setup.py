@@ -244,6 +244,14 @@ class TestCorrectDetectorAngles(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
 
+    def test_bragg_peak_none(self):
+        output = self.setup.correct_detector_angles(bragg_peak_position=None)
+        self.assertTrue(
+            np.isclose(self.setup.inplane_angle, 12.2)
+            and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
+        )
+
     def test_correct(self):
         self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
         print(self.setup.inplane_angle, self.setup.outofplane_angle)
