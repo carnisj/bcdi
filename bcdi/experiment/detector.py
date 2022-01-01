@@ -102,7 +102,7 @@ def create_roi(dic: Dict[str, Any]) -> Any:
 
     If a key is not defined, it will consider that the values of roi_detector are
     absolute pixels positions, e.g. if only "center_roi_y" is defined, the output will
-    be: 
+    be:
     [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
     roi_detector[2], roi_detector[3]].
 
