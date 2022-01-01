@@ -30,6 +30,7 @@ class TestFindBragg(unittest.TestCase):
             binning: Optional[Tuple[int, ...]] = None,
     ) -> Tuple[int, ...]:
     """
+
     def setUp(self) -> None:
         data = np.zeros((4, 32, 32))
         data[:-1, -12:, 18:30] = gaussian_window(window_shape=(3, 12, 12))
