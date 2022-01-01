@@ -796,7 +796,7 @@ class Setup:
 
     def correct_detector_angles(
             self,
-            bragg_peak_position: Tuple[int, ...],
+            bragg_peak_position: Optional[Tuple[int, ...]],
             verbose: bool = True,
     ) -> None:
         """
@@ -817,6 +817,11 @@ class Setup:
             self.inplane_angle, self.outofplane_angle, self.distance
         }):
             raise ValueError("call setup.read_logfile before calling this method")
+
+        if bragg_peak_position is None:
+            print("Bragg peak position not defined, can't correct detector angles")
+            return
+
         if len(bragg_peak_position) == 3:
             bragg_peak_position = bragg_peak_position[-2:]
         valid.valid_container(
