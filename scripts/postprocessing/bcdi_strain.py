@@ -930,9 +930,8 @@ def run(prm):
         if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
             print("Trying to correct detector angles using the direct beam")
             # corrected detector angles not provided
-            if bragg_peak is None:
+            if bragg_peak is None and detector.template_imagefile is not None:
                 # Bragg peak position not provided, find it from the data
-                # TODO: put this in a try except block (templateimagefile not defined)
                 data, _, _, _ = setup.diffractometer.load_check_dataset(
                     scan_number=scan,
                     detector=detector,
