@@ -18,7 +18,7 @@ import numpy as np
 import pathlib
 import pandas as pd
 from pandas import DataFrame
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
 import vtk
 
 from bcdi.utils import validation as valid
@@ -402,6 +402,7 @@ class Facets:
                 ["{:.2f}".format(e) for e in v]
             )
 
+    @no_type_check
     def fixed_reference(
         self,
         hkl_reference: Tuple[float, float, float] = (1, 1, 1),
