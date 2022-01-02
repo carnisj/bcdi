@@ -795,9 +795,9 @@ class Setup:
             raise TypeError("the tilt angle should be a number")
 
     def correct_detector_angles(
-            self,
-            bragg_peak_position: Optional[Tuple[int, ...]],
-            verbose: bool = True,
+        self,
+        bragg_peak_position: Optional[Tuple[int, ...]],
+        verbose: bool = True,
     ) -> None:
         """
         Correct the detector angles given the direct beam position.
@@ -813,9 +813,10 @@ class Setup:
             print("direct beam position not defined, can't correct detector angles")
             return
 
-        if any(val is None for val in {
-            self.inplane_angle, self.outofplane_angle, self.distance
-        }):
+        if any(
+            val is None
+            for val in {self.inplane_angle, self.outofplane_angle, self.distance}
+        ):
             raise ValueError("call setup.read_logfile before calling this method")
 
         if bragg_peak_position is None:
@@ -829,7 +830,7 @@ class Setup:
             container_types=(tuple, list, np.ndarray),
             item_types=Real,
             length=2,
-            name="bragg_peak_position"
+            name="bragg_peak_position",
         )
         valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
@@ -841,7 +842,8 @@ class Setup:
             )
             print(
                 f"Detector angles before correction: inplane {self.inplane_angle:.2f}"
-                f" deg, outofplane {self.outofplane_angle:.2f} deg")
+                f" deg, outofplane {self.outofplane_angle:.2f} deg"
+            )
 
         self.inplane_angle = (
             self.inplane_angle
@@ -871,7 +873,8 @@ class Setup:
         if verbose:
             print(
                 f"Corrected detector angles: inplane {self.inplane_angle:.2f} deg, "
-                f"outofplane {self.outofplane_angle:.2f} deg")
+                f"outofplane {self.outofplane_angle:.2f} deg"
+            )
 
     def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
         """

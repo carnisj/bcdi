@@ -596,10 +596,7 @@ def run(prm):
     # find the best reconstruction from the list, based on mean amplitude and variance #
     ####################################################################################
     if nbfiles > 1:
-        print(
-            "\nTrying to find the best reconstruction\nSorting by ",
-            sort_method
-        )
+        print("\nTrying to find the best reconstruction\nSorting by ", sort_method)
         sorted_obj = pu.sort_reconstruction(
             file_path=file_path,
             amplitude_threshold=isosurface_strain,
@@ -945,7 +942,7 @@ def run(prm):
                 )
                 bragg_peak = bu.find_bragg(
                     data=data,
-                    peak_method='maxcom',
+                    peak_method="maxcom",
                     roi=detector.roi,
                     binning=None,
                 )
@@ -1432,9 +1429,7 @@ def run(prm):
     fig.text(0.60, 0.35, f"Ticks spacing={tick_spacing} nm", size=20)
     fig.text(0.60, 0.30, f"Volume={int(volume)} nm3", size=20)
     fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
-    fig.text(
-        0.60, 0.20, f"correlation threshold={correlation_threshold}", size=20
-    )
+    fig.text(0.60, 0.20, f"correlation threshold={correlation_threshold}", size=20)
     fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
     fig.text(0.60, 0.10, f"Planar distance={planar_dist:.5f} nm", size=20)
     if prm.get("get_temperature", False):
@@ -1472,8 +1467,8 @@ def run(prm):
         phase,
         sum_frames=False,
         title="Orthogonal displacement",
-        vmin=-prm.get("phase_range", np.pi/2),
-        vmax=prm.get("phase_range", np.pi/2),
+        vmin=-prm.get("phase_range", np.pi / 2),
+        vmax=prm.get("phase_range", np.pi / 2),
         tick_direction=tick_direction,
         cmap=my_cmap,
         tick_width=tick_width,

@@ -609,10 +609,10 @@ def center_fft(
 
 
 def find_bragg(
-        data: np.ndarray,
-        peak_method: str,
-        roi: Optional[Tuple[int, int, int, int]] = None,
-        binning: Optional[Tuple[int, ...]] = None,
+    data: np.ndarray,
+    peak_method: str,
+    roi: Optional[Tuple[int, int, int, int]] = None,
+    binning: Optional[Tuple[int, ...]] = None,
 ) -> Tuple[int, ...]:
     """
     Find the Bragg peak position in data based on the centering method.
@@ -638,7 +638,7 @@ def find_bragg(
         item_types=int,
         length=4,
         allow_none=True,
-        name="roi"
+        name="roi",
     )
     valid.valid_container(
         binning,
@@ -646,7 +646,7 @@ def find_bragg(
         item_types=int,
         length=data.ndim,
         allow_none=True,
-        name="binning"
+        name="binning",
     )
     if peak_method not in {"max", "com", "maxcom"}:
         raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
@@ -667,7 +667,7 @@ def find_bragg(
 
     # unbin
     if binning is not None:
-        position = [a*b for a, b in zip(position, binning)]
+        position = [a * b for a, b in zip(position, binning)]
 
     # add the offset due to the region of interest
     if roi is not None:
@@ -1279,11 +1279,11 @@ def reload_bcdi_data(
 
 
 def show_rocking_curve(
-        data,
-        roi_center,
-        integration_roi=None,
-        tilt_values=None,
-        savedir=None,
+    data,
+    roi_center,
+    integration_roi=None,
+    tilt_values=None,
+    savedir=None,
 ):
     """
     Calculate the integrated intensity along a rocking curve and plot it.
@@ -1305,7 +1305,7 @@ def show_rocking_curve(
         container_types=(tuple, list, np.ndarray),
         length=3,
         item_types=Real,
-        name="roi_center"
+        name="roi_center",
     )
     valid.valid_container(
         integration_roi,
@@ -1313,16 +1313,14 @@ def show_rocking_curve(
         length=2,
         item_types=int,
         allow_none=True,
-        name="integration_roi"
+        name="integration_roi",
     )
     if integration_roi is None:
         integration_roi = (data.shape[1], data.shape[2])
-    elif (
-            integration_roi[0] > data.shape[1]
-            or integration_roi[1] > data.shape[2]
-    ):
-        print("integration_roi larger than the frame size, using the full frame"
-              "instead")
+    elif integration_roi[0] > data.shape[1] or integration_roi[1] > data.shape[2]:
+        print(
+            "integration_roi larger than the frame size, using the full frame" "instead"
+        )
         integration_roi = (data.shape[1], data.shape[2])
 
     valid.valid_container(
@@ -1331,7 +1329,7 @@ def show_rocking_curve(
         length=nb_frames,
         item_types=Real,
         allow_none=True,
-        name="tilt_values"
+        name="tilt_values",
     )
     if tilt_values is None:
         tilt_values = np.arange(nb_frames)
@@ -1345,20 +1343,23 @@ def show_rocking_curve(
 
     # calculate the integrated intensity per frame
     rocking_curve = data[
-                    :,
-                    roi_center[1]-integration_roi[0]//2:roi_center[1]+integration_roi[0]//2,
-                    roi_center[2] - integration_roi[1]//2:roi_center[2] + integration_roi[
-                        1]//2,
-                    ].sum(axis=(1, 2))
+        :,
+        roi_center[1]
+        - integration_roi[0] // 2 : roi_center[1]
+        + integration_roi[0] // 2,
+        roi_center[2]
+        - integration_roi[1] // 2 : roi_center[2]
+        + integration_roi[1] // 2,
+    ].sum(axis=(1, 2))
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
     interp_points = 5 * nb_frames
     interp_tilt = np.linspace(tilt_values.min(), tilt_values.max(), interp_points)
     interp_curve = interpolation(interp_tilt)
     interp_fwhm = (
-            len(np.argwhere(interp_curve >= interp_curve.max() / 2))
-            * (tilt_values.max() - tilt_values.min())
-            / (interp_points - 1)
+        len(np.argwhere(interp_curve >= interp_curve.max() / 2))
+        * (tilt_values.max() - tilt_values.min())
+        / (interp_points - 1)
     )
     print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
 

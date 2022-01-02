@@ -82,10 +82,7 @@ class TestFindBragg(unittest.TestCase):
 
     def test_bin_roi(self):
         peak = find_bragg(
-            data=self.data,
-            peak_method="max",
-            roi=(3, 3, 4, 2),
-            binning=(3, 3, 4)
+            data=self.data, peak_method="max", roi=(3, 3, 4, 2), binning=(3, 3, 4)
         )
         self.assertTrue(peak == (3, 81, 100))
 

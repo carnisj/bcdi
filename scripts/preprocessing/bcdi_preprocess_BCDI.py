@@ -487,7 +487,7 @@ def run(prm):
     align_q = prm.get("align_q", True)
     ref_axis_q = prm.get("ref_axis_q", "y")
     preprocessing_binning = prm.get("preprocessing_binning", (1, 1, 1))
-    interpolation_method = prm.get("interpolation_method", 'linearization')
+    interpolation_method = prm.get("interpolation_method", "linearization")
     save_dir = prm.get("save_dir", None)
     flag_interact = prm.get("flag_interact", True)
     center_fft = prm.get("center_fft", "skip")
@@ -844,20 +844,20 @@ def run(prm):
                 # Bragg peak position not provided, find it from the data
                 bragg_peak = bu.find_bragg(
                     data=data,
-                    peak_method='maxcom',
+                    peak_method="maxcom",
                     roi=detector.roi,
-                    binning=detector.binning
+                    binning=detector.binning,
                 )
             roi_center = (
                 bragg_peak[0],
                 (bragg_peak[1] - roi_detector[0]) // 2,
-                (bragg_peak[2] - roi_detector[2]) // 2
+                (bragg_peak[2] - roi_detector[2]) // 2,
             )
             bu.show_rocking_curve(
                 data,
                 roi_center=roi_center,
                 tilt_values=setup.incident_angles,
-                savedir=detector.savedir
+                savedir=detector.savedir,
             )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
             prm["outofplane_angle"] = setup.outofplane_angle
