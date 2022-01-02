@@ -18,7 +18,7 @@ import numpy as np
 import pathlib
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-from typing import Optional, Tuple
+from typing import no_type_check, Optional, Tuple
 import xrayutilities as xu
 
 from ..experiment import diffractometer as diff
@@ -608,6 +608,7 @@ def center_fft(
     return data, mask, pad_width, q_values, frames_logical
 
 
+@no_type_check  # https://github.com/python/mypy/issues/6697
 def find_bragg(
     data: np.ndarray,
     peak_method: str,
