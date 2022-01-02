@@ -366,7 +366,7 @@ class Facets:
         inv_tensor1 = np.linalg.inv(tensor1)
         self.rotation_matrix = np.dot(np.transpose(tensor0), np.transpose(inv_tensor1))
 
-    def rotate_particle(self) -> None:
+    def rotate_particle(self):
         """
         Rotate the nanocrystal.
 
@@ -538,6 +538,7 @@ class Facets:
             ax.grid(which="major", alpha=0.5)
             plt.show()
 
+    @no_type_check
     def test_vector(self, vec: np.ndarray) -> None:
         """
         Computes value of a vector passed through the rotation matrix.
@@ -844,6 +845,7 @@ class Facets:
         plt.tight_layout()
         plt.show()
 
+    @no_type_check
     def plot_strain(
         self,
         figsize: Tuple[float, float] = (12, 10),
@@ -954,6 +956,7 @@ class Facets:
             plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
+    @no_type_check
     def plot_displacement(
         self,
         figsize: Tuple[float, float] = (12, 10),
