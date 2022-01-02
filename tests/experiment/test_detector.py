@@ -126,7 +126,9 @@ class TestCreateRoi(unittest.TestCase):
     def test_center_roi_x_y_not_none(self):
         roi = [10, 200, 20, 50]
         correct = [140, 350, -10, 60]
-        output = create_roi({"roi_detector": roi, "center_roi_y": 150, "center_roi_x": 10})
+        output = create_roi(
+            {"roi_detector": roi, "center_roi_y": 150, "center_roi_x": 10}
+        )
         print(output)
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
