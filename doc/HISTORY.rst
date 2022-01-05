@@ -1,3 +1,11 @@
+Future:
+-------
+
+* Allow the correction of detector angles directly in `bcdi_preprocessing_BCDI.py` and
+  `bcdi_strain.py`. The user can either provide the Bragg peak position, or this one
+  will be calculated from the provided direct beam position and the setup geometry.
+  The user can still provide already corrected detector angles.
+
 Version 0.2.1:
 --------------
 
