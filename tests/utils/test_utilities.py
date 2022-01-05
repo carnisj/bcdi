@@ -147,7 +147,27 @@ class TestIsFloat(unittest.TestCase):
             util.is_float(np.ones(3))
 
 
+class TestGaussianWindow(unittest.TestCase):
+    """
+    Tests on the function utilities.gaussian_window.
+
+    def gaussian_window(
+        window_shape,
+        sigma=0.3,
+        mu=0.0,
+        voxel_size=None,
+        debugging=False
+    )
+    """
+
+    def test_3d(self):
+        data = np.zeros((4, 32, 32))
+        data[:-1, -12:, 18:30] = util.gaussian_window(window_shape=(3, 12, 12))
+        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (1, 26, 24))
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestIsFloat)
     run_tests(TestFindFile)
+    run_tests(TestGaussianWindow)
