@@ -6,6 +6,14 @@ Future:
   will be calculated from the provided direct beam position and the setup geometry.
   The user can still provide already corrected detector angles.
 
+* Bug: use the unbinned detector pixel size in `detector.create_roi`,
+  `diffractometer.init_data_mask` and `diffractometer.load_check_dataset` instead of
+  the calculated pixel size, which includes the preprocessing binning.
+
+* Rename the parameters for the definition of the detector ROI for data loading
+  `x_bragg` and `y_bragg` as `center_roi_x` and `center_roi_y`, to avoid the confusion
+  with the Bragg peak position.
+
 Version 0.2.1:
 --------------
 
