@@ -160,10 +160,27 @@ class TestGaussianWindow(unittest.TestCase):
     )
     """
 
+    def test_2d(self):
+        window = util.gaussian_window(window_shape=(13, 13))
+        self.assertTrue(
+            np.unravel_index(abs(window).argmax(), window.shape) == (6, 6)
+        )
+
+    def test_2d_pad(self):
+        data = np.zeros((32, 32))
+        data[-13:, 17:30] = util.gaussian_window(window_shape=(13, 13))
+        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (25, 23))
+
     def test_3d(self):
+        window = util.gaussian_window(window_shape=(3, 13, 13))
+        self.assertTrue(
+            np.unravel_index(abs(window).argmax(), window.shape) == (1, 6, 6)
+        )
+
+    def test_3d_pad(self):
         data = np.zeros((4, 32, 32))
-        data[:-1, -12:, 18:30] = util.gaussian_window(window_shape=(3, 12, 12))
-        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (1, 26, 24))
+        data[:-1, -13:, 17:30] = util.gaussian_window(window_shape=(3, 13, 13))
+        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (1, 25, 23))
 
 
 if __name__ == "__main__":
