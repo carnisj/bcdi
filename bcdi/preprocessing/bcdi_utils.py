@@ -1384,7 +1384,7 @@ def show_rocking_curve(
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
     plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
-    plt.scatter(roi_center[1], roi_center[2], color='r', alpha=0.7, linewidth=1)
+    plt.scatter(roi_center[2], roi_center[1], color='r', alpha=0.7, linewidth=1)
     plt.title(f"Slice at frame {roi_center[0]}")
     plt.colorbar()
     plt.pause(0.1)
