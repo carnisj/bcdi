@@ -946,6 +946,17 @@ def run(prm):
                     roi=detector.roi,
                     binning=None,
                 )
+                roi_center = (
+                    bragg_peak[0],
+                    bragg_peak[1] - detector.roi[0],
+                    bragg_peak[2] - detector.roi[2],
+                )
+                bu.show_rocking_curve(
+                    data,
+                    roi_center=roi_center,
+                    tilt_values=setup.incident_angles,
+                    savedir=detector.savedir,
+                )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
