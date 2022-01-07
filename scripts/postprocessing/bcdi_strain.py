@@ -948,8 +948,8 @@ def run(prm):
                 )
                 roi_center = (
                     bragg_peak[0],
-                    bragg_peak[1] - detector.roi[0],
-                    bragg_peak[2] - detector.roi[2],
+                    bragg_peak[1] - detector.roi[0],  # no binning as in bu.find_bragg
+                    bragg_peak[2] - detector.roi[2],  # no binning as in bu.find_bragg
                 )
                 bu.show_rocking_curve(
                     data,
