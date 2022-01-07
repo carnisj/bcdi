@@ -652,6 +652,9 @@ def find_bragg(
     if peak_method not in {"max", "com", "maxcom"}:
         raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
 
+    print(f"\nFinding Bragg peak position: input data shape {data.shape}")
+    print(f"Binning: {binning}")
+    print(f"Roi: {roi}")
     if peak_method == "max":
         position = np.unravel_index(abs(data).argmax(), data.shape)
         print(f"Max at: {position}, Max = {int(data[position])}")
