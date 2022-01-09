@@ -853,6 +853,7 @@ def run(prm):
                 (bragg_peak[1] - detector.roi[0]) // detector.binning[1],
                 (bragg_peak[2] - detector.roi[2]) // detector.binning[2],
             )
+
             bu.show_rocking_curve(
                 data,
                 roi_center=roi_center,

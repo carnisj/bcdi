@@ -1346,14 +1346,24 @@ def show_rocking_curve(
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
     # calculate the integrated intensity per frame
+    # rocking_curve = data[
+    #     :,
+    #     roi_center[1]
+    #     - integration_roi[0] // 2 : roi_center[1]
+    #     + integration_roi[0] // 2,
+    #     roi_center[2]
+    #     - integration_roi[1] // 2 : roi_center[2]
+    #     + integration_roi[1] // 2,
+    # ].sum(axis=(1, 2))
+
     rocking_curve = data[
         :,
-        roi_center[1]
-        - integration_roi[0] // 2 : roi_center[1]
-        + integration_roi[0] // 2,
-        roi_center[2]
-        - integration_roi[1] // 2 : roi_center[2]
-        + integration_roi[1] // 2,
+        np.clip(roi_center[1] - integration_roi[0] // 2, 0, data.shape[1]) : np.clip(
+            roi_center[1] + integration_roi[0] // 2, 0, data.shape[1]
+        ),
+        np.clip(roi_center[2] - integration_roi[1] // 2, 0, data.shape[2]) : np.clip(
+            roi_center[2] + integration_roi[1] // 2, 0, data.shape[2]
+        ),
     ].sum(axis=(1, 2))
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
@@ -1371,13 +1381,13 @@ def show_rocking_curve(
     fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
     ax0.plot(tilt_values, rocking_curve, ".")
     ax0.plot(interp_tilt, interp_curve)
-    ax0.axvline(tilt_values[roi_center[0]], color='r', alpha=0.7, linewidth=1)
+    ax0.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
     ax0.set_ylabel("Integrated intensity")
     ax0.legend(("data", "interpolation"))
     ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
     ax1.plot(tilt_values, np.log10(rocking_curve), ".")
     ax1.plot(interp_tilt, np.log10(interp_curve))
-    ax1.axvline(tilt_values[roi_center[0]], color='r', alpha=0.7, linewidth=1)
+    ax1.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
     ax1.set_xlabel(x_label)
     ax1.set_ylabel("Log(integrated intensity)")
     ax0.legend(("data", "interpolation"))
@@ -1387,7 +1397,9 @@ def show_rocking_curve(
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
     plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
-    plt.scatter(roi_center[2], roi_center[1], color='r', alpha=0.7, linewidth=1)
+    plt.scatter(
+        roi_center[2], roi_center[1], color="r", marker="1", alpha=0.7, linewidth=1
+    )
     plt.title(f"Slice at frame {roi_center[0]}")
     plt.colorbar()
     plt.pause(0.1)
