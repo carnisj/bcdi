@@ -130,7 +130,7 @@ setup(
     python_requires=">=3.6*",
     install_requires=[
         "numpy",
-        "scipy=1.7.2",
+        "scipy",
         "scikit-image<=0.18.3",
         "matplotlib",
         "hdf5plugin",
