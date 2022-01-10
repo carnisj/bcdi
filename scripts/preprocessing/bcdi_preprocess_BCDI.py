@@ -853,7 +853,8 @@ def run(prm):
                 (bragg_peak[1] - detector.roi[0]) // detector.binning[1],
                 (bragg_peak[2] - detector.roi[2]) // detector.binning[2],
             )
-            bu.show_rocking_curve(
+
+            metadata = bu.show_rocking_curve(
                 data,
                 roi_center=roi_center,
                 tilt_values=setup.incident_angles,
@@ -862,6 +863,19 @@ def run(prm):
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
+
+        ####################################
+        # wavevector transfer calculations #
+        ####################################
+        kin = (
+            2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
+        )  # in lab frame z downstream, y vertical, x outboard
+        kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
+        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
+        qnorm = np.linalg.norm(q)
+        dist_plane = 2 * np.pi / qnorm
+        print(f"\nWavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
+        print(f"Interplanar distance: {dist_plane:.6f} angstroms")
 
         ##############################################################
         # optional interpolation of the data onto an orthogonal grid #
@@ -1571,6 +1585,22 @@ def run(prm):
             par = hf.create_group("params")
             out.create_dataset("data", data=data)
             out.create_dataset("mask", data=mask)
+
+            out.create_dataset("tilt_values", data=metadata["tilt_values"])
+            out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
+            out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
+            out.create_dataset("interp_curve", data=metadata["interp_rocking_curve"])
+
+            out.create_dataset("COM_rocking_curve", data=metadata["COM_rocking_curve"])
+            out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
+            out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
+            out.create_dataset("bragg_peak", data=bragg_peak)
+            out.create_dataset("q", data=q)
+            out.create_dataset("qnorm", data=qnorm)
+            out.create_dataset("dist_plane", data=dist_plane)
+            out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
+            out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
+
             par.create_dataset("detector", data=str(detector.params))
             par.create_dataset("setup", data=str(setup.params))
             par.create_dataset("parameters", data=str(prm))
