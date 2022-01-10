@@ -68,38 +68,23 @@ class DataSet:
         self.path_aliases = inspect.getfile(bcdi).split("__")[0] + "preprocessing/"
 
         print("### ReadNxs3 ###")
-        if alias_dict:
-            try:
-                self._alias_dict = pickle.load(open(alias_dict, "rb"))
-            except pickle.UnpicklingError:
-                # need to convert DOS linefeeds (crlf) to UNIX (lf)
-                dirname = os.path.dirname(alias_dict)
-                dict_name = os.path.splitext(os.path.basename(alias_dict))[
-                    0
-                ]  # e.g.'alias_dict_2021'
-                util.dos2unix(
-                    input_file=alias_dict,
-                    output_file=dirname + f"\\{dict_name}_unix.txt",
-                )
-                alias_dict = dirname + f"\\{dict_name}_unix.txt"
-                self._alias_dict = pickle.load(open(alias_dict, "rb"))
-        else:
+        if not alias_dict:
             print("Defaulting to alias_dict_2021.txt")
             alias_dict = self.path_aliases + "alias_dict_2021.txt"
-            try:
-                self._alias_dict = pickle.load(open(alias_dict, "rb"))
-            except pickle.UnpicklingError:
-                # need to convert DOS linefeeds (crlf) to UNIX (lf)
-                dirname = os.path.dirname(alias_dict)
-                dict_name = os.path.splitext(os.path.basename(alias_dict))[
-                    0
-                ]  # e.g.'alias_dict_2021'
-                util.dos2unix(
-                    input_file=alias_dict,
-                    output_file=dirname + f"\\{dict_name}_unix.txt",
-                )
-                alias_dict = dirname + f"\\{dict_name}_unix.txt"
-                self._alias_dict = pickle.load(open(alias_dict, "rb"))
+        try:
+            self._alias_dict = pickle.load(open(alias_dict, "rb"))
+        except pickle.UnpicklingError:
+            # need to convert DOS linefeeds (crlf) to UNIX (lf)
+            dirname = os.path.dirname(alias_dict)
+            dict_name = os.path.splitext(os.path.basename(alias_dict))[
+                0
+            ]  # e.g.'alias_dict_2021'
+            util.dos2unix(
+                input_file=alias_dict,
+                output_file=dirname + f"\\{dict_name}_unix.txt",
+            )
+            alias_dict = dirname + f"\\{dict_name}_unix.txt"
+            self._alias_dict = pickle.load(open(alias_dict, "rb"))
 
         def is_empty(any_structure):
             """Quick function to determine if an array, tuple or string is empty."""
