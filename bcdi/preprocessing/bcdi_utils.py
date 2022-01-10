@@ -1300,6 +1300,9 @@ def show_rocking_curve(
     :param integration_roi: the region of interest where to integrate the intensity
     :param tilt_values: the angular values along the rocking curve
     :param savedir: path to the saving directory
+
+    :return:
+     - output metadata dictionnary
     """
     # check parameters
     valid.valid_ndarray(data, ndim=3, name="data")
@@ -1344,17 +1347,6 @@ def show_rocking_curve(
     valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
     if savedir is not None:
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-
-    # calculate the integrated intensity per frame
-    # rocking_curve = data[
-    #     :,
-    #     roi_center[1]
-    #     - integration_roi[0] // 2 : roi_center[1]
-    #     + integration_roi[0] // 2,
-    #     roi_center[2]
-    #     - integration_roi[1] // 2 : roi_center[2]
-    #     + integration_roi[1] // 2,
-    # ].sum(axis=(1, 2))
 
     rocking_curve = data[
         :,
@@ -1406,6 +1398,18 @@ def show_rocking_curve(
     fig.savefig(savedir + "central_slice.png")
     plt.close(fig)
     plt.ioff()
+
+    metadata = {
+        "tilt_values": tilt_values,
+        "rocking_curve": rocking_curve,
+        "interp_tilt": interp_tilt,
+        "interp_curve": interp_curve,
+        "interp_fwhm": interp_fwhm,
+        "COM_rocking_curve" : tilt_values[roi_center[0]],
+        "detector_data_COM" : data[roi_center[0], :, :],
+        }
+
+    return metadata
 
 
 def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
