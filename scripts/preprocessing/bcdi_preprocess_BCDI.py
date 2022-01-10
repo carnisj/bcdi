@@ -864,6 +864,19 @@ def run(prm):
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
 
+        ####################################
+        # wavevector transfer calculations #
+        ####################################
+        kin = (
+            2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
+        )  # in lab frame z downstream, y vertical, x outboard
+        kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
+        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
+        qnorm = np.linalg.norm(q)
+        dist_plane = 2 * np.pi / qnorm
+        print(f"\nWavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
+        print(f"Interplanar distance: {dist_plane:.6f} angstroms")
+
         ##############################################################
         # optional interpolation of the data onto an orthogonal grid #
         ##############################################################
@@ -1582,9 +1595,9 @@ def run(prm):
             out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
             out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
             out.create_dataset("bragg_peak", data=bragg_peak)
-            # out.create_dataset("q", data=q)
-            # out.create_dataset("qnorm", data=qnorm)
-            # out.create_dataset("dist_plane", data=dist_plane)
+            out.create_dataset("q", data=q)
+            out.create_dataset("qnorm", data=qnorm)
+            out.create_dataset("dist_plane", data=dist_plane)
             out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
             out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
 

@@ -1402,8 +1402,8 @@ def show_rocking_curve(
     metadata = {
         "tilt_values": tilt_values,
         "rocking_curve": rocking_curve,
-        "interp_tilt": interp_tilt,
-        "interp_curve": interp_curve,
+        "interp_tilt_values": interp_tilt,
+        "interp_rocking_curve": interp_curve,
         "interp_fwhm": interp_fwhm,
         "COM_rocking_curve" : tilt_values[roi_center[0]],
         "detector_data_COM" : data[roi_center[0], :, :],
