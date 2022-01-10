@@ -157,15 +157,3 @@ API Reference
 
 .. automodule:: bcdi.experiment.setup
    :members:
-
-dataset
-^^^^^^^
-
-This class stores the data and associated arrays (mask, optical path...) as well as few
-methods.
-
-API Reference
--------------
-
-.. automodule:: bcdi.experiment.dataset
-   :members:
