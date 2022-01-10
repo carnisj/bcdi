@@ -25,6 +25,7 @@ import bcdi.utils.utilities as util
 import inspect
 import bcdi
 
+
 class EmptyO:
     """Empty class used as container in the nxs2spec case."""
 

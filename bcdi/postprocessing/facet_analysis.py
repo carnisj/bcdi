@@ -530,8 +530,6 @@ class Facets:
 
             ax.set_xticks(major_ticks)
             ax.set_xticks(minor_ticks, minor=True)
-            # ax.set_yticks(major_ticks)
-            # ax.set_yticks(minor_ticks, minor=True)
 
             # Or if you want different settings for the grids:
             ax.grid(which="minor", alpha=0.2)
@@ -669,7 +667,6 @@ class Facets:
                 pass  # we are on the corners and edges
             except Exception as e:
                 raise e
-                # pass
 
         if not output:
             return None

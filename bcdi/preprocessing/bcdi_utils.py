@@ -674,8 +674,8 @@ def find_bragg(
         position = [a * b for a, b in zip(position, binning)]
 
     # add the offset due to the region of interest
+    # the roi is defined as [y_start, y_stop, x_start, x_stop]
     if roi is not None:
-        # roi = [y_start, y_stop, x_start, x_stop]
         position = list(position)
         position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
@@ -1404,9 +1404,9 @@ def show_rocking_curve(
         "interp_tilt_values": interp_tilt,
         "interp_rocking_curve": interp_curve,
         "interp_fwhm": interp_fwhm,
-        "COM_rocking_curve" : tilt_values[roi_center[0]],
-        "detector_data_COM" : data[roi_center[0], :, :],
-        }
+        "COM_rocking_curve": tilt_values[roi_center[0]],
+        "detector_data_COM": data[roi_center[0], :, :],
+    }
 
     return metadata
 

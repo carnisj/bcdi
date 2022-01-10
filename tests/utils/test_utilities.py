@@ -162,9 +162,7 @@ class TestGaussianWindow(unittest.TestCase):
 
     def test_2d(self):
         window = util.gaussian_window(window_shape=(13, 13))
-        self.assertTrue(
-            np.unravel_index(abs(window).argmax(), window.shape) == (6, 6)
-        )
+        self.assertTrue(np.unravel_index(abs(window).argmax(), window.shape) == (6, 6))
 
     def test_2d_pad(self):
         data = np.zeros((32, 32))

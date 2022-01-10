@@ -97,7 +97,6 @@ normalize = "monitor"
 # 'monitor' to return the default monitor values, 'skip' to do nothing
 high_threshold = 500000  # everything above will be considered as hotpixel
 hotpixels_file = ""  # root_folder + 'hotpixels_cristal.npz'
-# root_folder + 'merlin_mask_190222_14keV.h5'  #
 flatfield_file = ""  # root_folder + "flatfield_maxipix_8kev.npz"  #
 template_imagefile = "_master.h5"
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'

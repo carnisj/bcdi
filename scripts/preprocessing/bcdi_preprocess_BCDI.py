@@ -36,7 +36,8 @@ import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
+CONFIG_FILE = "C:/Users/Jerome/Documents/data/share/config_preprocessing.yml"
+# "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
@@ -870,7 +871,9 @@ def run(prm):
         kin = (
             2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
         )  # in lab frame z downstream, y vertical, x outboard
-        kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
+        kout = (
+            setup.exit_wavevector
+        )  # in lab.frame z downstream, y vertical, x outboard
         q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
         qnorm = np.linalg.norm(q)
         dist_plane = 2 * np.pi / qnorm

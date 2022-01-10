@@ -857,7 +857,6 @@ class Setup:
             )
             - self.dirbeam_detector_angles[1]
         )
-        # inplane_coeff is +1 or -1
 
         self.outofplane_angle = (
             self.outofplane_angle
@@ -869,7 +868,7 @@ class Setup:
             * (bragg_peak_position[0] - self.direct_beam[0])
             - self.dirbeam_detector_angles[0]
         )
-        # outofplane_coeff is +1 or -1
+
         if verbose:
             print(
                 f"Corrected detector angles: inplane {self.inplane_angle:.2f} deg, "

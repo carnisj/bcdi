@@ -2990,12 +2990,12 @@ class DiffractometerSIXS(Diffractometer):
 
 class Diffractometer34ID(Diffractometer):
     """
-    Define 34ID goniometer: 2 sample circles + 2 detector circles.
+    Define 34ID goniometer: 3 sample circles + 2 detector circles.
 
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
 
-    - sample: theta (inplane), phi (out of plane)
+    - sample: theta (inplane), chi, phi (out of plane)
     - detector: delta (inplane), gamma).
 
     """
@@ -3244,8 +3244,8 @@ class Diffractometer34ID(Diffractometer):
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
-            # chi = chi - self.sample_offsets[1]  # after updating the diffractometer
-            phi = phi - self.sample_offsets[1]  # [2] after updating the diffractometer
+            chi = chi - self.sample_offsets[1]
+            phi = phi - self.sample_offsets[2]
 
         else:  # manually defined custom scan
             theta = setup.custom_motors["theta"]
