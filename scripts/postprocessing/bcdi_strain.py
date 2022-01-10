@@ -958,6 +958,8 @@ def run(prm):
                     savedir=detector.savedir,
                 )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+            prm["outofplane_angle"] = setup.outofplane_angle
+            prm["inplane_angle"] = setup.inplane_angle
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,

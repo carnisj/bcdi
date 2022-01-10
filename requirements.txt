@@ -1,5 +1,5 @@
 numpy
-scipy==1.7.2
+scipy
 scikit-image<=0.18.3
 matplotlib
 hdf5plugin

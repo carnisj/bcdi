@@ -7,7 +7,7 @@ channels:
 dependencies:
   - python=3.8
   - numpy
-  - scipy=1.7.2
+  - scipy
   - scikit-image<=0.18.3
   - matplotlib
   - h5py
