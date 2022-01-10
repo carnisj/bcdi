@@ -619,6 +619,7 @@ class DataSet:
             return stack
         except AttributeError:
             print("There is no such attribute")
+            return None
 
     def make_mask_frame_xpad(self):
         """
