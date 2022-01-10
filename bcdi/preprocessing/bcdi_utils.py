@@ -1293,16 +1293,15 @@ def show_rocking_curve(
     Calculate the integrated intensity along a rocking curve and plot it.
 
     The data is expected to be stacked, the first axis corresponding to the rocking
-    angle and axes 1 and 2 to the detector plane (vertical, horizontal)
+    angle and axes 1 and 2 to the detector plane (vertical, horizontal).
+
     :param data: the stacked rocking curve data
     :param roi_center: the position of the center of the region of interest. Most often
      this will be the position of the Bragg peak.
     :param integration_roi: the region of interest where to integrate the intensity
     :param tilt_values: the angular values along the rocking curve
     :param savedir: path to the saving directory
-
-    :return:
-     - output metadata dictionnary
+    :return: a dictionary containing the output metadata
     """
     # check parameters
     valid.valid_ndarray(data, ndim=3, name="data")
