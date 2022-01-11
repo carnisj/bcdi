@@ -161,6 +161,16 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         value = np.asarray(value)
     elif key == "beamline":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
+    elif key == "bragg_peak":
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            item_types=Real,
+            min_included=0,
+            length=3,
+            allow_none=True,
+            name=key,
+        )
     elif key == "cch1":
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "cch2":
@@ -183,6 +193,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"com", "max", "max_com", "do_nothing"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "center_roi_x":
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
+    elif key == "center_roi_y":
+        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     elif key == "comment":
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startwith("_"):
@@ -192,7 +206,9 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         if not os.path.isfile(value):
             raise ValueError(f"The directory {value} does not exist")
     elif key == "correlation_threshold":
-        valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
+        valid.valid_item(
+            value, allowed_types=Real, min_included=0, max_included=1, name=key
+        )
     elif key == "custom_images":
         valid.valid_container(
             value,
@@ -222,6 +238,24 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "dirbeam_detector_angles":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=2,
+            allow_none=True,
+            name=key,
+        )
+    elif key == "direct_beam":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=2,
+            allow_none=True,
+            name=key,
+        )
     elif key == "detector":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
     elif key == "detrot":
@@ -246,15 +280,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = (0, 1)
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "fix_bragg":
-        valid.valid_container(
-            value,
-            container_types=(tuple, list),
-            length=3,
-            item_types=int,
-            allow_none=True,
-            name=key,
-        )
     elif key == "fix_size":
         valid.valid_container(
             value,
@@ -497,10 +522,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "strain_range":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
-    elif key == "threshold_avg":
-        valid.valid_item(
-            value, allowed_types=Real, min_included=0, max_included=1, name=key
-        )
     elif key == "template_imagefile":
         valid.valid_container(
             value, container_types=str, min_length=0, allow_none=True, name=key
@@ -525,10 +546,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(value, allowed_types=Real, name=key)
     elif key == "tilt_detector":
         valid.valid_item(value, allowed_types=Real, name=key)
-    elif key == "x_bragg":
-        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
-    elif key == "y_bragg":
-        valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     else:
         # this key is not in the known parameters
         is_valid = False

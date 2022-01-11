@@ -156,6 +156,113 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.grazing_angle, None)
 
 
+class TestCorrectDirectBeam(unittest.TestCase):
+    """
+    Tests related to correct_direct_beam.
+
+    def correct_direct_beam(
+            self, direct_beam: Optional[List[Real]]
+    ) -> Optional[Tuple[Real, ...]]:
+    """
+
+    def setUp(self) -> None:
+        self.setup = Setup(
+            beamline="ID01",
+            direct_beam=[12, 324],
+            dirbeam_detector_angles=[-1, 1],
+            distance=1.23,
+        )
+
+    def test_direct_beam_none(self):
+        self.setup.direct_beam = None
+        self.assertTrue(self.setup.correct_direct_beam() is None)
+
+    def test_dirbeam_detector_angles_none(self):
+        self.setup.dirbeam_detector_angles = None
+        self.assertEqual(
+            self.setup.correct_direct_beam(), tuple(self.setup.direct_beam)
+        )
+
+    def test_dirbeam_detector_angles_not_none(self):
+        self.assertTrue(
+            np.allclose(
+                self.setup.correct_direct_beam(),
+                (402.3190872641864, -66.31908726418641),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+
+class TestCorrectDetectorAngles(unittest.TestCase):
+    """
+    Tests related to correct_direct_beam.
+
+    def correct_detector_angles(self, bragg_peak_position: Tuple[Real, Real]) -> None:
+    """
+
+    def setUp(self) -> None:
+        self.setup = Setup(
+            beamline="ID01",
+            direct_beam=[12, 324],
+            dirbeam_detector_angles=[0.5, 1],
+            distance=1.23,
+            inplane_angle=12.2,
+            outofplane_angle=34.5,
+        )
+
+    def test_direct_beam_none(self):
+        self.setup.direct_beam = None
+        output = self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+        self.assertTrue(
+            np.isclose(self.setup.inplane_angle, 12.2)
+            and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
+        )
+
+    def test_dirbeam_detector_angles_none(self):
+        self.setup.dirbeam_detector_angles = None
+        output = self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+        self.assertTrue(
+            np.isclose(self.setup.inplane_angle, 12.2)
+            and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
+        )
+
+    def test_distance_undefined(self):
+        self.setup.distance = None
+        with self.assertRaises(ValueError):
+            self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+
+    def test_inplane_undefined(self):
+        self.setup.inplane_angle = None
+        with self.assertRaises(ValueError):
+            self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+
+    def test_outofplane_undefined(self):
+        self.setup.outofplane_angle = None
+        with self.assertRaises(ValueError):
+            self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+
+    def test_bragg_peak_none(self):
+        output = self.setup.correct_detector_angles(bragg_peak_position=None)
+        self.assertTrue(
+            np.isclose(self.setup.inplane_angle, 12.2)
+            and np.isclose(self.setup.outofplane_angle, 34.5)
+            and output is None
+        )
+
+    def test_correct(self):
+        self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
+        print(self.setup.inplane_angle, self.setup.outofplane_angle)
+        self.assertTrue(
+            np.isclose(self.setup.inplane_angle, 11.940419849886538)
+            and np.isclose(self.setup.outofplane_angle, 33.6080130206483)
+        )
+
+
 if __name__ == "__main__":
     run_tests(Test)
     run_tests(TestCheckSetup)
+    run_tests(TestCorrectDirectBeam)
+    run_tests(TestCorrectDetectorAngles)

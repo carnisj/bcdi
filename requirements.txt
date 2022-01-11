@@ -13,6 +13,7 @@ silx
 lmfit
 moviepy
 pillow
+tables
 pandas
 ipywidgets
 pyyaml

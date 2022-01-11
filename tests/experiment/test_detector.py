@@ -90,43 +90,46 @@ class TestCreateRoi(unittest.TestCase):
         with self.assertRaises(TypeError):
             create_roi({"roi_detector": "[1, 2, 3, 4]"})
 
-    def test_xbragg_ybragg_none(self):
+    def test_center_roi_x_center_roi_y_none(self):
         roi = [10, 200, 20, 50]
         output = create_roi({"roi_detector": roi})
         self.assertTrue(all(out == roi[idx] for idx, out in enumerate(output)))
 
-    def test_xbragg_not_none(self):
+    def test_center_roi_x_not_none(self):
         roi = [10, 200, 20, 50]
         correct = [10, 200, 130, 200]
-        output = create_roi({"roi_detector": roi, "x_bragg": 150})
+        output = create_roi({"roi_detector": roi, "center_roi_x": 150})
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
-    def test_xbragg_wrong_type_str(self):
+    def test_center_roi_x_wrong_type_str(self):
         with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "x_bragg": "150"})
+            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_x": "150"})
 
-    def test_xbragg_wrong_type_float(self):
+    def test_center_roi_x_wrong_type_float(self):
         with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "x_bragg": 1.5})
+            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_x": 1.5})
 
-    def test_ybragg_wrong_type_str(self):
+    def test_center_roi_y_wrong_type_str(self):
         with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "y_bragg": "150"})
+            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_y": "150"})
 
-    def test_ybragg_wrong_type_float(self):
+    def test_center_roi_y_wrong_type_float(self):
         with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "y_bragg": 1.5})
+            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_y": 1.5})
 
-    def test_ybragg_not_none(self):
+    def test_center_roi_y_not_none(self):
         roi = [10, 200, 20, 50]
         correct = [140, 350, 20, 50]
-        output = create_roi({"roi_detector": roi, "y_bragg": 150})
+        output = create_roi({"roi_detector": roi, "center_roi_y": 150})
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
-    def test_x_bragg_ybragg_not_none(self):
+    def test_center_roi_x_y_not_none(self):
         roi = [10, 200, 20, 50]
         correct = [140, 350, -10, 60]
-        output = create_roi({"roi_detector": roi, "y_bragg": 150, "x_bragg": 10})
+        output = create_roi(
+            {"roi_detector": roi, "center_roi_y": 150, "center_roi_x": 10}
+        )
+        print(output)
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
 

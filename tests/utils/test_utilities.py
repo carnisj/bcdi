@@ -147,7 +147,42 @@ class TestIsFloat(unittest.TestCase):
             util.is_float(np.ones(3))
 
 
+class TestGaussianWindow(unittest.TestCase):
+    """
+    Tests on the function utilities.gaussian_window.
+
+    def gaussian_window(
+        window_shape,
+        sigma=0.3,
+        mu=0.0,
+        voxel_size=None,
+        debugging=False
+    )
+    """
+
+    def test_2d(self):
+        window = util.gaussian_window(window_shape=(13, 13))
+        self.assertTrue(np.unravel_index(abs(window).argmax(), window.shape) == (6, 6))
+
+    def test_2d_pad(self):
+        data = np.zeros((32, 32))
+        data[-13:, 17:30] = util.gaussian_window(window_shape=(13, 13))
+        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (25, 23))
+
+    def test_3d(self):
+        window = util.gaussian_window(window_shape=(3, 13, 13))
+        self.assertTrue(
+            np.unravel_index(abs(window).argmax(), window.shape) == (1, 6, 6)
+        )
+
+    def test_3d_pad(self):
+        data = np.zeros((4, 32, 32))
+        data[:-1, -13:, 17:30] = util.gaussian_window(window_shape=(3, 13, 13))
+        self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (1, 25, 23))
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestIsFloat)
     run_tests(TestFindFile)
+    run_tests(TestGaussianWindow)

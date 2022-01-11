@@ -15,7 +15,10 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
+import pathlib
+from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
+from typing import no_type_check, Optional, Tuple
 import xrayutilities as xu
 
 from ..experiment import diffractometer as diff
@@ -605,52 +608,80 @@ def center_fft(
     return data, mask, pad_width, q_values, frames_logical
 
 
-def find_bragg(data, peak_method):
+@no_type_check  # https://github.com/python/mypy/issues/6697
+def find_bragg(
+    data: np.ndarray,
+    peak_method: str,
+    roi: Optional[Tuple[int, int, int, int]] = None,
+    binning: Optional[Tuple[int, ...]] = None,
+) -> Tuple[int, ...]:
     """
     Find the Bragg peak position in data based on the centering method.
+
+    It compensates for a ROI in the detector and an eventual binning.
 
     :param data: 2D or 3D array. If complex, Bragg peak position is calculated for
      abs(array)
     :param peak_method: 'max', 'com' or 'maxcom'. For 'maxcom', it uses method 'max'
      for the first axis and 'com' for the other axes.
-    :return: the centered data
+    :param roi: tuple of integers of length 4, region of interest used to generate data
+     from the full sized detector.
+    :param binning: tuple of integers of length data.ndim, binning applied to the data
+     in each dimension.
+    :return: the Bragg peak position in the unbinned, full size detector as a tuple of
+     data.ndim elements
     """
+    # check parameters
     valid.valid_ndarray(arrays=data, ndim=(2, 3))
-    if all((peak_method != val for val in {"max", "com", "maxcom"})):
-        raise ValueError('Incorrect value for "centering_method" parameter')
+    valid.valid_container(
+        roi,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=4,
+        allow_none=True,
+        name="roi",
+    )
+    valid.valid_container(
+        binning,
+        container_types=(tuple, list, np.ndarray),
+        item_types=int,
+        length=data.ndim,
+        allow_none=True,
+        name="binning",
+    )
+    if peak_method not in {"max", "com", "maxcom"}:
+        raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
 
-    if data.ndim == 2:
-        z0 = 0
-        if peak_method == "max":
-            y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print(f"Max at (y, x): ({y0}, {x0})  Max = {int(data[y0, x0])}")
-        else:  # 'com'
-            y0, x0 = center_of_mass(data)
-            print(
-                f"Center of mass at (y, x): ({y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(y0), int(x0)])}"
-            )
-    else:  # 3D
-        if peak_method == "max":
-            z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            print(
-                f"Max at (z, y, x): ({z0}, {y0}, {x0})  Max = {int(data[z0, y0, x0])}"
-            )
-        elif peak_method == "com":
-            z0, y0, x0 = center_of_mass(data)
-            print(
-                f"Center of mass at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(z0), int(y0), int(x0)])}"
-            )
-        else:  # 'maxcom'
-            z0, _, _ = np.unravel_index(abs(data).argmax(), data.shape)
-            y0, x0 = center_of_mass(data[z0, :, :])
-            print(
-                f"MaxCom at (z, y, x): ({z0:.1f}, {y0:.1f}, {x0:.1f})  "
-                f"COM = {int(data[int(z0), int(y0), int(x0)])}"
-            )
+    print(f"\nFinding Bragg peak position: input data shape {data.shape}")
+    print(f"Binning: {binning}")
+    print(f"Roi: {roi}")
+    if peak_method == "max":
+        position = np.unravel_index(abs(data).argmax(), data.shape)
+        print(f"Max at: {position}, Max = {int(data[position])}")
+    elif peak_method == "com":
+        position = center_of_mass(data)
+        position = tuple(map(lambda x: int(np.rint(x)), position))
+        print(f"Center of mass at: {position}, COM = {int(data[position])}")
+    else:  # 'maxcom'
+        valid.valid_ndarray(arrays=data, ndim=3)
+        position = list(np.unravel_index(abs(data).argmax(), data.shape))
+        position[1:] = center_of_mass(data[position[0], :, :])
+        position = tuple(map(lambda x: int(np.rint(x)), position))
+        print(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
 
-    return z0, y0, x0
+    # unbin
+    if binning is not None:
+        position = [a * b for a, b in zip(position, binning)]
+
+    # add the offset due to the region of interest
+    # the roi is defined as [y_start, y_stop, x_start, x_stop]
+    if roi is not None:
+        position = list(position)
+        position[-1] = position[-1] + roi[2]
+        position[-2] = position[-2] + roi[0]
+
+    print(f"Bragg peak (full unbinned roi) at: {position}")
+    return tuple(position)
 
 
 def grid_bcdi_labframe(
@@ -1249,6 +1280,135 @@ def reload_bcdi_data(
         mask[np.nonzero(mask)] = 1
 
     return data, mask, frames_logical, monitor
+
+
+def show_rocking_curve(
+    data,
+    roi_center,
+    integration_roi=None,
+    tilt_values=None,
+    savedir=None,
+):
+    """
+    Calculate the integrated intensity along a rocking curve and plot it.
+
+    The data is expected to be stacked, the first axis corresponding to the rocking
+    angle and axes 1 and 2 to the detector plane (vertical, horizontal).
+
+    :param data: the stacked rocking curve data
+    :param roi_center: the position of the center of the region of interest. Most often
+     this will be the position of the Bragg peak.
+    :param integration_roi: the region of interest where to integrate the intensity
+    :param tilt_values: the angular values along the rocking curve
+    :param savedir: path to the saving directory
+    :return: a dictionary containing the output metadata
+    """
+    # check parameters
+    valid.valid_ndarray(data, ndim=3, name="data")
+    nb_frames = data.shape[0]
+    valid.valid_container(
+        roi_center,
+        container_types=(tuple, list, np.ndarray),
+        length=3,
+        item_types=Real,
+        name="roi_center",
+    )
+    valid.valid_container(
+        integration_roi,
+        container_types=(tuple, list, np.ndarray),
+        length=2,
+        item_types=int,
+        allow_none=True,
+        name="integration_roi",
+    )
+    if integration_roi is None:
+        integration_roi = (data.shape[1], data.shape[2])
+    elif integration_roi[0] > data.shape[1] or integration_roi[1] > data.shape[2]:
+        print(
+            "integration_roi larger than the frame size, using the full frame" "instead"
+        )
+        integration_roi = (data.shape[1], data.shape[2])
+
+    valid.valid_container(
+        tilt_values,
+        container_types=(tuple, list, np.ndarray),
+        length=nb_frames,
+        item_types=Real,
+        allow_none=True,
+        name="tilt_values",
+    )
+    if tilt_values is None:
+        tilt_values = np.arange(nb_frames)
+        x_label = "Frame number"
+    else:
+        x_label = "Rocking angle (deg)"
+
+    valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
+    if savedir is not None:
+        pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+
+    rocking_curve = data[
+        :,
+        np.clip(roi_center[1] - integration_roi[0] // 2, 0, data.shape[1]) : np.clip(
+            roi_center[1] + integration_roi[0] // 2, 0, data.shape[1]
+        ),
+        np.clip(roi_center[2] - integration_roi[1] // 2, 0, data.shape[2]) : np.clip(
+            roi_center[2] + integration_roi[1] // 2, 0, data.shape[2]
+        ),
+    ].sum(axis=(1, 2))
+
+    interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
+    interp_points = 5 * nb_frames
+    interp_tilt = np.linspace(tilt_values.min(), tilt_values.max(), interp_points)
+    interp_curve = interpolation(interp_tilt)
+    interp_fwhm = (
+        len(np.argwhere(interp_curve >= interp_curve.max() / 2))
+        * (tilt_values.max() - tilt_values.min())
+        / (interp_points - 1)
+    )
+    print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
+
+    plt.ion()
+    fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
+    ax0.plot(tilt_values, rocking_curve, ".")
+    ax0.plot(interp_tilt, interp_curve)
+    ax0.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
+    ax0.set_ylabel("Integrated intensity")
+    ax0.legend(("data", "interpolation"))
+    ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
+    ax1.plot(tilt_values, np.log10(rocking_curve), ".")
+    ax1.plot(interp_tilt, np.log10(interp_curve))
+    ax1.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel("Log(integrated intensity)")
+    ax0.legend(("data", "interpolation"))
+    plt.pause(0.1)
+    fig.savefig(savedir + "rocking_curve.png")
+    plt.close(fig)
+
+    fig, _ = plt.subplots(1, 1, figsize=(10, 5))
+    plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
+    plt.scatter(
+        roi_center[2], roi_center[1], color="r", marker="1", alpha=0.7, linewidth=1
+    )
+    plt.title(f"Slice at frame {roi_center[0]}")
+    plt.colorbar()
+    plt.pause(0.1)
+    fig.savefig(savedir + "central_slice.png")
+    plt.close(fig)
+    plt.ioff()
+
+    metadata = {
+        "tilt_values": tilt_values,
+        "rocking_curve": rocking_curve,
+        "interp_tilt_values": interp_tilt,
+        "interp_rocking_curve": interp_curve,
+        "interp_fwhm": interp_fwhm,
+        "COM_rocking_curve": tilt_values[roi_center[0]],
+        "detector_data_COM": data[roi_center[0], :, :],
+    }
+
+    return metadata
 
 
 def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):

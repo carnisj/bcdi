@@ -18,7 +18,7 @@ import numpy as np
 import pathlib
 import pandas as pd
 from pandas import DataFrame
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
 import vtk
 
 from bcdi.utils import validation as valid
@@ -366,7 +366,7 @@ class Facets:
         inv_tensor1 = np.linalg.inv(tensor1)
         self.rotation_matrix = np.dot(np.transpose(tensor0), np.transpose(inv_tensor1))
 
-    def rotate_particle(self) -> None:
+    def rotate_particle(self):
         """
         Rotate the nanocrystal.
 
@@ -402,6 +402,7 @@ class Facets:
                 ["{:.2f}".format(e) for e in v]
             )
 
+    @no_type_check
     def fixed_reference(
         self,
         hkl_reference: Tuple[float, float, float] = (1, 1, 1),
@@ -529,14 +530,13 @@ class Facets:
 
             ax.set_xticks(major_ticks)
             ax.set_xticks(minor_ticks, minor=True)
-            # ax.set_yticks(major_ticks)
-            # ax.set_yticks(minor_ticks, minor=True)
 
             # Or if you want different settings for the grids:
             ax.grid(which="minor", alpha=0.2)
             ax.grid(which="major", alpha=0.5)
             plt.show()
 
+    @no_type_check
     def test_vector(self, vec: np.ndarray) -> None:
         """
         Computes value of a vector passed through the rotation matrix.
@@ -667,7 +667,6 @@ class Facets:
                 pass  # we are on the corners and edges
             except Exception as e:
                 raise e
-                # pass
 
         if not output:
             return None
@@ -843,6 +842,7 @@ class Facets:
         plt.tight_layout()
         plt.show()
 
+    @no_type_check
     def plot_strain(
         self,
         figsize: Tuple[float, float] = (12, 10),
@@ -953,6 +953,7 @@ class Facets:
             plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
+    @no_type_check
     def plot_displacement(
         self,
         figsize: Tuple[float, float] = (12, 10),

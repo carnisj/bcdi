@@ -131,7 +131,7 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "scikit-image",
+        "scikit-image<=0.18.3",
         "matplotlib",
         "hdf5plugin",
         "h5py",

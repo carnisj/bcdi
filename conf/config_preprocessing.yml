@@ -1,14 +1,14 @@
-scans: 622  # scan number or list of scan numbers
-root_folder: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/"
+scans: 76  # scan number or list of scan numbers
+root_folder: "C:/Users/Jerome/Documents/data/dataset_P10/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/dataset_34ID/IzrO/test/"
+save_dir: "C:/Users/Jerome/Documents/data/dataset_P10/test/"
 # images will be saved here, leave it to None otherwise
 data_dir: None  # leave None to use the beamline default,
 # '' empty string when there is no subfolder
 # (data directly in the scan folder), or a non-empty string for the subfolder name
 # (default to scan_folder/pynx/ or scan_folder/pynxraw/
 # depending on the setting of use_rawdata)
-sample_name: "S"  # str or list of str of sample names
+sample_name: "B15_syn_S1_2"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 comment: ""  # string, should start with "_"
@@ -16,17 +16,14 @@ debug: False  # set to True to see plots
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact: True  # True to interact with plots, False to close it automatically
+flag_interact: False  # True to interact with plots, False to close it automatically
 background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 # For visual comfort during masking
 #########################################################
 # parameters related to data cropping/padding/centering #
 #########################################################
 centering_method: "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
-#  It will be overridden by 'fix_bragg' if not empty
-fix_bragg: None  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
-# considering the full detector
-# It is useful if hotpixels or intense aliens. Leave None otherwise.
+#  It will be overridden by 'bragg_peak' if not empty
 fix_size: None  # crop the array to predefined size considering the full detector,
 # leave None otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
 # ROI will be defaulted to []
@@ -67,7 +64,7 @@ save_as_int: False
 ######################################
 # define beamline related parameters #
 ######################################
-beamline: "34ID"
+beamline: "P10"
 # name of the beamline, used for data loading and normalization by monitor
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
 # 'NANOMAX', '34ID'
@@ -76,9 +73,9 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series: True  # specific to series measurement at P10
-rocking_angle: "inplane"  # "outofplane" for a sample rotation around x outboard,
+rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
-specfile_name: "Dmitry1120c.spec"
+specfile_name: None
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS: full path of the alias dictionnary or None to use the one in the
@@ -99,23 +96,23 @@ custom_monitor: None
 ###############################
 # detector related parameters #
 ###############################
-detector: "Timepix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-phasing_binning: [1, 1, 1]  # binning to apply to the data
+detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
 # polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
 # the detector at high intensities. Leave None otherwise.
-x_bragg: None  # horizontal pixel number of the Bragg peak,
-# can be used for the definition of the ROI
-y_bragg: None  # vertical pixel number of the Bragg peak,
-# can be used for the definition of the ROI
-roi_detector: None
-# [Vstart, Vstop, Hstart, Hstop]. If "x_bragg" or "y_bragg" are not None, it will
-# consider that the current values in roi_detector define a window around the Bragg
-# peak position and the final output will be
-# [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
-# x_bragg - roi_detector[2], x_bragg + roi_detector[3]].
+center_roi_x: 1577  # horizontal pixel number of the center of the ROI for data
+# loading, leave None to use the full detector
+center_roi_y: 833  # vertical pixel number of the center of the ROI for data
+# loading, leave None to use the full detector
+roi_detector: [200, 200, 250, 250]
+# [Vstart, Vstop, Hstart, Hstop]. If "center_roi_x" or "center_roi_y" are not None,
+# it will consider that the current values in roi_detector define a window around the
+# pixel [center_roi_y, center_roi_x] and the final output will be
+# [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+# center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
 normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
@@ -125,7 +122,7 @@ photon_filter: "loading"  # 'loading' or 'postprocessing',
 # when the photon threshold should be applied
 # if 'loading', it is applied before binning; if 'postprocessing',
 # it is applied at the end of the script before saving
-bin_during_loading: False  # True to bin during loading, faster
+bin_during_loading: True  # True to bin during loading, faster
 frames_pattern: None
 # list of int, of length data.shape[0]. If frames_pattern is 0 at index,
 # the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
@@ -133,7 +130,7 @@ frames_pattern: None
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
-template_imagefile: "Dmitry1120c_S0622_%05d.tif"
+template_imagefile: '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
@@ -158,8 +155,8 @@ sample_offsets: None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-sdd: 0.50678  # in m, sample to detector distance in m
-energy: 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+sdd: 1.84 # in m, sample to detector distance in m
+energy: None  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors: None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -180,10 +177,20 @@ align_q: True  # used only when interp_method is 'linearization',
 # if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q: "y"  # q will be aligned along that axis
-outofplane_angle: 42.6093
+bragg_peak: [73, 839, 1589]  # list of three integers, position of the Bragg peak on the unbinned
+# and full-sized detector. It will be used to calculate the real detector angles for the
+# and full-sized detector. It will be used to calculate the real detector angles for the
+# measured Bragg peak. Leave None to determine the Bragg peak position automatically.
+direct_beam: [1055, 1339.5]  # [vertical, horizontal]
+# direct beam position on the unbinned, full detector measured
+# with detector angles given by dirbeam_detector_angles. It will be used to calculate
+# the real detector angles for the measured Bragg peak. Leave None for no correction.
+dirbeam_detector_angles: [0, 0]  # [outofplane, inplane] detector angles in degrees
+# for the direct beam measurement. Leave None for no correction.
+outofplane_angle: None # 42.6093
 # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle: -0.5783
+inplane_angle: None # -0.5783
 # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################

@@ -15,6 +15,7 @@ try:
 except ModuleNotFoundError:
     pass
 import gc
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -35,7 +36,8 @@ import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 import bcdi.utils.utilities as util
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
+CONFIG_FILE = "C:/Users/Jerome/Documents/data/share/config_preprocessing.yml"
+# "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
@@ -97,10 +99,7 @@ Usage:
 
     :param centering_method: e.g. "max"
      Bragg peak determination: 'max' or 'com', 'max' is better usually. It will be
-     overridden by 'fix_bragg' if not empty
-    :param fix_bragg: e.g. [121, 321, 256]
-     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the full detector.
-     It is useful if hotpixels or intense aliens. Leave None otherwise.
+     overridden by 'bragg_peak' if not empty
     :param fix_size: e.g. [0, 256, 10, 240, 50, 350]
      crop the array to that predefined size considering the full detector.
      [zstart, zstop, ystart, ystop, xstart, xstop], ROI will be defaulted to [] if
@@ -195,19 +194,20 @@ Usage:
      coefficients of the 4th order polynomial ax^4 + bx^3 + cx^2 + dx + e which it used
      to correct the non-linearity of the detector at high intensities. Leave None
      otherwise.
-    :param x_bragg: e.g. 1577
-     horizontal pixel number of the Bragg peak, used for the definition of roi_detector
-     (see below). Leave None otherwise.
-    :param y_bragg: e.g. 833
-     vertical pixel number of the Bragg peak, used for the definition of roi_detector
-     (see below). Leave None otherwise.
+    :param center_roi_x: e.g. 1577
+     horizontal pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param center_roi_y: e.g. 833
+     vertical pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
     :param roi_detector: e.g.[0, 250, 10, 210]
-     region of interest of the detector to load. If "x_bragg" or "y_bragg" are not None,
-     it will consider that the current values in roi_detector define a window around the
-     Bragg peak position and the final output will be:
-     [y_bragg - roi_detector[0], y_bragg + roi_detector[1],
-     x_bragg - roi_detector[2], x_bragg + roi_detector[3]]. Leave None to use the full
-     detector. Use with center_fft='skip' if you want this exact size for the output.
+     region of interest of the detector to load. If "center_roi_x" or "center_roi_y" are
+     not None, it will consider that the current values in roi_detector define a window
+     around the pixel [center_roi_y, center_roi_x] and the final output will be
+     [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+     center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+     Leave None to use the full detector. Use with center_fft='skip' if you want this
+     exact size for the output.
     :param normalize_flux: e.g. "monitor"
      'monitor' to normalize the intensity by the default monitor values,
      'skip' to do nothing
@@ -271,6 +271,19 @@ Usage:
      if True it rotates the crystal to align q, along one axis of the array. It is used
      only when interp_method is 'linearization'
     :param ref_axis_q: e.g. "y"  # q will be aligned along that axis
+    :param direct_beam: e.g. [125, 362]
+     [vertical, horizontal], direct beam position on the unbinned, full detector
+     measured with detector angles given by `dirbeam_detector_angles`. It will be used
+     to calculate the real detector angles for the measured Bragg peak. Leave None for
+     no correction.
+    :param dirbeam_detector_angles: e.g. [1, 25]
+     [outofplane, inplane] detector angles in degrees for the direct beam measurement.
+     Leave None for no correction
+    :param bragg_peak: e.g. [121, 321, 256]
+     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the unbinned full
+     detector. If 'outofplane_angle' and 'inplane_angle' are None and the direct beam
+     position is provided, it will be used to calculate the correct detector angles.
+     It is useful if there are hotpixels or intense aliens. Leave None otherwise.
     :param outofplane_angle: e.g. 42.6093
      detector angle in deg (rotation around x outboard, typically delta), corrected for
      the direct beam position. Leave None to use the uncorrected position.
@@ -467,27 +480,42 @@ def run(prm):
     ################################
     # assign often used parameters #
     ################################
-    scans = prm["scans"]
-    fix_size = prm["fix_size"]
-    sample_name = prm["sample_name"]
-    debug = prm["debug"]
-    user_comment = prm["comment"]
-    root_folder = prm["root_folder"]
-    align_q = prm["align_q"]
-    ref_axis_q = prm["ref_axis_q"]
-    phasing_binning = prm["phasing_binning"]
-    preprocessing_binning = prm["preprocessing_binning"]
-    interpolation_method = prm["interpolation_method"]
-    save_dir = prm["save_dir"]
-    flag_interact = prm["flag_interact"]
-    center_fft = prm["center_fft"]
-    median_filter = prm["median_filter"]
-    rocking_angle = prm["rocking_angle"]
-    photon_threshold = prm["photon_threshold"]
-    reload_orthogonal = prm["reload_orthogonal"]
+    background_plot = prm.get("background_plot", 0.5)
+    bragg_peak = prm.get("bragg_peak")
+    fix_size = prm.get("fix_size")
+    debug = prm.get("debug", False)
+    user_comment = prm.get("comment", "")
+    align_q = prm.get("align_q", True)
+    ref_axis_q = prm.get("ref_axis_q", "y")
+    preprocessing_binning = prm.get("preprocessing_binning", (1, 1, 1))
+    interpolation_method = prm.get("interpolation_method", "linearization")
+    save_dir = prm.get("save_dir", None)
+    flag_interact = prm.get("flag_interact", True)
+    center_fft = prm.get("center_fft", "skip")
+    median_filter = prm.get("median_filter", "skip")
+    photon_threshold = prm.get("photon_threshold", 0)
+    reload_orthogonal = prm.get("reload_orthogonal", False)
     roi_detector = create_roi(dic=prm)
-    use_rawdata = prm["use_rawdata"]
-    normalize_flux = prm["normalize_flux"]
+    normalize_flux = prm.get("normalize_flux", False)
+    sample_inplane = prm.get("sample_inplane", [1, 0, 0])
+    sample_outofplane = prm.get("sample_outofplane", [0, 0, 1])
+    save_to_mat = prm.get("save_to_mat", False)
+    save_to_npz = prm.get("save_to_npz", True)
+
+    # parameters below must be provided
+    try:
+        beamline_name = prm["beamline"]
+        detector_name = prm["detector"]
+        phasing_binning = prm["phasing_binning"]
+        rocking_angle = prm["rocking_angle"]
+        root_folder = prm["root_folder"]
+        sample_name = prm["sample_name"]
+        scans = prm["scans"]
+        use_rawdata = prm["use_rawdata"]
+
+    except KeyError as ex:
+        print("Required parameter not defined")
+        raise ex
     #########################
     # check some parameters #
     #########################
@@ -506,13 +534,15 @@ def run(prm):
         print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
         center_fft = "skip"
 
-    if prm["photon_filter"] == "loading":
+    if prm.get("photon_filter", "loading") == "loading":
         loading_threshold = photon_threshold
     else:
         loading_threshold = 0
 
-    if prm["reload_previous"]:
+    if prm.get("reload_previous"):
         user_comment += "_reloaded"
+        root = tk.Tk()
+        root.withdraw()
     else:
         preprocessing_binning = (1, 1, 1)
         reload_orthogonal = False
@@ -583,36 +613,38 @@ def run(prm):
     # Initialize detector #
     #######################
     detector = create_detector(
-        name=prm["detector"],
-        template_imagefile=prm["template_imagefile"],
+        name=detector_name,
+        template_imagefile=prm.get("template_imagefile"),
         roi=roi_detector,
         binning=phasing_binning,
         preprocessing_binning=preprocessing_binning,
-        linearity_func=prm["linearity_func"],
+        linearity_func=prm.get("linearity_func"),
     )
 
     ####################
     # Initialize setup #
     ####################
     setup = Setup(
-        beamline=prm["beamline"],
+        beamline=beamline_name,
         detector=detector,
         energy=prm.get("energy"),
         rocking_angle=rocking_angle,
         distance=prm.get("sdd"),
-        beam_direction=prm["beam_direction"],
-        sample_inplane=prm["sample_inplane"],
-        sample_outofplane=prm["sample_outofplane"],
-        offset_inplane=prm["offset_inplane"],
-        custom_scan=prm["custom_scan"],
-        custom_images=prm["custom_images"],
-        sample_offsets=prm["sample_offsets"],
-        custom_monitor=prm["custom_monitor"],
-        custom_motors=prm["custom_motors"],
-        actuators=prm["actuators"],
-        is_series=prm["is_series"],
+        beam_direction=prm.get("beam_direction", [1, 0, 0]),
+        sample_inplane=sample_inplane,
+        sample_outofplane=sample_outofplane,
+        offset_inplane=prm.get("offset_inplane", 0),
+        custom_scan=prm.get("custom_scan", False),
+        custom_images=prm.get("custom_images"),
+        sample_offsets=prm.get("sample_offsets"),
+        custom_monitor=prm.get("custom_monitor"),
+        custom_motors=prm.get("custom_motors"),
+        actuators=prm.get("actuators"),
+        is_series=prm.get("is_series", False),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
+        dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
+        direct_beam=prm.get("direct_beam"),
     )
 
     ########################################
@@ -636,9 +668,6 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    root = tk.Tk()
-    root.withdraw()
-
     for scan_idx, scan_nb in enumerate(scans, start=1):
         plt.ion()
 
@@ -650,17 +679,21 @@ def run(prm):
         setup.init_paths(
             sample_name=sample_name[scan_idx - 1],
             scan_number=scan_nb,
-            data_dir=prm["data_dir"],
+            data_dir=prm.get("data_dir"),
             root_folder=root_folder,
             save_dir=save_dir,
             save_dirname=save_dirname,
-            specfile_name=prm["specfile_name"],
-            template_imagefile=prm["template_imagefile"],
+            specfile_name=prm.get("specfile_name"),
+            template_imagefile=prm.get("template_imagefile"),
         )
 
         logfile = setup.create_logfile(
             scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile
         )
+
+        # load the goniometer positions needed for the calculation of the corrected
+        # detector angles
+        setup.read_logfile(scan_number=scan_nb)
 
         if not use_rawdata:
             comment += "_ortho"
@@ -677,7 +710,7 @@ def run(prm):
         #############
         # Load data #
         #############
-        if prm["reload_previous"]:  # resume previous masking
+        if prm.get("reload_previous", False):  # resume previous masking
             print("Resuming previous masking")
             file_path = filedialog.askopenfilename(
                 initialdir=detector.scandir,
@@ -776,16 +809,16 @@ def run(prm):
 
         else:  # new masking process
             reload_orthogonal = False  # the data is in the detector plane
-            flatfield = util.load_flatfield(prm["flatfield_file"])
-            hotpix_array = util.load_hotpixels(prm["hotpixels_file"])
-            background = util.load_background(prm["background_file"])
+            flatfield = util.load_flatfield(prm.get("flatfield_file"))
+            hotpix_array = util.load_hotpixels(prm.get("hotpixels_file"))
+            background = util.load_background(prm.get("background_file"))
 
             data, mask, frames_logical, monitor = bu.load_bcdi_data(
                 scan_number=scan_nb,
                 detector=detector,
                 setup=setup,
-                frames_pattern=prm["frames_pattern"],
-                bin_during_loading=prm["bin_during_loading"],
+                frames_pattern=prm.get("frames_pattern"),
+                bin_during_loading=prm.get("bin_during_loading", False),
                 flatfield=flatfield,
                 hotpixels=hotpix_array,
                 background=background,
@@ -803,13 +836,60 @@ def run(prm):
             f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
         )
 
+        ##############################################################
+        # correct detector angles and save values for postprocessing #
+        ##############################################################
+        if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+            # corrected detector angles not provided
+            if bragg_peak is None:
+                # Bragg peak position not provided, find it from the data
+                bragg_peak = bu.find_bragg(
+                    data=data,
+                    peak_method="maxcom",
+                    roi=detector.roi,
+                    binning=detector.binning,
+                )
+            roi_center = (
+                bragg_peak[0],
+                (bragg_peak[1] - detector.roi[0]) // detector.binning[1],
+                (bragg_peak[2] - detector.roi[2]) // detector.binning[2],
+            )
+
+            metadata = bu.show_rocking_curve(
+                data,
+                roi_center=roi_center,
+                tilt_values=setup.incident_angles,
+                savedir=detector.savedir,
+            )
+            setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+            prm["outofplane_angle"] = setup.outofplane_angle
+            prm["inplane_angle"] = setup.inplane_angle
+
+        ####################################
+        # wavevector transfer calculations #
+        ####################################
+        kin = (
+            2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
+        )  # in lab frame z downstream, y vertical, x outboard
+        kout = (
+            setup.exit_wavevector
+        )  # in lab.frame z downstream, y vertical, x outboard
+        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
+        qnorm = np.linalg.norm(q)
+        dist_plane = 2 * np.pi / qnorm
+        print(f"\nWavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
+        print(f"Interplanar distance: {dist_plane:.6f} angstroms")
+
+        ##############################################################
+        # optional interpolation of the data onto an orthogonal grid #
+        ##############################################################
         if not reload_orthogonal:
-            if prm["save_rawdata"]:
+            if prm.get("save_rawdata", False):
                 np.savez_compressed(
                     detector.savedir + f"S{scan_nb}" + "_data_before_masking_stack",
                     data=data,
                 )
-                if prm["save_to_mat"]:
+                if prm.get("save_to_mat", False):
                     # save to .mat, the new order is x y z
                     # (outboard, vertical up, downstream)
                     savemat(
@@ -853,8 +933,8 @@ def run(prm):
                     qconv, offsets = setup.init_qconversion()
                     detector.offsets = offsets
                     hxrd = xu.experiment.HXRD(
-                        prm["sample_inplane"],
-                        prm["sample_outofplane"],
+                        sample_inplane,
+                        sample_outofplane,
                         en=setup.energy,
                         qconv=qconv,
                     )
@@ -924,7 +1004,7 @@ def run(prm):
                         align_q=align_q,
                         reference_axis=axis_to_array_xyz[ref_axis_q],
                         debugging=debug,
-                        fill_value=(0, prm["fill_value_mask"]),
+                        fill_value=(0, prm.get("fill_value_mask", 0)),
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -988,10 +1068,10 @@ def run(prm):
             mask=mask,
             detector=detector,
             frames_logical=frames_logical,
-            centering=prm["centering_method"],
+            centering=prm.get("centering_method", "max"),
             fft_option=center_fft,
-            pad_size=prm["pad_size"],
-            fix_bragg=prm["fix_bragg"],
+            pad_size=prm.get("pad_size"),
+            fix_bragg=prm.get("bragg_peak"),
             fix_size=fix_size,
             q_values=q_values,
         )
@@ -1008,7 +1088,7 @@ def run(prm):
         ##########################################
         # optional masking of zero photon events #
         ##########################################
-        if prm["mask_zero_event"]:
+        if prm.get("mask_zero_event", False):
             # mask points when there is no intensity along the whole rocking curve
             # probably dead pixels
             temp_mask = np.zeros((ny, nx))
@@ -1103,7 +1183,7 @@ def run(prm):
             qz = q_values[1]
             qy = q_values[2]
 
-            if prm["save_to_vti"]:
+            if prm.get("save_to_vti", False):
                 # save diffraction pattern to vti
                 (
                     nqx,
@@ -1182,7 +1262,7 @@ def run(prm):
             fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
-            fig_mask.set_facecolor(prm["background_plot"])
+            fig_mask.set_facecolor(background_plot)
             plt.show()
             del fig_mask, original_data, original_mask
             gc.collect()
@@ -1281,7 +1361,7 @@ def run(prm):
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
             plt.connect("button_press_event", on_click)
-            fig_mask.set_facecolor(prm["background_plot"])
+            fig_mask.set_facecolor(background_plot)
             plt.show()
 
             mask[np.nonzero(updated_mask)] = 1
@@ -1293,9 +1373,18 @@ def run(prm):
         mask[np.nonzero(mask)] = 1
         data[mask == 1] = 0
 
-        #############################################
-        # mask or median filter isolated empty pixels
-        #############################################
+        ########################################################
+        # save the projected mask as hotpixels for later reuse #
+        ########################################################
+        hotpixels = mask.sum(axis=0)
+        hotpixels[np.nonzero(hotpixels)] = 1
+        np.savez_compressed(
+            detector.savedir + f"S{scan_nb}_hotpixels", hotpixels=hotpixels.astype(int)
+        )
+
+        ###############################################
+        # mask or median filter isolated empty pixels #
+        ###############################################
         if median_filter in {"mask_isolated", "interp_isolated"}:
             print("\nFiltering isolated pixels")
             nb_pix = 0
@@ -1304,7 +1393,7 @@ def run(prm):
             ):  # filter only frames whith data (not padded)
                 data[idx, :, :], processed_pix, mask[idx, :, :] = util.mean_filter(
                     data=data[idx, :, :],
-                    nb_neighbours=prm["median_filter_order"],
+                    nb_neighbours=prm.get("median_filter_order", 7),
                     mask=mask[idx, :, :],
                     interpolate=median_filter,
                     min_count=3,
@@ -1443,21 +1532,21 @@ def run(prm):
         # save final data and mask #
         ############################
         print("\nSaving directory:", detector.savedir)
-        if prm["save_as_int"]:
+        if prm.get("save_as_int", False):
             data = data.astype(int)
         print("Data type before saving:", data.dtype)
         mask[np.nonzero(mask)] = 1
         mask = mask.astype(int)
         print("Mask type before saving:", mask.dtype)
         if not use_rawdata and len(q_values) != 0:
-            if prm["save_to_npz"]:
+            if save_to_npz:
                 np.savez_compressed(
                     detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
                     qx=qx,
                     qz=qz,
                     qy=qy,
                 )
-            if prm["save_to_mat"]:
+            if save_to_mat:
                 savemat(detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
                 savemat(detector.savedir + f"S{scan_nb}_qz.mat", {"qz": qz})
                 savemat(detector.savedir + f"S{scan_nb}_qy.mat", {"qy": qy})
@@ -1481,7 +1570,7 @@ def run(prm):
             )
             plt.close(fig)
 
-        if prm["save_to_npz"]:
+        if save_to_npz:
             np.savez_compressed(
                 detector.savedir + f"S{scan_nb}_pynx" + comment, data=data
             )
@@ -1489,7 +1578,7 @@ def run(prm):
                 detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
             )
 
-        if prm["save_to_mat"]:
+        if save_to_mat:
             # save to .mat, the new order is x y z (outboard, vertical up, downstream)
             savemat(
                 detector.savedir + f"S{scan_nb}_data.mat",
@@ -1499,6 +1588,34 @@ def run(prm):
                 detector.savedir + f"S{scan_nb}_mask.mat",
                 {"data": np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])},
             )
+
+        # save results in hdf5 file
+        with h5py.File(
+            f"{detector.savedir}S{scan_nb}_preprocessing{comment}.h5", "w"
+        ) as hf:
+            out = hf.create_group("output")
+            par = hf.create_group("params")
+            out.create_dataset("data", data=data)
+            out.create_dataset("mask", data=mask)
+
+            out.create_dataset("tilt_values", data=metadata["tilt_values"])
+            out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
+            out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
+            out.create_dataset("interp_curve", data=metadata["interp_rocking_curve"])
+
+            out.create_dataset("COM_rocking_curve", data=metadata["COM_rocking_curve"])
+            out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
+            out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
+            out.create_dataset("bragg_peak", data=bragg_peak)
+            out.create_dataset("q", data=q)
+            out.create_dataset("qnorm", data=qnorm)
+            out.create_dataset("dist_plane", data=dist_plane)
+            out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
+            out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
+
+            par.create_dataset("detector", data=str(detector.params))
+            par.create_dataset("setup", data=str(setup.params))
+            par.create_dataset("parameters", data=str(prm))
 
         ############################
         # plot final data and mask #

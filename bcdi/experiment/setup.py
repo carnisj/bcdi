@@ -49,8 +49,10 @@ class Setup:
      rocking angle. Leave None if there is no such circle.
     :param kwargs:
 
-     - 'direct_beam': tuple of two real numbers indicating the position of the direct
-       beam in pixels at zero detector angles.
+     - 'direct_beam': [vertical, horizontal] list of two real numbers indicating the
+       position of the direct beam in pixels in the unbinned, full detector
+     - 'dirbeam_detector_angles': [outofplane, inplane] detector angles in degrees
+       for the direct beam measurement.
      - 'filtered_data': boolean, True if the data and the mask to be loaded were
        already preprocessed.
      - 'custom_scan': boolean, True is the scan does not follow the beamline's usual
@@ -109,6 +111,7 @@ class Setup:
             kwargs=kwargs,
             allowed_kwargs={
                 "direct_beam",
+                "dirbeam_detector_angles",
                 "filtered_data",
                 "custom_scan",
                 "custom_images",
@@ -124,10 +127,9 @@ class Setup:
             name="Setup.__init__",
         )
 
-        # kwargs for preprocessing forward CDI data
-        self.direct_beam = kwargs.get("direct_beam")
         # kwargs for loading and preprocessing data
-        sample_offsets = kwargs.get("sample_offsets")  # sequence
+        self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
+        self.direct_beam = kwargs.get("direct_beam")
         self.filtered_data = kwargs.get("filtered_data", False)  # boolean
         self.custom_scan = kwargs.get("custom_scan", False)  # boolean
         self.custom_images = kwargs.get("custom_images")  # list or tuple
@@ -145,7 +147,7 @@ class Setup:
         # create the Diffractometer instance
         self._diffractometer = create_diffractometer(
             beamline=self.beamline,
-            sample_offsets=sample_offsets,
+            sample_offsets=kwargs.get("sample_offsets"),
         )
         self.detector = detector or create_detector("Dummy")
         self.beam_direction = beam_direction
@@ -159,6 +161,7 @@ class Setup:
 
         # initialize other attributes
         self.logfile = None
+        self.incident_angles = None
 
     @property
     def actuators(self):
@@ -358,12 +361,33 @@ class Setup:
         return self._diffractometer
 
     @property
+    def dirbeam_detector_angles(self):
+        """
+        Detector angles in degrees for the measurement of the direct beam.
+
+        [outofplane, inplane]
+        """
+        return self._dirbeam_detector_angles
+
+    @dirbeam_detector_angles.setter
+    def dirbeam_detector_angles(self, value):
+        if value is not None:
+            valid.valid_container(
+                value,
+                container_types=(tuple, list),
+                length=2,
+                item_types=Real,
+                allow_none=True,
+                name="Setup.dirbeam_detector_angles",
+            )
+        self._dirbeam_detector_angles = value
+
+    @property
     def direct_beam(self):
         """
         Direct beam position in pixels.
 
-        Tuple of two real numbers indicating the position of the direct beam in pixels
-        at zero detector angles.
+        Tuple of two real numbers indicating the position of the direct beam in pixels.
         """
         return self._direct_beam
 
@@ -548,6 +572,8 @@ class Setup:
             "Class": self.__class__.__name__,
             "beamline": self.beamline,
             "detector": self.detector.name,
+            "direct_beam": self.direct_beam,
+            "dirbeam_detector_angles": self.dirbeam_detector_angles,
             "pixel_size_m": self.detector.unbinned_pixel_size,
             "beam_direction": self.beam_direction,
             "energy_eV": self.energy,
@@ -630,6 +656,8 @@ class Setup:
             f"{self.__class__.__name__}(beamline='{self.beamline}', "
             f"detector='{self.detector.name}',"
             f" beam_direction={self.beam_direction}, "
+            f"direct_beam={self.direct_beam}, "
+            f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
             f"energy={self.energy}, distance={self.distance}, "
             f"outofplane_angle={self.outofplane_angle},\n"
             f"inplane_angle={self.inplane_angle}, "
@@ -755,6 +783,7 @@ class Setup:
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
 
+        self.incident_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
@@ -764,6 +793,121 @@ class Setup:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
+
+    def correct_detector_angles(
+        self,
+        bragg_peak_position: Optional[Tuple[int, ...]],
+        verbose: bool = True,
+    ) -> None:
+        """
+        Correct the detector angles given the direct beam position.
+
+        The detector angles for the direct beam measurement can be non-zero.
+
+        :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
+         in the unbinned, full detector
+        :param verbose: True to print more comments
+        """
+        # check parameters
+        if self.direct_beam is None or self.dirbeam_detector_angles is None:
+            print("direct beam position not defined, can't correct detector angles")
+            return
+
+        if any(
+            val is None
+            for val in {self.inplane_angle, self.outofplane_angle, self.distance}
+        ):
+            raise ValueError("call setup.read_logfile before calling this method")
+
+        if bragg_peak_position is None:
+            print("Bragg peak position not defined, can't correct detector angles")
+            return
+
+        if len(bragg_peak_position) == 3:
+            bragg_peak_position = bragg_peak_position[-2:]
+        valid.valid_container(
+            bragg_peak_position,
+            container_types=(tuple, list, np.ndarray),
+            item_types=Real,
+            length=2,
+            name="bragg_peak_position",
+        )
+        valid.valid_item(verbose, allowed_types=bool, name="verbose")
+
+        if verbose:
+            print(
+                f"\nDirect beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
+                f"out-of-plane {self.dirbeam_detector_angles[0]} deg)"
+                f"(X, Y): {self.direct_beam[1]}, {self.direct_beam[0]}"
+            )
+            print(
+                f"Detector angles before correction: inplane {self.inplane_angle:.2f}"
+                f" deg, outofplane {self.outofplane_angle:.2f} deg"
+            )
+
+        self.inplane_angle = (
+            self.inplane_angle
+            + self.inplane_coeff
+            * (
+                self.detector.unbinned_pixel_size[1]
+                / self.distance
+                * 180
+                / np.pi
+                * (bragg_peak_position[1] - self.direct_beam[1])
+            )
+            - self.dirbeam_detector_angles[1]
+        )
+
+        self.outofplane_angle = (
+            self.outofplane_angle
+            - self.outofplane_coeff
+            * self.detector.unbinned_pixel_size[0]
+            / self.distance
+            * 180
+            / np.pi
+            * (bragg_peak_position[0] - self.direct_beam[0])
+            - self.dirbeam_detector_angles[0]
+        )
+
+        if verbose:
+            print(
+                f"Corrected detector angles: inplane {self.inplane_angle:.2f} deg, "
+                f"outofplane {self.outofplane_angle:.2f} deg"
+            )
+
+    def correct_direct_beam(self) -> Optional[Tuple[Real, ...]]:
+        """
+        Calculate the direct beam position in pixels at zero detector angles.
+
+        :return: a tuple representing the direct beam position at zero detector angles
+        """
+        if self.direct_beam is None:
+            print("direct beam position not defined")
+            return None
+
+        if self.dirbeam_detector_angles is None:
+            print("detector angles for the direct beam measurement not defined")
+            return tuple(self.direct_beam)
+
+        ver_direct = (
+            self.direct_beam[0]
+            - self.outofplane_coeff
+            * self.dirbeam_detector_angles[0]
+            * np.pi
+            / 180
+            * self.distance
+            / self.detector.unbinned_pixel_size[0]
+        )  # outofplane_coeff is +1 or -1
+
+        hor_direct = self.direct_beam[1] + self.inplane_coeff * (
+            self.dirbeam_detector_angles[1]
+            * np.pi
+            / 180
+            * self.distance
+            / self.detector.unbinned_pixel_size[1]
+        )  # inplane_coeff is +1 or -1
+
+        return ver_direct, hor_direct
 
     def create_logfile(self, scan_number, root_folder, filename):
         """

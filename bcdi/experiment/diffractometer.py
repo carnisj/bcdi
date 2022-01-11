@@ -843,9 +843,9 @@ class Diffractometer(ABC):
         # detector size
         if (
             detector.roi[0] < 0
-            or detector.roi[1] > detector.nb_pixel_y
+            or detector.roi[1] > detector.unbinned_pixel_number[0]
             or detector.roi[2] < 0
-            or detector.roi[3] > detector.nb_pixel_x
+            or detector.roi[3] > detector.unbinned_pixel_number[1]
         ):
             print(
                 "Data shape is limited by detector size,"
@@ -853,9 +853,9 @@ class Diffractometer(ABC):
             )
         loading_roi = [
             max(0, detector.roi[0]),
-            min(detector.nb_pixel_y, detector.roi[1]),
+            min(detector.unbinned_pixel_number[0], detector.roi[1]),
             max(0, detector.roi[2]),
-            min(detector.nb_pixel_x, detector.roi[3]),
+            min(detector.unbinned_pixel_number[1], detector.roi[3]),
         ]
 
         # initialize the data array, the mask is binned afterwards in load_check_dataset
@@ -894,7 +894,7 @@ class Diffractometer(ABC):
 
         return (
             data,
-            np.zeros((detector.nb_pixel_y, detector.nb_pixel_x)),
+            np.zeros(detector.unbinned_pixel_number),
             monitor,
             loading_roi,
         )
@@ -924,7 +924,7 @@ class Diffractometer(ABC):
                 monitor = self.read_monitor(setup=setup, **kwargs)
         if monitor is None:
             monitor = np.ones(nb_frames)
-            print("Cannot retrieve the monitor, use `actuators` to define it.")
+            print("Skipping intensity normalization.")
         return monitor
 
     def load_check_dataset(
@@ -974,13 +974,13 @@ class Diffractometer(ABC):
         )
         print(
             "Detector physical size without binning (VxH):",
-            detector.nb_pixel_y,
-            detector.nb_pixel_x,
+            detector.unbinned_pixel_number[0],
+            detector.unbinned_pixel_number[1],
         )
         print(
             "Detector size with binning (VxH):",
-            detector.nb_pixel_y // detector.binning[1],
-            detector.nb_pixel_x // detector.binning[2],
+            detector.unbinned_pixel_number[0] // detector.binning[1],
+            detector.unbinned_pixel_number[1] // detector.binning[2],
         )
 
         if setup.filtered_data:
@@ -2517,6 +2517,11 @@ class DiffractometerP10(Diffractometer):
                     break
                 except ValueError:  # something went wrong
                     break
+
+            if len(series_data) == 0:
+                raise ValueError(
+                    f"Check the parameter 'is_series', current value {is_series}"
+                )
             if is_series:
                 data[point_idx, :, :] = np.asarray(series_data).sum(axis=0)
                 if normalize == "sum_roi":
@@ -2528,6 +2533,7 @@ class DiffractometerP10(Diffractometer):
                 data[start_index : start_index + tempdata_length, :, :] = np.asarray(
                     series_data
                 )
+
                 if normalize == "sum_roi":
                     monitor[start_index : start_index + tempdata_length] = np.asarray(
                         series_monitor
@@ -2984,12 +2990,12 @@ class DiffractometerSIXS(Diffractometer):
 
 class Diffractometer34ID(Diffractometer):
     """
-    Define 34ID goniometer: 2 sample circles + 2 detector circles.
+    Define 34ID goniometer: 3 sample circles + 2 detector circles.
 
     The laboratory frame uses the CXI convention (z downstream, y vertical up,
     x outboard).
 
-    - sample: theta (inplane), phi (out of plane)
+    - sample: theta (inplane), chi, phi (out of plane)
     - detector: delta (inplane), gamma).
 
     """
@@ -3238,8 +3244,8 @@ class Diffractometer34ID(Diffractometer):
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
-            # chi = chi - self.sample_offsets[1]  # after updating the diffractometer
-            phi = phi - self.sample_offsets[1]  # [2] after updating the diffractometer
+            chi = chi - self.sample_offsets[1]
+            phi = phi - self.sample_offsets[2]
 
         else:  # manually defined custom scan
             theta = setup.custom_motors["theta"]

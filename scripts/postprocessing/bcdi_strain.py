@@ -25,8 +25,9 @@ import tkinter as tk
 from tkinter import filedialog
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
+from bcdi.experiment.detector import create_detector, create_roi
 from bcdi.experiment.setup import Setup
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
@@ -92,6 +93,8 @@ Usage:
 
     :param sort_method: e.g. "variance/mean"
      'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
+    :param averaging_space: e.g. "reciprocal_space"
+     in which space to average, 'direct_space' or 'reciprocal_space'
     :param correlation_threshold: e.g. 0.90
      minimum correlation between two arrays to average them
 
@@ -161,6 +164,8 @@ Usage:
 
     :param beamline: e.g. "ID01"
      name of the beamline, used for data loading and normalization by monitor
+    :param is_series: e.g. True
+     specific to series measurement at P10.
     :param actuators: e.g. {'rocking_angle': 'actuator_1_1'}
      optional dictionary that can be used to define the entries corresponding to
      actuators in data files (useful at CRISTAL where the location of data keeps
@@ -188,6 +193,19 @@ Usage:
      if there is no offset.
     :param tilt_angle: e.g. 0.00537
      angular step size in degrees for the rocking angle
+    :param direct_beam: e.g. [125, 362]
+     [vertical, horizontal], direct beam position on the unbinned, full detector
+     measured with detector angles given by `dirbeam_detector_angles`. It will be used
+     to calculate the real detector angles for the measured Bragg peak. Leave None for
+     no correction.
+    :param dirbeam_detector_angles: e.g. [1, 25]
+     [outofplane, inplane] detector angles in degrees for the direct beam measurement.
+     Leave None for no correction
+    :param bragg_peak: e.g. [121, 321, 256]
+     Bragg peak position [z_bragg, y_bragg, x_bragg] considering the unbinned full
+     detector. If 'outofplane_angle' and 'inplane_angle' are None and the direct beam
+     position is provided, it will be used to calculate the correct detector angles.
+     It is useful if there are hotpixels or intense aliens. Leave None otherwise.
     :param outofplane_angle: e.g. 42.6093
      detector angle in deg (rotation around x outboard, typically delta), corrected for
      the direct beam position. Leave None to use the uncorrected position.
@@ -219,6 +237,20 @@ Usage:
      name of the detector
     :param pixel_size: e.g. 100e-6
      use this to declare the pixel size of the "Dummy" detector if different from 55e-6
+    :param center_roi_x: e.g. 1577
+     horizontal pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param center_roi_y: e.g. 833
+     vertical pixel number of the center of the ROI for data loading.
+     Leave None to use the full detector.
+    :param roi_detector: e.g.[0, 250, 10, 210]
+     region of interest of the detector to load. If "center_roi_x" or "center_roi_y" are
+     not None, it will consider that the current values in roi_detector define a window
+     around the pixel [center_roi_y, center_roi_x] and the final output will be
+     [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+     center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+     Leave None to use the full detector. Use with center_fft='skip' if you want this
+     exact size for the output.
     :param template_imagefile: e.g. "data_mpx4_%05d.edf.gz"
      use one of the following template:
 
@@ -311,14 +343,6 @@ Usage:
      temperature in Kelvins used to calibrate the thermal expansion, if None it is fixed
      to 293.15K (room temperature)
 
-
-    Parameters for averaging several reconstructed objects:
-
-    :param averaging_space: e.g. "reciprocal_space"
-     in which space to average, 'direct_space' or 'reciprocal_space'
-    :param threshold_avg: e.g. 0.90
-     minimum correlation between arrays for averaging
-
     Parameters for phase averaging or apodization:
 
     :param half_width_avg_phase: e.g. 0
@@ -357,34 +381,52 @@ def run(prm):
     ################################
     # assign often used parameters #
     ################################
-    debug = prm["debug"]
-    comment = prm["comment"]
-    centering_method = prm["centering_method"]
-    original_size = prm["original_size"]
-    phasing_binning = prm["phasing_binning"]
-    preprocessing_binning = prm["preprocessing_binning"]
-    isosurface_strain = prm["isosurface_strain"]
-    ref_axis_q = prm["ref_axis_q"]
-    fix_voxel = prm["fix_voxel"]
-    output_size = prm["output_size"]
-    save = prm["save"]
-    tick_spacing = prm["tick_spacing"]
-    tick_direction = prm["tick_direction"]
-    tick_length = prm["tick_length"]
-    tick_width = prm["tick_width"]
-    invert_phase = prm["invert_phase"]
-    correct_refraction = prm["correct_refraction"]
-    save_frame = prm["save_frame"]
-    data_frame = prm["data_frame"]
-    scan = prm["scan"]
-    sample_name = prm["sample_name"]
-    root_folder = prm["root_folder"]
+    bragg_peak = prm.get("bragg_peak")
+    debug = prm.get("debug", False)
+    comment = prm.get("comment", "")
+    centering_method = prm.get("centering_method", "max_com")
+    original_size = prm.get("original_size")
+    phasing_binning = prm.get("phasing_binning", [1, 1, 1])
+    preprocessing_binning = prm.get("preprocessing_binning", [1, 1, 1])
+    ref_axis_q = prm.get("ref_axis_q", "y")
+    fix_voxel = prm.get("fix_voxel")
+    save = prm.get("save", True)
+    tick_spacing = prm.get("tick_spacing", 50)
+    tick_direction = prm.get("tick_direction", "inout")
+    tick_length = prm.get("tick_length", 10)
+    tick_width = prm.get("tick_width", 2)
+    invert_phase = prm.get("invert_phase", True)
+    correct_refraction = prm.get("correct_refraction", False)
+    threshold_unwrap_refraction = prm.get("threshold_unwrap_refraction", 0.05)
+    threshold_gradient = prm.get("threshold_gradient", 1.0)
+    offset_method = prm.get("offset_method", "mean")
+    phase_offset = prm.get("phase_offset", 0)
+    offset_origin = prm.get("phase_offset_origin")
+    sort_method = prm.get("sort_method", "variance/mean")
+    correlation_threshold = prm.get("correlation_threshold", 0.90)
+    roi_detector = create_roi(dic=prm)
+
+    # parameters below must be provided
+    try:
+        detector_name = prm["detector"]
+        beamline_name = prm["beamline"]
+        rocking_angle = prm["rocking_angle"]
+        isosurface_strain = prm["isosurface_strain"]
+        output_size = prm["output_size"]
+        save_frame = prm["save_frame"]
+        data_frame = prm["data_frame"]
+        scan = prm["scan"]
+        sample_name = prm["sample_name"]
+        root_folder = prm["root_folder"]
+    except KeyError as ex:
+        print("Required parameter not defined")
+        raise ex
 
     prm["sample"] = (f"{sample_name}+{scan}",)
     #########################
     # Check some parameters #
     #########################
-    if prm["simulation"]:
+    if prm.get("simulation", False):
         invert_phase = False
         correct_refraction = 0
     if invert_phase:
@@ -423,7 +465,7 @@ def run(prm):
     ###################
     # define colormap #
     ###################
-    if prm["grey_background"]:
+    if prm.get("grey_background"):
         bad_color = "0.7"
     else:
         bad_color = "1.0"  # white background
@@ -434,29 +476,33 @@ def run(prm):
     # Initialize detector #
     #######################
     detector = create_detector(
-        name=prm["detector"],
-        template_imagefile=prm["template_imagefile"],
+        name=detector_name,
+        template_imagefile=prm.get("template_imagefile"),
+        roi=roi_detector,
         binning=phasing_binning,
         preprocessing_binning=preprocessing_binning,
-        pixel_size=prm["pixel_size"],
+        pixel_size=prm.get("pixel_size"),
     )
 
     ####################################
     # define the experimental geometry #
     ####################################
     setup = Setup(
-        beamline=prm["beamline"],
+        beamline=beamline_name,
         detector=detector,
         energy=prm.get("energy"),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
         tilt_angle=prm.get("tilt_angle"),
-        rocking_angle=prm["rocking_angle"],
+        rocking_angle=rocking_angle,
         distance=prm.get("sdd"),
         sample_offsets=prm.get("sample_offsets"),
         actuators=prm.get("actuators"),
         custom_scan=prm.get("custom_scan", False),
         custom_motors=prm.get("custom_motors"),
+        dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
+        direct_beam=prm.get("direct_beam"),
+        is_series=prm.get("is_series", False),
     )
 
     ########################################
@@ -466,10 +512,10 @@ def run(prm):
         sample_name=sample_name,
         scan_number=scan,
         root_folder=root_folder,
-        data_dir=prm["data_dir"],
-        save_dir=prm["save_dir"],
-        specfile_name=prm["specfile_name"],
-        template_imagefile=prm["template_imagefile"],
+        data_dir=prm.get("data_dir"),
+        save_dir=prm.get("save_dir"),
+        specfile_name=prm.get("specfile_name"),
+        template_imagefile=prm.get("template_imagefile"),
     )
 
     setup.create_logfile(
@@ -499,7 +545,7 @@ def run(prm):
         root.withdraw()
         file_path = filedialog.askopenfilenames(
             initialdir=detector.scandir
-            if prm["data_dir"] is None
+            if prm.get("data_dir") is None
             else detector.datadir,
             filetypes=[
                 ("NPZ", "*.npz"),
@@ -536,7 +582,7 @@ def run(prm):
     # define range for orthogonalization and plotting - speed up calculations #
     ###########################################################################
     zrange, yrange, xrange = pu.find_datarange(
-        array=obj, amplitude_threshold=0.05, keep_size=prm["keep_size"]
+        array=obj, amplitude_threshold=0.05, keep_size=prm.get("keep_size", False)
     )
 
     numz = zrange * 2
@@ -550,14 +596,12 @@ def run(prm):
     # find the best reconstruction from the list, based on mean amplitude and variance #
     ####################################################################################
     if nbfiles > 1:
-        print(
-            "\nTrying to find the best reconstruction\nSorting by ", prm["sort_method"]
-        )
+        print("\nTrying to find the best reconstruction\nSorting by ", sort_method)
         sorted_obj = pu.sort_reconstruction(
             file_path=file_path,
             amplitude_threshold=isosurface_strain,
             data_range=(zrange, yrange, xrange),
-            sort_method="variance/mean",
+            sort_method=sort_method,
         )
     else:
         sorted_obj = [0]
@@ -574,14 +618,14 @@ def run(prm):
         print("\nOpening ", file_path[value])
         prm[f"from_file_{counter}"] = file_path[value]
 
-        if prm["flip_reconstruction"]:
+        if prm.get("flip_reconstruction", False):
             obj = pu.flip_reconstruction(obj, debugging=True)
 
         if extension == ".h5":
             centering_method = "do_nothing"  # do not center, data is already cropped
             # just on support for mode decomposition
             # correct a roll after the decomposition into modes in PyNX
-            obj = np.roll(obj, prm["roll_modes"], axis=(0, 1, 2))
+            obj = np.roll(obj, prm.get("roll_modes", [0, 0, 0]), axis=(0, 1, 2))
             fig, _, _ = gu.multislices_plot(
                 abs(obj),
                 sum_frames=True,
@@ -602,9 +646,9 @@ def run(prm):
             ref_obj=ref_obj,
             obj=obj,
             support_threshold=0.25,
-            correlation_threshold=prm["threshold_avg"],
+            correlation_threshold=correlation_threshold,
             aligning_option="dft",
-            space=prm["averaging_space"],
+            space=prm.get("averaging_space", "reciprocal_space"),
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
             debugging=debug,
@@ -622,7 +666,7 @@ def run(prm):
     ################
     phase, extent_phase = pu.unwrap(
         avg_obj,
-        support_threshold=prm["threshold_unwrap_refraction"],
+        support_threshold=threshold_unwrap_refraction,
         debugging=debug,
         reciprocal_space=False,
         is_orthogonal=is_orthogonal,
@@ -655,7 +699,7 @@ def run(prm):
         initial_shape=original_size,
         method="gradient",
         amplitude_threshold=isosurface_strain,
-        threshold_gradient=prm["threshold_gradient"],
+        threshold_gradient=threshold_gradient,
     )
     del avg_obj
     gc.collect()
@@ -680,9 +724,9 @@ def run(prm):
     phase = pu.remove_offset(
         array=phase,
         support=support,
-        offset_method=prm["offset_method"],
-        phase_offset=prm["phase_offset"],
-        offset_origin=prm["phase_offset_origin"],
+        offset_method=offset_method,
+        phase_offset=phase_offset,
+        offset_origin=offset_origin,
         title="Phase",
         debugging=debug,
     )
@@ -696,7 +740,7 @@ def run(prm):
     ##############################################################################
     # average the phase over a window or apodize to reduce noise in strain plots #
     ##############################################################################
-    half_width_avg_phase = prm["half_width_avg_phase"]
+    half_width_avg_phase = prm.get("half_width_avg_phase", 0)
     if half_width_avg_phase != 0:
         bulk = pu.find_bulk(
             amp=amp, support_threshold=isosurface_strain, method="threshold"
@@ -723,19 +767,19 @@ def run(prm):
     )  # put back the phase ramp otherwise the diffraction
     # pattern will be shifted and the prtf messed up
 
-    if prm["apodize"]:
+    if prm.get("apodize", False):
         amp, phase = pu.apodize(
             amp=amp,
             phase=phase,
             initial_shape=original_size,
-            window_type=prm["apodization_window"],
-            sigma=prm["apodization_sigma"],
-            mu=prm["apodization_mu"],
-            alpha=prm["apodization_alpha"],
+            window_type=prm.get("apodization_window", "blackman"),
+            sigma=prm.get("apodization_sigma", [0.30, 0.30, 0.30]),
+            mu=prm.get("apodization_mu", [0.0, 0.0, 0.0]),
+            alpha=prm.get("apodization_alpha", [1.0, 1.0, 1.0]),
             is_orthogonal=is_orthogonal,
             debugging=True,
         )
-        comment = comment + "_apodize_" + prm["apodization_window"]
+        comment = comment + "_apodize_" + prm.get("apodization_window", "blackman")
 
     ################################################################
     # save the phase with the ramp for PRTF calculations,          #
@@ -772,7 +816,7 @@ def run(prm):
     #######################
     #  save support & vti #
     #######################
-    if prm["save_support"]:
+    if prm.get("save_support", False):
         # to be used as starting support in phasing, hence still in the detector frame
         support = np.zeros((numz, numy, numx))
         support[abs(avg_obj) / abs(avg_obj).max() > 0.01] = 1
@@ -783,7 +827,7 @@ def run(prm):
         del support
         gc.collect()
 
-    if prm["save_rawdata"]:
+    if prm.get("save_rawdata", False):
         np.savez_compressed(
             detector.savedir + "S" + str(scan) + "_raw_amp-phase" + comment,
             amp=abs(avg_obj),
@@ -856,12 +900,12 @@ def run(prm):
     #######################
     #  orthogonalize data #
     #######################
-    print("\nShape before orthogonalization", avg_obj.shape)
+    print("\nShape before orthogonalization", avg_obj.shape, "\n")
     if data_frame == "detector":
         if debug:
             phase, _ = pu.unwrap(
                 avg_obj,
-                support_threshold=prm["threshold_unwrap_refraction"],
+                support_threshold=threshold_unwrap_refraction,
                 debugging=True,
                 reciprocal_space=False,
                 is_orthogonal=False,
@@ -879,6 +923,43 @@ def run(prm):
             )
             del phase
             gc.collect()
+
+        if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+            print("Trying to correct detector angles using the direct beam")
+            # corrected detector angles not provided
+            if bragg_peak is None and detector.template_imagefile is not None:
+                # Bragg peak position not provided, find it from the data
+                data, _, _, _ = setup.diffractometer.load_check_dataset(
+                    scan_number=scan,
+                    detector=detector,
+                    setup=setup,
+                    frames_pattern=prm.get("frames_pattern"),
+                    bin_during_loading=False,
+                    flatfield=prm.get("flatfield"),
+                    hotpixels=prm.get("hotpix_array"),
+                    background=prm.get("background"),
+                    normalize=prm.get("normalize_flux", "skip"),
+                )
+                bragg_peak = bu.find_bragg(
+                    data=data,
+                    peak_method="maxcom",
+                    roi=detector.roi,
+                    binning=None,
+                )
+                roi_center = (
+                    bragg_peak[0],
+                    bragg_peak[1] - detector.roi[0],  # no binning as in bu.find_bragg
+                    bragg_peak[2] - detector.roi[2],  # no binning as in bu.find_bragg
+                )
+                bu.show_rocking_curve(
+                    data,
+                    roi_center=roi_center,
+                    tilt_values=setup.incident_angles,
+                    savedir=detector.savedir,
+                )
+            setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+            prm["outofplane_angle"] = setup.outofplane_angle
+            prm["inplane_angle"] = setup.inplane_angle
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,
@@ -972,7 +1053,7 @@ def run(prm):
     print("\nPhase unwrapping")
     phase, extent_phase = pu.unwrap(
         obj_ortho,
-        support_threshold=prm["threshold_unwrap_refraction"],
+        support_threshold=threshold_unwrap_refraction,
         debugging=True,
         reciprocal_space=False,
         is_orthogonal=True,
@@ -993,8 +1074,8 @@ def run(prm):
     if correct_refraction:  # or correct_absorption:
         bulk = pu.find_bulk(
             amp=amp,
-            support_threshold=prm["threshold_unwrap_refraction"],
-            method=prm["optical_path_method"],
+            support_threshold=threshold_unwrap_refraction,
+            method=prm.get("optical_path_method", "threshold"),
             debugging=debug,
         )
 
@@ -1081,9 +1162,9 @@ def run(prm):
         amp=amp,
         phase=phase,
         initial_shape=original_size,
-        method=prm["phase_ramp_removal"],
+        method=prm.get("phase_ramp_removal", "gradient"),
         amplitude_threshold=isosurface_strain,
-        threshold_gradient=prm["threshold_gradient"],
+        threshold_gradient=threshold_gradient,
         debugging=debug,
     )
 
@@ -1096,9 +1177,9 @@ def run(prm):
     phase = pu.remove_offset(
         array=phase,
         support=support,
-        offset_method=prm["offset_method"],
-        phase_offset=prm["phase_offset"],
-        offset_origin=prm["phase_offset_origin"],
+        offset_method=offset_method,
+        phase_offset=phase_offset,
+        offset_origin=offset_origin,
         title="Orthogonal phase",
         debugging=debug,
         reciprocal_space=False,
@@ -1121,7 +1202,7 @@ def run(prm):
         voxel_size=voxel_size,
         reference_axis=ref_axis_q,
         extent_phase=extent_phase,
-        method=prm["strain_method"],
+        method=prm.get("strain_method", "default"),
         debugging=debug,
     )
 
@@ -1175,7 +1256,7 @@ def run(prm):
     ###############################################
     # typically this is an inplane rotation, q should stay aligned with the axis
     # along which the strain was calculated
-    if prm["align_axis"]:
+    if prm.get("align_axis", False):
         print("\nRotating arrays for visualization")
         amp, phase, strain = util.rotate_crystal(
             arrays=(amp, phase, strain),
@@ -1360,18 +1441,16 @@ def run(prm):
     )
     fig.text(0.60, 0.35, f"Ticks spacing={tick_spacing} nm", size=20)
     fig.text(0.60, 0.30, f"Volume={int(volume)} nm3", size=20)
-    fig.text(0.60, 0.25, "Sorted by " + prm["sort_method"], size=20)
-    fig.text(
-        0.60, 0.20, f"correlation threshold={prm['correlation_threshold']}", size=20
-    )
+    fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
+    fig.text(0.60, 0.20, f"correlation threshold={correlation_threshold}", size=20)
     fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
     fig.text(0.60, 0.10, f"Planar distance={planar_dist:.5f} nm", size=20)
-    if prm["get_temperature"]:
+    if prm.get("get_temperature", False):
         temperature = pu.bragg_temperature(
             spacing=planar_dist * 10,
             reflection=prm["reflection"],
-            spacing_ref=prm["reference_spacing"],
-            temperature_ref=prm["reference_temperature"],
+            spacing_ref=prm.get("reference_spacing"),
+            temperature_ref=prm.get("reference_temperature"),
             use_q=False,
             material="Pt",
         )
@@ -1401,8 +1480,8 @@ def run(prm):
         phase,
         sum_frames=False,
         title="Orthogonal displacement",
-        vmin=-prm["phase_range"],
-        vmax=prm["phase_range"],
+        vmin=-prm.get("phase_range", np.pi / 2),
+        vmax=prm.get("phase_range", np.pi / 2),
         tick_direction=tick_direction,
         cmap=my_cmap,
         tick_width=tick_width,
@@ -1436,8 +1515,8 @@ def run(prm):
         strain,
         sum_frames=False,
         title="Orthogonal strain",
-        vmin=-prm["strain_range"],
-        vmax=prm["strain_range"],
+        vmin=-prm.get("strain_range", 0.002),
+        vmax=prm.get("strain_range", 0.002),
         tick_direction=tick_direction,
         tick_width=tick_width,
         tick_length=tick_length,
