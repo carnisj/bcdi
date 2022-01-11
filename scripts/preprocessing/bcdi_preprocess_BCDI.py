@@ -1373,9 +1373,18 @@ def run(prm):
         mask[np.nonzero(mask)] = 1
         data[mask == 1] = 0
 
-        #############################################
-        # mask or median filter isolated empty pixels
-        #############################################
+        ########################################################
+        # save the projected mask as hotpixels for later reuse #
+        ########################################################
+        hotpixels = mask.sum(axis=0)
+        hotpixels[np.nonzero(hotpixels)] = 1
+        np.savez_compressed(
+            detector.savedir + f"S{scan_nb}_hotpixels", hotpixels=hotpixels.astype(int)
+        )
+
+        ###############################################
+        # mask or median filter isolated empty pixels #
+        ###############################################
         if median_filter in {"mask_isolated", "interp_isolated"}:
             print("\nFiltering isolated pixels")
             nb_pix = 0
