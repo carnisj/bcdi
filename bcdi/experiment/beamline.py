@@ -575,7 +575,7 @@ class BeamlineCRISTAL(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mgomega, mgphi, gamma, delta, energy = super().process_positions(
+        mgomega, mgphi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -891,7 +891,7 @@ class BeamlineID01(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, eta, phi, nu, delta, energy = super().process_positions(
+        mu, eta, phi, nu, delta, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -1208,7 +1208,7 @@ class BeamlineNANOMAX(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, gamma, delta, energy = super().process_positions(
+        theta, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -1542,7 +1542,7 @@ class BeamlineP10(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        mu, om, chi, phi, gamma, delta, energy = super().process_positions(
+        mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -2152,7 +2152,7 @@ class BeamlineSIXS(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        beta, mu, gamma, delta, energy = super().process_positions(
+        beta, mu, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -2432,7 +2432,7 @@ class Beamline34ID(Beamline):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        theta, phi, delta, gamma, energy = super().process_positions(
+        theta, chi, phi, delta, gamma, energy, _ = super().process_positions(
             setup=setup,
             logfile=logfile,
             nb_frames=nb_frames,
@@ -2462,7 +2462,7 @@ class Beamline34ID(Beamline):
         return util.bin_parameters(
             binning=setup.detector.binning[0],
             nb_frames=nb_frames,
-            params=[theta, phi, delta, gamma, energy],
+            params=[theta, chi, phi, delta, gamma, energy],
         )
 
     def transformation_matrix(
