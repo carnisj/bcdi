@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Bug with interpolation with xrayutilities: use the correct number of values to unpack
+  from the call to `beamline.Beamline.process_position` (the detector distance was
+  missing)
+
 * Allow the correction of detector angles directly in `bcdi_preprocessing_BCDI.py` and
   `bcdi_strain.py`. The user can either provide the Bragg peak position, or this one
   will be calculated from the provided direct beam position and the setup geometry.
