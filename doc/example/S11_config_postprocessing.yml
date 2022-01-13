@@ -27,11 +27,11 @@ centering_method: "max_com"
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################
-original_size: [256, 256, 256]  # size of the FFT array sent to phase retrieval.
+original_size: [252, 420, 392]  # size of the FFT array sent to phase retrieval.
 # It will be modified to take into account binning during phasing automatically.
 # Leave it to () if the shape did not change.
 phasing_binning: [1, 1, 1]  # binning factor applied during phase retrieval
-preprocessing_binning: [1, 2, 2]
+preprocessing_binning: [1, 1, 1]
 # binning factors in each dimension used in preprocessing (not phase retrieval)
 output_size: [100, 100, 100]
 # (z, y, x) Fix the size of the output array, leave None to use the object size
@@ -85,7 +85,7 @@ sdd: 0.50678  # 1.26  # sample to detector distance in m
 energy: 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction: [1, 0, 0]
 # incident beam along z, in the frame (z downstream, y vertical up, x outboard)
-bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
+bragg_peak: [127, 214, 316]  # list of three integers, position of the Bragg peak on the unbinned
 # and full-sized detector. It will be used to calculate the real detector angles for the
 # measured Bragg peak. Leave None to determine the Bragg peak position automatically.
 direct_beam: [208, 154]  # [vertical, horizontal]
