@@ -21,9 +21,6 @@ background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 #########################################################
 centering_method: "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
 #  It will be overridden by 'fix_bragg' if not empty
-fix_bragg: None  # fix the Bragg peak position [z_bragg, y_bragg, x_bragg]
-# considering the full detector
-# It is useful if hotpixels or intense aliens. Leave None otherwise.
 fix_size: None  # crop the array to predefined size considering the full detector,
 # leave None otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
 # ROI will be defaulted to []
@@ -73,7 +70,7 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series: False  # specific to series measurement at P10
-rocking_angle: "inplane"  # "outofplane" for a sample rotation around x outboard,
+rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
 # "inplane" for a sample rotation around y vertical up, "energy"
 specfile_name: "l5.spec"
 # template for ID01 and 34ID: name of the spec file if it is at the default location
@@ -103,10 +100,10 @@ linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
 # polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
 # the detector at high intensities. Leave None otherwise.
-x_bragg: None  # horizontal pixel number of the Bragg peak,
-# can be used for the definition of the ROI
-y_bragg: None  # vertical pixel number of the Bragg peak,
-# can be used for the definition of the ROI
+center_roi_x: None  # horizontal pixel number of the center of the ROI for data
+# loading, leave None to use the full detector
+center_roi_y: None  # vertical pixel number of the center of the ROI for data
+# loading, leave None to use the full detector
 roi_detector: None
 # [Vstart, Vstop, Hstart, Hstop]. If "x_bragg" or "y_bragg" are not None, it will
 # consider that the current values in roi_detector define a window around the Bragg
@@ -177,10 +174,20 @@ align_q: True  # used only when interp_method is 'linearization',
 # if True it rotates the crystal to align q
 # along one axis of the array
 ref_axis_q: "y"  # q will be aligned along that axis
-outofplane_angle: 35.3627
+bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
+# and full-sized detector. It will be used to calculate the real detector angles for the
+# and full-sized detector. It will be used to calculate the real detector angles for the
+# measured Bragg peak. Leave None to determine the Bragg peak position automatically.
+direct_beam: [208, 154]  # [vertical, horizontal]
+# direct beam position on the unbinned, full detector measured
+# with detector angles given by dirbeam_detector_angles. It will be used to calculate
+# the real detector angles for the measured Bragg peak. Leave None for no correction.
+dirbeam_detector_angles: [0, 0]  # [outofplane, inplane] detector angles in degrees
+# for the direct beam measurement. Leave None for no correction.
+outofplane_angle: None  # 35.3627
 # detector angle in deg (rotation around x outboard, typically delta),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle: 0.4864
+inplane_angle: None  # 0.4864
 # detector angle in deg(rotation around y vertical up, typically gamma),
 # corrected for the direct beam position. Leave None to use the uncorrected position.
 ################################################################################
