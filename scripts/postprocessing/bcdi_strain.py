@@ -1279,6 +1279,7 @@ def run(prm):
             reference_axis=prm["axis_to_align"],
         )
 
+    q_final = q_final * qnorm
     print(
         f"\nq_final = ({q_final[0]:.4f} 1/A,"
         f" {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)"
