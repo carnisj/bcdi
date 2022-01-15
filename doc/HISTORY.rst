@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Add an example in the documentation, using the dataset ID182 from the CXIDB.
+
 * Bug with interpolation with xrayutilities: use the correct number of values to unpack
   from the call to `beamline.Beamline.process_position` (the detector distance was
   missing)
