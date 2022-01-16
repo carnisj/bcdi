@@ -133,11 +133,11 @@ custom_motors: {
 detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
 pixel_size: None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
-center_roi_x: None  # horizontal pixel number of the center of the ROI for data
+center_roi_x: 1577  # horizontal pixel number of the center of the ROI for data
 # loading, leave None to use the full detector
-center_roi_y: None  # vertical pixel number of the center of the ROI for data
+center_roi_y: 833  # vertical pixel number of the center of the ROI for data
 # loading, leave None to use the full detector
-roi_detector: None
+roi_detector: [250, 250, 500, 500]
 # [Vstart, Vstop, Hstart, Hstop]. If "center_roi_x" or "center_roi_y" are not None,
 # it will consider that the current values in roi_detector define a window around the
 # pixel [center_roi_y, center_roi_x] and the final output will be
