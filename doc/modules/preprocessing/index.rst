@@ -6,6 +6,17 @@
 :mod:`bcdi.preprocessing`: Preprocessing of (B)CDI data before phase retrieval
 ==============================================================================
 
+preprocessing_runner
+^^^^^^^^^^^^^^^^^^^^
+
+This module provides the function which manage the whole preprocessing.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.preprocessing.preprocessing_runner
+   :members:
+
 bcdi_utils
 ^^^^^^^^^^
 
