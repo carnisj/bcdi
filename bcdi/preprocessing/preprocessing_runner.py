@@ -543,6 +543,7 @@ def run(prm):
         ##############################################################
         # correct detector angles and save values for postprocessing #
         ##############################################################
+        metadata = None
         if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
             # corrected detector angles not provided
             if bragg_peak is None:
@@ -1302,14 +1303,22 @@ def run(prm):
             out.create_dataset("data", data=data)
             out.create_dataset("mask", data=mask)
 
-            out.create_dataset("tilt_values", data=metadata["tilt_values"])
-            out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
-            out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
-            out.create_dataset("interp_curve", data=metadata["interp_rocking_curve"])
-
-            out.create_dataset("COM_rocking_curve", data=metadata["COM_rocking_curve"])
-            out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
-            out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
+            if metadata is not None:
+                out.create_dataset("tilt_values", data=metadata["tilt_values"])
+                out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
+                out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
+                out.create_dataset(
+                    "interp_curve", data=metadata["interp_rocking_curve"]
+                )
+                out.create_dataset(
+                    "COM_rocking_curve", data=metadata["COM_rocking_curve"]
+                )
+                out.create_dataset(
+                    "detector_data_COM", data=metadata["detector_data_COM"]
+                )
+                out.create_dataset(
+                    "interp_fwhm", data=metadata["interp_fwhm"]
+                )
             out.create_dataset("bragg_peak", data=bragg_peak)
             out.create_dataset("q", data=q)
             out.create_dataset("qnorm", data=qnorm)
