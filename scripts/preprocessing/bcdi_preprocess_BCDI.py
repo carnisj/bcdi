@@ -320,16 +320,6 @@ Usage:
 """
 
 
-def close_event(event):
-    """
-    This function handles closing events on plots.
-
-    :return: nothing
-    """
-    print(event, "Click on the figure instead of closing it!")
-    sys.exit()
-
-
 def run(prm):
     """
     Run the postprocessing.
@@ -1057,7 +1047,7 @@ def run(prm):
                         fig.canvas.mpl_disconnect(
                             fig.canvas.manager.key_press_handler_id
                         )
-                        cid = plt.connect("close_event", close_event)
+                        cid = plt.connect("close_event", gu.close_event)
                         fig.waitforbuttonpress()
                         plt.disconnect(cid)
                     plt.close(fig)
@@ -1122,7 +1112,7 @@ def run(prm):
             )
         if flag_interact:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect("close_event", close_event)
+            cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
         plt.close(fig)
@@ -1150,7 +1140,7 @@ def run(prm):
             )
         if flag_interact:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect("close_event", close_event)
+            cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
         plt.close(fig)
@@ -1175,7 +1165,7 @@ def run(prm):
 
         if flag_interact:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect("close_event", close_event)
+            cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
         plt.close(fig)
@@ -1286,7 +1276,7 @@ def run(prm):
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect("close_event", close_event)
+            cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
             plt.close(fig)
@@ -1304,7 +1294,7 @@ def run(prm):
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
-            cid = plt.connect("close_event", close_event)
+            cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
             plt.disconnect(cid)
             plt.close(fig)
