@@ -73,7 +73,7 @@ def run(prm):
 
     def press_key(event):
         """
-        Interact with a plot for masking parasitic intensity or detector gaps
+        Interact with a plot for masking parasitic intensity or detector gaps.
 
         :param event: button press event
         """
