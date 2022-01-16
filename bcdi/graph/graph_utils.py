@@ -76,11 +76,7 @@ class Colormap:
 
 
 def close_event(event):
-    """
-    This function handles closing events on plots.
-
-    :return: nothing
-    """
+    """Handle closing events on plots."""
     print(event, "Click on the figure instead of closing it!")
     sys.exit()
 
