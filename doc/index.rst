@@ -16,6 +16,34 @@
     
 .. include:: ../README.rst
 
+Examples
+========
+
+In this section you will find two examples showing how to pre-process and post-process
+experimental BCDI using this package. In order to run the example, you need first to
+get the data, which is available on the Coherent X-ray Imaging DataBank. Please
+download the dataset ID182 from the following location:
+https://www.cxidb.org/id-182.html
+
+Extract files, you should get the following::
+
+    CXIDB-182/
+        Readme ID 182.txt
+        CH4760/
+            l5.spec
+            S11/
+            ...
+        HS4670/
+            ...
+
+
+For the demonstration, we will use the scan ``S11`` from the experiment ``CH4760``.
+The spec file for this scan is ``l5.spec``.
+
+.. include:: EXAMPLE_PREPROCESSING.rst
+
+.. include:: EXAMPLE_POSTPROCESSING.rst
+
 Changelog
 =========
 

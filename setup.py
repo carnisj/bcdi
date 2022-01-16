@@ -150,6 +150,7 @@ setup(
         "moviepy",
         "pillow",
         "pandas",
+        "pyqt5",
         "ipywidgets",
     ],
     extras_require={

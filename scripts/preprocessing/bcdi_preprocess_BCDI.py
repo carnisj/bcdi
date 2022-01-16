@@ -16,6 +16,7 @@ except ModuleNotFoundError:
     pass
 import gc
 import h5py
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -519,6 +520,10 @@ def run(prm):
     #########################
     # check some parameters #
     #########################
+    if not prm.get("backend"):
+        prm["backend"] = "Qt5Agg"
+    matplotlib.use(prm["backend"])
+
     if len(scans) > 1 and center_fft not in [
         "crop_asymmetric_ZYX",
         "pad_Z",
