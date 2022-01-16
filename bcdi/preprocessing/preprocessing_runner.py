@@ -8,6 +8,7 @@
 """Main runner for BCDI data preprocessing, before phase retrieval."""
 
 import gc
+
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -1320,9 +1321,7 @@ def run(prm):
                 out.create_dataset(
                     "detector_data_COM", data=metadata["detector_data_COM"]
                 )
-                out.create_dataset(
-                    "interp_fwhm", data=metadata["interp_fwhm"]
-                )
+                out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
             out.create_dataset("bragg_peak", data=bragg_peak)
             out.create_dataset("q", data=q)
             out.create_dataset("qnorm", data=qnorm)

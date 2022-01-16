@@ -8,6 +8,7 @@
 """Main runner for BCDI data postprocessing, after phase retrieval."""
 
 import gc
+
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
