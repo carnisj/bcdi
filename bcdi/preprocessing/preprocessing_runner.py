@@ -43,7 +43,7 @@ def run(prm):
 
     def on_click(event):
         """
-        Function to interact with a plot, return the position of clicked pixel.
+        Interact with a plot, return the position of clicked pixel.
 
         If flag_pause==1 or if the mouse is out of plot axes, it will not register
         the click.
