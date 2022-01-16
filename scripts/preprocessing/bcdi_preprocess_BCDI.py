@@ -9,18 +9,12 @@
 
 import argparse
 from datetime import datetime
-
-try:
-    import hdf5plugin  # for P10, should be imported before h5py or PyTables
-except ModuleNotFoundError:
-    pass
 import matplotlib.pyplot as plt
 
 from bcdi.preprocessing.preprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/data/share/config_preprocessing.yml"
-# "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
+CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and

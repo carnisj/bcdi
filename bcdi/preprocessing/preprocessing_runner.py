@@ -8,6 +8,10 @@
 """Main runner for BCDI data preprocessing, before phase retrieval."""
 
 import gc
+try:
+    import hdf5plugin  # for P10, should be imported before h5py or PyTables
+except ModuleNotFoundError:
+    pass
 import h5py
 import matplotlib
 import matplotlib.pyplot as plt
