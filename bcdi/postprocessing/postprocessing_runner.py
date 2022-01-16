@@ -7,6 +7,7 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Main runner for BCDI data postprocessing, after phase retrieval."""
 
+from functools import reduce
 import gc
 
 try:
