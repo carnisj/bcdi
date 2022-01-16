@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Move the run functions from `bcdi_strain.py` and `bcdi_preprocessing_BCDI.py` to new
+  dedicated modules `postprocessing.postprocessing_runner` and
+  `preprocessing.preprocessing_runner`, so that it can be imported.
+
 * Add an example in the documentation, using the dataset ID182 from the CXIDB.
 
 * Bug with interpolation with xrayutilities: use the correct number of values to unpack

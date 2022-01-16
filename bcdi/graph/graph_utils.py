@@ -19,9 +19,10 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
+from operator import itemgetter
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
-from operator import itemgetter
+import sys
 from ..utils import validation as valid
 
 # define a colormap
@@ -72,6 +73,12 @@ class Colormap:
         self.bad_color = bad_color
         self.cmap = LinearSegmentedColormap("my_colormap", self.cdict, 256)
         self.cmap.set_bad(color=self.bad_color)
+
+
+def close_event(event):
+    """Handle closing events on plots."""
+    print(event, "Click on the figure instead of closing it!")
+    sys.exit()
 
 
 def colorbar(mappable, scale="linear", numticks=10, label=None, pad=0.05):

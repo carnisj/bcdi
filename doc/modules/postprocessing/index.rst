@@ -36,6 +36,17 @@ API Reference
 .. automodule:: bcdi.postprocessing.facet_analysis
    :members:
 
+postprocessing_runner
+^^^^^^^^^^^^^^^^^^^^^
+
+This module provides the function which manage the whole postprocessing.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.postprocessing.postprocessing_runner
+   :members:
+
 postprocessing_utils
 ^^^^^^^^^^^^^^^^^^^^
 
