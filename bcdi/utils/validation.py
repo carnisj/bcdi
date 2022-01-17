@@ -269,7 +269,8 @@ def valid_item(
 
     # check the type of obj
     if value is not None and not isinstance(value, allowed_types):
-        raise TypeError(f"{name}: wrong type for value, allowed is {allowed_types}")
+        raise TypeError(f"{name}: wrong type for value, "
+                        f"allowed is {allowed_types}, got {type(value)}")
 
     # check min_included
     if min_included is not None and value is not None:
