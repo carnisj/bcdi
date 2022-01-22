@@ -1,5 +1,5 @@
-Future:
--------
+Version 0.2.2:
+--------------
 
 * Move the run functions from `bcdi_strain.py` and `bcdi_preprocessing_BCDI.py` to new
   dedicated modules `postprocessing.postprocessing_runner` and
