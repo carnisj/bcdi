@@ -8,10 +8,10 @@ removal, refraction correction, interpolation of the object from the detector fr
 an orthonormal frame etc...
 
 It is assumed that the phase retrieval of this dataset has been realized
-(e.g. using PyNX), and that the data provided as input is in direct space, with the
-first axis corresponding to the rocking dimension. If it is still in the detector frame,
-the second axis corresponds to the detector vertical axis and the third axis to the
-detector horizontal axis.
+(e.g. using PyNX), and that the data provided as input is in direct space. If it is
+still in the detector frame, the first axis is expected to correspond to the rocking
+dimension, the second axis corresponds to the detector vertical axis and the third axis
+to the detector horizontal axis.
 
 The most usefull script is ``bcdi_strain.py``. It requires a YAML config
 file, which for this example is ``bcdi/doc/example/S11_config_postprocessing.yml``.
