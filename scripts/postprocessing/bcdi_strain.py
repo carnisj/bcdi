@@ -14,7 +14,8 @@ from matplotlib import pyplot as plt
 from bcdi.postprocessing.postprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_postprocessing.yml"
+CONFIG_FILE = \
+    "C:/Users/Jerome/Documents/myscripts/bcdi/bcdi/examples/config_postprocessing.yml"
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
