@@ -14,7 +14,7 @@ dimension, the second axis corresponds to the detector vertical axis and the thi
 to the detector horizontal axis.
 
 The most usefull script is ``bcdi_strain.py``. It requires a YAML config
-file, which for this example is ``bcdi/doc/example/S11_config_postprocessing.yml``.
+file, which for this example is ``bcdi/examples/S11_config_postprocessing.yml``.
 
 In order to have it running correctly on your machine, you will have to modify the paths
 corresponding to the following parameters::

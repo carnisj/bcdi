@@ -5,7 +5,7 @@ This example will guide you through the pre-processing of an experimental BCDI d
 measured at the European Synchrotron Radiation Facility, beamline ID01.
 
 The most usefull script is ``bcdi_preprocessing_BCDI.py``. It requires a YAML config
-file, which for this example is ``bcdi/doc/example/S11_config_preprocessing.yml``.
+file, which for this example is ``bcdi/examples/S11_config_preprocessing.yml``.
 
 In order to have it running correctly on your machine, you will have to modify the paths
 corresponding to the following parameters::
