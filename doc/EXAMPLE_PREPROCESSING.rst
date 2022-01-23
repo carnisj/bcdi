@@ -21,6 +21,17 @@ practice), run:
 
 ``python path_to/bcdi_preprocessing_BCDI.py --conf path_to/S11_config_preprocessing.yml``
 
+If you installed the package, the scripts and configuration files will be located at the
+following location (example with ``bcdi`` installed in a conda virtual environment named
+``myenv``):
+
+- on Windows:
+
+    - scripts in ``C:\Users\my_username\anaconda3\envs\myenv\Scripts``
+    - config files in ``C:\Users\my_username\anaconda3\envs\myenv\Lib\site-packages\bcdi\examples``
+
+- on Linux
+
 The data will be loaded and a plot is opened. This allows you to check whether, e.g.,
 the region of interest provided is correct. Click on the plot to resume the execution
 of the script.
