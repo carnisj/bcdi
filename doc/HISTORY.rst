@@ -1,6 +1,9 @@
 Version 0.2.2:
 --------------
 
+* Move the configuration files and example modes data to a subpackage ``bcdi.examples``
+  so that they are distributed with the builds and wheels.
+
 * Move the run functions from `bcdi_strain.py` and `bcdi_preprocessing_BCDI.py` to new
   dedicated modules `postprocessing.postprocessing_runner` and
   `preprocessing.preprocessing_runner`, so that it can be imported.
