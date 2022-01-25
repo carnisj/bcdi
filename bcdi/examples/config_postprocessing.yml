@@ -10,9 +10,9 @@ data_dir: None
 sample_name: "B15_syn_S1_2"
 # string in front of the scan number in the folder name.
 comment: ""  # comment in filenames, should start with _
-#########################################################
-# parameters used when averaging several reconstruction #
-#########################################################
+##########################################################
+# parameters used when averaging several reconstructions #
+##########################################################
 sort_method: "variance/mean"
 # 'mean_amplitude' or 'variance' or 'variance/mean' or 'volume', metric for averaging
 averaging_space: "reciprocal_space"  # 'direct_space' or 'reciprocal_space'
@@ -131,7 +131,7 @@ custom_motors: {
 # detector related parameters #
 ###############################
 detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin", "Timepix" or "Dummy"
-pixel_size: None
+custom_pixelsize: None
 # use this to declare the pixel size of the "Dummy" detector if different from 55e-6
 center_roi_x: 1577  # horizontal pixel number of the center of the ROI for data
 # loading, leave None to use the full detector
