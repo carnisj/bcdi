@@ -73,6 +73,7 @@ strain_method: "default"  # 'default' or 'defect'.
 beamline: "ID01"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
 # supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+is_series: True  # specific to series measurement at P10
 actuators: None
 # Optional dictionary that can be used to define the entries
 # corresponding to actuators in data files
