@@ -40,6 +40,24 @@ Extract the files, you should get the following::
 For the demonstration, we will use the scan ``S11`` from the experiment ``CH4760``.
 The spec file for this scan is ``l5.spec``.
 
+If you installed the package, the scripts and configuration files will be located at the
+following location (example with the ``bcdi`` package installed in a Python3.8 conda
+virtual environment named ``myenv``):
+
+- on Windows:
+
+|    - scripts in:
+|      ``path_to\anaconda3\envs\myenv\Scripts``
+|    - config files in:
+|      ``path_to\anaconda3\envs\myenv\Lib\site-packages\bcdi\examples``
+
+- on Linux:
+
+|    - scripts in:
+|      ``/path_to/anaconda3/envs/myenv/bin``
+|    - config files in:
+|      ``/path_to/anaconda3/envs/myenv/lib/python3.8/site-packages/bcdi/examples``
+
 .. include:: EXAMPLE_PREPROCESSING.rst
 
 .. include:: EXAMPLE_POSTPROCESSING.rst

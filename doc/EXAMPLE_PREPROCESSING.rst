@@ -8,7 +8,7 @@ The most usefull script is ``bcdi_preprocessing_BCDI.py``. It requires a YAML co
 file, which for this example is ``bcdi/examples/S11_config_preprocessing.yml``.
 
 In order to have it running correctly on your machine, you will have to modify the paths
-corresponding to the following parameters::
+for the following parameters::
 
     root_folder: "path_to/CXIDB-I182/CH4760/"
     save_dir: "path_to_saving_directory"
@@ -20,20 +20,6 @@ After activating your virtual environment (assuming you created one, which is a 
 practice), run:
 
 ``python path_to/bcdi_preprocessing_BCDI.py --conf path_to/S11_config_preprocessing.yml``
-
-If you installed the package, the scripts and configuration files will be located at the
-following location (example with the ``bcdi`` package installed in a Python3.8 conda
-virtual environment named ``myenv``):
-
-- on Windows:
-
-    - scripts in ``path_to\anaconda3\envs\myenv\Scripts``
-    - config files in ``path_to\anaconda3\envs\myenv\Lib\site-packages\bcdi\examples``
-
-- on Linux:
-
-    - scripts in ``/path_to/anaconda3/envs/myenv/bin``
-    - config files in ``/path_to/anaconda3/envs/myenv/lib/python3.8/site-packages/bcdi/examples``
 
 The data will be loaded and a plot is opened. This allows you to check whether, e.g.,
 the region of interest provided is correct. Click on the plot to resume the execution
