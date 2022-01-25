@@ -107,18 +107,22 @@ Download & Installation
 
 BCDI is available from:
 
-* Python Package Index: ``pip install bcdi``
-* `Most updated version on GitHub <https://github.com/carnisj/bcdi>`_
+* the Python Package Index: ``python -m pip install bcdi``
+* or on `GitHub <https://github.com/carnisj/bcdi>`_, where you will find the latest
+  version:
 
-- Upgrade your version with the latest changes from GitHub (main branch):
-  ``pip install --upgrade git+https://github.com/carnisj/bcdi.git``
-- Test a specific branch from GitHub:
-  ``pip install --upgrade git+https://github.com/carnisj/bcdi.git@branch_name``
+|  - to install the main branch, type:
+|    ``python -m pip install git+https://github.com/carnisj/bcdi.git``
+|  - to install a specific branch, type:
+|    ``python -m pip install git+https://github.com/carnisj/bcdi.git@branch_name``
+
+Add the flag ``--upgrade`` to the commands above in order to update an existing
+installation.
 
 Note that there are issues with installing scikit-image within an Anaconda environment.
 In such situation, the workaround is to create instead a virtual environment using pip.
 
-Please send feedback in `GitHub <https://github.com/carnisj/bcdi/issues>`_.
+Please send feedback in `GitHub issues <https://github.com/carnisj/bcdi/issues>`_.
 
 Documentation
 =============
