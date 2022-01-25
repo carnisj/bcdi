@@ -3,11 +3,8 @@ root_folder: "C:/Users/Jerome/Documents/data/dataset_P10/"
 # folder of the experiment, where all scans are stored
 save_dir: "C:/Users/Jerome/Documents/data/dataset_P10/test/"
 # images will be saved here, leave it to None otherwise
-data_dir: None  # leave None to use the beamline default,
-# '' empty string when there is no subfolder
-# (data directly in the scan folder), or a non-empty string for the subfolder name
-# (default to scan_folder/pynx/ or scan_folder/pynxraw/
-# depending on the setting of use_rawdata)
+data_dir: None
+# leave None to use the beamline default, or provide the full path to the data.
 sample_name: "B15_syn_S1_2"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.

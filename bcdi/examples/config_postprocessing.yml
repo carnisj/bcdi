@@ -5,8 +5,7 @@ save_dir: "C:/Users/Jerome/Documents/data/dataset_P10/test/"
 # images will be saved here,
 # leave it to None otherwise (default to data directory's parent)
 data_dir: None
-# leave None to use the beamline default, or provide the full path to the output of the
-# phase retrieval.
+# leave None to use the beamline default, or provide the full path to the data.
 sample_name: "B15_syn_S1_2"
 # string in front of the scan number in the folder name.
 comment: ""  # comment in filenames, should start with _
