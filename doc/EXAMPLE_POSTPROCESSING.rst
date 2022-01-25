@@ -15,13 +15,16 @@ to the detector horizontal axis.
 
 The most usefull script is ``bcdi_strain.py``. It requires a YAML config
 file, which for this example is ``bcdi/examples/S11_config_postprocessing.yml``.
+A result file named ``S11_modes.h5`` is also provided in ``bcdi/examples``. This is the
+output of the decomposition into orthogonal modes after phase retrieval with PyNX. For
+convenience, copy ``S11_modes.h5`` to the data folder "path_to/CXIDB-I182/CH4760/S11/".
 
 In order to have it running correctly on your machine, you will have to modify the paths
 corresponding to the following parameters::
 
     root_folder: "path_to/CXIDB-I182/CH4760/"
     save_dir: "path_to_saving_directory"
-    data_dir: "path_to/bcdi/doc/example/modes_S11.h5"
+    data_dir: "path_to/CXIDB-I182/CH4760/S11/"
 
 The script should run properly with other parameters unchanged.
 
@@ -44,6 +47,10 @@ virtual environment named ``myenv``):
     - scripts in ``/path_to/anaconda3/envs/myenv/bin``
     - config files in ``/path_to/anaconda3/envs/myenv/lib/python3.8/site-packages/bcdi/examples``
 
+After launching the script, a pop-up window opens, so that you can select the files to
+load. By default this window opens at the location defined by ``data_dir``, but you can
+navigate to any location on your computer.
+
 The phase retrieval output will be loaded and several postprocessing steps are applied
 automatically. Below are few important points about parameters:
 
@@ -64,3 +71,5 @@ automatically. Below are few important points about parameters:
      position) with the parameters `outofplane_angle` and `inplane_angle`. If these
      parameters are None, the script will try to load them from the log file and will
      apply the correction if the direct beam position is provided in the config file.
+     The raw data (detector frames) are then expected to be located in ``data_dir``, and
+     an exception will be raised in the contrary.
