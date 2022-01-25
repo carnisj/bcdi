@@ -147,7 +147,7 @@ def run(prm):
         roi=roi_detector,
         binning=phasing_binning,
         preprocessing_binning=preprocessing_binning,
-        pixel_size=prm.get("pixel_size"),
+        custom_pixelsize=prm.get("custom_pixelsize"),
     )
 
     ####################################

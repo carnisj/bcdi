@@ -20,12 +20,12 @@ Examples
 ========
 
 In this section you will find two examples showing how to pre-process and post-process
-experimental BCDI using this package. In order to run the example, you need first to
-get the data, which is available on the Coherent X-ray Imaging DataBank. Please
-download the dataset ID182 from the following location:
+experimental BCDI data using this package. In order to run the examples, you need first
+to get the data, which is available at the Coherent X-ray Imaging DataBank. Please
+download the dataset ID182 from the following website:
 https://www.cxidb.org/id-182.html
 
-Extract files, you should get the following::
+Extract the files, you should get the following::
 
     CXIDB-182/
         Readme ID 182.txt

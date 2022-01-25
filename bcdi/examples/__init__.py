@@ -5,5 +5,9 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""The main bcdi package, which contains the whole framework."""
-__version__ = "0.2.2"
+
+"""
+BCDI examples.
+
+This package contains examples about preprocessing and postprocessing scripts.
+"""

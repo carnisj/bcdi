@@ -229,6 +229,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "custom_motors":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
+    elif key == "custom_pixelsize":
+        valid.valid_item(
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+        )
     elif key == "data_dir":
         if value is not None:
             valid.valid_container(value, container_types=str, min_length=1, name=key)
@@ -402,10 +406,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "photon_threshold":
         valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
-    elif key == "pixel_size":
-        valid.valid_item(
-            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
-        )
     elif key == "preprocessing_binning":
         valid.valid_container(
             value,

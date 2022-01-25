@@ -14,7 +14,9 @@ import matplotlib.pyplot as plt
 from bcdi.preprocessing.preprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 
-CONFIG_FILE = "C:/Users/Jerome/Documents/myscripts/bcdi/conf/config_preprocessing.yml"
+CONFIG_FILE = (
+    "C:/Users/Jerome/Documents/myscripts/bcdi/bcdi/examples/config_preprocessing.yml"
+)
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and

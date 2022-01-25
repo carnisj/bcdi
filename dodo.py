@@ -149,17 +149,20 @@ def task_mypy():
 
 def task_check_links_doc():
     """Check external links in the doc using sphinx."""
-    make = Path(get_path()) / "doc/make"
+    sourcedir = Path(get_path()) / "doc"
+    outputdir = sourcedir / "doc_html"
     return {
-        "actions": [f"{make} linkcheck"],
+        "actions": [f"sphinx-build -b linkcheck {sourcedir} {outputdir}"],
         "verbosity": 1,
     }
 
 
 def task_build_doc():
     """Build the documentation with sphinx."""
+    sourcedir = Path(get_path()) / "doc"
+    outputdir = sourcedir / "doc_html"
     return {
-        "actions": ["sphinx-build doc doc/doc_html"],
+        "actions": [f"sphinx-build -b html {sourcedir} {outputdir}"],
         "targets": ["docs/"],
     }
 
