@@ -30,6 +30,20 @@ practice), run:
 
 ``python path_to/bcdi_strain.py --conf path_to/S11_config_postprocessing.yml``
 
+If you installed the package, the scripts and configuration files will be located at the
+following location (example with the ``bcdi`` package installed in a Python3.8 conda
+virtual environment named ``myenv``):
+
+- on Windows:
+
+    - scripts in ``path_to\anaconda3\envs\myenv\Scripts``
+    - config files in ``path_to\anaconda3\envs\myenv\Lib\site-packages\bcdi\examples``
+
+- on Linux:
+
+    - scripts in ``/path_to/anaconda3/envs/myenv/bin``
+    - config files in ``/path_to/anaconda3/envs/myenv/lib/python3.8/site-packages/bcdi/examples``
+
 The phase retrieval output will be loaded and several postprocessing steps are applied
 automatically. Below are few important points about parameters:
 
