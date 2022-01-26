@@ -78,6 +78,7 @@ todo_include_todos = False
 autodoc_mock_imports = [
     "ipywidgets",
     "numpy",
+    "pandas",
     "scipy",
     "skimage",
     "matplotlib",
