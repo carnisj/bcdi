@@ -148,7 +148,7 @@ fill_value_mask: 0  # 0 (not masked) or 1 (masked).
 # imposed). The data is by default set to 0 outside the defined range.
 beam_direction: [1, 0, 0]
 # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets: None
+sample_offsets: [90, 0, 0]
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
