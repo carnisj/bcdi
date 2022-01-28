@@ -3173,7 +3173,7 @@ class Diffractometer34ID(Diffractometer):
                 except TypeError:
                     raise ValueError(
                         "Error in string formatting of the image filename, "
-                        "check the value of template_imagefile"
+                        "check the value of 'template_imagefile'"
                     )
 
             data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
