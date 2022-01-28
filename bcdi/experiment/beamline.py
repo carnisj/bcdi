@@ -24,12 +24,14 @@ to be instantiated directly but via a Setup instance.
       +str name
       detector_hor(@)
       detector_ver(@)
+      goniometer_values(@)
       init_paths(@)
       process_positions(@)
       transformation_matrix(@)
       exit_wavevector()
       find_inplane()
       find_outofplane()
+      flatten_sample()
       init_qconversion()
       inplane_coeff()
       outofplane_coeff()
@@ -100,8 +102,7 @@ class Beamline(ABC):
         self.diffractometer = create_diffractometer(name, **kwargs)
         self.loader = create_loader(
             name=name,
-            sample_offsets=self.diffractometer.sample_offsets,
-            **kwargs
+            sample_offsets=self.diffractometer.sample_offsets
         )
 
     @property
