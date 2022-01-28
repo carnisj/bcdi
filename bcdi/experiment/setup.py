@@ -521,7 +521,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self.beamline.inplane_coeff(self.diffractometer)
+        return self.beamline.inplane_coeff()
 
     @property
     def is_series(self):
