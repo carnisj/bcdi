@@ -119,7 +119,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -167,10 +166,12 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -313,7 +314,6 @@ class TestBeamlineID01(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -361,10 +361,12 @@ class TestBeamlineID01(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -516,7 +518,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -565,10 +566,12 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -713,7 +716,6 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -792,10 +794,12 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
         self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -984,7 +988,6 @@ class TestBeamlineSIXS(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1032,10 +1035,12 @@ class TestBeamlineSIXS(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -1178,7 +1183,6 @@ class TestBeamline34ID(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1226,10 +1230,12 @@ class TestBeamline34ID(unittest.TestCase):
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
+        self.assertEqual(
+            self.beamline.outofplane_coeff(), 1
+        )
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
