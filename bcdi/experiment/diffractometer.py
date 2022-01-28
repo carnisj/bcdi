@@ -1225,7 +1225,7 @@ class Diffractometer(ABC):
         :param stage_name: supported stage name, 'sample' or 'detector'
         :param index: index of the circle to be removed from the list
         """
-        if stage_name not in self.valid_names.keys():
+        if stage_name not in self.valid_names:
             raise NotImplementedError(
                 f"'{stage_name}' is not implemented,"
                 f" available are {list(self.valid_names.keys())}"
@@ -1313,7 +1313,7 @@ class Diffractometer(ABC):
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         """
-        if stage_name not in self.valid_names.keys():
+        if stage_name not in self.valid_names:
             raise NotImplementedError(
                 f"'{stage_name}' is not implemented,"
                 f" available are {list(self.valid_names.keys())}"
