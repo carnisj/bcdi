@@ -3168,13 +3168,13 @@ class Diffractometer34ID(Diffractometer):
                         filename=ccdfiletmp % i,
                         convert_grey=True,
                         cmap="gray",
-                        debug=False
+                        debug=False,
                     )
                 except TypeError:
-                    raise ValueError("Error in string formatting of the image filename,"
-                                     " check the value of template_imagefile")
-
-
+                    raise ValueError(
+                        "Error in string formatting of the image filename, "
+                        "check the value of template_imagefile"
+                    )
 
             data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
                 frame=ccdraw,
