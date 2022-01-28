@@ -9,45 +9,55 @@
 This module provides classes and methods for the definition of the experimental setup.
 The following classes are implemented:
 
- * Beamline and corresponding child classes (one per supported beamline)
- * Detector and corresponding child classes (one per supported detector)
- * Diffractometer and corresponding child classes (one per supported beamline)
+ * Beamline and corresponding child classes: calculations related to reciprocal or
+   direct space transformation.
+ * Detector and corresponding child classes: implementation of the 2D detectors.
+ * Diffractometer and Geometry with corresponding child classes: implementation of the
+   diffractometer geometry.
+ * Loader and corresponding child classes: initialization of the file system and loading
+   of data and motor positions.
  * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
- * Setup
+ * Setup: the manager of the analysis
 
 .. mermaid::
   :align: center
 
   classDiagram
     class Setup{
-      +str beamline
+      +name : beamline name
   }
     class Beamline{
-      +str name
+      +name
   }
     class Loader{
-      +str name
+      +name
+      +sample_offsets
   }
     class Diffractometer{
-      +tuple sample_offsets
+      +name
+      +sample_offsets
+  }
+    class Geometry{
+      +name
   }
     class Detector{
-      +str name
+      +name
   }
     class RotationMatrix{
-      +str circle
-      +float angle
+      +angle
+      +circle
   }
-    Setup *-- Beamline : create_beamline()
+    Setup o-- Beamline : create_beamline()
     Setup o-- Detector : create_detector()
-    Beamline o-- Diffractometer : create_diffractometer()
+    Beamline o-- Diffractometer
+    Diffractometer o-- Geometry : create_geometry()
     Beamline o-- Loader : create_loader()
     Diffractometer o-- RotationMatrix
 
 In scripts, the initial step is to declare a detector instance and a setup instance with
-the related parameters (see the class documentation). The beamline and the
-diffractometer are not meant to be instantiated directly, this is done internally in
-Setup.
+the related parameters (see the class documentation). The beamline is instantiated
+internally in the Setup instance. The Loader and Diffractometer are instantiated in the
+Beamline instance.
 
 The geometry of the following beamlines is implemented:
 
@@ -77,7 +87,7 @@ General organization of the module:
 
   classDiagram
     class Beamline{
-      +str name
+      +name : beamline name
   }
     ABC <|-- Beamline
     Beamline <|-- BeamlineID01
@@ -101,7 +111,7 @@ General organization of the module:
 
   classDiagram
     class Detector{
-      +str name : detector_name
+      +name : detector_name
   }
     ABC <|-- Detector
     Detector <|-- Maxipix
@@ -117,27 +127,6 @@ General organization of the module:
 diffractometer
 ^^^^^^^^^^^^^^
 
-General organization of the module:
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Diffractometer{
-      +detector_circles
-      +name
-      +sample_circles
-      +sample_offsets
-      +tuple sample_offsets
-      -_geometry
-      add_circle()
-      get_circles()
-      get_rocking_circle()
-      remove_circle()
-      rotation_matrix()
-      valid_name()
-  }
-
 .. automodule:: bcdi.experiment.diffractometer
     :members:
 
@@ -151,7 +140,8 @@ General organization of the module:
 
   classDiagram
     class Loader{
-      +str name
+      +name
+      +sample_offsets
   }
     ABC <|-- Loader
     Loader <|-- LoaderID01
