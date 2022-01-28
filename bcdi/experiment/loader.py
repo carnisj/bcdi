@@ -7,10 +7,10 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Implementation of beanlime-dependent data loading classes.
+Implementation of beamline-dependent data loading classes.
 
-The class methods manage the initialization of the file system and data loading.
-Generic method are implemented in the abstract base class Beamline, and
+The class methods manage the initialization of the file system and data/motor position
+loading. Generic method are implemented in the abstract base class Loader, and
 beamline-dependent methods need to be implemented in each child class (they are
 decorated by @abstractmethod in the base class; they are indicated using @ in the
 following diagram).
@@ -31,7 +31,7 @@ following diagram).
       load_check_dataset()
 
   }
-    ABC <|-- Beamline
+    ABC <|-- Loader
 
 API Reference
 -------------
@@ -64,7 +64,7 @@ from bcdi.utils import validation as valid
 
 def create_loader(name, sample_offsets):
     """
-    Create the instance of the beamline.
+    Create the instance of the loader.
 
     :param name: str, name of the beamline
     :param sample_offsets: list or tuple of angles in degrees, corresponding to
@@ -496,13 +496,8 @@ class Loader(ABC):
      the sample offsets will be subtracted to measurement the motor values.
     """
     def __init__(self, name, sample_offsets):
-        self._name = name
+        self.name = name
         self.sample_offsets = sample_offsets
-
-    @property
-    def name(self):
-        """Name of the beamline."""
-        return self._name
 
     @staticmethod
     @abstractmethod
@@ -879,6 +874,7 @@ class Loader(ABC):
 
 
 class LoaderID01(Loader):
+    """Loader for ESRF ID01 beamline before the deployement of BLISS."""
 
     motor_table = {
         "old_names": {
@@ -1203,6 +1199,7 @@ class LoaderID01(Loader):
 
 
 class LoaderID01BLISS(Loader):
+    """Loader for ESRF ID01 beamline after the deployement of BLISS."""
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -1297,6 +1294,7 @@ class LoaderID01BLISS(Loader):
 
 
 class LoaderSIXS(Loader):
+    """Loader for SOLEIL SIXS beamline."""
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -1505,6 +1503,7 @@ class LoaderSIXS(Loader):
 
 
 class Loader34ID(Loader):
+    """Loader for APS 34ID-C beamline."""
 
     motor_table = {
         "theta": "Theta",
@@ -1768,6 +1767,7 @@ class Loader34ID(Loader):
 
 
 class LoaderP10(Loader):
+    """Loader for PETRAIII P10 beamline."""
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -2105,6 +2105,7 @@ class LoaderP10(Loader):
 
 
 class LoaderP10SAXS(LoaderP10):
+    """Loader for PETRAIII P10 SAXS beamline."""
 
     def motor_positions(self, setup, **_):
         """
@@ -2142,6 +2143,7 @@ class LoaderP10SAXS(LoaderP10):
 
 
 class LoaderCRISTAL(Loader):
+    """Loader for SOLEIL CRISTAL beamline."""
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -2504,6 +2506,7 @@ class LoaderCRISTAL(Loader):
 
 
 class LoaderNANOMAX(Loader):
+    """Loader for MAX IV NANOMAX beamline."""
 
     @staticmethod
     def create_logfile(**kwargs):
