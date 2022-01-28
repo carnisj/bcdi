@@ -22,7 +22,7 @@ following diagram).
     class Loader{
       +name
       +sample_offsets
-      create_logile(@)
+      create_logfile(@)
       load_data(@)
       motor_positions(@)
       read_device(@)
