@@ -48,6 +48,7 @@ from numbers import Real
 import os
 import xrayutilities as xu
 
+from bcdi.experiment.diffractometer import create_diffractometer
 from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -96,6 +97,7 @@ class Beamline(ABC):
 
     def __init__(self, name, **kwargs):
         self._name = name
+        self.diffractometer = create_diffractometer(name, **kwargs)
         self.loader = create_loader(name, **kwargs)
 
     @property
@@ -198,6 +200,135 @@ class Beamline(ABC):
             if val.startswith("x"):
                 index = idx
         return index
+
+    def flatten_sample(
+        self,
+        arrays,
+        voxel_size,
+        q_com,
+        rocking_angle,
+        central_angle=None,
+        fill_value=0,
+        is_orthogonal=True,
+        reciprocal_space=False,
+        debugging=False,
+        **kwargs,
+    ):
+        """
+        Send all sample circles to zero degrees.
+
+        Arrays are rotatedsuch that all circles of the sample stage are at their zero
+        position.
+
+        :param arrays: tuple of 3D real arrays of the same shape.
+        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
+         (CXI convention)
+        :param q_com: diffusion vector of the center of mass of the Bragg peak,
+         expressed in an orthonormal frame x y z
+        :param rocking_angle: angle which is tilted during the rocking curve in
+         {'outofplane', 'inplane'}
+        :param central_angle: if provided, angle to be used in the calculation
+         of the rotation matrix for the rocking angle. If None, it will be defined as
+         the angle value at the middle of the rocking curve.
+        :param fill_value: tuple of numeric values used in the RegularGridInterpolator
+         for points outside of the interpolation domain. The length of the tuple
+         should be equal to the number of input arrays.
+        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise.
+         Used for plot labels.
+        :param reciprocal_space: True if the data is in reciprocal space,
+         False otherwise. Used for plot labels.
+        :param debugging: tuple of booleans of the same length as the number
+         of input arrays, True to see plots before and after rotation
+        :param kwargs:
+
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the
+           debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle
+           of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle
+           of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle
+           of the initial array
+
+        :return: a rotated array (if a single array was provided) or a tuple of
+         rotated arrays (same length as the number of input arrays)
+        """
+        valid.valid_ndarray(arrays, ndim=3)
+
+        # check few parameters, the rest will be validated in rotate_crystal
+        valid.valid_container(
+            q_com,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name="q_com",
+        )
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError("the norm of q_com is zero")
+        if self.diffractometer.sample_angles is None:
+            raise ValueError(
+                "call diffractometer.goniometer_values before calling this method"
+            )
+        valid.valid_item(
+            central_angle, allowed_types=Real, allow_none=True, name="central_angle"
+        )
+        # find the index of the circle which corresponds to the rocking angle
+        angles = self.diffractometer.sample_angles
+        rocking_circle = self.diffractometer.get_rocking_circle(
+            rocking_angle=rocking_angle, stage_name="sample", angles=angles
+        )
+
+        # get the relevant angle within the rocking circle.
+        # The reference point when orthogonalizing if the center of the array,
+        # but we do not know to which angle it corresponds if the data was cropped.
+        if central_angle is None:
+            print(
+                "central_angle=None, using the angle at half of the rocking curve"
+                " for the calculation of the rotation matrix"
+            )
+            nb_steps = len(angles[rocking_circle])
+            central_angle = angles[rocking_circle][int(nb_steps // 2)]
+
+        # use this angle in the calculation of the rotation matrix
+        angles = list(angles)
+        angles[rocking_circle] = central_angle
+        print(
+            f"sample stage circles: {self.diffractometer.sample_circles}\n"
+            f"sample stage angles:  {angles}"
+        )
+
+        # check that all angles are Real, not encapsulated in a list or an array
+        for idx, angle in enumerate(angles):
+            if not isinstance(angle, Real):  # list/tuple or ndarray, cannot be None
+                if len(angle) != 1:
+                    raise ValueError(
+                        "A list of angles was provided instead of a single value"
+                    )
+                angles[idx] = angle[0]
+
+        # calculate the rotation matrix
+        rotation_matrix = self.diffractometer.rotation_matrix(
+            stage_name="sample",
+            angles=angles
+        )
+
+        # rotate the arrays
+        rotated_arrays = util.rotate_crystal(
+            arrays=arrays,
+            rotation_matrix=rotation_matrix,
+            voxel_size=voxel_size,
+            fill_value=fill_value,
+            debugging=debugging,
+            is_orthogonal=is_orthogonal,
+            reciprocal_space=reciprocal_space,
+            **kwargs,
+        )
+        rotated_q = util.rotate_vector(
+            vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix)
+        )
+        return rotated_arrays, rotated_q
 
     @staticmethod
     @abstractmethod
