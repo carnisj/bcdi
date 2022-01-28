@@ -169,9 +169,7 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -364,9 +362,7 @@ class TestBeamlineID01(unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -569,9 +565,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -797,9 +791,7 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -1038,9 +1030,7 @@ class TestBeamlineSIXS(unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -1233,9 +1223,7 @@ class TestBeamline34ID(unittest.TestCase):
         self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(
-            self.beamline.outofplane_coeff(), 1
-        )
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
