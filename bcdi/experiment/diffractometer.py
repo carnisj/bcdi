@@ -194,11 +194,6 @@ class Diffractometer:
         self._detector_circles = list(value)
 
     @property
-    def name(self):
-        """Name of the beamline."""
-        return self.name
-
-    @property
     def sample_circles(self):
         """
         List of sample circles.
