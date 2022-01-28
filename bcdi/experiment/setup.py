@@ -144,8 +144,7 @@ class Setup:
         self.is_series = kwargs.get("is_series", False)  # boolean
         # load positional arguments corresponding to instance properties
         self.beamline = create_beamline(
-            name=beamline,
-            sample_offsets=kwargs.get("sample_offsets")
+            name=beamline, sample_offsets=kwargs.get("sample_offsets")
         )
         self.detector = detector or create_detector("Dummy")
         self.beam_direction = beam_direction
@@ -561,7 +560,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self.beamline.outofplane_coeff(self.diffractometer)
+        return self.beamline.outofplane_coeff()
 
     @property
     def params(self):
