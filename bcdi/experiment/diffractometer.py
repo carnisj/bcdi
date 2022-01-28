@@ -60,7 +60,7 @@ Describe the geometry of the diffractometer.
 :param default_offsets: tuple, default sample offsets of the diffractometer, same length
  as sample_circles.
 :param user_offsets: tuple, user-defined sample offsets of the diffractometer, same
-length as sample_circles.
+ length as sample_circles.
 """
 
 
