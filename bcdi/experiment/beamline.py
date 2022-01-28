@@ -98,7 +98,7 @@ class Beamline(ABC):
     # "y-" detector vertical axis down, as it should be in the CXI convention
 
     def __init__(self, name, **kwargs):
-        self._name = name
+        self.name = name
         self.diffractometer = Diffractometer(
             name=name,
             sample_offsets=kwargs.get("sample_offsets")
@@ -479,11 +479,6 @@ class Beamline(ABC):
             self.orientation_lookup[diffractometer.detector_circles[index]]
             * self.orientation_lookup[self.detector_hor]
         )
-
-    @property
-    def name(self):
-        """Name of the beamline."""
-        return self._name
 
     def outofplane_coeff(self, diffractometer):
         """
