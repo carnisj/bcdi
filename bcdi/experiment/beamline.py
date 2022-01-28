@@ -111,6 +111,22 @@ class Beamline(ABC):
         self.detector_angles = None
 
     @property
+    def detector_angles(self):
+        """Tuple of goniometer angular values for the detector stages."""
+        return self._detector_angles
+
+    @detector_angles.setter
+    def detector_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="detector_angles",
+        )
+        self._detector_angles = value
+
+    @property
     @abstractmethod
     def detector_hor(self):
         """
@@ -557,6 +573,22 @@ class Beamline(ABC):
             # data has been cropped, we suppose it is centered in z dimension
             array = array[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
         return array
+
+    @property
+    def sample_angles(self):
+        """Tuple of goniometer angular values for the sample stages."""
+        return self._sample_angles
+
+    @sample_angles.setter
+    def sample_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="sample_angles",
+        )
+        self._sample_angles = value
 
     @abstractmethod
     def transformation_matrix(
