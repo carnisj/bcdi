@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
 
-from ..experiment import diffractometer as diff
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.experiment import loader
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 
 def beamstop_correction(data, detector, setup, debugging=False):
@@ -423,12 +423,12 @@ def grid_cdi(
     """
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-    if setup.beamline == "P10_SAXS":
+    if setup.name == "P10_SAXS":
         if setup.rocking_angle == "inplane":
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle, _, _ = setup.diffractometer.motor_positions(setup=setup)
+                cdi_angle, _, _ = setup.loader.motor_positions(setup=setup)
                 # second return value is the X-ray energy, third the detector distance
         else:
             raise ValueError(
@@ -639,7 +639,7 @@ def load_cdi_data(
         frames_pattern, allow_none=True, allowed_values={0, 1}, name="frames_pattern"
     )
 
-    rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+    rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
         detector=detector,
         setup=setup,
@@ -767,13 +767,13 @@ def reload_cdi_data(
                 detector.sum_roi[2] : detector.sum_roi[3],
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
-            monitor = setup.diffractometer.read_monitor(
+            monitor = setup.loader.read_monitor(
                 scan_number=scan_number,
                 setup=setup,
             )
 
         print("Intensity normalization using " + normalize_method)
-        data, monitor = diff.normalize_dataset(
+        data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
             norm_to_min=True,

@@ -21,10 +21,10 @@ from scipy.ndimage.measurements import center_of_mass
 from typing import no_type_check, Optional, Tuple
 import xrayutilities as xu
 
-from ..experiment import diffractometer as diff
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.experiment import loader
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 
 def center_fft(
@@ -1101,7 +1101,7 @@ def load_bcdi_data(
         frames_pattern, allow_none=True, allowed_values={0, 1}, name="frames_pattern"
     )
 
-    rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+    rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
         detector=detector,
         setup=setup,
@@ -1215,13 +1215,13 @@ def reload_bcdi_data(
         print("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
-        monitor = setup.diffractometer.read_monitor(
+        monitor = setup.loader.read_monitor(
             scan_number=scan_number,
             setup=setup,
         )
 
         print("Intensity normalization using " + normalize_method)
-        data, monitor = diff.normalize_dataset(
+        data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
             norm_to_min=True,
