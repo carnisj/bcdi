@@ -25,6 +25,9 @@ The following classes are implemented:
     class Beamline{
       +str name
   }
+    class Loader{
+      +str name
+  }
     class Diffractometer{
       +tuple sample_offsets
   }
@@ -38,6 +41,7 @@ The following classes are implemented:
     Setup *-- Beamline : create_beamline()
     Setup *-- Diffractometer : create_diffractometer()
     Setup o-- Detector : create_detector()
+    Beamline o-- Loader : create_loader()
     Diffractometer o-- RotationMatrix
 
 In scripts, the initial step is to declare a detector instance and a setup instance with
@@ -133,6 +137,30 @@ General organization of the module:
 
 .. automodule:: bcdi.experiment.diffractometer
     :members:
+
+loader
+^^^^^^
+
+General organization of the module:
+
+.. mermaid::
+  :align: center
+
+  classDiagram
+    class Loader{
+      +str name
+  }
+    ABC <|-- Loader
+    Loader <|-- LoaderID01
+    LoaderID01 <|-- LoaderID01BLISS
+    Loader <|-- LoaderSIXS
+    Loader <|-- Loader34ID
+    Loader <|-- LoaderP10
+    Loader <|-- LoaderCRISTAL
+    Loader <|-- LoaderNANOMAX
+
+.. automodule:: bcdi.experiment.beamline
+   :members:
 
 rotation_matrix
 ^^^^^^^^^^^^^^^

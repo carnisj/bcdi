@@ -9,13 +9,12 @@
 """
 Implementation of beamline-related classes.
 
-The class methods manage the initialization of the file system and the calculations
-related to reciprocal or direct space transformation (interpolation in an orthonormal
-grid). Generic method are implemented in the abstract base class Beamline, and
-beamline-dependent methods need to be implemented in each child class (they are
-decorated by @abstractmethod in the base class; they are indicated using @ in the
-following diagram). These classes are not meant to be instantiated directly but via a
-Setup instance.
+The class methods manage  the calculations related to reciprocal or direct space
+transformation (interpolation in an orthonormal grid). Generic method are implemented
+in the abstract base class Beamline, and beamline-dependent methods need to be
+implemented in each child class (they are decorated by @abstractmethod in the base
+class; they are indicated using @ in the following diagram). These classes are not meant
+to be instantiated directly but via a Setup instance.
 
 .. mermaid::
   :align: center
@@ -23,7 +22,6 @@ Setup instance.
   classDiagram
     class Beamline{
       +str name
-      create_logfile(@)
       detector_hor(@)
       detector_ver(@)
       init_paths(@)
@@ -44,14 +42,13 @@ API Reference
 
 """
 from abc import ABC, abstractmethod
-import h5py
 from math import hypot, isclose
 import numpy as np
 from numbers import Real
 import os
-from silx.io.specfile import SpecFile
 import xrayutilities as xu
 
+from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -99,28 +96,7 @@ class Beamline(ABC):
 
     def __init__(self, name, **kwargs):
         self._name = name
-
-    @staticmethod
-    @abstractmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which can be a log/spec file or the data itself.
-
-        The nature of this file is beamline dependent.
-
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
-
-          - 'scan_number': the scan number to load.
-          - 'root_folder': the root directory of the experiment, where is e.g. the
-            specfile/.fio file.
-          - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
-          - 'datadir': the data directory
-          - 'template_imagefile': the template for data/image file names
-          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
-        """
+        self.loader = create_loader(name, **kwargs)
 
     @property
     @abstractmethod
@@ -360,7 +336,7 @@ class Beamline(ABC):
 
     @staticmethod
     @abstractmethod
-    def process_positions(setup, logfile, nb_frames, scan_number, frames_logical=None):
+    def process_positions(setup, nb_frames, scan_number, frames_logical=None):
         """
         Load and crop/pad motor positions depending on the current number of frames.
 
@@ -368,7 +344,6 @@ class Beamline(ABC):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -479,35 +454,6 @@ class BeamlineCRISTAL(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for CRISTAL.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. 'S%d.nxs'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
-
     @property
     def detector_hor(self):
         """
@@ -554,7 +500,6 @@ class BeamlineCRISTAL(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -566,7 +511,6 @@ class BeamlineCRISTAL(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -577,7 +521,6 @@ class BeamlineCRISTAL(Beamline):
         """
         mgomega, mgphi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -793,31 +736,6 @@ class BeamlineID01(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the spec file for ID01.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the spec file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
-
     @property
     def detector_hor(self):
         """
@@ -870,7 +788,6 @@ class BeamlineID01(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -882,7 +799,6 @@ class BeamlineID01(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -893,7 +809,6 @@ class BeamlineID01(Beamline):
         """
         mu, eta, phi, nu, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -1113,34 +1028,6 @@ class BeamlineNANOMAX(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for Nanomax.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. '%06d.h5'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
-
     @property
     def detector_hor(self):
         """
@@ -1187,7 +1074,6 @@ class BeamlineNANOMAX(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -1199,7 +1085,6 @@ class BeamlineNANOMAX(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -1210,7 +1095,6 @@ class BeamlineNANOMAX(Beamline):
         """
         theta, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -1428,41 +1312,6 @@ class BeamlineP10(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the .fio file for P10.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where the scan
-           folders are located.
-         - 'filename': str, name of the .fio file or full path of the .fio file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        if os.path.isfile(filename):
-            # filename is already the full path to the .fio file
-            return filename
-        print(f"Could not find the fio file at: {filename}")
-
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-
-        # return the path to the .fio file
-        path = root_folder + filename + "/" + filename + ".fio"
-        print(f"Trying to load the fio file at: {path}")
-        return path
-
     @property
     def detector_hor(self):
         """
@@ -1521,7 +1370,6 @@ class BeamlineP10(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -1533,7 +1381,6 @@ class BeamlineP10(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -1544,7 +1391,6 @@ class BeamlineP10(Beamline):
         """
         mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -2008,62 +1854,6 @@ class BeamlineSIXS(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for SIXS.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name:
-
-           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-
-         - 'scan_number': int, the scan number to load
-         - 'filename': str, absolute path of 'alias_dict.txt'
-         - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-        filename = kwargs.get("filename")
-        name = kwargs.get("name")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_container(filename, container_types=str, name="filename")
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        shortname = template_imagefile % scan_number
-        if name == "SIXS_2018":
-            # no specfile, load directly the dataset
-            import bcdi.preprocessing.nxsReady as nxsReady
-
-            return nxsReady.DataSet(
-                longname=datadir + shortname,
-                shortname=shortname,
-                alias_dict=filename,
-                scan="SBS",
-            )
-        if name == "SIXS_2019":
-            # no specfile, load directly the dataset
-            import bcdi.preprocessing.ReadNxs3 as ReadNxs3
-
-            return ReadNxs3.DataSet(
-                directory=datadir,
-                filename=shortname,
-                alias_dict=filename,
-            )
-        raise NotImplementedError(f"{name} is not implemented")
-
     @property
     def detector_hor(self):
         """
@@ -2131,7 +1921,6 @@ class BeamlineSIXS(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -2143,7 +1932,6 @@ class BeamlineSIXS(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -2154,7 +1942,6 @@ class BeamlineSIXS(Beamline):
         """
         beta, mu, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -2334,31 +2121,6 @@ class Beamline34ID(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the spec file for 34ID-C.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the .spec file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
-
     @property
     def detector_hor(self):
         """
@@ -2411,7 +2173,6 @@ class Beamline34ID(Beamline):
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -2423,7 +2184,6 @@ class Beamline34ID(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -2434,7 +2194,6 @@ class Beamline34ID(Beamline):
         """
         theta, chi, phi, delta, gamma, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,

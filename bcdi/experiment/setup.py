@@ -21,13 +21,14 @@ import numpy as np
 from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
-from typing import List, Optional, Tuple, Union
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
-from .diffractometer import create_diffractometer
-from .beamline import create_beamline
-from .detector import create_detector, Detector
+from typing import Optional, Tuple
+
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
+from bcdi.experiment.diffractometer import create_diffractometer
+from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.detector import create_detector, Detector
 
 
 class Setup:
@@ -925,7 +926,7 @@ class Setup:
         if self.custom_scan:
             logfile = None
         else:
-            logfile = self._beamline.create_logfile(
+            logfile = self._beamline.loader.create_logfile(
                 scan_number=scan_number,
                 root_folder=root_folder,
                 filename=filename,
