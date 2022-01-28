@@ -50,7 +50,7 @@ from numbers import Real
 import os
 import xrayutilities as xu
 
-from bcdi.experiment.diffractometer import create_diffractometer
+from bcdi.experiment.diffractometer import Diffractometer
 from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -99,11 +99,16 @@ class Beamline(ABC):
 
     def __init__(self, name, **kwargs):
         self._name = name
-        self.diffractometer = create_diffractometer(name, **kwargs)
+        self.diffractometer = Diffractometer(
+            name=name,
+            sample_offsets=kwargs.get("sample_offsets")
+        )
         self.loader = create_loader(
             name=name,
             sample_offsets=self.diffractometer.sample_offsets
         )
+        self.sample_angles = None
+        self.detector_angles = None
 
     @property
     @abstractmethod
@@ -272,7 +277,7 @@ class Beamline(ABC):
         )
         if np.linalg.norm(q_com) == 0:
             raise ValueError("the norm of q_com is zero")
-        if self.diffractometer.sample_angles is None:
+        if self.sample_angles is None:
             raise ValueError(
                 "call diffractometer.goniometer_values before calling this method"
             )
@@ -280,7 +285,7 @@ class Beamline(ABC):
             central_angle, allowed_types=Real, allow_none=True, name="central_angle"
         )
         # find the index of the circle which corresponds to the rocking angle
-        angles = self.diffractometer.sample_angles
+        angles = self.sample_angles
         rocking_circle = self.diffractometer.get_rocking_circle(
             rocking_angle=rocking_angle, stage_name="sample", angles=angles
         )
@@ -664,8 +669,8 @@ class BeamlineCRISTAL(Beamline):
         )
 
         # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
-        self.diffractometer.sample_angles = (mgomega, mgphi)
-        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+        self.sample_angles = (mgomega, mgphi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
 
@@ -1005,8 +1010,8 @@ class BeamlineID01(Beamline):
         )
 
         # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
-        self.diffractometer.sample_angles = (mu, eta, phi)
-        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+        self.sample_angles = (mu, eta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
@@ -1341,8 +1346,8 @@ class BeamlineNANOMAX(Beamline):
         )
 
         # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
-        self.diffractometer.sample_angles = (theta, phi)
-        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+        self.sample_angles = (theta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
@@ -1671,8 +1676,8 @@ class BeamlineP10(Beamline):
         )
 
         # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
-        self.diffractometer.sample_angles = (mu, om, chi, phi)
-        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+        self.sample_angles = (mu, om, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
@@ -2216,8 +2221,8 @@ class BeamlineP10SAXS(BeamlineP10):
         )
 
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
-        self.diffractometer.sample_angles = (phi,)
-        self.diffractometer.detector_angles = (0, 0)
+        self.sample_angles = (phi,)
+        self.detector_angles = (0, 0)
 
         return tilt_angle, grazing, 0, 0
 
@@ -2293,8 +2298,8 @@ class BeamlineSIXS(Beamline):
         )
 
         # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
-        self.diffractometer.sample_angles = (beta, mu)
-        self.diffractometer.detector_angles = (beta, inplane_angle, outofplane_angle)
+        self.sample_angles = (beta, mu)
+        self.detector_angles = (beta, inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
@@ -2619,8 +2624,8 @@ class Beamline34ID(Beamline):
 
         # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
         # phi (out of plane)   detector: delta (inplane), gamma)
-        self.diffractometer.sample_angles = (theta, chi, phi)
-        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+        self.sample_angles = (theta, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
 
         return tilt_angle, grazing, inplane_angle, outofplane_angle
 
