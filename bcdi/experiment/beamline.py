@@ -502,7 +502,7 @@ class Beamline(ABC):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        motor_positions = setup.diffractometer.motor_positions(
+        motor_positions = setup.loader.motor_positions(
             setup=setup,
             scan_number=scan_number,
         )
