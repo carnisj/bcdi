@@ -46,7 +46,7 @@ from bcdi.utils import validation as valid
 
 Geometry = namedtuple(
     "Geometry",
-    ["sample_circles", "detector_circles", "default_offsets", "user_offsets"]
+    ["sample_circles", "detector_circles", "default_offsets", "user_offsets"],
 )
 Geometry.__doc__ = """
 Describe the geometry of the diffractometer.
@@ -80,49 +80,49 @@ def create_geometry(beamline, sample_offsets=None):
             sample_circles=["y-", "x-", "y-"],
             detector_circles=["y-", "x-"],
             default_offsets=(0, 0, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline in {"SIXS_2018", "SIXS_2019"}:
         return Geometry(
             sample_circles=["x-", "y+"],
             detector_circles=["x-", "y+", "x-"],
             default_offsets=(0, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline == "34ID":
         return Geometry(
             sample_circles=["y+", "z-", "y+"],
             detector_circles=["y+", "x-"],
             default_offsets=(0, 90, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline == "P10":
         return Geometry(
             sample_circles=["y+", "x-", "z+", "y-"],
             detector_circles=["y+", "x-"],
             default_offsets=(0, 0, 90, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline == "P10_SAXS":
         return Geometry(
             sample_circles=["y+"],
             detector_circles=[],
             default_offsets=(0,),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline == "CRISTAL":
         return Geometry(
             sample_circles=["x-", "y+"],
             detector_circles=["y+", "x-"],
             default_offsets=(0, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     if beamline == "NANOMAX":
         return Geometry(
             sample_circles=["x-", "y-"],
             detector_circles=["y-", "x-"],
             default_offsets=(0, 0),
-            user_offsets=sample_offsets
+            user_offsets=sample_offsets,
         )
     raise NotImplementedError(
         f"No diffractometer implemented for the beamline {beamline}"
@@ -164,7 +164,8 @@ class Diffractometer:
         self.sample_circles = self._geometry.sample_circles
         self.detector_circles = self._geometry.detector_circles
         self.sample_offsets = (
-            self._geometry.user_offsets if self._geometry.user_offsets is not None
+            self._geometry.user_offsets
+            if self._geometry.user_offsets is not None
             else self._geometry.default_offsets
         )
 

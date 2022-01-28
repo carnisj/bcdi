@@ -351,7 +351,7 @@ def load_frame(
     if normalize == "sum_roi":
         monitor = util.sum_roi(array=frame, roi=detector.sum_roi)
 
-    frame = frame[loading_roi[0]: loading_roi[1], loading_roi[2]: loading_roi[3]]
+    frame = frame[loading_roi[0] : loading_roi[1], loading_roi[2] : loading_roi[3]]
 
     if bin_during_loading:
         frame = util.bin_data(
@@ -496,6 +496,7 @@ class Loader(ABC):
      should be at index 0). The number of circles is beamline dependent. Convention:
      the sample offsets will be subtracted to measurement the motor values.
     """
+
     def __init__(self, name, sample_offsets):
         self.name = name
         self.sample_offsets = sample_offsets

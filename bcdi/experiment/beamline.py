@@ -104,12 +104,10 @@ class Beamline(ABC):
     def __init__(self, name, **kwargs):
         self.name = name
         self.diffractometer = Diffractometer(
-            name=name,
-            sample_offsets=kwargs.get("sample_offsets")
+            name=name, sample_offsets=kwargs.get("sample_offsets")
         )
         self.loader = create_loader(
-            name=name,
-            sample_offsets=self.diffractometer.sample_offsets
+            name=name, sample_offsets=self.diffractometer.sample_offsets
         )
         self.sample_angles = None
         self.detector_angles = None
@@ -333,8 +331,7 @@ class Beamline(ABC):
 
         # calculate the rotation matrix
         rotation_matrix = self.diffractometer.rotation_matrix(
-            stage_name="sample",
-            angles=angles
+            stage_name="sample", angles=angles
         )
 
         # rotate the arrays
