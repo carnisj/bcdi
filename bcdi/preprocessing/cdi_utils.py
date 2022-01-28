@@ -466,7 +466,9 @@ def grid_cdi(
     interp_data[np.nonzero(interp_mask)] = 0
 
     # calculate the position in pixels of the origin of the reciprocal space
-    pivot_z = int((setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2])
+    pivot_z = int(
+        (setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2]
+    )
     # 90 degrees conter-clockwise rotation of detector X around qz, downstream
     _, numy, numx = interp_data.shape
     pivot_y = int(numy - corrected_dirbeam[0])
@@ -647,9 +649,7 @@ def load_cdi_data(
     #################################
     # apply the beamstop correction #
     #################################
-    rawdata = beamstop_correction(
-        data=rawdata, setup=setup, debugging=debugging
-    )
+    rawdata = beamstop_correction(data=rawdata, setup=setup, debugging=debugging)
 
     #####################################################
     # apply an optional photon threshold before binning #
@@ -673,10 +673,14 @@ def load_cdi_data(
             setup.detector.binning[2],
         )
         rawdata = util.bin_data(
-            rawdata, (1, setup.detector.binning[1], setup.detector.binning[2]), debugging=False
+            rawdata,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask = util.bin_data(
-            rawmask, (1, setup.detector.binning[1], setup.detector.binning[2]), debugging=False
+            rawmask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask[np.nonzero(rawmask)] = 1
 
@@ -776,7 +780,11 @@ def reload_cdi_data(
         setup.detector.roi[1] - setup.detector.roi[0] > nby
         or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
-        start = (0, max(0, abs(setup.detector.roi[0])), max(0, abs(setup.detector.roi[2])))
+        start = (
+            0,
+            max(0, abs(setup.detector.roi[0])),
+            max(0, abs(setup.detector.roi[2])),
+        )
         print("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
@@ -814,10 +822,14 @@ def reload_cdi_data(
             setup.detector.binning[2],
         )
         data = util.bin_data(
-            data, (1, setup.detector.binning[1], setup.detector.binning[2]), debugging=debugging
+            data,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask = util.bin_data(
-            mask, (1, setup.detector.binning[1], setup.detector.binning[2]), debugging=debugging
+            mask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask[np.nonzero(mask)] = 1
 

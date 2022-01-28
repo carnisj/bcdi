@@ -249,11 +249,15 @@ plt.ion()
 ########################
 # initialize the setup #
 ########################
-setup = Setup(beamline=beamline, is_series=is_series,    detector_name=detector,
+setup = Setup(
+    beamline=beamline,
+    is_series=is_series,
+    detector_name=detector,
     datadir="",
     template_imagefile=template_imagefile,
     sum_roi=sum_roi,
-    binning=[1, binning[0], binning[1]],)
+    binning=[1, binning[0], binning[1]],
+)
 
 if setup.beamline == "P10":
     specfile_name = sample_name + "_{:05d}".format(scan)

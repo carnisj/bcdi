@@ -275,7 +275,9 @@ print(setup.detector)
 # Initialize the logfile #
 ##########################
 if simulation:
-    setup.detector.datadir, setup.detector.datadir, setup.detector.savedir = (root_folder,) * 3
+    setup.detector.datadir, setup.detector.datadir, setup.detector.savedir = (
+        root_folder,
+    ) * 3
 
 logfile = setup.create_logfile(
     scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
@@ -622,7 +624,9 @@ if flag_interact:
             vmin=0,
             reciprocal_space=True,
         )
-        np.savez_compressed(setup.detector.savedir + "linecut_prtf.npz", data=linecut_prtf)
+        np.savez_compressed(
+            setup.detector.savedir + "linecut_prtf.npz", data=linecut_prtf
+        )
     else:
         linecut_prtf = prtf_matrix
 

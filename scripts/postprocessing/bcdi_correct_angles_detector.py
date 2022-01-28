@@ -191,7 +191,10 @@ else:
         filetypes=[("NPZ", "*.npz")],
     )
     data = np.load(file_path)["data"]
-    data = data[setup.detector.roi[0] : setup.detector.roi[1], setup.detector.roi[2] : setup.detector.roi[3]]
+    data = data[
+        setup.detector.roi[0] : setup.detector.roi[1],
+        setup.detector.roi[2] : setup.detector.roi[3],
+    ]
     frames_logical = np.ones(data.shape[0]).astype(
         int
     )  # use all frames from the filtered data

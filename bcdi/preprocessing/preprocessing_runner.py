@@ -862,7 +862,8 @@ def run(prm):
         if debug:
             plt.savefig(
                 setup.detector.savedir
-                + f"data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}"
+                + f"data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
+                f"{setup.detector.binning[0]}"
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
         if flag_interact:
@@ -886,7 +887,8 @@ def run(prm):
         if debug:
             plt.savefig(
                 setup.detector.savedir
-                + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}"
+                + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
+                f"{setup.detector.binning[0]}"
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
 

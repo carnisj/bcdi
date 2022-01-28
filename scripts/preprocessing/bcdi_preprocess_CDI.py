@@ -539,19 +539,32 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 or (setup.detector.binning[2] != 1)
             ):
                 print("Binning the reloaded orthogonal data by", setup.detector.binning)
-                data = util.bin_data(data, binning=setup.detector.binning, debugging=False)
-                mask = util.bin_data(mask, binning=setup.detector.binning, debugging=False)
+                data = util.bin_data(
+                    data, binning=setup.detector.binning, debugging=False
+                )
+                mask = util.bin_data(
+                    mask, binning=setup.detector.binning, debugging=False
+                )
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
                     qz = q_values[1]
                     qy = q_values[2]
                     numz, numy, numx = len(qx), len(qz), len(qy)
-                    qx = qx[: numz - (numz % setup.detector.binning[2]) : setup.detector.binning[2]]
+                    qx = qx[
+                        : numz
+                        - (numz % setup.detector.binning[2]) : setup.detector.binning[2]
+                    ]
                     # along z downstream, same binning as along x
-                    qz = qz[: numy - (numy % setup.detector.binning[1]) : setup.detector.binning[1]]
+                    qz = qz[
+                        : numy
+                        - (numy % setup.detector.binning[1]) : setup.detector.binning[1]
+                    ]
                     # along y vertical, the axis of rotation
-                    qy = qy[: numx - (numx % setup.detector.binning[2]) : setup.detector.binning[2]]
+                    qy = qy[
+                        : numx
+                        - (numx % setup.detector.binning[2]) : setup.detector.binning[2]
+                    ]
                     # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
@@ -588,7 +601,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     print("\nInput data shape:", nz, ny, nx)
 
     if not reload_orthogonal:
-        dirbeam = int((setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2])
+        dirbeam = int(
+            (setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2]
+        )
         # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
         print(
@@ -602,7 +617,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
         if save_rawdata:
             np.savez_compressed(
-                setup.detector.savedir + "S" + str(scan_nb) + "_data_before_masking_stack",
+                setup.detector.savedir
+                + "S"
+                + str(scan_nb)
+                + "_data_before_masking_stack",
                 data=data,
             )
             if save_to_mat:
@@ -1218,7 +1236,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(
-                setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment, qx=qx, qz=qz, qy=qy
+                setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
+                qx=qx,
+                qz=qz,
+                qy=qy,
             )
         if save_to_mat:
             savemat(setup.detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
@@ -1238,12 +1259,17 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             reciprocal_space=True,
         )
         fig.savefig(
-            setup.detector.savedir + f"final_reciprocal_space_S{scan_nb}" + comment + ".png"
+            setup.detector.savedir
+            + f"final_reciprocal_space_S{scan_nb}"
+            + comment
+            + ".png"
         )
         plt.close(fig)
 
     if save_to_npz:
-        np.savez_compressed(setup.detector.savedir + f"S{scan_nb}_pynx" + comment, data=data)
+        np.savez_compressed(
+            setup.detector.savedir + f"S{scan_nb}_pynx" + comment, data=data
+        )
         np.savez_compressed(
             setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
         )

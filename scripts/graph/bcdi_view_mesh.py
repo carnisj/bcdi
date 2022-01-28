@@ -257,11 +257,15 @@ plt.ion()
 ########################
 # initialize the setup #
 ########################
-setup = Setup(beamline=beamline, is_series=is_series,     detector_name=detector,
+setup = Setup(
+    beamline=beamline,
+    is_series=is_series,
+    detector_name=detector,
     datadir="",
     template_imagefile=template_imagefile,
     sum_roi=sum_roi,
-    binning=[1, binning[0], binning[1]],)
+    binning=[1, binning[0], binning[1]],
+)
 
 crop_roi = crop_roi or (0, setup.detector.nb_pixel_y, 0, setup.detector.nb_pixel_x)
 setup.detector.roi = crop_roi

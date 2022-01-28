@@ -282,7 +282,10 @@ setup = Setup(
     custom_motors=custom_motors,
     filtered_data=filtered_data,
     is_orthogonal=is_orthogonal,
-    detector_name = detector, datadir = "", template_imagefile = template_imagefile, roi = roi_detector
+    detector_name=detector,
+    datadir="",
+    template_imagefile=template_imagefile,
+    roi=roi_detector,
 )
 
 #############################################

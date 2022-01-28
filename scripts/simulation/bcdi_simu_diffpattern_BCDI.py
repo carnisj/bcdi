@@ -131,7 +131,7 @@ setup = Setup(
     rocking_angle=rocking_angle,
     grazing_angle=grazing_angle,
     distance=original_sdd,
-    detector_name=detector
+    detector_name=detector,
 )
 
 #########################
@@ -469,7 +469,9 @@ print("Multiplication factor for the real-space voxel size:  pad_size/original_s
 
 # compensate change in detector distance
 comment = comment + "_sdd_" + str("{:.2f}".format(simulated_sdd))
-print("\nCurrent detector pixel size", setup.detector.unbinned_pixel_size[0] * 1e6, "um")
+print(
+    "\nCurrent detector pixel size", setup.detector.unbinned_pixel_size[0] * 1e6, "um"
+)
 print(
     "Detector pixel size to compensate the change in detector distance",
     str(
