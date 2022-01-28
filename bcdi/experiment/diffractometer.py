@@ -3163,9 +3163,18 @@ class Diffractometer34ID(Diffractometer):
                     i = int(setup.custom_images[idx])
                 else:
                     i = idx
-                ccdraw = util.image_to_ndarray(
-                    filename=ccdfiletmp % i, convert_grey=True, cmap="gray", debug=False
-                )
+                try:
+                    ccdraw = util.image_to_ndarray(
+                        filename=ccdfiletmp % i,
+                        convert_grey=True,
+                        cmap="gray",
+                        debug=False
+                    )
+                except TypeError:
+                    raise ValueError("Error in string formatting of the image filename,"
+                                     " check the value of template_imagefile")
+
+
 
             data[idx, :, :], mask2d, monitor[idx] = self.load_frame(
                 frame=ccdraw,
