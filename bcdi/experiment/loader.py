@@ -62,30 +62,33 @@ from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 
-def create_loader(name, **kwargs):
+def create_loader(name, sample_offsets):
     """
     Create the instance of the beamline.
 
     :param name: str, name of the beamline
-    :param kwargs: optional beamline-dependent parameters
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
     :return: the corresponding beamline instance
     """
     if name == "ID01":
-        return LoaderID01(name=name, **kwargs)
+        return LoaderID01(name=name, sample_offsets=sample_offsets)
     if name == "ID01BLISS":
-        return LoaderID01BLISS(name=name, **kwargs)
+        return LoaderID01BLISS(name=name, sample_offsets=sample_offsets)
     if name in {"SIXS_2018", "SIXS_2019"}:
-        return LoaderSIXS(name=name, **kwargs)
+        return LoaderSIXS(name=name, sample_offsets=sample_offsets)
     if name == "34ID":
-        return Loader34ID(name=name, **kwargs)
+        return Loader34ID(name=name, sample_offsets=sample_offsets)
     if name == "P10":
-        return LoaderP10(name=name, **kwargs)
+        return LoaderP10(name=name, sample_offsets=sample_offsets)
     if name == "P10_SAXS":
-        return LoaderP10SAXS(name=name, **kwargs)
+        return LoaderP10SAXS(name=name, sample_offsets=sample_offsets)
     if name == "CRISTAL":
-        return LoaderCRISTAL(name=name, **kwargs)
+        return LoaderCRISTAL(name=name, sample_offsets=sample_offsets)
     if name == "NANOMAX":
-        return LoaderNANOMAX(name=name, **kwargs)
+        return LoaderNANOMAX(name=name, sample_offsets=sample_offsets)
     raise ValueError(f"Loader {name} not supported")
 
 
@@ -896,9 +899,6 @@ class LoaderID01(Loader):
         },
     }
 
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
-
     @staticmethod
     def create_logfile(**kwargs):
         """
@@ -1204,9 +1204,6 @@ class LoaderID01(Loader):
 
 class LoaderID01BLISS(Loader):
 
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
-
     @staticmethod
     def create_logfile(**kwargs):
         """
@@ -1300,9 +1297,6 @@ class LoaderID01BLISS(Loader):
 
 
 class LoaderSIXS(Loader):
-
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -1521,9 +1515,6 @@ class Loader34ID(Loader):
         "energy": "Energy",
         "detector_distance": "camdist",
     }
-
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -1777,9 +1768,6 @@ class Loader34ID(Loader):
 
 
 class LoaderP10(Loader):
-
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(**kwargs):
@@ -2155,9 +2143,6 @@ class LoaderP10SAXS(LoaderP10):
 
 class LoaderCRISTAL(Loader):
 
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
-
     @staticmethod
     def create_logfile(**kwargs):
         """
@@ -2519,9 +2504,6 @@ class LoaderCRISTAL(Loader):
 
 
 class LoaderNANOMAX(Loader):
-
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def create_logfile(**kwargs):
