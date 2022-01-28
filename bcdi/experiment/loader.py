@@ -646,7 +646,6 @@ class Loader(ABC):
     def load_check_dataset(
         self,
         scan_number,
-        detector,
         setup,
         frames_pattern=None,
         flatfield=None,
@@ -660,7 +659,6 @@ class Loader(ABC):
         Load data, apply filters and concatenate it for phasing.
 
         :param scan_number: the scan number to load
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param frames_pattern: 1D array of int, of length data.shape[0]. If
          frames_pattern is 0 at index, the frame at data[index] will be skipped,
@@ -685,29 +683,29 @@ class Loader(ABC):
         """
         print(
             "User-defined ROI size (VxH):",
-            detector.roi[1] - detector.roi[0],
-            detector.roi[3] - detector.roi[2],
+            setup.detector.roi[1] - setup.detector.roi[0],
+            setup.detector.roi[3] - setup.detector.roi[2],
         )
         print(
             "Detector physical size without binning (VxH):",
-            detector.unbinned_pixel_number[0],
-            detector.unbinned_pixel_number[1],
+            setup.detector.unbinned_pixel_number[0],
+            setup.detector.unbinned_pixel_number[1],
         )
         print(
             "Detector size with binning (VxH):",
-            detector.unbinned_pixel_number[0] // detector.binning[1],
-            detector.unbinned_pixel_number[1] // detector.binning[2],
+            setup.detector.unbinned_pixel_number[0] // setup.detector.binning[1],
+            setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2],
         )
 
         if setup.filtered_data:
             data, mask3d, monitor, frames_logical = load_filtered_data(
-                detector=detector
+                detector=setup.detector
             )
         else:
             data, mask2d, monitor, loading_roi = self.load_data(
                 setup=setup,
                 scan_number=scan_number,
-                detector=detector,
+                detector=setup.detector,
                 flatfield=flatfield,
                 hotpixels=hotpixels,
                 background=background,
@@ -727,7 +725,7 @@ class Loader(ABC):
             if bin_during_loading:
                 mask2d = util.bin_data(
                     mask2d,
-                    (detector.binning[1], detector.binning[2]),
+                    (setup.detector.binning[1], setup.detector.binning[2]),
                     debugging=debugging,
                 )
             mask2d[np.nonzero(mask2d)] = 1
@@ -772,7 +770,7 @@ class Loader(ABC):
                     array=data,
                     monitor=monitor,
                     norm_to_min=True,
-                    savedir=detector.savedir,
+                    savedir=setup.detector.savedir,
                     debugging=debugging,
                 )
 
@@ -788,7 +786,6 @@ class Loader(ABC):
     @abstractmethod
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -801,7 +798,6 @@ class Loader(ABC):
         """
         Load data including detector/background corrections.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -924,7 +920,6 @@ class LoaderID01(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -937,7 +932,6 @@ class LoaderID01(Loader):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -960,9 +954,11 @@ class LoaderID01(Loader):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        if detector.template_imagefile is None:
+        if setup.detector.template_imagefile is None:
             raise ValueError("'template_imagefile' must be defined to load the images.")
-        ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+        ccdfiletmp = os.path.join(
+            setup.detector.datadir, setup.detector.template_imagefile
+        )
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
@@ -971,10 +967,13 @@ class LoaderID01(Loader):
 
             # find the number of images
             try:
-                ccdn = labels_data[labels.index(detector.counter("ID01")), :]
+                ccdn = labels_data[labels.index(setup.detector.counter("ID01")), :]
             except ValueError:
                 try:
-                    print(detector.counter("ID01"), "not in the list, trying 'ccd_n'")
+                    print(
+                        setup.detector.counter("ID01"),
+                        "not in the list, trying 'ccd_n'",
+                    )
                     ccdn = labels_data[labels.index("ccd_n"), :]
                 except ValueError:
                     raise ValueError(
@@ -995,7 +994,7 @@ class LoaderID01(Loader):
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -1022,7 +1021,7 @@ class LoaderID01(Loader):
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
-                detector=detector,
+                detector=setup.detector,
                 loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
@@ -1219,7 +1218,6 @@ class LoaderID01BLISS(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -1232,7 +1230,6 @@ class LoaderID01BLISS(Loader):
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -1356,7 +1353,6 @@ class LoaderSIXS(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -1369,7 +1365,6 @@ class LoaderSIXS(Loader):
         """
         Load data, apply filters and concatenate it for phasing at SIXS.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -1390,7 +1385,7 @@ class LoaderSIXS(Loader):
         # load the data
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
-        if detector.name == "Merlin":
+        if setup.detector.name == "Merlin":
             tmp_data = setup.logfile.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
@@ -1410,7 +1405,7 @@ class LoaderSIXS(Loader):
 
         # initialize arrays and loading ROI
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -1424,7 +1419,7 @@ class LoaderSIXS(Loader):
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
-                detector=detector,
+                detector=setup.detector,
                 loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
@@ -1544,7 +1539,6 @@ class Loader34ID(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -1557,7 +1551,6 @@ class Loader34ID(Loader):
         """
         Load 34ID-C data including detector/background corrections.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -1572,9 +1565,11 @@ class Loader34ID(Loader):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        if detector.template_imagefile is None:
+        if setup.detector.template_imagefile is None:
             raise ValueError("'template_imagefile' must be defined to load the images.")
-        ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+        ccdfiletmp = os.path.join(
+            setup.detector.datadir, setup.detector.template_imagefile
+        )
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
@@ -1606,7 +1601,7 @@ class Loader34ID(Loader):
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -1634,7 +1629,7 @@ class Loader34ID(Loader):
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
-                detector=detector,
+                detector=setup.detector,
                 loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
@@ -1808,7 +1803,6 @@ class LoaderP10(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -1821,7 +1815,6 @@ class LoaderP10(Loader):
         """
         Load P10 data, apply filters and concatenate it for phasing.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -1839,10 +1832,12 @@ class LoaderP10(Loader):
          - the monitor values for normalization
 
         """
-        if detector.template_imagefile is None:
+        if setup.detector.template_imagefile is None:
             raise ValueError("'template_imagefile' must be defined to load the images.")
         # template for the master file
-        ccdfiletmp = os.path.join(detector.datadir, detector.template_imagefile)
+        ccdfiletmp = os.path.join(
+            setup.detector.datadir, setup.detector.template_imagefile
+        )
         is_series = setup.is_series
         if not setup.custom_scan:
             h5file = h5py.File(ccdfiletmp, "r")
@@ -1872,7 +1867,7 @@ class LoaderP10(Loader):
 
         # initialize arrays and loading ROI
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -1890,13 +1885,13 @@ class LoaderP10(Loader):
                 # this case, load directly data files.
                 i = int(setup.custom_images[idx])
                 ccdfiletmp = (
-                    detector.rootdir
-                    + detector.sample_name
+                    setup.detector.rootdir
+                    + setup.detector.sample_name
                     + "_{:05d}".format(i)
                     + "/e4m/"
-                    + detector.sample_name
+                    + setup.detector.sample_name
                     + "_{:05d}".format(i)
-                    + detector.template_file
+                    + setup.detector.template_file
                 )
                 h5file = h5py.File(ccdfiletmp, "r")  # load the data file
                 data_path = "data_000001"
@@ -1917,7 +1912,7 @@ class LoaderP10(Loader):
                         mask2d=mask2d,
                         monitor=monitor[idx],
                         frames_per_point=1,
-                        detector=detector,
+                        detector=setup.detector,
                         loading_roi=loading_roi,
                         flatfield=flatfield,
                         background=background,
@@ -2308,7 +2303,6 @@ class LoaderCRISTAL(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -2324,7 +2318,6 @@ class LoaderCRISTAL(Loader):
         It will look for the correct entry 'detector' in the dictionary 'actuators',
         and look for a dataset with compatible shape otherwise.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -2352,14 +2345,14 @@ class LoaderCRISTAL(Loader):
             logfile=setup.logfile,
             actuators=setup.actuators,
             root=group_key,
-            detector_shape=(detector.nb_pixel_y, detector.nb_pixel_x),
+            detector_shape=(setup.detector.nb_pixel_y, setup.detector.nb_pixel_x),
         )
 
         # find the number of images
         nb_img = tmp_data.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -2373,7 +2366,7 @@ class LoaderCRISTAL(Loader):
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
-                detector=detector,
+                detector=setup.detector,
                 loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,
@@ -2540,7 +2533,6 @@ class LoaderNANOMAX(Loader):
 
     def load_data(
         self,
-        detector,
         setup,
         flatfield=None,
         hotpixels=None,
@@ -2553,7 +2545,6 @@ class LoaderNANOMAX(Loader):
         """
         Load NANOMAX data, apply filters and concatenate it for phasing.
 
-        :param detector: an instance of the class Detector
         :param setup: an instance of the calss Setup
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array
@@ -2588,7 +2579,7 @@ class LoaderNANOMAX(Loader):
         nb_img = tmp_data.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
-            detector=detector,
+            detector=setup.detector,
             setup=setup,
             normalize=normalize,
             nb_frames=nb_img,
@@ -2602,7 +2593,7 @@ class LoaderNANOMAX(Loader):
                 mask2d=mask2d,
                 monitor=monitor[idx],
                 frames_per_point=1,
-                detector=detector,
+                detector=setup.detector,
                 loading_roi=loading_roi,
                 flatfield=flatfield,
                 background=background,

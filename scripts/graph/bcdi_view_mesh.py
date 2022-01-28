@@ -324,7 +324,6 @@ if not (
 #############
 data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
-    detector=detector,
     setup=setup,
     bin_during_loading=True,
     debugging=False,

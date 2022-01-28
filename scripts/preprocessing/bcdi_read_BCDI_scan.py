@@ -195,7 +195,6 @@ logfile = setup.create_logfile(
 data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
     detector=detector,
-    setup=setup,
     flatfield=flatfield,
     hotpixels=hotpix_array,
     normalize=normalize,

@@ -35,7 +35,7 @@ class Setup:
     Class for defining the experimental geometry.
 
     :param beamline: str, name of the beamline
-    :param detector: an instance of the cass experiment_utils.Detector()
+    :param detector_name: str, name of the detector
     :param beam_direction: direction of the incident X-ray beam in the frame
      (z downstream,y vertical up,x outboard)
     :param energy: energy setting of the beamline, in eV.
@@ -95,7 +95,7 @@ class Setup:
     def __init__(
         self,
         beamline,
-        detector=None,
+        detector_name="Dummy",
         beam_direction=(1, 0, 0),
         energy=None,
         distance=None,
@@ -123,6 +123,11 @@ class Setup:
                 "offset_inplane",
                 "actuators",
                 "is_series",
+                "template_imagefile",
+                "roi",
+                "binning",
+                "preprocessing_binning",
+                "custom_pixelsize",
             },
             name="Setup.__init__",
         )
@@ -146,7 +151,7 @@ class Setup:
         self.beamline = create_beamline(
             name=beamline, sample_offsets=kwargs.get("sample_offsets")
         )
-        self.detector = detector or create_detector("Dummy")
+        self.detector = create_detector(name=detector_name, **kwargs)
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance

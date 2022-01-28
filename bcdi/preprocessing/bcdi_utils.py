@@ -1045,7 +1045,6 @@ def grid_bcdi_xrayutil(
 
 def load_bcdi_data(
     scan_number,
-    detector,
     setup,
     bin_during_loading=False,
     flatfield=None,
@@ -1059,7 +1058,6 @@ def load_bcdi_data(
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
     :param scan_number: the scan number to load
-    :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
     :param bin_during_loading: True to bin the data during loading (faster)
     :param flatfield: the 2D flatfield array
@@ -1103,7 +1101,6 @@ def load_bcdi_data(
 
     rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
-        detector=detector,
         setup=setup,
         frames_pattern=frames_pattern,
         bin_during_loading=bin_during_loading,
@@ -1127,19 +1124,23 @@ def load_bcdi_data(
     # binning in the stacking dimension is done at the very end of the data processing #
     ####################################################################################
     if not bin_during_loading and (
-        (detector.binning[1] != 1) or (detector.binning[2] != 1)
+        (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1)
     ):
         print(
             "Binning the data: detector vertical axis by",
-            detector.binning[1],
+            setup.detector.binning[1],
             ", detector horizontal axis by",
-            detector.binning[2],
+            setup.detector.binning[2],
         )
         rawdata = util.bin_data(
-            rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False
+            rawdata,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask = util.bin_data(
-            rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False
+            rawmask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask[np.nonzero(rawmask)] = 1
 
@@ -1148,8 +1149,8 @@ def load_bcdi_data(
     ################################################
     rawdata, rawmask = util.pad_from_roi(
         arrays=(rawdata, rawmask),
-        roi=detector.roi,
-        binning=detector.binning[1:],
+        roi=setup.detector.roi,
+        binning=setup.detector.binning[1:],
         pad_value=(0, 1),
     )
 
@@ -1160,7 +1161,6 @@ def reload_bcdi_data(
     data,
     mask,
     scan_number,
-    detector,
     setup,
     normalize=False,
     debugging=False,
@@ -1172,7 +1172,6 @@ def reload_bcdi_data(
     :param data: the 3D data array
     :param mask: the 3D mask array
     :param scan_number: the scan number to load
-    :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
     :param normalize: set to True to normalize by the default monitor of the beamline
     :param debugging:  set to True to see plots
@@ -1225,24 +1224,24 @@ def reload_bcdi_data(
             array=data,
             monitor=monitor,
             norm_to_min=True,
-            savedir=detector.savedir,
+            savedir=setup.detector.savedir,
             debugging=True,
         )
 
     # pad the data to the shape defined by the ROI
     if (
-        detector.roi[1] - detector.roi[0] > nby
-        or detector.roi[3] - detector.roi[2] > nbx
+        setup.detector.roi[1] - setup.detector.roi[0] > nby
+        or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
-        start = (np.nan, min(0, detector.roi[0]), min(0, detector.roi[2]))
+        start = (np.nan, min(0, setup.detector.roi[0]), min(0, setup.detector.roi[2]))
         print("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,
             output_shape=(
                 data.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
+                setup.detector.roi[1] - setup.detector.roi[0],
+                setup.detector.roi[3] - setup.detector.roi[2],
             ),
         )
         mask = util.crop_pad(
@@ -1251,8 +1250,8 @@ def reload_bcdi_data(
             pad_start=start,
             output_shape=(
                 mask.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
+                setup.detector.roi[1] - setup.detector.roi[0],
+                setup.detector.roi[3] - setup.detector.roi[2],
             ),
         )
 
@@ -1264,18 +1263,22 @@ def reload_bcdi_data(
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+    if (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1):
         print(
-            "Binning the data: detector vertical axis by",
-            detector.binning[1],
-            ", detector horizontal axis by",
-            detector.binning[2],
+            "Binning the data: setup.detector vertical axis by",
+            setup.detector.binning[1],
+            ", setup.detector horizontal axis by",
+            setup.detector.binning[2],
         )
         data = util.bin_data(
-            data, (1, detector.binning[1], detector.binning[2]), debugging=debugging
+            data,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask = util.bin_data(
-            mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging
+            mask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask[np.nonzero(mask)] = 1
 

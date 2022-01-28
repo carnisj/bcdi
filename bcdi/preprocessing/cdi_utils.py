@@ -641,7 +641,6 @@ def load_cdi_data(
 
     rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
-        detector=detector,
         setup=setup,
         frames_pattern=frames_pattern,
         bin_during_loading=bin_during_loading,
