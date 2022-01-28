@@ -11,14 +11,6 @@ import os
 from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
-from bcdi.experiment.diffractometer import (
-    DiffractometerCRISTAL,
-    DiffractometerNANOMAX,
-    DiffractometerID01,
-    DiffractometerP10,
-    Diffractometer34ID,
-    DiffractometerSIXS,
-)
 
 # conversion table from the laboratory frame (CXI convention)
 # (z downstream, y vertical up, x outboard) to the frame of xrayutilities
@@ -48,63 +40,51 @@ class TestBeamline(unittest.TestCase):
 
     def test_find_inplane_CRISTAL(self):
         beamline = create_beamline("CRISTAL")
-        diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_CRISTAL(self):
         beamline = create_beamline("CRISTAL")
-        diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_ID01(self):
         beamline = create_beamline("ID01")
-        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_ID01(self):
         beamline = create_beamline("ID01")
-        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_NANOMAX(self):
         beamline = create_beamline("NANOMAX")
-        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_NANOMAX(self):
         beamline = create_beamline("NANOMAX")
-        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_P10(self):
         beamline = create_beamline("P10")
-        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_P10(self):
         beamline = create_beamline("P10")
-        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_SIXS(self):
         beamline = create_beamline("SIXS_2019")
-        diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_inplane() == 1)
 
     def test_find_outofplane_SIXS(self):
         beamline = create_beamline("SIXS_2019")
-        diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 2)
+        self.assertTrue(beamline.find_outofplane() == 2)
 
     def test_find_inplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
 
 class TestBeamlineCRISTAL(unittest.TestCase):
@@ -118,7 +98,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         self.specfile_name = "anything"
         self.template_imagefile = self.sample_name + "%d.nxs"
         self.beamline = create_beamline("CRISTAL")
-        self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -140,7 +119,7 @@ class TestBeamlineCRISTAL(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -180,19 +159,18 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -314,7 +292,6 @@ class TestBeamlineID01(unittest.TestCase):
         self.template_imagefile = "data_mpx4_%05d.edf.gz"
         self.specfile_name = "test"
         self.beamline = create_beamline("ID01")
-        self.diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -336,7 +313,7 @@ class TestBeamlineID01(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -376,19 +353,18 @@ class TestBeamlineID01(unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -519,7 +495,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         self.template_imagefile = "%06d.h5"
         self.specfile_name = "anything"
         self.beamline = create_beamline("NANOMAX")
-        self.diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -541,7 +516,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -582,19 +557,18 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -718,7 +692,6 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
         self.template_imagefile = "_master.h5"
         self.specfile_name = ""
         self.beamline = create_beamline("P10")
-        self.diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -740,7 +713,7 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -811,19 +784,18 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -991,7 +963,6 @@ class TestBeamlineSIXS(unittest.TestCase):
         self.specfile_name = self.root_dir + "alias_dict.txt"
         self.template_imagefile = "spare_ascan_mu_%05d.nxs"
         self.beamline = create_beamline("SIXS_2019")
-        self.diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -1013,7 +984,7 @@ class TestBeamlineSIXS(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1053,19 +1024,18 @@ class TestBeamlineSIXS(unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -1187,7 +1157,6 @@ class TestBeamline34ID(unittest.TestCase):
         self.template_imagefile = None
         self.specfile_name = "test_spec"
         self.beamline = create_beamline("34ID")
-        self.diffractometer = Diffractometer34ID(sample_offsets=None)
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -1209,7 +1178,7 @@ class TestBeamline34ID(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
+            "diffractometer": self.beamline.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1249,19 +1218,18 @@ class TestBeamline34ID(unittest.TestCase):
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(self.beamline.diffractometer), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(self.beamline.diffractometer), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
