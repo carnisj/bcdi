@@ -7,19 +7,10 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Beamline-dependent diffractometer classes.
+Diffractometer class.
 
-These classes follow the same structure as beamline classes. It would have been
-possible to put all the beamline-dependent code in a single child class per beamline,
-but the class would have been huge and more difficult to maintain. The class methods
-manage the extraction of motors/counters position, data loading (which can be thought
-just as another counter), data preprocessing (normalization by monitor, flatfield,
-hotpixels removal, background subtraction), and the rotation of the sample so that all
-sample circles are at 0 degrees. Generic method are implemented in the abstract base
-class Diffractometer, and beamline-dependent methods need to be implemented in each
-child class (they are decoracted by @abstractmethod in the base class, they are
-indicated using @ in the following diagram). These classes are not meant to be
-instantiated directly but via a Setup instance.
+This class holds the definition of the geometry for the sample and detector circles.
+The beamline-specific geometry is defined via a named tuple.
 
 .. mermaid::
   :align: center
@@ -27,8 +18,6 @@ instantiated directly but via a Setup instance.
   classDiagram
     class Diffractometer{
       +tuple sample_offsets
-      +tuple sample_circles
-      +tuple detector_circles
       add_circle()
       get_circles()
       get_rocking_circle()
@@ -37,7 +26,6 @@ instantiated directly but via a Setup instance.
       select_frames()
       valid_name()
   }
-    ABC <|-- Diffractometer
 
 API Reference
 -------------
@@ -168,6 +156,7 @@ class Diffractometer:
         sample_offsets=None,
     ):
         self._geometry = create_geometry(beamline=name, sample_offsets=sample_offsets)
+        self.name = name
         self.sample_circles = self._geometry.sample_circles
         self.detector_circles = self._geometry.detector_circles
         self.sample_offsets = (
@@ -203,6 +192,11 @@ class Diffractometer:
                 f" valid are {self.valid_circles}"
             )
         self._detector_circles = list(value)
+
+    @property
+    def name(self):
+        """Name of the beamline."""
+        return self.name
 
     @property
     def sample_circles(self):
