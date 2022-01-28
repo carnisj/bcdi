@@ -39,8 +39,8 @@ The following classes are implemented:
       +float angle
   }
     Setup *-- Beamline : create_beamline()
-    Setup *-- Diffractometer : create_diffractometer()
     Setup o-- Detector : create_detector()
+    Beamline o-- Diffractometer : create_diffractometer()
     Beamline o-- Loader : create_loader()
     Diffractometer o-- RotationMatrix
 
