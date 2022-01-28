@@ -707,8 +707,6 @@ def run(prm):
                         data=data,
                         mask=mask,
                         scan_number=scan_nb,
-                        logfile=logfile,
-                        detector=setup.detector,
                         setup=setup,
                         frames_logical=frames_logical,
                         hxrd=hxrd,

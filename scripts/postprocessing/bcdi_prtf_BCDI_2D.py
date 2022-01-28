@@ -22,7 +22,6 @@ import xrayutilities as xu
 import gc
 import sys
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
@@ -145,22 +144,11 @@ debug = False  # True to show more plots
 # end of user parameters #
 ##########################
 
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector,
-    template_imagefile=template_imagefile,
-    binning=(1, 1, 1),
-    preprocessing_binning=pre_binning,
-)
-
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,
@@ -170,6 +158,10 @@ setup = Setup(
     sample_offsets=sample_offsets,
     actuators=actuators,
     is_series=is_series,
+    detector_name=detector,
+    template_imagefile=template_imagefile,
+    binning=(1, 1, 1),
+    preprocessing_binning=pre_binning,
 )
 
 ########################################
@@ -185,7 +177,7 @@ setup.init_paths(
 )
 
 logfile = setup.create_logfile(
-    scan_number=scan, root_folder=root_folder, filename=detector.specfile
+    scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 
 ###################
@@ -195,13 +187,13 @@ print(f'{"#"*(5+len(str(scan)))}\nScan {scan}\n{"#"*(5+len(str(scan)))}')
 print("\n##############\nSetup instance\n##############")
 print(setup)
 print("\n#################\nDetector instance\n#################")
-print(detector)
+print(setup.detector)
 
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
 qconv, offsets = setup.init_qconversion()
-detector.offsets = offsets
+setup.detector.offsets = offsets
 hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)
 # x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction
@@ -221,7 +213,7 @@ root = tk.Tk()
 root.withdraw()
 
 file_path = filedialog.askopenfilename(
-    initialdir=detector.savedir,
+    initialdir=setup.detector.savedir,
     title="Select 2D slice",
     filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
 )
@@ -229,7 +221,7 @@ slice_2D, _ = util.load_file(file_path)
 slice_2D = slice_2D.astype(float)
 
 file_path = filedialog.askopenfilename(
-    initialdir=detector.savedir,
+    initialdir=setup.detector.savedir,
     title="Select 2D mask",
     filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
 )
@@ -255,11 +247,11 @@ elif len(crop_roi) != 0:
 # compensate the "rebin" option used in PyNX  #
 ###############################################
 # update also the detector pixel sizes to take into account the binning
-detector.binning = phasing_binning
+setup.detector.binning = phasing_binning
 print(
     "Pixel sizes after phasing_binning (vertical, horizontal): ",
-    detector.pixelsize_y,
-    detector.pixelsize_x,
+    setup.detector.pixelsize_y,
+    setup.detector.pixelsize_x,
     "(m)",
 )
 slice_2D = util.bin_data(
@@ -281,7 +273,7 @@ plt.pause(0.1)
 # load the 3D dataset in order to calculate the q values #
 ##########################################################
 file_path = filedialog.askopenfilename(
-    initialdir=detector.savedir,
+    initialdir=setup.detector.savedir,
     title="Select the 3D diffraction pattern",
     filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy")],
 )
@@ -351,8 +343,8 @@ hxrd.Ang2Q.init_area(
     cch2=int(x0),
     Nch1=numy,
     Nch2=numx,
-    pwidth1=detector.pixelsize_y,
-    pwidth2=detector.pixelsize_x,
+    pwidth1=setup.detector.pixelsize_y,
+    pwidth2=setup.detector.pixelsize_x,
     distance=setup.distance,
 )
 # first two arguments in init_area are the direction of the detector
@@ -363,7 +355,6 @@ if simulation:
     )
 else:
     qx, qz, qy, _ = setup.calc_qvalues_xrutils(
-        logfile=logfile,
         hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan,
@@ -444,7 +435,7 @@ plt.pause(0.1)
 # load reconstructed object #
 #############################
 file_path = filedialog.askopenfilename(
-    initialdir=detector.savedir,
+    initialdir=setup.detector.savedir,
     title="Select a 2D reconstruction (prtf)",
     filetypes=[("NPZ", "*.npz"), ("NPY", "*.npy"), ("CXI", "*.cxi"), ("HDF5", "*.h5")],
 )
@@ -598,7 +589,7 @@ ax.set_xlim(defined_q.min(), defined_q.max())
 ax.set_ylim(0, 1.1)
 
 gu.savefig(
-    savedir=detector.savedir,
+    savedir=setup.detector.savedir,
     figure=fig,
     axes=ax,
     tick_width=2,

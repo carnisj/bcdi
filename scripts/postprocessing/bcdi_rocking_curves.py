@@ -15,7 +15,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.graph.graph_utils as gu
@@ -179,21 +178,11 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 # to see if the peak is indeed
 # captured by the rocking curve
 
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector,
-    template_imagefile=template_imagefile,
-    roi=roi_detector,
-)
-
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,
@@ -203,6 +192,9 @@ setup = Setup(
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
     is_series=is_series,
+    detector_name=detector,
+    template_imagefile=template_imagefile,
+    roi=roi_detector,
 )
 
 ########################################
@@ -211,7 +203,7 @@ setup = Setup(
 print("\n##############\nSetup instance\n##############")
 print(setup)
 print("\n#################\nDetector instance\n#################")
-print(detector)
+print(setup.detector)
 
 ###############################################
 # load recursively the scans and update lists #
@@ -236,10 +228,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
 
     # override the saving directory, we want to save results at the same place
-    detector.savedir = save_dir
+    setup.detector.savedir = save_dir
 
     logfile = setup.create_logfile(
-        scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile
+        scan_number=scan_nb, root_folder=root_folder, filename=setup.detector.specfile
     )
 
     data, mask, frames_logical, monitor = bu.load_bcdi_data(
@@ -334,12 +326,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         ) = (outofplane, inplane, tilt, grazing)
 
         # calculate the position of the Bragg peak in full detector pixels
-        bragg_x = detector.roi[2] + pix
-        bragg_y = detector.roi[0] + piy
+        bragg_x = setup.detector.roi[2] + pix
+        bragg_y = setup.detector.roi[0] + piy
 
         # calculate the position of the direct beam at 0 detector angles
         x_direct_0 = directbeam_x + setup.inplane_coeff * (
-            direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x
+            direct_inplane * np.pi / 180 * sdd / setup.detector.pixelsize_x
         )  # inplane_coeff is +1 or -1
         y_direct_0 = (
             directbeam_y
@@ -348,17 +340,17 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             * np.pi
             / 180
             * sdd
-            / detector.pixelsize_y
+            / setup.detector.pixelsize_y
         )  # outofplane_coeff is +1 or -1
 
         # calculate corrected detector angles for the Bragg peak
         bragg_inplane = setup.inplane_angle + setup.inplane_coeff * (
-            detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi
+            setup.detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi
         )  # inplane_coeff is +1 or -1
         bragg_outofplane = (
             setup.outofplane_angle
             - setup.outofplane_coeff
-            * detector.pixelsize_y
+            * setup.detector.pixelsize_y
             * (bragg_y - y_direct_0)
             / sdd
             * 180
@@ -414,7 +406,7 @@ for fig_idx in range(nb_fig):
         scan_counter = scan_counter + 1
     plt.tight_layout()
     plt.pause(0.1)
-    fig.savefig(detector.savedir + f"check-roi{fig_idx+1}" + comment + ".png")
+    fig.savefig(setup.detector.savedir + f"check-roi{fig_idx+1}" + comment + ".png")
 
 ##########################################################
 # plot the evolution of the center of mass and intensity #
@@ -457,7 +449,7 @@ else:  # 'max'
 ax5.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
-fig.savefig(detector.savedir + "summary" + comment + ".png")
+fig.savefig(setup.detector.savedir + "summary" + comment + ".png")
 
 ############################################
 # plot the evolution of the incident angle #
@@ -496,7 +488,7 @@ ax2.set_ylabel("Bragg angle (deg)")
 ax2.set_facecolor(bckg_color)
 plt.tight_layout()
 plt.pause(0.1)
-fig.savefig(detector.savedir + "Bragg angle" + comment + ".png")
+fig.savefig(setup.detector.savedir + "Bragg angle" + comment + ".png")
 
 ##############################################
 # plot the evolution of the diffusion vector #
@@ -535,7 +527,7 @@ if convert_to_q:
     ax2.set_facecolor(bckg_color)
     plt.tight_layout()
     plt.pause(0.1)
-    fig.savefig(detector.savedir + "diffusion vector" + comment + ".png")
+    fig.savefig(setup.detector.savedir + "diffusion vector" + comment + ".png")
 
 plt.ioff()
 plt.show()

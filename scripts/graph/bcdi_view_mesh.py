@@ -17,7 +17,6 @@ from matplotlib.widgets import RectangleSelector
 import numpy as np
 import os
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 
 matplotlib.use("Qt5Agg")
@@ -255,37 +254,35 @@ colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 plt.ion()
 
-#################################################
-# initialize detector, setup, paths and logfile #
-#################################################
-detector = create_detector(
-    name=detector,
+########################
+# initialize the setup #
+########################
+setup = Setup(beamline=beamline, is_series=is_series,     detector_name=detector,
     datadir="",
     template_imagefile=template_imagefile,
     sum_roi=sum_roi,
-    binning=[1, binning[0], binning[1]],
-)
-crop_roi = crop_roi or (0, detector.nb_pixel_y, 0, detector.nb_pixel_x)
-detector.roi = crop_roi
-setup = Setup(beamline=beamline, detector=detector, is_series=is_series)
+    binning=[1, binning[0], binning[1]],)
+
+crop_roi = crop_roi or (0, setup.detector.nb_pixel_y, 0, setup.detector.nb_pixel_x)
+setup.detector.roi = crop_roi
 
 if setup.beamline == "P10":
     specfile_name = sample_name + "_{:05d}".format(scan)
     homedir = root_folder + specfile_name + "/"
-    detector.datadir = homedir + "e4m/"
+    setup.detector.datadir = homedir + "e4m/"
     template_imagefile = specfile_name + template_imagefile
-    detector.template_imagefile = template_imagefile
+    setup.detector.template_imagefile = template_imagefile
 elif setup.beamline in {"SIXS_2018", "SIXS_2019"}:
     homedir = root_folder
-    detector.datadir = homedir + "align/"
+    setup.detector.datadir = homedir + "align/"
 else:
     homedir = root_folder + sample_name + str(scan) + "/"
-    detector.datadir = homedir + "data/"
+    setup.detector.datadir = homedir + "data/"
 
 if savedir == "":
-    savedir = os.path.abspath(os.path.join(detector.datadir, os.pardir)) + "/"
+    savedir = os.path.abspath(os.path.join(setup.detector.datadir, os.pardir)) + "/"
 
-detector.savedir = savedir
+setup.detector.savedir = savedir
 print("savedir: ", savedir)
 
 logfile = setup.create_logfile(
@@ -298,7 +295,7 @@ logfile = setup.create_logfile(
 if fast_axis not in {"vertical", "horizontal"}:
     raise ValueError("fast_axis parameter value not supported")
 if len(sum_roi) == 0:
-    sum_roi = [0, detector.nb_pixel_y, 0, detector.nb_pixel_x]
+    sum_roi = [0, setup.detector.nb_pixel_y, 0, setup.detector.nb_pixel_x]
 
 print(f"sum_roi before binning and offset correction = {sum_roi}")
 

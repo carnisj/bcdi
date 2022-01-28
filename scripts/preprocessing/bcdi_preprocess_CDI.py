@@ -22,7 +22,6 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 import bcdi.preprocessing.cdi_utils as cdi
@@ -411,23 +410,11 @@ colormap = gu.Colormap()
 my_cmap = colormap.cmap
 plt.rcParams["keymap.fullscreen"] = [""]
 
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector,
-    roi=roi_detector,
-    sum_roi=normalize_roi,
-    binning=binning,
-    preprocessing_binning=preprocessing_binning,
-)
-
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     rocking_angle="inplane",
     distance=sdd,
@@ -437,6 +424,11 @@ setup = Setup(
     custom_monitor=custom_monitor,
     custom_motors=custom_motors,
     is_series=is_series,
+    detector_name=detector,
+    roi=roi_detector,
+    sum_roi=normalize_roi,
+    binning=binning,
+    preprocessing_binning=preprocessing_binning,
 )
 
 ########################################
@@ -445,7 +437,7 @@ setup = Setup(
 print("\n##############\nSetup instance\n##############")
 print(setup)
 print("\n#################\nDetector instance\n#################")
-print(detector)
+print(setup.detector)
 
 ############################################
 # Initialize values for callback functions #
@@ -484,7 +476,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
 
     logfile = setup.create_logfile(
-        scan_number=scan_nb, root_folder=root_folder, filename=detector.specfile
+        scan_number=scan_nb, root_folder=root_folder, filename=setup.detector.specfile
     )
 
     if normalize_method != "skip":
@@ -496,7 +488,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     if reload_previous:  # resume previous masking
         print("Resuming previous masking")
         file_path = filedialog.askopenfilename(
-            initialdir=detector.scandir,
+            initialdir=setup.detector.scandir,
             title="Select data file",
             filetypes=[("NPZ", "*.npz")],
         )
@@ -504,10 +496,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         nz, ny, nx = np.shape(data)
 
         # update savedir to save the data in the same directory as the reloaded data
-        detector.savedir = os.path.dirname(file_path) + "/"
+        setup.detector.savedir = os.path.dirname(file_path) + "/"
 
         file_path = filedialog.askopenfilename(
-            initialdir=detector.savedir,
+            initialdir=setup.detector.savedir,
             title="Select mask file",
             filetypes=[("NPZ", "*.npz")],
         )
@@ -517,7 +509,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             use_rawdata = False
             try:
                 file_path = filedialog.askopenfilename(
-                    initialdir=detector.savedir,
+                    initialdir=setup.detector.savedir,
                     title="Select q values",
                     filetypes=[("NPZ", "*.npz")],
                 )
@@ -542,24 +534,24 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
             # bin data and mask if needed
             if (
-                (detector.binning[0] != 1)
-                or (detector.binning[1] != 1)
-                or (detector.binning[2] != 1)
+                (setup.detector.binning[0] != 1)
+                or (setup.detector.binning[1] != 1)
+                or (setup.detector.binning[2] != 1)
             ):
-                print("Binning the reloaded orthogonal data by", detector.binning)
-                data = util.bin_data(data, binning=detector.binning, debugging=False)
-                mask = util.bin_data(mask, binning=detector.binning, debugging=False)
+                print("Binning the reloaded orthogonal data by", setup.detector.binning)
+                data = util.bin_data(data, binning=setup.detector.binning, debugging=False)
+                mask = util.bin_data(mask, binning=setup.detector.binning, debugging=False)
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
                     qz = q_values[1]
                     qy = q_values[2]
                     numz, numy, numx = len(qx), len(qz), len(qy)
-                    qx = qx[: numz - (numz % detector.binning[2]) : detector.binning[2]]
+                    qx = qx[: numz - (numz % setup.detector.binning[2]) : setup.detector.binning[2]]
                     # along z downstream, same binning as along x
-                    qz = qz[: numy - (numy % detector.binning[1]) : detector.binning[1]]
+                    qz = qz[: numy - (numy % setup.detector.binning[1]) : setup.detector.binning[1]]
                     # along y vertical, the axis of rotation
-                    qy = qy[: numx - (numx % detector.binning[2]) : detector.binning[2]]
+                    qy = qy[: numx - (numx % setup.detector.binning[2]) : setup.detector.binning[2]]
                     # along x outboard
                     del numz, numy, numx
         else:  # the data is in the detector frame
@@ -567,7 +559,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 scan_number=scan_nb,
                 data=data,
                 mask=mask,
-                detector=detector,
                 setup=setup,
                 debugging=debug,
                 normalize_method=normalize_method,
@@ -582,7 +573,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
         data, mask, frames_logical, monitor = cdi.load_cdi_data(
             scan_number=scan_nb,
-            detector=detector,
             setup=setup,
             frames_pattern=frames_pattern,
             bin_during_loading=bin_during_loading,
@@ -598,7 +588,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     print("\nInput data shape:", nz, ny, nx)
 
     if not reload_orthogonal:
-        dirbeam = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
+        dirbeam = int((setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2])
         # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
         print(
@@ -612,14 +602,14 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
         if save_rawdata:
             np.savez_compressed(
-                detector.savedir + "S" + str(scan_nb) + "_data_before_masking_stack",
+                setup.detector.savedir + "S" + str(scan_nb) + "_data_before_masking_stack",
                 data=data,
             )
             if save_to_mat:
                 # save to .mat, the new order is x y z
                 # (outboard, vertical up, downstream)
                 savemat(
-                    detector.savedir
+                    setup.detector.savedir
                     + "S"
                     + str(scan_nb)
                     + "_data_before_masking_stack.mat",
@@ -694,9 +684,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         if use_rawdata:
             q_values = []
             binning_comment = (
-                f"_{detector.preprocessing_binning[0]*detector.binning[0]}"
-                f"_{detector.preprocessing_binning[1]*detector.binning[1]}"
-                f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
+                f"_{setup.detector.preprocessing_binning[0]*setup.detector.binning[0]}"
+                f"_{setup.detector.preprocessing_binning[1]*setup.detector.binning[1]}"
+                f"_{setup.detector.preprocessing_binning[2]*setup.detector.binning[2]}"
             )
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
@@ -704,9 +694,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             # sample rotation around the vertical direction at P10:
             # the effective binning in axis 0 is preprocessing_binning[2]*binning[2]
             binning_comment = (
-                f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
-                f"_{detector.preprocessing_binning[1]*detector.binning[1]}"
-                f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
+                f"_{setup.detector.preprocessing_binning[2]*setup.detector.binning[2]}"
+                f"_{setup.detector.preprocessing_binning[1]*setup.detector.binning[1]}"
+                f"_{setup.detector.preprocessing_binning[2]*setup.detector.binning[2]}"
             )
 
             tmp_data = np.copy(
@@ -724,7 +714,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 reciprocal_space=True,
             )
             plt.savefig(
-                detector.savedir
+                setup.detector.savedir
                 + f"data_before_gridding_S{scan_nb}_{nz}_{ny}_{nx}"
                 + binning_comment
                 + ".png"
@@ -737,8 +727,6 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             data, mask, q_values, frames_logical = cdi.grid_cdi(
                 data=data,
                 mask=mask,
-                logfile=logfile,
-                detector=detector,
                 setup=setup,
                 frames_logical=frames_logical,
                 correct_curvature=correct_curvature,
@@ -776,7 +764,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 )
 
                 fig.savefig(
-                    detector.savedir
+                    setup.detector.savedir
                     + f"monitor_gridded_S{scan_nb}_{nz}_{ny}_{nx}"
                     + binning_comment
                     + ".png"
@@ -794,9 +782,9 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     else:  # reload_orthogonal=True, the data is already gridded,
         # binning was realized along each axis
         binning_comment = (
-            f"_{detector.preprocessing_binning[0]*detector.binning[0]}"
-            f"_{detector.preprocessing_binning[1]*detector.binning[1]}"
-            f"_{detector.preprocessing_binning[2]*detector.binning[2]}"
+            f"_{setup.detector.preprocessing_binning[0]*setup.detector.binning[0]}"
+            f"_{setup.detector.preprocessing_binning[1]*setup.detector.binning[1]}"
+            f"_{setup.detector.preprocessing_binning[2]*setup.detector.binning[2]}"
         )
 
     nz, ny, nx = np.shape(data)
@@ -828,7 +816,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
     if debug:
         plt.savefig(
-            detector.savedir
+            setup.detector.savedir
             + f"data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}"
             + binning_comment
             + ".png"
@@ -854,7 +842,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     )
     if debug:
         plt.savefig(
-            detector.savedir
+            setup.detector.savedir
             + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}"
             + binning_comment
             + ".png"
@@ -894,7 +882,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
 
             gu.save_to_vti(
                 filename=os.path.join(
-                    detector.savedir,
+                    setup.detector.savedir,
                     "S" + str(scan_nb) + "_ortho_int" + comment + ".vti",
                 ),
                 voxel_size=(dqx, dqz, dqy),
@@ -1126,7 +1114,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             reciprocal_space=True,
         )
         plt.savefig(
-            detector.savedir
+            setup.detector.savedir
             + f"middle_frame_S{scan_nb}_{nz}_{ny}_{nx}"
             + binning_comment
             + ".png"
@@ -1145,7 +1133,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             reciprocal_space=True,
         )
         plt.savefig(
-            detector.savedir
+            setup.detector.savedir
             + f"sum_S{scan_nb}_{nz}_{ny}_{nx}"
             + binning_comment
             + ".png"
@@ -1165,7 +1153,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             reciprocal_space=True,
         )
         plt.savefig(
-            detector.savedir
+            setup.detector.savedir
             + f"mask_S{scan_nb}_{nz}_{ny}_{nx}"
             + binning_comment
             + ".png"
@@ -1209,10 +1197,10 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # the detector plane was already binned during data loading  #
     ##############################################################
     if (
-        detector.binning[0] != 1 and not reload_orthogonal
+        setup.detector.binning[0] != 1 and not reload_orthogonal
     ):  # for data to be gridded, binning[0] is set to 1
-        data = util.bin_data(data, (detector.binning[0], 1, 1), debugging=False)
-        mask = util.bin_data(mask, (detector.binning[0], 1, 1), debugging=False)
+        data = util.bin_data(data, (setup.detector.binning[0], 1, 1), debugging=False)
+        mask = util.bin_data(mask, (setup.detector.binning[0], 1, 1), debugging=False)
         mask[np.nonzero(mask)] = 1
 
     nz, ny, nx = data.shape
@@ -1222,7 +1210,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     ############################
     # save final data and mask #
     ############################
-    print("\nSaving directory:", detector.savedir)
+    print("\nSaving directory:", setup.detector.savedir)
     print("Data type before saving:", data.dtype)
     mask[np.nonzero(mask)] = 1
     mask = mask.astype(int)
@@ -1230,12 +1218,12 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     if not use_rawdata and len(q_values) != 0:
         if save_to_npz:
             np.savez_compressed(
-                detector.savedir + f"QxQzQy_S{scan_nb}" + comment, qx=qx, qz=qz, qy=qy
+                setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment, qx=qx, qz=qz, qy=qy
             )
         if save_to_mat:
-            savemat(detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
-            savemat(detector.savedir + f"S{scan_nb}_qy.mat", {"qy": qy})
-            savemat(detector.savedir + f"S{scan_nb}_qz.mat", {"qz": qz})
+            savemat(setup.detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
+            savemat(setup.detector.savedir + f"S{scan_nb}_qy.mat", {"qy": qy})
+            savemat(setup.detector.savedir + f"S{scan_nb}_qz.mat", {"qz": qz})
         fig, _, _ = gu.contour_slices(
             data,
             (qx, qz, qy),
@@ -1250,24 +1238,24 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             reciprocal_space=True,
         )
         fig.savefig(
-            detector.savedir + f"final_reciprocal_space_S{scan_nb}" + comment + ".png"
+            setup.detector.savedir + f"final_reciprocal_space_S{scan_nb}" + comment + ".png"
         )
         plt.close(fig)
 
     if save_to_npz:
-        np.savez_compressed(detector.savedir + f"S{scan_nb}_pynx" + comment, data=data)
+        np.savez_compressed(setup.detector.savedir + f"S{scan_nb}_pynx" + comment, data=data)
         np.savez_compressed(
-            detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
+            setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
         )
 
     if save_to_mat:
         # save to .mat, the new order is x y z (outboard, vertical up, downstream)
         savemat(
-            detector.savedir + "S" + str(scan_nb) + "_data.mat",
+            setup.detector.savedir + "S" + str(scan_nb) + "_data.mat",
             {"data": np.moveaxis(data.astype(np.float32), [0, 1, 2], [-1, -2, -3])},
         )
         savemat(
-            detector.savedir + "S" + str(scan_nb) + "_mask.mat",
+            setup.detector.savedir + "S" + str(scan_nb) + "_mask.mat",
             {"data": np.moveaxis(mask.astype(np.int8), [0, 1, 2], [-1, -2, -3])},
         )
 
@@ -1285,7 +1273,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         is_orthogonal=not use_rawdata,
         reciprocal_space=True,
     )
-    plt.savefig(detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
+    plt.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
     if not flag_interact:
         plt.close(fig)
 
@@ -1300,7 +1288,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         is_orthogonal=not use_rawdata,
         reciprocal_space=True,
     )
-    plt.savefig(detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
+    plt.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
     if not flag_interact:
         plt.close(fig)
 

@@ -680,11 +680,10 @@ class Setup:
             f"is_series={self.is_series})"
         )
 
-    def calc_qvalues_xrutils(self, logfile, hxrd, nb_frames, **kwargs):
+    def calc_qvalues_xrutils(self, hxrd, nb_frames, **kwargs):
         """
         Calculate the 3D q values of the BCDI scan using xrayutilities.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param hxrd: an initialized xrayutilities HXRD object used for the
          orthogonalization of the dataset
         :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped
@@ -724,7 +723,7 @@ class Setup:
         # process motor positions
         processed_positions = self.beamline.process_positions(
             setup=self,
-            logfile=logfile,
+            logfile=self.logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,

@@ -869,8 +869,6 @@ def grid_bcdi_xrayutil(
     data,
     mask,
     scan_number,
-    logfile,
-    detector,
     setup,
     frames_logical,
     hxrd,
@@ -884,9 +882,6 @@ def grid_bcdi_xrayutil(
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
     :param scan_number: the scan number to load
-    :param logfile: file containing the information about the scan and image numbers
-     (specfile, .fio...)
-    :param detector: an instance of the class Detector
     :param setup: instance of the Class experiment_utils.Setup()
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
@@ -912,7 +907,6 @@ def grid_bcdi_xrayutil(
             "otherwise q values will be wrong."
         )
     qx, qz, qy, frames_logical = setup.calc_qvalues_xrutils(
-        logfile=logfile,
         hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan_number,
@@ -963,9 +957,9 @@ def grid_bcdi_xrayutil(
 
     # plot the gridded data
     final_binning = (
-        detector.preprocessing_binning[0] * detector.binning[0],
-        detector.preprocessing_binning[1] * detector.binning[1],
-        detector.preprocessing_binning[2] * detector.binning[2],
+        setup.detector.preprocessing_binning[0] * setup.detector.binning[0],
+        setup.detector.preprocessing_binning[1] * setup.detector.binning[1],
+        setup.detector.preprocessing_binning[2] * setup.detector.binning[2],
     )
 
     numz, numy, numx = interp_data.shape
@@ -986,7 +980,7 @@ def grid_bcdi_xrayutil(
         is_orthogonal=True,
         reciprocal_space=True,
     )
-    fig.savefig(detector.savedir + string + "sum" + plot_comment)
+    fig.savefig(setup.detector.savedir + string + "sum" + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(
@@ -1000,7 +994,7 @@ def grid_bcdi_xrayutil(
         is_orthogonal=True,
         reciprocal_space=True,
     )
-    fig.savefig(detector.savedir + string + "central" + plot_comment)
+    fig.savefig(setup.detector.savedir + string + "central" + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(
@@ -1013,7 +1007,7 @@ def grid_bcdi_xrayutil(
         is_orthogonal=True,
         reciprocal_space=True,
     )
-    fig.savefig(detector.savedir + string + "sum_pix" + plot_comment)
+    fig.savefig(setup.detector.savedir + string + "sum_pix" + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(
@@ -1026,7 +1020,7 @@ def grid_bcdi_xrayutil(
         is_orthogonal=True,
         reciprocal_space=True,
     )
-    fig.savefig(detector.savedir + string + "central_pix" + plot_comment)
+    fig.savefig(setup.detector.savedir + string + "central_pix" + plot_comment)
     plt.close(fig)
     if debugging:
         gu.multislices_plot(

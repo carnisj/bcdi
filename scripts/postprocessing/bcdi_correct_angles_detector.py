@@ -19,7 +19,6 @@ from tkinter import filedialog
 import sys
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
 
@@ -128,21 +127,12 @@ reference_temperature = None
 ##########################
 
 plt.ion()
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector,
-    template_imagefile=template_imagefile,
-    roi=roi_detector,
-)
 
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,
@@ -154,6 +144,9 @@ setup = Setup(
     sample_offsets=sample_offsets,
     actuators=actuators,
     is_series=is_series,
+    detector_name=detector,
+    template_imagefile=template_imagefile,
+    roi=roi_detector,
 )
 
 ########################################
@@ -171,7 +164,7 @@ setup.init_paths(
 )
 
 logfile = setup.create_logfile(
-    scan_number=scan, root_folder=root_folder, filename=detector.specfile
+    scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 
 #################
@@ -193,12 +186,12 @@ else:
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.askopenfilename(
-        initialdir=detector.scandir + "pynxraw/",
+        initialdir=setup.detector.scandir + "pynxraw/",
         title="Select 3D data",
         filetypes=[("NPZ", "*.npz")],
     )
     data = np.load(file_path)["data"]
-    data = data[detector.roi[0] : detector.roi[1], detector.roi[2] : detector.roi[3]]
+    data = data[setup.detector.roi[0] : setup.detector.roi[1], setup.detector.roi[2] : setup.detector.roi[3]]
     frames_logical = np.ones(data.shape[0]).astype(
         int
     )  # use all frames from the filtered data
@@ -274,11 +267,11 @@ plt.pause(0.1)
 ##############################
 # Calculate corrected angles #
 ##############################
-bragg_x = detector.roi[2] + x0  # convert it in full detector pixel
-bragg_y = detector.roi[0] + y0  # convert it in full detector pixel
+bragg_x = setup.detector.roi[2] + x0  # convert it in full detector pixel
+bragg_y = setup.detector.roi[0] + y0  # convert it in full detector pixel
 
 x_direct_0 = directbeam_x + setup.inplane_coeff * (
-    direct_inplane * np.pi / 180 * sdd / detector.pixelsize_x
+    direct_inplane * np.pi / 180 * sdd / setup.detector.pixelsize_x
 )  # inplane_coeff is +1 or -1
 y_direct_0 = (
     directbeam_y
@@ -287,7 +280,7 @@ y_direct_0 = (
     * np.pi
     / 180
     * sdd
-    / detector.pixelsize_y
+    / setup.detector.pixelsize_y
 )  # outofplane_coeff is +1 or -1
 
 print(
@@ -301,12 +294,12 @@ print(
 )
 
 bragg_inplane = setup.inplane_angle + setup.inplane_coeff * (
-    detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi
+    setup.detector.pixelsize_x * (bragg_x - x_direct_0) / sdd * 180 / np.pi
 )  # inplane_coeff is +1 or -1
 bragg_outofplane = (
     setup.outofplane_angle
     - setup.outofplane_coeff
-    * detector.pixelsize_y
+    * setup.detector.pixelsize_y
     * (bragg_y - y_direct_0)
     / sdd
     * 180
@@ -362,8 +355,8 @@ setup.outofplane_angle = bragg_outofplane
 dz_realspace, dy_realspace, dx_realspace = setup.voxel_sizes(
     (nb_frames, numy, numx),
     tilt_angle=setup.tilt_angle,
-    pixel_x=detector.pixelsize_x,
-    pixel_y=detector.pixelsize_y,
+    pixel_x=setup.detector.pixelsize_x,
+    pixel_y=setup.detector.pixelsize_y,
     verbose=True,
 )
 

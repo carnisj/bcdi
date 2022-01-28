@@ -14,7 +14,6 @@ except ModuleNotFoundError:
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.graph.graph_utils as gu
@@ -137,22 +136,11 @@ if normalize not in {"skip", "monitor"}:
         " allowed values are 'skip' and 'monitor'"
     )
 
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector,
-    template_imagefile=template_imagefile,
-    roi=roi_detector,
-    binning=binning,
-)
-
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     rocking_angle=rocking_angle,
     custom_scan=custom_scan,
     custom_images=custom_images,
@@ -160,6 +148,10 @@ setup = Setup(
     custom_motors=custom_motors,
     actuators=actuators,
     is_series=is_series,
+    detector_name=detector,
+    template_imagefile=template_imagefile,
+    roi=roi_detector,
+    binning=binning,
 )
 
 ########################################
@@ -168,7 +160,7 @@ setup = Setup(
 print("\n##############\nSetup instance\n##############")
 print(setup)
 print("\n#################\nDetector instance\n#################")
-print(detector)
+print(setup.detector)
 
 ########################
 # initialize the paths #
@@ -185,7 +177,7 @@ setup.init_paths(
 )
 
 logfile = setup.create_logfile(
-    scan_number=scan, root_folder=root_folder, filename=detector.specfile
+    scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 
 
@@ -194,7 +186,7 @@ logfile = setup.create_logfile(
 #################
 data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
-    detector=detector,
+    setup=setup,
     flatfield=flatfield,
     hotpixels=hotpix_array,
     normalize=normalize,
@@ -226,15 +218,15 @@ if data.ndim == 3:
         x_bragg = x0
     else:  # calculate the new position with binning and cropping
         x_bragg = int(
-            (x_bragg - detector.roi[2])
-            / (detector.preprocessing_binning[2] * detector.binning[2])
+            (x_bragg - setup.detector.roi[2])
+            / (setup.detector.preprocessing_binning[2] * setup.detector.binning[2])
         )
     if y_bragg is None:  # Bragg peak position not defined by the user, use the max
         y_bragg = y0
     else:  # calculate the new position with binning and cropping
         y_bragg = int(
-            (y_bragg - detector.roi[0])
-            / (detector.preprocessing_binning[1] * detector.binning[1])
+            (y_bragg - setup.detector.roi[0])
+            / (setup.detector.preprocessing_binning[1] * setup.detector.binning[1])
         )
 
     peak_int = int(data[z0, y0, x0])
@@ -310,7 +302,7 @@ print(f"width for plotting: {width}")
 # plot mask, monitor and concatenated data #
 ############################################
 if save_mask:
-    np.savez_compressed(detector.savedir + "hotpixels.npz", mask=mask)
+    np.savez_compressed(setup.detector.savedir + "hotpixels.npz", mask=mask)
 
 gu.combined_plots(
     tuple_array=(monitor, mask),
@@ -350,5 +342,5 @@ plot = ax.imshow(
 )
 ax.set_title(f"{title} Peak at (y, x): ({y0},{x0})   Bragg peak value = {peak_int}")
 gu.colorbar(plot)
-fig.savefig(detector.savedir + f"sum_S{scan}.png")
+fig.savefig(setup.detector.savedir + f"sum_S{scan}.png")
 plt.show()

@@ -22,7 +22,6 @@ from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.facet_recognition as fu
 import bcdi.preprocessing.bcdi_utils as bu
@@ -264,19 +263,11 @@ bad_color = "1.0"  # white background
 colormap = gu.Colormap(bad_color=bad_color)
 my_cmap = colormap.cmap
 
-#######################
-# Initialize detector #
-#######################
-detector = create_detector(
-    name=detector, datadir="", template_imagefile=template_imagefile, roi=roi_detector
-)
-
 ####################
 # Initialize setup #
 ####################
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,
@@ -291,28 +282,29 @@ setup = Setup(
     custom_motors=custom_motors,
     filtered_data=filtered_data,
     is_orthogonal=is_orthogonal,
+    detector_name = detector, datadir = "", template_imagefile = template_imagefile, roi = roi_detector
 )
 
 #############################################
 # Initialize geometry for orthogonalization #
 #############################################
 qconv, offsets = setup.init_qconversion()
-detector.offsets = offsets
+setup.detector.offsets = offsets
 hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)
 # x downstream, y outboard, z vertical
 # first two arguments in HXRD are the inplane reference direction
 # along the beam and surface normal of the sample
-cch1 = cch1 - detector.roi[0]  # take into account the roi if the image is cropped
-cch2 = cch2 - detector.roi[2]  # take into account the roi if the image is cropped
+cch1 = cch1 - setup.detector.roi[0]  # take into account the roi if the image is cropped
+cch2 = cch2 - setup.detector.roi[2]  # take into account the roi if the image is cropped
 hxrd.Ang2Q.init_area(
     "z-",
     "y+",
     cch1=cch1,
     cch2=cch2,
-    Nch1=detector.roi[1] - detector.roi[0],
-    Nch2=detector.roi[3] - detector.roi[2],
-    pwidth1=detector.pixelsize_y,
-    pwidth2=detector.pixelsize_x,
+    Nch1=setup.detector.roi[1] - setup.detector.roi[0],
+    Nch2=setup.detector.roi[3] - setup.detector.roi[2],
+    pwidth1=setup.detector.pixelsize_y,
+    pwidth2=setup.detector.pixelsize_x,
     distance=sdd,
     detrot=detrot,
     tiltazimuth=tiltazimuth,
@@ -329,15 +321,15 @@ root = tk.Tk()
 root.withdraw()
 if setup.beamline != "P10":
     homedir = root_folder + sample_name + str(scan) + "/"
-    detector.datadir = homedir + "data/"
+    setup.detector.datadir = homedir + "data/"
 else:
     specfile_name = specfile_name % scan
     homedir = root_folder + specfile_name + "/"
-    detector.datadir = homedir + "e4m/"
+    setup.detector.datadir = homedir + "e4m/"
     template_imagefile = specfile_name + template_imagefile
-    detector.template_imagefile = template_imagefile
+    setup.detector.template_imagefile = template_imagefile
 
-detector.savedir = homedir
+setup.detector.savedir = homedir
 
 if not reconstructed_data:  # load reciprocal space data
     flatfield = util.load_flatfield(flatfield_file)
@@ -358,8 +350,6 @@ if not reconstructed_data:  # load reciprocal space data
         data=data,
         mask=mask,
         scan_number=scan,
-        logfile=logfile,
-        detector=detector,
         setup=setup,
         frames_logical=frames_logical,
         hxrd=hxrd,
