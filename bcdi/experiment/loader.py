@@ -9,8 +9,8 @@
 """
 Implementation of beamline-dependent data loading classes.
 
-The class methods manage the initialization of the file system and data/motor position
-loading. Generic method are implemented in the abstract base class Loader, and
+The class methods manage the initialization of the file system and loading of data and
+motor positions. Generic method are implemented in the abstract base class Loader, and
 beamline-dependent methods need to be implemented in each child class (they are
 decorated by @abstractmethod in the base class; they are indicated using @ in the
 following diagram).
