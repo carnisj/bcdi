@@ -98,7 +98,11 @@ class Beamline(ABC):
     def __init__(self, name, **kwargs):
         self._name = name
         self.diffractometer = create_diffractometer(name, **kwargs)
-        self.loader = create_loader(name, **kwargs)
+        self.loader = create_loader(
+            name=name,
+            sample_offsets=self.diffractometer.sample_offsets,
+            **kwargs
+        )
 
     @property
     @abstractmethod
@@ -329,6 +333,20 @@ class Beamline(ABC):
             vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix)
         )
         return rotated_arrays, rotated_q
+
+    @abstractmethod
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer values.
+
+        This method is beamline dependent. It must be implemented in the child classes.
+
+        :param setup: the experimental setup: Class Setup
+        :param kwargs: beamline_specific parameters
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
 
     @staticmethod
     @abstractmethod
@@ -605,6 +623,50 @@ class BeamlineCRISTAL(Beamline):
         frame convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        (
+            mgomega,
+            mgphi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # mgomega rocking curve
+            grazing = None  # nothing below mgomega at CRISTAL
+            tilt_angle = mgomega
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mgomega[0],)
+            tilt_angle = mgphi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
+        self.diffractometer.sample_angles = (mgomega, mgphi)
+        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -887,6 +949,65 @@ class BeamlineID01(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :param kwargs:
+         - 'scan_number': the scan number to load
+
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load kwargs
+        scan_number = kwargs["scan_number"]
+
+        # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
+
+        # load motor positions
+        (
+            mu,
+            eta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(
+            setup=setup,
+            scan_number=scan_number,
+        )
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # eta rocking curve
+            grazing = (mu,)  # mu below eta but not used at ID01
+            tilt_angle = eta
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mu, eta)  # mu below eta but not used at ID01
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
+        self.diffractometer.sample_angles = (mu, eta, phi)
+        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1180,6 +1301,50 @@ class BeamlineNANOMAX(Beamline):
         """
         return "y-"
 
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        (
+            theta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # theta rocking curve
+            grazing = None  # nothing below theta at NANOMAX
+            tilt_angle = theta
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (theta,)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
+        self.diffractometer.sample_angles = (theta, phi)
+        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
+
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
         """
@@ -1463,6 +1628,52 @@ class BeamlineP10(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        (
+            mu,
+            om,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # om rocking curve
+            grazing = (mu,)
+            tilt_angle = om
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mu, om, chi)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
+        self.diffractometer.sample_angles = (mu, om, chi, phi)
+        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1974,6 +2185,41 @@ class BeamlineP10SAXS(BeamlineP10):
 
         return qx, qz, qy
 
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a CDI tomographic scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        phi, energy, detector_distance = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for CDI
+        # no circle yet below phi at P10
+        if setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (0,)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=0,
+            outofplane_angle=0,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
+        self.diffractometer.sample_angles = (phi,)
+        self.diffractometer.detector_angles = (0, 0)
+
+        return tilt_angle, grazing, 0, 0
+
 
 class BeamlineSIXS(Beamline):
     """
@@ -2005,6 +2251,51 @@ class BeamlineSIXS(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        (
+            beta,
+            mu,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "inplane":  # mu rocking curve
+            grazing = (beta,)  # beta below the whole diffractomter at SIXS
+            tilt_angle = mu
+        elif setup.rocking_angle == "outofplane":
+            raise NotImplementedError(
+                "outofplane rocking curve not implemented for SIXS"
+            )
+        else:
+            raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
+        self.diffractometer.sample_angles = (beta, mu)
+        self.diffractometer.detector_angles = (beta, inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -2272,6 +2563,65 @@ class Beamline34ID(Beamline):
         convention is (z downstream, y vertical, x outboard).
         """
         return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a BCDI rocking scan.
+
+        :param setup: the experimental setup: Class Setup
+        :param kwargs:
+         - 'scan_number': the scan number to load
+
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load kwargs
+        scan_number = kwargs["scan_number"]
+
+        # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
+
+        # load the motor positions
+        (
+            theta,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup, scan_number=scan_number)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "inplane":
+            # theta is the inplane rotation around the vertical axis at 34ID
+            grazing = None  # theta (inplane) is below phi
+            tilt_angle = theta
+        elif setup.rocking_angle == "outofplane":
+            # phi is the incident angle (out of plane rotation) at 34ID
+            grazing = (theta, chi)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
+        # phi (out of plane)   detector: delta (inplane), gamma)
+        self.diffractometer.sample_angles = (theta, chi, phi)
+        self.diffractometer.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
