@@ -181,7 +181,7 @@ flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 
 if not filtered_data:
-    data, _, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+    data, _, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan,
         detector=detector,
         setup=setup,

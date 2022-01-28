@@ -19,7 +19,6 @@ import os
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.bcdi_utils as bu
 
 matplotlib.use("Qt5Agg")
 
@@ -323,7 +322,7 @@ if not (
 #############
 # load data #
 #############
-data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
     detector=detector,
     setup=setup,
@@ -342,10 +341,10 @@ data[data <= threshold] = 0
 ########################
 # load motor positions #
 ########################
-fast_positions = setup.diffractometer.read_device(
+fast_positions = setup.loader.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=fast_motor
 )
-slow_positions = setup.diffractometer.read_device(
+slow_positions = setup.loader.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=slow_motor
 )
 

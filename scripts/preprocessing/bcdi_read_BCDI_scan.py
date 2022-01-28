@@ -192,7 +192,7 @@ logfile = setup.create_logfile(
 #################
 # load the data #
 #################
-data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
     detector=detector,
     setup=setup,

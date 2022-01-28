@@ -19,7 +19,6 @@ import matplotlib.ticker as ticker
 import os
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
-import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 
@@ -304,7 +303,7 @@ if scale not in {"linear", "log"}:
 #############
 # load data #
 #############
-data, mask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+data, mask, monitor, frames_logical = setup.loader.load_check_dataset(
     scan_number=scan,
     detector=detector,
     setup=setup,
@@ -318,7 +317,7 @@ data[np.nonzero(mask)] = 0
 ########################
 # load motor positions #
 ########################
-motor_positions = setup.diffractometer.read_device(
+motor_positions = setup.loader.read_device(
     logfile=logfile, scan_number=scan, setup=setup, motor_name=motor_name
 )
 
