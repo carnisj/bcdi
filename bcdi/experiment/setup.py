@@ -448,7 +448,6 @@ class Setup:
         :return: kout vector
         """
         return self.beamline.exit_wavevector(
-            diffractometer=self.diffractometer,
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
             wavelength=self.wavelength,
@@ -1337,7 +1336,6 @@ class Setup:
             conversion_table=self.labframe_to_xrayutil,
             beam_direction=self.beam_direction_xrutils,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
 
     @staticmethod
