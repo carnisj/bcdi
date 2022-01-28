@@ -62,7 +62,7 @@ def create_beamline(name, **kwargs):
     :param kwargs: optional beamline-dependent parameters
     :return: the corresponding beamline instance
     """
-    if name == "ID01":
+    if name in {"ID01", "ID01BLISS"}:
         return BeamlineID01(name=name, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
         return BeamlineSIXS(name=name, **kwargs)

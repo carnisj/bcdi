@@ -267,7 +267,7 @@ def create_diffractometer(beamline, sample_offsets):
      the sample offsets will be subtracted to measurement the motor values.
     :return:  the corresponding diffractometer instance
     """
-    if beamline == "ID01":
+    if beamline in {"ID01", "ID01BLISS"}:
         return DiffractometerID01(sample_offsets)
     if beamline in {"SIXS_2018", "SIXS_2019"}:
         return DiffractometerSIXS(sample_offsets)
