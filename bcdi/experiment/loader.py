@@ -78,8 +78,10 @@ def create_loader(name, **kwargs):
         return LoaderSIXS(name=name, **kwargs)
     if name == "34ID":
         return Loader34ID(name=name, **kwargs)
-    if name in {"P10", "P10_SAXS"}:
+    if name == "P10":
         return LoaderP10(name=name, **kwargs)
+    if name == "P10_SAXS":
+        return LoaderP10SAXS(name=name, **kwargs)
     if name == "CRISTAL":
         return LoaderCRISTAL(name=name, **kwargs)
     if name == "NANOMAX":
