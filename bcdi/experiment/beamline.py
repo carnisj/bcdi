@@ -154,25 +154,22 @@ class Beamline(ABC):
         :return: "y+" or "y-"
         """
 
-    def exit_wavevector(
-        self, diffractometer, wavelength, inplane_angle, outofplane_angle
-    ):
+    def exit_wavevector(self, wavelength, inplane_angle, outofplane_angle):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
-        :param diffractometer: an instance of the class Diffractometer
         :param wavelength: float, X-ray wavelength in meters.
         :param inplane_angle: float, horizontal detector angle, in degrees.
         :param outofplane_angle: float, vertical detector angle, in degrees.
         :return: kout vector as a numpy array of shape (3)
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
 
-        factor = self.orientation_lookup[diffractometer.detector_circles[index]]
+        factor = self.orientation_lookup[self.diffractometer.detector_circles[index]]
 
         kout = (
             2
@@ -192,8 +189,7 @@ class Beamline(ABC):
         )
         return kout
 
-    @staticmethod
-    def find_inplane(diffractometer):
+    def find_inplane(self):
         """
         Find the index of the detector inplane circle.
 
@@ -201,17 +197,15 @@ class Beamline(ABC):
         property of the diffractometer ("y+" or "y-") . The coordinate
         convention is the laboratory  frame (z downstream, y vertical up, x outboard).
 
-        :param: diffractometer: an instance of the class Diffractometer
         :return: int, the index. None if not found.
         """
         index = None
-        for idx, val in enumerate(diffractometer.detector_circles):
+        for idx, val in enumerate(self.diffractometer.detector_circles):
             if val.startswith("y"):
                 index = idx
         return index
 
-    @staticmethod
-    def find_outofplane(diffractometer):
+    def find_outofplane(self):
         """
         Find the index of the detector out-of-plane circle.
 
@@ -222,11 +216,10 @@ class Beamline(ABC):
         detector rotations due to the beta circle. We need the index of the most inner
         circle, not beta.
 
-        :param: diffractometer: an instance of the class Diffractometer
         :return: int, the index. None if not found.
         """
         index = None
-        for idx, val in enumerate(diffractometer.detector_circles):
+        for idx, val in enumerate(self.diffractometer.detector_circles):
             if val.startswith("x"):
                 index = idx
         return index
@@ -412,9 +405,7 @@ class Beamline(ABC):
 
         """
 
-    def init_qconversion(
-        self, conversion_table, beam_direction, offset_inplane, diffractometer
-    ):
+    def init_qconversion(self, conversion_table, beam_direction, offset_inplane):
         """
         Initialize the qconv object for xrayutilities depending on the setup parameters.
 
@@ -431,7 +422,6 @@ class Beamline(ABC):
          xrayutilities.
         :param offset_inplane: inplane offset of the detector defined as the outer angle
          in xrayutilities area detector calibration.
-        :param diffractometer: instance of the class Diffractometer
         :return: a tuple containing:
 
          - the qconv object for xrayutilities
@@ -439,14 +429,14 @@ class Beamline(ABC):
 
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
 
         # convert axes from the laboratory frame to the frame of xrayutilies
         sample_circles = [
-            conversion_table[val] for val in diffractometer.sample_circles
+            conversion_table[val] for val in self.diffractometer.sample_circles
         ]
         detector_circles = [
-            conversion_table[val] for val in diffractometer.detector_circles
+            conversion_table[val] for val in self.diffractometer.detector_circles
         ]
         qconv = xu.experiment.QConversion(
             sample_circles, detector_circles, r_i=beam_direction
@@ -464,7 +454,7 @@ class Beamline(ABC):
 
         return qconv, offsets
 
-    def inplane_coeff(self, diffractometer):
+    def inplane_coeff(self):
         """
         Coefficient related to the detector inplane orientation.
 
@@ -474,17 +464,16 @@ class Beamline(ABC):
 
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
-        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
         return (
-            self.orientation_lookup[diffractometer.detector_circles[index]]
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
             * self.orientation_lookup[self.detector_hor]
         )
 
-    def outofplane_coeff(self, diffractometer):
+    def outofplane_coeff(self):
         """
         Coefficient related to the detector vertical orientation.
 
@@ -494,13 +483,12 @@ class Beamline(ABC):
 
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
-        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
         # look for the index of the out-of-plane detector circle
-        index = self.find_outofplane(diffractometer=diffractometer)
+        index = self.find_outofplane()
         return (
-            self.orientation_lookup[diffractometer.detector_circles[index]]
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
             * self.orientation_lookup[self.detector_ver]
         )
 
