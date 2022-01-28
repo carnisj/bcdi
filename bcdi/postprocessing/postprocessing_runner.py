@@ -595,7 +595,7 @@ def run(prm):
             # corrected detector angles not provided
             if bragg_peak is None and detector.template_imagefile is not None:
                 # Bragg peak position not provided, find it from the data
-                data, _, _, _ = setup.diffractometer.load_check_dataset(
+                data, _, _, _ = setup.loader.load_check_dataset(
                     scan_number=scan,
                     detector=detector,
                     setup=setup,
@@ -896,7 +896,7 @@ def run(prm):
     if save_frame == "lab_flat_sample":
         comment = comment + "_flat"
         print("\nSending sample stage circles to 0")
-        (amp, phase, strain), q_final = setup.diffractometer.flatten_sample(
+        (amp, phase, strain), q_final = setup.beamline.flatten_sample(
             arrays=(amp, phase, strain),
             voxel_size=voxel_size,
             q_com=q_lab[::-1],  # q_com needs to be in xyz order
