@@ -21,7 +21,11 @@ to be instantiated directly but via a Setup instance.
 
   classDiagram
     class Beamline{
-      +str name
+      +diffractometer
+      +loader
+      +name
+      +sample_angles
+      +detector_angles
       detector_hor(@)
       detector_ver(@)
       goniometer_values(@)

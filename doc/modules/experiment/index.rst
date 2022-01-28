@@ -124,16 +124,19 @@ General organization of the module:
 
   classDiagram
     class Diffractometer{
+      +detector_circles
+      +name
+      +sample_circles
+      +sample_offsets
       +tuple sample_offsets
+      -_geometry
+      add_circle()
+      get_circles()
+      get_rocking_circle()
+      remove_circle()
+      rotation_matrix()
+      valid_name()
   }
-    ABC <|-- Diffractometer
-    Diffractometer <|-- DiffractometerID01
-    Diffractometer <|-- DiffractometerSIXS
-    Diffractometer <|-- Diffractometer34ID
-    Diffractometer <|-- DiffractometerP10
-    DiffractometerP10 <|-- DiffractometerP10SAXS
-    Diffractometer <|-- DiffractometerCRISTAL
-    Diffractometer <|-- DiffractometerNANOMAX
 
 .. automodule:: bcdi.experiment.diffractometer
     :members:
@@ -152,14 +155,15 @@ General organization of the module:
   }
     ABC <|-- Loader
     Loader <|-- LoaderID01
-    LoaderID01 <|-- LoaderID01BLISS
+    Loader <|-- LoaderID01BLISS
     Loader <|-- LoaderSIXS
     Loader <|-- Loader34ID
     Loader <|-- LoaderP10
+    LoaderP10 <|-- LoaderP10SAXS
     Loader <|-- LoaderCRISTAL
     Loader <|-- LoaderNANOMAX
 
-.. automodule:: bcdi.experiment.beamline
+.. automodule:: bcdi.experiment.loader
    :members:
 
 rotation_matrix

@@ -20,7 +20,8 @@ following diagram).
 
   classDiagram
     class Loader{
-      +str name
+      +name
+      +sample_offsets
       create_logile(@)
       load_data(@)
       motor_positions(@)

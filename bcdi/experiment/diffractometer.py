@@ -17,13 +17,17 @@ The beamline-specific geometry is defined via a named tuple.
 
   classDiagram
     class Diffractometer{
+      +detector_circles
+      +name
+      +sample_circles
+      +sample_offsets
       +tuple sample_offsets
+      -_geometry
       add_circle()
       get_circles()
       get_rocking_circle()
       remove_circle()
       rotation_matrix()
-      select_frames()
       valid_name()
   }
 
