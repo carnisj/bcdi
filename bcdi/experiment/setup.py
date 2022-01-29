@@ -724,7 +724,6 @@ class Setup:
         # process motor positions
         processed_positions = self.beamline.process_positions(
             setup=self,
-            logfile=self.logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
