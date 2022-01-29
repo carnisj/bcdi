@@ -128,6 +128,7 @@ class Setup:
                 "binning",
                 "preprocessing_binning",
                 "custom_pixelsize",
+                "linearity_func",
             },
             name="Setup.__init__",
         )
