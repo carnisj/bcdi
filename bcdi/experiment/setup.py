@@ -2368,7 +2368,7 @@ class Setup:
             name="scan_number",
         )
 
-        return self.diffractometer.goniometer_values(
+        return self.beamline.goniometer_values(
             setup=self,
             scan_number=scan_number,
         )
