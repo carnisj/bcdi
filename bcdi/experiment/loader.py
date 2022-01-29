@@ -1214,7 +1214,6 @@ class LoaderID01BLISS(Loader):
 
         :return: logfile
         """
-        pass  # TODO
 
     def load_data(
         self,
@@ -1249,7 +1248,6 @@ class LoaderID01BLISS(Loader):
          - the monitor values for normalization
 
         """
-        pass  # TODO
 
     def motor_positions(self, setup, **kwargs):
         """
@@ -1263,7 +1261,6 @@ class LoaderID01BLISS(Loader):
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
-        pass  # TODO
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
@@ -1277,7 +1274,6 @@ class LoaderID01BLISS(Loader):
 
         :return: the positions/values of the device as a numpy 1D array
         """
-        pass  # TODO
 
     def read_monitor(self, setup, **kwargs):
         """
@@ -1289,7 +1285,6 @@ class LoaderID01BLISS(Loader):
 
         :return: the default monitor values
         """
-        pass  # TODO
 
 
 class LoaderSIXS(Loader):
