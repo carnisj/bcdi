@@ -591,7 +591,6 @@ def run(prm):
                 # Bragg peak position not provided, find it from the data
                 data, _, _, _ = setup.loader.load_check_dataset(
                     scan_number=scan,
-                    detector=setup.detector,
                     setup=setup,
                     frames_pattern=prm.get("frames_pattern"),
                     bin_during_loading=False,
