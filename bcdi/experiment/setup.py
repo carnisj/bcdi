@@ -142,17 +142,22 @@ class Setup:
         self.custom_monitor = kwargs.get("custom_monitor")  # list or tuple
         self.custom_motors = kwargs.get("custom_motors")  # dictionnary
         self.actuators = kwargs.get("actuators", {})  # list or tuple
+
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
         self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
         self.offset_inplane = kwargs.get("offset_inplane", 0)
+
         # kwargs for series (several frames per point) at P10
         self.is_series = kwargs.get("is_series", False)  # boolean
-        # load positional arguments corresponding to instance properties
+
+        # create the detector and beamline instances
+        self.detector = create_detector(name=detector_name, **kwargs)
         self.beamline = create_beamline(
             name=beamline, sample_offsets=kwargs.get("sample_offsets")
         )
-        self.detector = create_detector(name=detector_name, **kwargs)
+
+        # load positional arguments corresponding to instance properties
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
