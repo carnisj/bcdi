@@ -48,12 +48,12 @@ The following classes are implemented:
       +angle
       +circle
   }
-    Setup o-- Beamline : create_beamline()
-    Setup o-- Detector : create_detector()
-    Beamline o-- Diffractometer
-    Diffractometer o-- Geometry : create_geometry()
-    Beamline o-- Loader : create_loader()
-    Diffractometer o-- RotationMatrix
+    Setup *-- Beamline : create_beamline()
+    Setup *-- Detector : create_detector()
+    Beamline *-- Diffractometer
+    Diffractometer *-- Geometry : create_geometry()
+    Beamline *-- Loader : create_loader()
+    Diffractometer *-- RotationMatrix
 
 In scripts, the initial step is to declare a detector instance and a setup instance with
 the related parameters (see the class documentation). The beamline and the detector are
