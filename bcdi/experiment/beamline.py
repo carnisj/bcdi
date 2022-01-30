@@ -9,11 +9,11 @@
 """
 Implementation of beamline-related classes.
 
-The class methods manage  the calculations related to reciprocal or direct space
+The class methods manage the calculations related to reciprocal or direct space
 transformation (interpolation in an orthonormal grid). Generic method are implemented
 in the abstract base class Beamline, and beamline-dependent methods need to be
 implemented in each child class (they are decorated by @abstractmethod in the base
-class; they are indicated using @ in the following diagram). These classes are not meant
+class; they are written in italic in the following diagram). These classes are not meant
 to be instantiated directly but via a Setup instance.
 
 .. mermaid::
@@ -21,17 +21,18 @@ to be instantiated directly but via a Setup instance.
 
   classDiagram
     class Beamline{
+      <<abstract>>
       +diffractometer
       +loader
       +name
       +sample_angles
       +detector_angles
-      detector_hor(@)
-      detector_ver(@)
-      goniometer_values(@)
-      init_paths(@)
-      process_positions(@)
-      transformation_matrix(@)
+      detector_hor()*
+      detector_ver()*
+      goniometer_values()*
+      init_paths()*
+      process_positions()*
+      transformation_matrix()*
       exit_wavevector()
       find_inplane()
       find_outofplane()

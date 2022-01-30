@@ -12,7 +12,7 @@ Implementation of beamline-dependent data loading classes.
 The class methods manage the initialization of the file system and loading of data and
 motor positions. Generic method are implemented in the abstract base class Loader, and
 beamline-dependent methods need to be implemented in each child class (they are
-decorated by @abstractmethod in the base class; they are indicated using @ in the
+decorated by @abstractmethod in the base class; they are written in italic in the
 following diagram).
 
 .. mermaid::
@@ -20,13 +20,14 @@ following diagram).
 
   classDiagram
     class Loader{
+      <<abstract>>
       +name
       +sample_offsets
-      create_logfile(@)
-      load_data(@)
-      motor_positions(@)
-      read_device(@)
-      read_monitor(@)
+      create_logfile()*
+      load_data()*
+      motor_positions()*
+      read_device()*
+      read_monitor()*
       init_data_mask()
       init_monitor()
       load_check_dataset()

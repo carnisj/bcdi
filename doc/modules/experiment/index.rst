@@ -28,9 +28,11 @@ The following classes are implemented:
       +detector_name
   }
     class Beamline{
+      <<abstract>>
       +name
   }
     class Loader{
+      <<abstract>>
       +name
       +sample_offsets
   }
@@ -42,6 +44,7 @@ The following classes are implemented:
       +name
   }
     class Detector{
+      <<abstract>>
       +name
   }
     class RotationMatrix{
@@ -89,6 +92,7 @@ General organization of the module:
 
   classDiagram
     class Beamline{
+      <<abstract>>
       +name : beamline name
   }
     ABC <|-- Beamline
@@ -113,6 +117,7 @@ General organization of the module:
 
   classDiagram
     class Detector{
+      <<abstract>>
       +name : detector_name
   }
     ABC <|-- Detector
@@ -142,6 +147,7 @@ General organization of the module:
 
   classDiagram
     class Loader{
+      <<abstract>>
       +name
       +sample_offsets
   }
