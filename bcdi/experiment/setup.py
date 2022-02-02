@@ -592,7 +592,6 @@ class Setup:
             "tilt_angle_deg": self.tilt_angle,
             "grazing_angles_deg": self.grazing_angle,
             "sample_offsets_deg": self.diffractometer.sample_offsets,
-            "direct_beam_pixel": self.direct_beam,
             "filtered_data": self.filtered_data,
             "custom_scan": self.custom_scan,
             "custom_images": self.custom_images,
@@ -662,8 +661,8 @@ class Setup:
         """Representation string of the Setup instance."""
         return (
             f"{self.__class__.__name__}(beamline='{self.beamline}', "
-            f"detector='{self.detector.name}',"
-            f" beam_direction={self.beam_direction}, "
+            f"detector='{self.detector.name}', "
+            f"beam_direction={self.beam_direction}, "
             f"direct_beam={self.direct_beam}, "
             f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
             f"energy={self.energy}, distance={self.distance}, "
@@ -673,7 +672,6 @@ class Setup:
             f"rocking_angle='{self.rocking_angle}', "
             f"grazing_angle={self.grazing_angle},\n"
             f"pixel_size={self.detector.unbinned_pixel_size}, "
-            f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
             f"filtered_data={self.filtered_data},\n"
             f"custom_scan={self.custom_scan}, "
