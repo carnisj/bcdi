@@ -1664,8 +1664,8 @@ class Setup:
         dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
             initial_shape,
             tilt_angle=abs(tilt),
-            pixel_x=self.detector.unbinned_pixel_size[1],
-            pixel_y=self.detector.unbinned_pixel_size[0],
+            pixel_x=self.detector.pixelsize_x,
+            pixel_y=self.detector.pixelsize_y,
         )
         if verbose:
             print(
@@ -1679,10 +1679,10 @@ class Setup:
             # recalculate the tilt and pixel sizes to accomodate a shape change
             tilt *= initial_shape[0] / input_shape[0]
             pixel_y = (
-                self.detector.unbinned_pixel_size[0] * initial_shape[1] / input_shape[1]
+                self.detector.pixelsize_y * initial_shape[1] / input_shape[1]
             )
             pixel_x = (
-                self.detector.unbinned_pixel_size[1] * initial_shape[2] / input_shape[2]
+                self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
             )
             if verbose:
                 print(
@@ -1705,8 +1705,8 @@ class Setup:
                     f" {dx_realspace:.2f} nm)",
                 )
         else:
-            pixel_y = self.detector.unbinned_pixel_size[0]
-            pixel_x = self.detector.unbinned_pixel_size[1]
+            pixel_y = self.detector.pixelsize_y
+            pixel_x = self.detector.pixelsize_x
 
         if not voxel_size:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
@@ -2040,8 +2040,8 @@ class Setup:
             tilt_angle=self.tilt_angle * self.detector.preprocessing_binning[0],
             direct_space=False,
             verbose=verbose,
-            pixel_x=self.detector.unbinned_pixel_size[1],
-            pixel_y=self.detector.unbinned_pixel_size[0],
+            pixel_x=self.detector.pixelsize_x,
+            pixel_y=self.detector.pixelsize_y,
         )
 
         # the voxel size in q in the laboratory frame
