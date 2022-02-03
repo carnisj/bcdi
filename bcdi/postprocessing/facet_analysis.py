@@ -28,10 +28,11 @@ class Facets:
     """
     Import and stores data output of facet analyzer plugin for further analysis.
 
-    Extract the strain component and the displacement on the facets, and retrieves the
-    correct facet normals based on a user input (geometric transformation into the
-    crystal frame). It requries as input a VTK file extracted from the FacetAnalyser
-    plugin from ParaView. See: https://doi.org/10.1016/j.ultramic.2012.07.024
+    Extract the mean and standard deviation of the strain and displacement distribution
+    on the facets. Retrieves the correct facet normals based on a user input (geometric
+    transformation into the crystal frame). It requires as input a VTK file extracted
+    from the FacetAnalyser plugin from ParaView.
+    See: https://doi.org/10.1016/j.ultramic.2012.07.024
 
     Original tutorial on how to open vtk files:
     http://forrestbao.blogspot.com/2011/12/reading-vtk-files-in-python-via-python.html
