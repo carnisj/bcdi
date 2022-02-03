@@ -15,9 +15,10 @@ detector horizontal axis.
 
 The most usefull script is ``bcdi_strain.py``. It requires a YAML config
 file, which for this example is ``bcdi/examples/S11_config_postprocessing.yml``.
-A result file named ``S11_modes.h5`` is also provided in ``bcdi/examples``. This is the
-output of the decomposition into orthogonal modes after phase retrieval with PyNX. For
-convenience, copy ``S11_modes.h5`` to the data folder "path_to/CXIDB-I182/CH4760/S11/".
+A result file named ``S11_modes_252_420_392_prebinning_1_1_1.h5`` is also provided in
+``bcdi/examples``. This is the output of the decomposition into orthogonal modes after
+phase retrieval with PyNX. For convenience, copy it to the data folder
+"path_to/CXIDB-I182/CH4760/S11/".
 
 In order to have it running correctly on your machine, you will have to modify the paths
 for the following parameters::
