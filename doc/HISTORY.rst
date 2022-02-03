@@ -1,3 +1,8 @@
+Version 0.2.3:
+--------------
+
+* Bug: use the binned detector pixel size to calculate the transformation matrices
+
 Version 0.2.2:
 --------------
 
