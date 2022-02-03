@@ -1678,12 +1678,8 @@ class Setup:
         if input_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
             tilt *= initial_shape[0] / input_shape[0]
-            pixel_y = (
-                self.detector.pixelsize_y * initial_shape[1] / input_shape[1]
-            )
-            pixel_x = (
-                self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
-            )
+            pixel_y = self.detector.pixelsize_y * initial_shape[1] / input_shape[1]
+            pixel_x = self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
             if verbose:
                 print(
                     "Tilt, pixel_y, pixel_x based on the shape of the cropped array:",
