@@ -1,6 +1,9 @@
 Version 0.2.3:
 --------------
 
+* Refactor: allow the command line parameters to be None. ConfigParser can now be
+  instantiated providing the path to the config file only.
+
 * Bug: use the binned detector pixel size to calculate the transformation matrices
 
 Version 0.2.2:
