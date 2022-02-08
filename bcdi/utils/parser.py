@@ -44,7 +44,8 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "-bin" "--phasing_binning",
+        "-bin",
+        "--phasing_binning",
         type=str,
         help="binning factor applied during phasing",
     )
@@ -102,12 +103,6 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
 
     argument_parser.add_argument(
         "--outofplane_angle", type=float, help="detector out-of-plane angle"
-    )
-
-    argument_parser.add_argument(
-        "--phasing_binning",
-        type=str,
-        help="binning factor applied during phasing",
     )
 
     argument_parser.add_argument(
