@@ -96,6 +96,10 @@ class TestConfigParser(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.parser.load_arguments()
 
+    def test_instantiate_configparser_no_cla(self):
+        self.parser = ConfigParser(CONFIG)
+        self.assertIsNone(self.parser.arguments)
+
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)
