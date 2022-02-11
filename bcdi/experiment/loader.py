@@ -24,6 +24,7 @@ following diagram).
       +name
       +sample_offsets
       create_logfile()*
+      init_paths()*
       load_data()*
       motor_positions()*
       read_device()*
@@ -644,6 +645,44 @@ class Loader(ABC):
             print("Skipping intensity normalization.")
         return monitor
 
+    @staticmethod
+    @abstractmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: beamline-dependent template for the data files:
+
+         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+         - Cristal: 'S%d.nxs'
+         - P10: '_master.h5'
+         - NANOMAX: '%06d.h5'
+         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
+
+        :param kwargs: dictionnary of the setup parameters including the following keys:
+
+         - 'specfile_name': beamline-dependent string:
+
+           - ID01: name of the spec file without '.spec'
+           - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
+             root_folder+'alias_dict_2019.txt')
+           - empty string for all other beamlines
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+
     def load_check_dataset(
         self,
         scan_number,
@@ -918,6 +957,34 @@ class LoaderID01(Loader):
 
         path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at ID01.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g.
+         'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+        :param kwargs:
+         - 'specfile_name': name of the spec file without '.spec'
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        specfile_name = kwargs.get("specfile_name")
+
+        homedir = root_folder + sample_name + str(scan_number) + "/"
+        default_dirname = "data/"
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def load_data(
         self,
@@ -1216,6 +1283,28 @@ class LoaderID01BLISS(Loader):
         :return: logfile
         """
 
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at ID01 BLISS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: not used at CRISTAL
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
+        default_dirname = "data/"
+        return homedir, default_dirname, None, template_imagefile
+
     def load_data(
         self,
         setup,
@@ -1346,6 +1435,49 @@ class LoaderSIXS(Loader):
                 alias_dict=filename,
             )
         raise NotImplementedError(f"{name} is not implemented")
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at SIXS.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g.
+         'align.spec_ascan_mu_%05d.nxs' (SIXS_2018), 'spare_ascan_mu_%05d.nxs'
+         (SIXS_2019).
+        :param kwargs:
+         - 'specfile_name': None or full path of the alias dictionnary (e.g.
+           root_folder+'alias_dict_2019.txt')
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        specfile_name = kwargs.get("specfile_name")
+
+        homedir = root_folder + sample_name + str(scan_number) + "/"
+        default_dirname = "data/"
+
+        if specfile_name is None:
+            # default to the alias dictionnary located within the package
+            specfile = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    os.pardir,
+                    "preprocessing/alias_dict_2021.txt",
+                )
+            )
+        else:
+            specfile = specfile_name
+
+        return homedir, default_dirname, specfile, template_imagefile
 
     def load_data(
         self,
@@ -1532,6 +1664,34 @@ class Loader34ID(Loader):
 
         path = util.find_file(filename=filename, default_folder=root_folder)
         return SpecFile(path)
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at 34ID-C.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g.
+         'Sample%dC_ES_data_51_256_256.npz'.
+        :param kwargs:
+         - 'specfile_name': name of the spec file without '.spec'
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        specfile_name = kwargs.get("specfile_name")
+
+        homedir = root_folder + sample_name + str(scan_number) + "/"
+        default_dirname = "data/"
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def load_data(
         self,
@@ -1805,6 +1965,40 @@ class LoaderP10(Loader):
         path = root_folder + filename + "/" + filename + ".fio"
         print(f"Trying to load the fio file at: {path}")
         return path
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at P10.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '_master.h5'
+        :param kwargs:
+         - 'specfile_name': optional, full path of the .fio file
+
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        specfile = kwargs.get("specfile_name")
+        default_specfile = sample_name + "_{:05d}".format(scan_number)
+        if specfile is None or not os.path.isfile(specfile):
+            # default to the usual position of .fio at P10
+            specfile = default_specfile
+
+        homedir = root_folder + default_specfile + "/"
+        default_dirname = "e4m/"
+
+        if template_imagefile is not None:
+            template_imagefile = default_specfile + template_imagefile
+        return homedir, default_dirname, specfile, template_imagefile
 
     def load_data(
         self,
@@ -2306,6 +2500,28 @@ class LoaderCRISTAL(Loader):
             f"and pattern={pattern}"
         )
 
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at CRISTAL.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.nxs'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: not used at CRISTAL
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + str(scan_number) + "/"
+        default_dirname = "data/"
+        return homedir, default_dirname, None, template_imagefile
+
     def load_data(
         self,
         setup,
@@ -2535,6 +2751,28 @@ class LoaderNANOMAX(Loader):
 
         ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
         return h5py.File(ccdfiletmp, "r")
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at Nanomax.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. '%06d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: the name of the specfile if it exists
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
+        default_dirname = "data/"
+        return homedir, default_dirname, None, template_imagefile
 
     def load_data(
         self,

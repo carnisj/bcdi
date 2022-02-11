@@ -1289,7 +1289,7 @@ class Setup:
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self.beamline.init_paths(
+        ) = self.beamline.loader.init_paths(
             root_folder=root_folder,
             sample_name=sample_name,
             scan_number=scan_number,

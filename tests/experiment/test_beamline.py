@@ -7,8 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-import os
-from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
 
@@ -131,27 +129,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
                 atol=1e-09,
             )
         )
-
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, None)
-        self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
 
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
@@ -324,27 +301,6 @@ class TestBeamlineID01(unittest.TestCase):
                 atol=1e-09,
             )
         )
-
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, "test")
-        self.assertEqual(template_imagefile, "data_mpx4_%05d.edf.gz")
 
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
@@ -527,28 +483,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "{:06d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, None)
-        self.assertEqual(template_imagefile, "%06d.h5")
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
@@ -678,7 +612,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             )
 
 
-class TestBeamlineP10(fake_filesystem_unittest.TestCase):
+class TestBeamlineP10(unittest.TestCase):
     """Tests related to P10 beamline instantiation."""
 
     def setUp(self):
@@ -722,58 +656,6 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
                 atol=1e-09,
             )
         )
-
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(
-            specfile, self.sample_name + "_{:05d}".format(self.scan_number)
-        )
-        self.assertEqual(template_imagefile, "S_00001_master.h5")
-
-    def test_init_paths_specfile_full_path(self):
-        self.setUpPyfakefs()
-        valid_path = "/gpfs/bcdi/data"
-        os.makedirs(valid_path)
-        with open(valid_path + "/dummy.fio", "w") as f:
-            f.write("dummy")
-
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": valid_path + "/dummy.fio",
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(specfile, params["specfile_name"])
-        self.assertEqual(template_imagefile, "S_00001_master.h5")
 
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
@@ -993,27 +875,6 @@ class TestBeamlineSIXS(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, self.specfile_name)
-        self.assertEqual(template_imagefile, self.template_imagefile)
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
@@ -1185,27 +1046,6 @@ class TestBeamline34ID(unittest.TestCase):
                 atol=1e-09,
             )
         )
-
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, self.specfile_name)
-        self.assertEqual(template_imagefile, None)
 
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
