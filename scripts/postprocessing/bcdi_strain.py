@@ -10,13 +10,13 @@
 import argparse
 from datetime import datetime
 from matplotlib import pyplot as plt
+from pathlib import Path
 
 from bcdi.postprocessing.postprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 
-CONFIG_FILE = (
-    "C:/Users/Jerome/Documents/myscripts/bcdi/bcdi/examples/config_postprocessing.yml"
-)
+here = Path(__file__).parent
+CONFIG_FILE = str(here.parents[1] / "bcdi/examples/config_postprocessing.yml")
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,
