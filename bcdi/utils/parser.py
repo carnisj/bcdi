@@ -12,7 +12,7 @@
 from argparse import ArgumentParser
 import os
 import pathlib
-from typing import Any, ByteString, Dict, Union
+from typing import Any, ByteString, Dict, Optional
 import yaml
 
 from bcdi.utils.parameters import valid_param
@@ -44,7 +44,8 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "-bin" "--phasing_binning",
+        "-bin",
+        "--phasing_binning",
         type=str,
         help="binning factor applied during phasing",
     )
@@ -102,12 +103,6 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
 
     argument_parser.add_argument(
         "--outofplane_angle", type=float, help="detector out-of-plane angle"
-    )
-
-    argument_parser.add_argument(
-        "--phasing_binning",
-        type=str,
-        help="binning factor applied during phasing",
     )
 
     argument_parser.add_argument(
@@ -173,12 +168,12 @@ class ConfigParser:
     """
 
     def __init__(
-        self, file_path: str, command_line_args: Union[Dict[str, Any], None] = None
+        self, file_path: str, command_line_args: Optional[Dict[str, Any]] = None
     ) -> None:
         self.file_path = file_path
         self.command_line_args = command_line_args
         self.raw_config = self._open_file()
-        self.arguments: Union[Dict, None] = None
+        self.arguments: Optional[Dict] = None
 
     @property
     def command_line_args(self):
@@ -224,7 +219,7 @@ class ConfigParser:
         return {key: dic[key] for key in checked_keys}
 
     @staticmethod
-    def filter_dict(dic: Dict, filter_value: Any = None) -> Dict:
+    def filter_dict(dic: Optional[Dict], filter_value: Any = None) -> Dict:
         """
         Filter out key where the value is None.
 
@@ -232,7 +227,9 @@ class ConfigParser:
         :param filter_value: value to be filtered out
         :return: a dictionary with only keys where the value is not None
         """
-        return {k: v for k, v in dic.items() if v is not filter_value}
+        if dic is not None:
+            return {k: v for k, v in dic.items() if v is not filter_value}
+        return {}
 
     def load_arguments(self) -> Dict:
         """Parse the byte string, eventually override defaults and check parameters."""

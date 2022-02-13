@@ -75,6 +75,31 @@ class TestConfigParser(unittest.TestCase):
         # --scan argument from the command line works as expected
         self.assertTrue(args.get("scan") == self.command_line_args["scan"])
 
+    def test_load_arguments_no_cl_params_flip(self):
+        args = self.parser.load_arguments()
+        self.assertTrue(args.get("flip_reconstruction") is True)
+
+    def test_load_arguments_cl_params_flip(self):
+        self.parser = ConfigParser(
+            CONFIG, {"flip_reconstruction": "False", "root_folder": str(here)}
+        )
+        # "flip_reconstruction" is also key in CONFIG, which means that the overriding
+        # by the optional --flip_reconstruction argument from the command line works as
+        # expected
+        args = self.parser.load_arguments()
+        self.assertTrue(args.get("flip_reconstruction") is False)
+
+    def test_load_arguments_cl_params_flip_no_bool(self):
+        self.parser = ConfigParser(
+            CONFIG, {"flip_reconstruction": "weirdstring", "root_folder": str(here)}
+        )
+        with self.assertRaises(TypeError):
+            self.parser.load_arguments()
+
+    def test_instantiate_configparser_no_cla(self):
+        self.parser = ConfigParser(CONFIG)
+        self.assertIsNone(self.parser.arguments)
+
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)

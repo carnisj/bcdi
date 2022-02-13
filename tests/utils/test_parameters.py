@@ -29,39 +29,40 @@ class TestParameters(unittest.TestCase):
 
     def test_none_str_unexpected(self):
         val, flag = valid_param(key="not_expected", value="None")
-        self.assertTrue(val is None and not flag)
+        self.assertTrue(val is None and flag is False)
 
     def test_none_str_expected(self):
         val, flag = valid_param(key="actuators", value="None")
-        self.assertTrue(val is None and flag)
+        self.assertTrue(val is None and flag is True)
 
     def test_true_expected_1(self):
         val, flag = valid_param(key="align_axis", value="True")
-        self.assertTrue(val and flag)
+        self.assertTrue(val is True and flag is True)
 
     def test_true_expected_2(self):
         val, flag = valid_param(key="align_axis", value="true")
-        self.assertTrue(val and flag)
+        self.assertTrue(val is True and flag is True)
 
     def test_true_expected_3(self):
         val, flag = valid_param(key="align_axis", value="TRUE")
-        self.assertTrue(val and flag)
+        self.assertTrue(val is True and flag is True)
 
     def test_false_expected_1(self):
         val, flag = valid_param(key="align_axis", value="False")
-        self.assertTrue(not val and flag)
+        print(val, flag)
+        self.assertTrue(val is False and flag is True)
 
     def test_false_expected_2(self):
         val, flag = valid_param(key="align_axis", value="false")
-        self.assertTrue(not val and flag)
+        self.assertTrue(val is False and flag is True)
 
     def test_false_expected_3(self):
         val, flag = valid_param(key="align_axis", value="FALSE")
-        self.assertTrue(not val and flag)
+        self.assertTrue(val is False and flag is True)
 
     def test_data_dir_none(self):
         val, flag = valid_param(key="data_dir", value="None")
-        self.assertTrue(val is None and flag)
+        self.assertTrue(val is None and flag is True)
 
     def test_data_dir_not_existing(self):
         with self.assertRaises(ValueError):
@@ -69,7 +70,7 @@ class TestParameters(unittest.TestCase):
 
     def test_data_dir_existing(self):
         val, flag = valid_param(key="data_dir", value=THIS_DIR)
-        self.assertTrue(val == THIS_DIR and flag)
+        self.assertTrue(val == THIS_DIR and flag is True)
 
 
 if __name__ == "__main__":
