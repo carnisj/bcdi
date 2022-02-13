@@ -578,7 +578,7 @@ class Setup:
         """Return a dictionnary with all parameters."""
         return {
             "Class": self.__class__.__name__,
-            "beamline": self.beamline,
+            "beamline": self.beamline.name,
             "detector": self.detector.name,
             "direct_beam": self.direct_beam,
             "dirbeam_detector_angles": self.dirbeam_detector_angles,
@@ -660,7 +660,7 @@ class Setup:
     def __repr__(self):
         """Representation string of the Setup instance."""
         return (
-            f"{self.__class__.__name__}(beamline='{self.beamline}', "
+            f"{self.__class__.__name__}(beamline='{self.beamline.name}', "
             f"detector='{self.detector.name}', "
             f"beam_direction={self.beam_direction}, "
             f"direct_beam={self.direct_beam}, "
