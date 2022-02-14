@@ -102,7 +102,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
             np.linspace(-1, 1, nbx),
             indexing="ij",
         )
-        covariance = np.diag(sigma ** 2)
+        covariance = np.diag(sigma**2)
         window = multivariate_normal.pdf(
             np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]),
             mean=mu,

@@ -702,7 +702,7 @@ def gaussian(x_axis, amp, cen, sig):
     :param sig: HWHM of the Gaussian
     :return: the Gaussian line shape at x_axis
     """
-    return amp * np.exp(-((x_axis - cen) ** 2) / (2.0 * sig ** 2))
+    return amp * np.exp(-((x_axis - cen) ** 2) / (2.0 * sig**2))
 
 
 def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=False):
@@ -756,7 +756,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
             np.linspace(-nbx, nbx, nbx) * voxel_size[1],
             indexing="ij",
         )
-        covariance = np.diag(sigma ** 2)
+        covariance = np.diag(sigma**2)
         window = multivariate_normal.pdf(
             np.column_stack([grid_y.flat, grid_x.flat]), mean=mu, cov=covariance
         )
@@ -772,7 +772,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
             np.linspace(-nbx, nbx, nbx) * voxel_size[2],
             indexing="ij",
         )
-        covariance = np.diag(sigma ** 2)
+        covariance = np.diag(sigma**2)
         window = multivariate_normal.pdf(
             np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]),
             mean=mu,
@@ -1220,7 +1220,7 @@ def lorentzian(x_axis, amp, cen, sig):
     :param sig: HWHM of the Lorentzian
     :return: the Lorentzian line shape at x_axis
     """
-    return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
+    return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig**2))
 
 
 def make_support(
@@ -2238,7 +2238,7 @@ def skewed_gaussian(x_axis, amp, loc, sig, alpha):
     """
     return (
         amp
-        * np.exp(-((x_axis - loc) ** 2) / (2.0 * sig ** 2))
+        * np.exp(-((x_axis - loc) ** 2) / (2.0 * sig**2))
         * (1 + erf(alpha / np.sqrt(2) * (x_axis - loc) / sig))
     )
 
