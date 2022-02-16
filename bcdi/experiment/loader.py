@@ -5,6 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+#         Clement Atlan, c.atlan@outlook.com
 
 """
 Implementation of beamline-dependent data loading classes.
@@ -1272,8 +1273,10 @@ class LoaderID01BLISS(Loader):
 
     @staticmethod
     def create_logfile(**kwargs):
+        # This method does not create anything, only loads the logfile
+        # load_logfile would be more appropriate
         """
-        Create the logfile, which is the spec file for ID01.
+        Create the logfile, which is the h5 file for ID01BLISS.
 
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where is e.g. the
@@ -1282,6 +1285,30 @@ class LoaderID01BLISS(Loader):
 
         :return: logfile
         """
+        # Why make the path management so complex ? Working with
+        # absolute single piece path (not concatenated) is easier, thus
+        # we only have specfile_path = "/.../xxx.h5" for ex.
+        # Here we force the user to define the root_folder, give the
+        # basename of the specfile (i.e. without de root_folder).
+        # then the user has to remember what is the homedir, root_folder
+        # dirname etc.... ==> very painful
+        root_folder = kwargs.get("root_folder")
+        filename = kwargs.get("filename")
+
+        valid.valid_container(
+            filename,
+            container_types=str,
+            min_length=1,
+            name="filename",
+        )
+
+        path = util.find_file(filename=filename, default_folder=root_folder)
+        
+        # TO DO
+        # Wait, the file is not close... And it will stay opened
+        # as it is stored in the Setup.logfile attribute. 
+        return h5py.File(path,"r")
+
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1338,6 +1365,73 @@ class LoaderID01BLISS(Loader):
          - the monitor values for normalization
 
         """
+        # If these parameters are required, then they must appear in the
+        # arguments of the method (not in kwargs)
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        else:
+            scan_number = str(scan_number)
+        
+        dataset = kwargs.get("dataset")
+        if dataset is None:
+            raise ValueError("'dataset' parameter required")
+        
+        sample = kwargs.get("sample")
+        if sample is None:
+            raise ValueError("'sample' parameter required")
+
+        # TO DO: Check carefully the terms here (dataset / sample ??)
+
+        raw_data = setup.logfile[
+            dataset + "_" + sample + "_" + scan_number + ".1/measurement/mpxgaas"
+        ]
+
+        nb_frames = raw_data.shape[0]
+
+        # For now data_stack is set to None 
+        data_stack = None
+
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
+            detector=setup.detector,
+            setup=setup,
+            normalize=normalize,
+            nb_frames=nb_frames,
+            bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
+        )
+
+        # loop over frames, mask the detector and normalize / bin
+        for k in range(nb_frames):
+
+            # For now, data_stack and setup.custom_scan are not
+            # considered
+            if data_stack is not None:
+                pass
+            else:
+                if setup.custom_scan:
+                    pass
+                else:
+                    pass
+
+            data[k, :, :], mask2d, monitor[k] = load_frame(
+                frame=raw_data[k, ...],
+                mask2d=mask2d,
+                monitor=monitor[k],
+                frames_per_point=1,
+                detector=setup.detector,
+                loading_roi=loading_roi,
+                flatfield=flatfield,
+                background=background,
+                hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+            sys.stdout.write("\rLoading frame {:d}".format(k + 1))
+            sys.stdout.flush()
+
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
