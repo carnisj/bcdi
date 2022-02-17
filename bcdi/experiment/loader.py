@@ -55,6 +55,7 @@ from numbers import Integral
 import numpy as np
 import os
 import re
+import silx
 from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
@@ -1307,7 +1308,9 @@ class LoaderID01BLISS(Loader):
         # TO DO
         # Wait, the file is not close... And it will stay opened
         # as it is stored in the Setup.logfile attribute. 
-        return h5py.File(path,"r")
+        # ==> Use a wrapper that opens the file with context manager
+        
+        return silx.io.open(path)
 
 
     @staticmethod
