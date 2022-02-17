@@ -1366,7 +1366,7 @@ class LoaderID01BLISS(Loader):
 
         """
         # If these parameters are required, then they must appear in the
-        # arguments of the method (not in kwargs)
+        # arguments of the method (not in kwargs) ?
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -1381,10 +1381,11 @@ class LoaderID01BLISS(Loader):
         if sample is None:
             raise ValueError("'sample' parameter required")
 
-        # TO DO: Check carefully the terms here (dataset / sample ??)
+        # TO DO: Check carefully the terms (dataset / sample ??)
 
         raw_data = setup.logfile[
-            dataset + "_" + sample + "_" + scan_number + ".1/measurement/mpxgaas"
+            dataset + "_" + sample + "_" + scan_number
+            + ".1/measurement/mpxgaas"
         ]
 
         nb_frames = raw_data.shape[0]
@@ -1445,6 +1446,52 @@ class LoaderID01BLISS(Loader):
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        else:
+            scan_number = str(scan_number)
+        
+        dataset = kwargs.get("dataset")
+        if dataset is None:
+            raise ValueError("'dataset' parameter required")
+        
+        sample = kwargs.get("sample")
+        if sample is None:
+            raise ValueError("'sample' parameter required")
+        
+        # load positioners
+        positioners = setup.logfile[
+            dataset + "_" + sample + "_" + scan_number
+            + ".1/instrument/positioners"
+        ]
+        if not setup.custom_scan:
+            try:
+                mu = positioners["mu"][...]
+            except KeyError:
+                print("mu was not found in the logfile, then it is set to 0.")
+                mu = 0
+            eta = positioners["eta"][...]
+            phi = positioners["phi"][...]
+            nu = positioners["nu"][...]
+            delta = positioners["delta"][...]
+
+            # for now, return the setup.energy and setup.distance
+            energy = setup.energy
+            detector_distance = setup.distance            
+
+        else: # manually defined custom scan
+            mu = setup.custom_motors["mu"]
+            eta = setup.custom_motors["eta"]
+            phi = setup.custom_motors["phi"]
+            delta = setup.custom_motors["delta"]
+            nu = setup.custom_motors["nu"]
+            energy = setup.energy
+
+        # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+
+        return mu, eta, phi, nu, delta, energy, detector_distance
+
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
