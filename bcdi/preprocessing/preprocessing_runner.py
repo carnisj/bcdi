@@ -370,6 +370,7 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
+
     for scan_idx, scan_nb in enumerate(scans, start=1):
         plt.ion()
 
@@ -397,7 +398,10 @@ def run(prm):
 
         # load the goniometer positions needed for the calculation of the corrected
         # detector angles
-        setup.read_logfile(scan_number=scan_nb)
+        setup.read_logfile(
+            scan_number=scan_nb,
+            sample_name=sample_name[scan_idx - 1]
+        )
 
         if not use_rawdata:
             comment += "_ortho"
@@ -539,6 +543,7 @@ def run(prm):
                 normalize=normalize_flux,
                 debugging=debug,
                 photon_threshold=loading_threshold,
+                sample_name=sample_name[scan_idx - 1]
             )
 
         nz, ny, nx = np.shape(data)

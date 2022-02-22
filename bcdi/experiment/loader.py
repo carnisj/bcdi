@@ -586,6 +586,7 @@ class Loader(ABC):
                 ", detector horizontal axis by",
                 detector.binning[2],
             )
+            print(loading_roi)
             data = np.empty(
                 (
                     nb_frames,
@@ -696,6 +697,7 @@ class Loader(ABC):
         normalize="skip",
         bin_during_loading=False,
         debugging=False,
+        **kwargs
     ):
         """
         Load data, apply filters and concatenate it for phasing.
@@ -754,6 +756,7 @@ class Loader(ABC):
                 normalize=normalize,
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
+                **kwargs
             )
 
             print("")
@@ -1309,7 +1312,7 @@ class LoaderID01BLISS(Loader):
         # Wait, the file is not close... And it will stay opened
         # as it is stored in the Setup.logfile attribute. 
         # ==> Use a wrapper that opens the file with context manager
-        
+
         return silx.io.open(path)
 
 
@@ -1331,9 +1334,11 @@ class LoaderID01BLISS(Loader):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
-        return homedir, default_dirname, None, template_imagefile
+
+        specfile_name = kwargs.get("specfile_name")
+        homedir = root_folder 
+        default_dirname = ""
+        return homedir, default_dirname, specfile_name, template_imagefile
 
     def load_data(
         self,
@@ -1376,19 +1381,18 @@ class LoaderID01BLISS(Loader):
         else:
             scan_number = str(scan_number)
         
-        dataset = kwargs.get("dataset")
-        if dataset is None:
-            raise ValueError("'dataset' parameter required")
-        
-        sample = kwargs.get("sample")
-        if sample is None:
-            raise ValueError("'sample' parameter required")
+        sample_name = kwargs.get("sample_name")
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
 
         # TO DO: Check carefully the terms (dataset / sample ??)
+        # In bliss we define a dataset and a sample, thus either we add
+        # a new parameter in the config file etc (say 'dataset' for
+        # instance), OR, we can say that
+        # <sample_name (of bcdi)> = <dataset (of bliss)>_<sample(of bliss)>.
 
         raw_data = setup.logfile[
-            dataset + "_" + sample + "_" + scan_number
-            + ".1/measurement/mpxgaas"
+            sample_name + "_" + scan_number + ".1/measurement/mpxgaas"
         ]
 
         nb_frames = raw_data.shape[0]
@@ -1455,18 +1459,13 @@ class LoaderID01BLISS(Loader):
         else:
             scan_number = str(scan_number)
         
-        dataset = kwargs.get("dataset")
-        if dataset is None:
-            raise ValueError("'dataset' parameter required")
-        
-        sample = kwargs.get("sample")
-        if sample is None:
-            raise ValueError("'sample' parameter required")
+        sample_name = kwargs.get("sample_name")
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
         
         # load positioners
         positioners = setup.logfile[
-            dataset + "_" + sample + "_" + scan_number
-            + ".1/instrument/positioners"
+            sample_name + "_" + scan_number + ".1/instrument/positioners"
         ]
         if not setup.custom_scan:
             try:
@@ -1474,10 +1473,19 @@ class LoaderID01BLISS(Loader):
             except KeyError:
                 print("mu was not found in the logfile, then it is set to 0.")
                 mu = 0
-            eta = positioners["eta"][...]
-            phi = positioners["phi"][...]
-            nu = positioners["nu"][...]
-            delta = positioners["delta"][...]
+            nu = float(positioners["nu"][...])
+            delta = float(positioners["delta"][...])
+
+            angles = {angle: None for angle in ("eta", "phi", )}
+            for angle in angles.keys():
+                value = positioners[angle][...]
+                if value.shape == ():
+                    angles[angle] = float(value)
+                else:
+                    angles[angle] = value
+            
+            eta = angles["eta"]
+            phi = angles["phi"]
 
             # for now, return the setup.energy and setup.distance
             energy = setup.energy
@@ -1490,9 +1498,8 @@ class LoaderID01BLISS(Loader):
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
             energy = setup.energy
-
+        
         # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
-
         return mu, eta, phi, nu, delta, energy, detector_distance
 
 

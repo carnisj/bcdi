@@ -1046,7 +1046,7 @@ def load_bcdi_data(
     background=None,
     normalize="skip",
     debugging=False,
-    **kwargs,
+    **kwargs
 ):
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
@@ -1078,7 +1078,7 @@ def load_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"photon_threshold", "frames_pattern"},
+        allowed_kwargs={"photon_threshold", "frames_pattern", "sample_name"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1103,6 +1103,7 @@ def load_bcdi_data(
         background=background,
         normalize=normalize,
         debugging=debugging,
+        sample_name=kwargs.get("sample_name")
     )
 
     #####################################################
