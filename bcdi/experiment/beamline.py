@@ -944,6 +944,7 @@ class BeamlineID01(Beamline):
         ) = self.loader.motor_positions(
             setup=setup,
             scan_number=scan_number,
+            sample_name=kwargs["sample_name"]
         )
 
         # define the circles of interest for BCDI

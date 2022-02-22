@@ -220,6 +220,7 @@ class Detector(ABC):
         # initialize the threshold for saturation, can be overriden in child classes
         self.saturation_threshold = None
 
+
     @property
     def binning(self):
         """
