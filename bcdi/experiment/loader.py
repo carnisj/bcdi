@@ -1389,12 +1389,18 @@ class LoaderID01BLISS(Loader):
         # In bliss we define a dataset and a sample, thus either we add
         # a new parameter in the config file etc (say 'dataset' for
         # instance), OR, we can say that
-        # <sample_name (of bcdi)> = <dataset (of bliss)>_<sample(of bliss)>.
-
-        raw_data = setup.logfile[
-            sample_name + "_" + scan_number + ".1/measurement/mpxgaas"
-        ]
-
+        # <sample_name (of bcdi)> = <sample_name(of bliss)>_<dataset (of bliss)>
+        key_path = sample_name + "_" + scan_number + ".1/measurement/"
+        try:
+            raw_data = setup.logfile[key_path + "mpx1x4"]
+        except KeyError:
+            print("Looking for mpxgaas key")
+            try:
+                raw_data = setup.logfile[key_path + "mpxgaas"]
+            except KeyError:
+                print("No detector key found")
+                raise KeyError
+    		
         nb_frames = raw_data.shape[0]
 
         # For now data_stack is set to None 
