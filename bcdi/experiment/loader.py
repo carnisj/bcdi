@@ -209,7 +209,7 @@ def check_pixels(data, mask, debugging=False):
     # use the value 0.99 to be inclusive
     mean_singlephoton = min_count / nbz
     var_singlephoton = (
-        ((nbz - 1) * mean_singlephoton**2 + (min_count - mean_singlephoton) ** 2)
+        ((nbz - 1) * mean_singlephoton ** 2 + (min_count - mean_singlephoton) ** 2)
         * 1
         / nbz
     )
@@ -697,7 +697,7 @@ class Loader(ABC):
         normalize="skip",
         bin_during_loading=False,
         debugging=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Load data, apply filters and concatenate it for phasing.
@@ -756,7 +756,7 @@ class Loader(ABC):
                 normalize=normalize,
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
-                **kwargs
+                **kwargs,
             )
 
             print("")
@@ -1298,15 +1298,14 @@ class LoaderID01BLISS(Loader):
         )
 
         path = util.find_file(filename=filename, default_folder=root_folder)
-        
+
         # TO DO
-        # Use a wrapper that opens the file with context manager to 
+        # Use a wrapper that opens the file with context manager to
         # avoid opening the master file for a long time which is very
         # risky. In principe, no "opened" file should be stored in variables
         # or attributes.
 
         return silx.io.open(path)
-
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1328,7 +1327,7 @@ class LoaderID01BLISS(Loader):
         """
 
         specfile_name = kwargs.get("specfile_name")
-        homedir = root_folder 
+        homedir = root_folder
         default_dirname = ""
         return homedir, default_dirname, specfile_name, template_imagefile
 
@@ -1372,7 +1371,7 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'scan_number' parameter required")
         else:
             scan_number = str(scan_number)
-        
+
         sample_name = kwargs.get("sample_name")
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
@@ -1387,10 +1386,10 @@ class LoaderID01BLISS(Loader):
             except KeyError:
                 print("No detector key found")
                 raise KeyError
-    		
+
         nb_frames = raw_data.shape[0]
 
-        # For now data_stack is set to None 
+        # For now data_stack is set to None
         data_stack = None
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
@@ -1451,11 +1450,11 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'scan_number' parameter required")
         else:
             scan_number = str(scan_number)
-        
+
         sample_name = kwargs.get("sample_name")
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
-        
+
         # load positioners
         positioners = setup.logfile[
             sample_name + "_" + scan_number + ".1/instrument/positioners"
@@ -1469,32 +1468,37 @@ class LoaderID01BLISS(Loader):
             nu = float(positioners["nu"][...])
             delta = float(positioners["delta"][...])
 
-            angles = {angle: None for angle in ("eta", "phi", )}
+            angles = {
+                angle: None
+                for angle in (
+                    "eta",
+                    "phi",
+                )
+            }
             for angle in angles.keys():
                 value = positioners[angle][...]
                 if value.shape == ():
                     angles[angle] = float(value)
                 else:
                     angles[angle] = value
-            
+
             eta = angles["eta"]
             phi = angles["phi"]
 
             # for now, return the setup.energy and setup.distance
             energy = setup.energy
-            detector_distance = setup.distance            
+            detector_distance = setup.distance
 
-        else: # manually defined custom scan
+        else:  # manually defined custom scan
             mu = setup.custom_motors["mu"]
             eta = setup.custom_motors["eta"]
             phi = setup.custom_motors["phi"]
             delta = setup.custom_motors["delta"]
             nu = setup.custom_motors["nu"]
             energy = setup.energy
-        
+
         # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
         return mu, eta, phi, nu, delta, energy, detector_distance
-
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):
