@@ -183,7 +183,10 @@ def run(prm):
 
     # load the goniometer positions needed in the calculation
     # of the transformation matrix
-    setup.read_logfile(scan_number=scan)
+    setup.read_logfile(
+        scan_number=scan,
+        sample_name=sample_name
+    )
 
     ###################
     # print instances #
@@ -591,6 +594,7 @@ def run(prm):
                 # Bragg peak position not provided, find it from the data
                 data, _, _, _ = setup.loader.load_check_dataset(
                     scan_number=scan,
+                    sample_name=sample_name,
                     setup=setup,
                     frames_pattern=prm.get("frames_pattern"),
                     bin_during_loading=False,
