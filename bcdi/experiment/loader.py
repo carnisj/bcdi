@@ -1277,8 +1277,6 @@ class LoaderID01BLISS(Loader):
 
     @staticmethod
     def create_logfile(**kwargs):
-        # This method does not create anything, only loads the logfile
-        # load_logfile would be more appropriate
         """
         Create the logfile, which is the h5 file for ID01BLISS.
 
@@ -1289,13 +1287,6 @@ class LoaderID01BLISS(Loader):
 
         :return: logfile
         """
-        # Why make the path management so complex ? Working with
-        # absolute single piece path (not concatenated) is easier, thus
-        # we only have specfile_path = "/.../xxx.h5" for ex.
-        # Here we force the user to define the root_folder, give the
-        # basename of the specfile (i.e. without de root_folder).
-        # then the user has to remember what is the homedir, root_folder
-        # dirname etc.... ==> very painful
         root_folder = kwargs.get("root_folder")
         filename = kwargs.get("filename")
 
@@ -1309,9 +1300,10 @@ class LoaderID01BLISS(Loader):
         path = util.find_file(filename=filename, default_folder=root_folder)
         
         # TO DO
-        # Wait, the file is not close... And it will stay opened
-        # as it is stored in the Setup.logfile attribute. 
-        # ==> Use a wrapper that opens the file with context manager
+        # Use a wrapper that opens the file with context manager to 
+        # avoid opening the master file for a long time which is very
+        # risky. In principe, no "opened" file should be stored in variables
+        # or attributes.
 
         return silx.io.open(path)
 
@@ -1385,11 +1377,6 @@ class LoaderID01BLISS(Loader):
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
 
-        # TO DO: Check carefully the terms (dataset / sample ??)
-        # In bliss we define a dataset and a sample, thus either we add
-        # a new parameter in the config file etc (say 'dataset' for
-        # instance), OR, we can say that
-        # <sample_name (of bcdi)> = <sample_name(of bliss)>_<dataset (of bliss)>
         key_path = sample_name + "_" + scan_number + ".1/measurement/"
         try:
             raw_data = setup.logfile[key_path + "mpx1x4"]
