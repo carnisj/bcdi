@@ -1430,7 +1430,7 @@ class LoaderID01BLISS(Loader):
         else:
             scan_number = str(scan_number)
 
-        sample_name = kwargs.get("sample_name")
+        sample_name = setup.detector.sample_name
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
 
@@ -1442,7 +1442,7 @@ class LoaderID01BLISS(Loader):
             try:
                 mu = positioners["mu"][...]
             except KeyError:
-                print("mu was not found in the logfile, then it is set to 0.")
+                print("mu not found in the logfile, use the default value of 0.")
                 mu = 0
             nu = float(positioners["nu"][...])
             delta = float(positioners["delta"][...])
@@ -1464,9 +1464,8 @@ class LoaderID01BLISS(Loader):
             eta = angles["eta"]
             phi = angles["phi"]
 
-            # for now, return the setup.energy and setup.distance
+            # for now, return the setup.energy
             energy = setup.energy
-            detector_distance = setup.distance
 
         else:  # manually defined custom scan
             mu = setup.custom_motors["mu"]
@@ -1476,7 +1475,9 @@ class LoaderID01BLISS(Loader):
             nu = setup.custom_motors["nu"]
             energy = setup.energy
 
+        # TODO: implement self.retrieve_distance when the distance becomes available
         # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+        detector_distance = setup.distance
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod

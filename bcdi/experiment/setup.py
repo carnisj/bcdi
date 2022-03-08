@@ -2371,9 +2371,7 @@ class Setup:
             name="scan_number",
         )
 
-        return self.beamline.goniometer_values(
-            setup=self, scan_number=scan_number, sample_name=kwargs.get("sample_name")
-        )
+        return self.beamline.goniometer_values(setup=self, scan_number=scan_number)
 
     def transformation_bcdi(
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
