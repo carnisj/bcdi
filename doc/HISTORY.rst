@@ -1,3 +1,8 @@
+Future:
+-------
+
+* Feature: add support for the BLISS flavor of ID01 beamline.
+
 Version 0.2.3:
 --------------
 
