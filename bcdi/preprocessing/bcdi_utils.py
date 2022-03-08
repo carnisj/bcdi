@@ -1078,7 +1078,7 @@ def load_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"photon_threshold", "frames_pattern", "sample_name"},
+        allowed_kwargs={"photon_threshold", "frames_pattern"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
