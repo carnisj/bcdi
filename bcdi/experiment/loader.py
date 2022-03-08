@@ -2840,7 +2840,9 @@ class LoaderCRISTAL(Loader):
         group_key = list(setup.logfile.keys())[0]
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = setup.logfile["/" + group_key + "/scan_data/" + device_name][:]
+            device_values = setup.logfile[
+                "/" + group_key + "/scan_data/" + device_name
+            ][:]
             print("found!")
         except KeyError:
             print(f"no device {device_name} in the logfile")
@@ -3049,7 +3051,9 @@ class LoaderNANOMAX(Loader):
         group_key = list(setup.logfile.keys())[0]  # currently 'entry'
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = setup.logfile["/" + group_key + "/measurement/" + device_name][:]
+            device_values = setup.logfile[
+                "/" + group_key + "/measurement/" + device_name
+            ][:]
             print("found!")
         except KeyError:
             print(f"No device {device_name} in the logfile")
