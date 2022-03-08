@@ -342,10 +342,10 @@ data[data <= threshold] = 0
 # load motor positions #
 ########################
 fast_positions = setup.loader.read_device(
-    logfile=logfile, scan_number=scan, setup=setup, motor_name=fast_motor
+    setup=setup, device_name=fast_motor, scan_number=scan
 )
 slow_positions = setup.loader.read_device(
-    logfile=logfile, scan_number=scan, setup=setup, motor_name=slow_motor
+    setup=setup, device_name=slow_motor, scan_number=scan
 )
 
 min_fast, max_fast = fast_positions[0], fast_positions[-1]

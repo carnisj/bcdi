@@ -316,7 +316,7 @@ data[np.nonzero(mask)] = 0
 # load motor positions #
 ########################
 motor_positions = setup.loader.read_device(
-    logfile=logfile, scan_number=scan, setup=setup, motor_name=motor_name
+    setup=setup, device_name=motor_name, scan_number=scan
 )
 
 min_fast, max_fast = motor_positions[0], motor_positions[-1]
