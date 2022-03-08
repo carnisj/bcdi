@@ -228,14 +228,13 @@ def cast(val: Union[float, np.ndarray], target_type: type = float):
     if not isinstance(target_type, type):
         raise TypeError("target_type should be a type")
     if target_type not in [int, float]:
-        raise ValueError(
-            f"target_type should be 'int' or 'float', got {target_type}"
-        )
+        raise ValueError(f"target_type should be 'int' or 'float', got {target_type}")
     if isinstance(val, np.ndarray):
         val = val.astype(target_type)
     else:
         val = target_type(val)
     return val
+
 
 def catch_error(exception):
     """
