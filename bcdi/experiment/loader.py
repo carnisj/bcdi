@@ -885,11 +885,11 @@ class Loader(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name: str, **kwargs):
         """
         Extract the scanned device positions/values.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :param kwargs: beamline_specific parameters, which may include part of the
          totality of the following keys:
@@ -1192,11 +1192,11 @@ class LoaderID01(Loader):
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at ID01 beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :param kwargs:
          - 'scan_number': int, the scan number to load
@@ -1207,8 +1207,8 @@ class LoaderID01(Loader):
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
-        labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
@@ -1234,7 +1234,7 @@ class LoaderID01(Loader):
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "exp1")
             return self.read_device(
-                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
+                setup=setup, scan_number=scan_number, device_name=monitor_name
             )
         return None
 
@@ -1461,17 +1461,31 @@ class LoaderID01BLISS(Loader):
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name: str, **kwargs) -> np.ndarray:
         """
-        Extract the scanned device positions/values at ID01 beamline.
+        Extract the scanned device values at ID01 BLISS beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :param kwargs:
          - 'scan_number': int, the scan number to load
 
         :return: the positions/values of the device as a numpy 1D array
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        # load positioners
+        positioners = setup.logfile[
+            setup.detector.sample_name + "_" + str(scan_number) + ".1/measurement"
+        ]
+        try:
+            device_values = util.cast(positioners[device_name][()], target_type=float)
+        except KeyError:
+            print(f"No device {device_name} found in the logfile")
+            device_values = []
+        return np.asarray(device_values)
 
     def read_monitor(self, setup, **kwargs):
         """
@@ -1700,17 +1714,17 @@ class LoaderSIXS(Loader):
         return beta, mu, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at SIXS beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = getattr(logfile, device_name)
+            device_values = getattr(setup.logfile, device_name)
             print("found!")
         except AttributeError:
             print(f"No device {device_name} in the logfile")
@@ -1727,11 +1741,11 @@ class LoaderSIXS(Loader):
         if setup.beamline is None:
             raise ValueError("'beamline' parameter required")
         if setup.beamline == "SIXS_2018":
-            return self.read_device(logfile=setup.logfile, device_name="imon1")
+            return self.read_device(setup=setup, device_name="imon1")
         # SIXS_2019
-        monitor = self.read_device(logfile=setup.logfile, device_name="imon0")
+        monitor = self.read_device(setup=setup, device_name="imon0")
         if len(monitor) == 0:  # the alias dictionnary was probably not provided
-            monitor = self.read_device(logfile=setup.logfile, device_name="intensity")
+            monitor = self.read_device(setup=setup, device_name="intensity")
         return monitor
 
 
@@ -1989,11 +2003,11 @@ class Loader34ID(Loader):
         return theta, chi, phi, delta, gamma, energy, detector_distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at 34ID-C beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :param kwargs:
          - 'scan_number': int, the scan number to load
@@ -2004,8 +2018,8 @@ class Loader34ID(Loader):
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
-        labels = logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = logfile[str(scan_number) + ".1"].data  # motor scanned
+        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
@@ -2031,7 +2045,7 @@ class Loader34ID(Loader):
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "Monitor")
             return self.read_device(
-                logfile=setup.logfile, scan_number=scan_number, device_name=monitor_name
+                setup=setup, scan_number=scan_number, device_name=monitor_name
             )
         return None
 
@@ -2364,18 +2378,18 @@ class LoaderP10(Loader):
         return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at P10 beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
         device_values = []
         index_device = None  # index of the column corresponding to the device in .fio
         print(f"Trying to load values for {device_name}...", end="")
-        with open(logfile, "r") as fio:
+        with open(setup.logfile, "r") as fio:
             fio_lines = fio.readlines()
             for line in fio_lines:
                 this_line = line.strip()
@@ -2402,9 +2416,9 @@ class LoaderP10(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        monitor = self.read_device(logfile=setup.logfile, device_name="ipetra")
+        monitor = self.read_device(setup=setup, device_name="ipetra")
         if len(monitor) == 0:
-            monitor = self.read_device(logfile=setup.logfile, device_name="curpetra")
+            monitor = self.read_device(setup=setup, device_name="curpetra")
         return monitor
 
 
@@ -2798,18 +2812,18 @@ class LoaderCRISTAL(Loader):
         return mgomega, mgphi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at CRISTAL beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
-        group_key = list(logfile.keys())[0]
+        group_key = list(setup.logfile.keys())[0]
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = logfile["/" + group_key + "/scan_data/" + device_name][:]
+            device_values = setup.logfile["/" + group_key + "/scan_data/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"no device {device_name} in the logfile")
@@ -2825,7 +2839,7 @@ class LoaderCRISTAL(Loader):
         """
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "data_04")
-            return self.read_device(logfile=setup.logfile, device_name=monitor_name)
+            return self.read_device(setup=setup, device_name=monitor_name)
         return None
 
 
@@ -3006,18 +3020,18 @@ class LoaderNANOMAX(Loader):
         return theta, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(logfile, device_name, **kwargs):
+    def read_device(setup, device_name, **kwargs):
         """
         Extract the scanned device positions/values at Nanomax beamline.
 
-        :param logfile: the logfile created in Setup.create_logfile()
+        :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
-        group_key = list(logfile.keys())[0]  # currently 'entry'
+        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = logfile["/" + group_key + "/measurement/" + device_name][:]
+            device_values = setup.logfile["/" + group_key + "/measurement/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"No device {device_name} in the logfile")
@@ -3031,4 +3045,4 @@ class LoaderNANOMAX(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        return self.read_device(logfile=setup.logfile, device_name="alba2")
+        return self.read_device(setup=setup, device_name="alba2")
