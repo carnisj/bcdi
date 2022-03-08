@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import Union, Sequence
+from typing import List, Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
@@ -218,7 +218,9 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
     return params
 
 
-def cast(val: Union[float, np.ndarray], target_type: type = float):
+def cast(
+    val: Union[float, Sequence, np.ndarray], target_type: type = float
+) -> Union[float, List, np.ndarray]:
     """
     Cast val to a number or an array of numbers of the target type.
 
@@ -229,11 +231,16 @@ def cast(val: Union[float, np.ndarray], target_type: type = float):
         raise TypeError("target_type should be a type")
     if target_type not in [int, float]:
         raise ValueError(f"target_type should be 'int' or 'float', got {target_type}")
-    if isinstance(val, np.ndarray):
-        val = val.astype(target_type)
-    else:
-        val = target_type(val)
-    return val
+    try:
+        if isinstance(val, np.ndarray):
+            val = val.astype(target_type)
+        elif isinstance(val, Sequence):
+            val = [cast(value, target_type=target_type) for value in val]
+        else:
+            val = target_type(val)
+        return val
+    except TypeError:
+        raise
 
 
 def catch_error(exception):
