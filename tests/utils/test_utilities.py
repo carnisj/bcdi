@@ -21,8 +21,11 @@ def run_tests(test_class):
 
 class TestCast(unittest.TestCase):
     """
-    Tests on the function utilities.cast
+    Tests on the function utilities.cast.
 
+    def cast(
+    val: Union[float, List, np.ndarray], target_type: type = float
+    ) -> Union[float, List, np.ndarray]:
     """
 
     def test_not_type_None(self):
