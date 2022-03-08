@@ -697,7 +697,6 @@ class Loader(ABC):
         normalize="skip",
         bin_during_loading=False,
         debugging=False,
-        **kwargs,
     ):
         """
         Load data, apply filters and concatenate it for phasing.
@@ -756,7 +755,6 @@ class Loader(ABC):
                 normalize=normalize,
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
-                **kwargs,
             )
 
             print("")
@@ -1299,7 +1297,7 @@ class LoaderID01BLISS(Loader):
 
         path = util.find_file(filename=filename, default_folder=root_folder)
 
-        # TO DO
+        # TODO
         # Use a wrapper that opens the file with context manager to
         # avoid opening the master file for a long time which is very
         # risky. In principe, no "opened" file should be stored in variables
@@ -1325,11 +1323,9 @@ class LoaderID01BLISS(Loader):
          - template_imagefile: the template for data/image file names
 
         """
-
-        specfile_name = kwargs.get("specfile_name")
         homedir = root_folder
         default_dirname = ""
-        return homedir, default_dirname, specfile_name, template_imagefile
+        return homedir, default_dirname, None, template_imagefile
 
     def load_data(
         self,
@@ -1364,15 +1360,13 @@ class LoaderID01BLISS(Loader):
          - the monitor values for normalization
 
         """
-        # If these parameters are required, then they must appear in the
-        # arguments of the method (not in kwargs) ?
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         else:
             scan_number = str(scan_number)
 
-        sample_name = kwargs.get("sample_name")
+        sample_name = setup.detector.sample_name
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
 
@@ -1384,40 +1378,26 @@ class LoaderID01BLISS(Loader):
             try:
                 raw_data = setup.logfile[key_path + "mpxgaas"]
             except KeyError:
-                print("No detector key found")
-                raise KeyError
+                raise KeyError("No detector key found")
 
-        nb_frames = raw_data.shape[0]
-
-        # For now data_stack is set to None
-        data_stack = None
+        # find the number of images
+        nb_img = raw_data.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
             detector=setup.detector,
             setup=setup,
             normalize=normalize,
-            nb_frames=nb_frames,
+            nb_frames=nb_img,
             bin_during_loading=bin_during_loading,
             scan_number=scan_number,
         )
 
         # loop over frames, mask the detector and normalize / bin
-        for k in range(nb_frames):
-
-            # For now, data_stack and setup.custom_scan are not
-            # considered
-            if data_stack is not None:
-                pass
-            else:
-                if setup.custom_scan:
-                    pass
-                else:
-                    pass
-
-            data[k, :, :], mask2d, monitor[k] = load_frame(
-                frame=raw_data[k, ...],
+        for idx in range(nb_img):
+            data[idx, :, :], mask2d, monitor[idx] = load_frame(
+                frame=raw_data[idx, :, :],
                 mask2d=mask2d,
-                monitor=monitor[k],
+                monitor=monitor[idx],
                 frames_per_point=1,
                 detector=setup.detector,
                 loading_roi=loading_roi,
@@ -1428,9 +1408,8 @@ class LoaderID01BLISS(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(k + 1))
+            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
             sys.stdout.flush()
-
         return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
