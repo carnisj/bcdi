@@ -1103,7 +1103,6 @@ def load_bcdi_data(
         background=background,
         normalize=normalize,
         debugging=debugging,
-        sample_name=kwargs.get("sample_name"),
     )
 
     #####################################################
