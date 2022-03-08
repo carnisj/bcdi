@@ -385,6 +385,11 @@ def normalize_dataset(array, monitor, savedir=None, norm_to_min=True, debugging=
 
     """
     valid.valid_ndarray(arrays=array, ndim=3)
+
+    if monitor is None or len(monitor) == 0:
+        print("No monitor, skipping intensity normalization.")
+        return array, np.ones(array.shape[0])
+
     ndim = array.ndim
     nbz, nby, nbx = array.shape
     original_max = None
@@ -643,7 +648,7 @@ class Loader(ABC):
                 monitor = setup.custom_monitor
             else:
                 monitor = self.read_monitor(setup=setup, **kwargs)
-        if monitor is None:
+        if monitor is None or len(monitor) == 0:
             monitor = np.ones(nb_frames)
             print("Skipping intensity normalization.")
         return monitor
@@ -1233,10 +1238,11 @@ class LoaderID01(Loader):
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "exp1")
-            return self.read_device(
-                setup=setup, scan_number=scan_number, device_name=monitor_name
-            )
-        return None
+        else:
+            monitor_name = "exp1"
+        return self.read_device(
+            setup=setup, scan_number=scan_number, device_name=monitor_name
+        )
 
     @staticmethod
     def retrieve_distance(setup) -> Optional[float]:
@@ -1489,7 +1495,7 @@ class LoaderID01BLISS(Loader):
 
     def read_monitor(self, setup, **kwargs):
         """
-        Load the default monitor for a dataset measured at ID01.
+        Load the default monitor for a dataset measured at ID01 BLISS.
 
         :param setup: an instance of the class Setup
         :param kwargs:
@@ -1497,6 +1503,16 @@ class LoaderID01BLISS(Loader):
 
         :return: the default monitor values
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "imon")
+        else:
+            monitor_name = "imon"
+        return self.read_device(
+            setup=setup, scan_number=scan_number, device_name=monitor_name
+        )
 
 
 class LoaderSIXS(Loader):
@@ -2044,10 +2060,11 @@ class Loader34ID(Loader):
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "Monitor")
-            return self.read_device(
-                setup=setup, scan_number=scan_number, device_name=monitor_name
-            )
-        return None
+        else:
+            monitor_name = "Monitor"
+        return self.read_device(
+            setup=setup, scan_number=scan_number, device_name=monitor_name
+        )
 
 
 class LoaderP10(Loader):
@@ -2839,8 +2856,9 @@ class LoaderCRISTAL(Loader):
         """
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "data_04")
-            return self.read_device(setup=setup, device_name=monitor_name)
-        return None
+        else:
+            monitor_name = "data_04"
+        return self.read_device(setup=setup, device_name=monitor_name)
 
 
 class LoaderNANOMAX(Loader):
