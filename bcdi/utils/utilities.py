@@ -234,12 +234,12 @@ def cast(
     try:
         if isinstance(val, np.ndarray):
             val = val.astype(target_type)
-        elif isinstance(val, Sequence):
+        elif isinstance(val, (list, tuple)):
             val = [cast(value, target_type=target_type) for value in val]
         else:
             val = target_type(val)
         return val
-    except TypeError:
+    except (TypeError, ValueError):
         raise
 
 

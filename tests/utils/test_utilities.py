@@ -73,6 +73,10 @@ class TestCast(unittest.TestCase):
         out = util.cast("2.0", target_type=float)
         self.assertTrue(np.isclose(out, 2.0))
 
+    def test_not_a_number_str(self):
+        with self.assertRaises(ValueError):
+            util.cast("two", target_type=float)
+
 
 class TestFindFile(fake_filesystem_unittest.TestCase):
     """
