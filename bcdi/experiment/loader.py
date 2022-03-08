@@ -1302,13 +1302,6 @@ class LoaderID01BLISS(Loader):
         )
 
         path = util.find_file(filename=template_imagefile, default_folder=datadir)
-
-        # TODO
-        # Use a wrapper that opens the file with context manager to
-        # avoid opening the master file for a long time which is very
-        # risky. In principe, no "opened" file should be stored in variables
-        # or attributes.
-
         return silx.io.open(path)
 
     @staticmethod
@@ -1461,7 +1454,6 @@ class LoaderID01BLISS(Loader):
             nu = setup.custom_motors["nu"]
             energy = setup.energy
 
-        # TODO: implement self.retrieve_distance when the distance becomes available
         # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
         detector_distance = setup.distance
         return mu, eta, phi, nu, delta, energy, detector_distance
