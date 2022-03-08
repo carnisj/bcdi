@@ -60,7 +60,7 @@ from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import Optional
+from typing import Optional, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -1285,17 +1285,17 @@ class LoaderID01BLISS(Loader):
 
         :return: logfile
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
+        datadir = kwargs.get("datadir")
+        template_imagefile = kwargs.get("template_imagefile")
+
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
 
         valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
+            template_imagefile, container_types=str, name="template_imagefile"
         )
 
-        path = util.find_file(filename=filename, default_folder=root_folder)
+        path = util.find_file(filename=template_imagefile, default_folder=datadir)
 
         # TODO
         # Use a wrapper that opens the file with context manager to
@@ -1339,7 +1339,7 @@ class LoaderID01BLISS(Loader):
         **kwargs,
     ):
         """
-        Load ID01 data, apply filters and concatenate it for phasing.
+        Load ID01 BLISS data, apply filters and concatenate it for phasing.
 
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1416,8 +1416,6 @@ class LoaderID01BLISS(Loader):
         """
         Load the scan data and extract motor positions.
 
-        Stages names for data previous to ?2017? start with a capital letter.
-
         :param setup: an instance of the class Setup
         :param kwargs:
          - 'scan_number': the scan number to load
@@ -1440,29 +1438,15 @@ class LoaderID01BLISS(Loader):
         ]
         if not setup.custom_scan:
             try:
-                mu = positioners["mu"][...]
+                mu = util.cast(positioners["mu"][()], target_type=float)
             except KeyError:
                 print("mu not found in the logfile, use the default value of 0.")
-                mu = 0
-            nu = float(positioners["nu"][...])
-            delta = float(positioners["delta"][...])
+                mu = 0.0
 
-            angles = {
-                angle: None
-                for angle in (
-                    "eta",
-                    "phi",
-                )
-            }
-            for angle in angles.keys():
-                value = positioners[angle][...]
-                if value.shape == ():
-                    angles[angle] = float(value)
-                else:
-                    angles[angle] = value
-
-            eta = angles["eta"]
-            phi = angles["phi"]
+            nu = util.cast(positioners["nu"][()], target_type=float)
+            delta = util.cast(positioners["delta"][()], target_type=float)
+            eta = util.cast(positioners["eta"][()], target_type=float)
+            phi = util.cast(positioners["phi"][()], target_type=float)
 
             # for now, return the setup.energy
             energy = setup.energy
