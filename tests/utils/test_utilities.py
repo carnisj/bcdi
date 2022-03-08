@@ -67,7 +67,7 @@ class TestCast(unittest.TestCase):
 
     def test_number_complex(self):
         with self.assertRaises(TypeError):
-            util.cast(1-2*1j, target_type=float)
+            util.cast(1 - 2 * 1j, target_type=float)
 
     def test_number_str(self):
         out = util.cast("2.0", target_type=float)
