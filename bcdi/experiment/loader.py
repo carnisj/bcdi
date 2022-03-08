@@ -1363,14 +1363,12 @@ class LoaderID01BLISS(Loader):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        else:
-            scan_number = str(scan_number)
 
         sample_name = setup.detector.sample_name
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
 
-        key_path = sample_name + "_" + scan_number + ".1/measurement/"
+        key_path = sample_name + "_" + str(scan_number) + ".1/measurement/"
         try:
             raw_data = setup.logfile[key_path + "mpx1x4"]
         except KeyError:
@@ -1425,8 +1423,6 @@ class LoaderID01BLISS(Loader):
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
-        else:
-            scan_number = str(scan_number)
 
         sample_name = setup.detector.sample_name
         if sample_name is None:
@@ -1434,7 +1430,7 @@ class LoaderID01BLISS(Loader):
 
         # load positioners
         positioners = setup.logfile[
-            sample_name + "_" + scan_number + ".1/instrument/positioners"
+            sample_name + "_" + str(scan_number) + ".1/instrument/positioners"
         ]
         if not setup.custom_scan:
             try:
