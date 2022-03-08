@@ -219,7 +219,7 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
 
 
 def cast(
-    val: Union[float, Sequence, np.ndarray], target_type: type = float
+    val: Union[float, List, np.ndarray], target_type: type = float
 ) -> Union[float, List, np.ndarray]:
     """
     Cast val to a number or an array of numbers of the target type.
