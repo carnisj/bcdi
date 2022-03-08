@@ -481,7 +481,7 @@ def dos2unix(input_file, output_file):
 
 def find_file(filename: str, default_folder: str) -> str:
     """
-    Localize a file.
+    Locate a file.
 
     The filename can be either the name of the file (including the extension) or the
     full path to the file.
