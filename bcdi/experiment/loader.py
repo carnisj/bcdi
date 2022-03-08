@@ -586,7 +586,7 @@ class Loader(ABC):
                 ", detector horizontal axis by",
                 detector.binning[2],
             )
-            print(loading_roi)
+
             data = np.empty(
                 (
                     nb_frames,
