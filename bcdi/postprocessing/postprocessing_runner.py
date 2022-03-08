@@ -183,7 +183,7 @@ def run(prm):
 
     # load the goniometer positions needed in the calculation
     # of the transformation matrix
-    setup.read_logfile(scan_number=scan, sample_name=sample_name)
+    setup.read_logfile(scan_number=scan)
 
     ###################
     # print instances #
