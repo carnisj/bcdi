@@ -240,6 +240,7 @@ def cast(
             val = target_type(val)
         return val
     except (TypeError, ValueError):
+        print(f"Cannot cast to {target_type}")
         raise
 
 
