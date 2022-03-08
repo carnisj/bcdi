@@ -92,30 +92,28 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
         self.assertEqual(template_imagefile, "data_mpx4_%05d.edf.gz")
 
     def test_init_paths_ID01_BLISS(self):
-        pass
-        # TODO
-        # self.template_imagefile = "data_mpx4_%05d.edf.gz"
-        # self.specfile_name = "test"
-        # self.beamline = create_beamline("ID01_BLISS")
-        # params = {
-        #     "root_folder": self.root_dir,
-        #     "sample_name": self.sample_name,
-        #     "scan_number": self.scan_number,
-        #     "specfile_name": self.specfile_name,
-        #     "template_imagefile": self.template_imagefile,
-        # }
-        # (
-        #     homedir,
-        #     default_dirname,
-        #     specfile,
-        #     template_imagefile,
-        # ) = self.beamline.loader.init_paths(**params)
-        # self.assertEqual(
-        #     homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        # )
-        # self.assertEqual(default_dirname, "data/")
-        # self.assertEqual(specfile, "test")
-        # self.assertEqual(template_imagefile, "data_mpx4_%05d.edf.gz")
+        self.template_imagefile = "exp1_scan5.h5"
+        self.specfile_name = None
+        self.beamline = create_beamline("ID01BLISS")
+        params = {
+            "root_folder": self.root_dir,
+            "sample_name": self.sample_name,
+            "scan_number": self.scan_number,
+            "specfile_name": self.specfile_name,
+            "template_imagefile": self.template_imagefile,
+        }
+        (
+            homedir,
+            default_dirname,
+            specfile,
+            template_imagefile,
+        ) = self.beamline.loader.init_paths(**params)
+        self.assertEqual(
+            homedir, self.root_dir
+        )
+        self.assertEqual(default_dirname, "")
+        self.assertEqual(specfile, None)
+        self.assertEqual(template_imagefile, self.template_imagefile)
 
     def test_init_paths_NANOMAX(self):
         self.template_imagefile = "%06d.h5"
