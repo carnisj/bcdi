@@ -5,6 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+#         Clement Atlan, c.atlan@outlook.com
 
 """
 Implementation of beamline-dependent data loading classes.
@@ -54,11 +55,12 @@ from numbers import Integral
 import numpy as np
 import os
 import re
+import silx
 from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import Optional
+from typing import Optional, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -584,6 +586,7 @@ class Loader(ABC):
                 ", detector horizontal axis by",
                 detector.binning[2],
             )
+
             data = np.empty(
                 (
                     nb_frames,
@@ -1273,7 +1276,7 @@ class LoaderID01BLISS(Loader):
     @staticmethod
     def create_logfile(**kwargs):
         """
-        Create the logfile, which is the spec file for ID01.
+        Create the logfile, which is the h5 file for ID01BLISS.
 
         :param kwargs:
          - 'root_folder': str, the root directory of the experiment, where is e.g. the
@@ -1282,6 +1285,25 @@ class LoaderID01BLISS(Loader):
 
         :return: logfile
         """
+        datadir = kwargs.get("datadir")
+        template_imagefile = kwargs.get("template_imagefile")
+
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+
+        path = util.find_file(filename=template_imagefile, default_folder=datadir)
+
+        # TODO
+        # Use a wrapper that opens the file with context manager to
+        # avoid opening the master file for a long time which is very
+        # risky. In principe, no "opened" file should be stored in variables
+        # or attributes.
+
+        return silx.io.open(path)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1301,8 +1323,8 @@ class LoaderID01BLISS(Loader):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
+        homedir = root_folder
+        default_dirname = ""
         return homedir, default_dirname, None, template_imagefile
 
     def load_data(
@@ -1317,7 +1339,7 @@ class LoaderID01BLISS(Loader):
         **kwargs,
     ):
         """
-        Load ID01 data, apply filters and concatenate it for phasing.
+        Load ID01 BLISS data, apply filters and concatenate it for phasing.
 
         :param setup: an instance of the class Setup
         :param flatfield: the 2D flatfield array
@@ -1338,12 +1360,61 @@ class LoaderID01BLISS(Loader):
          - the monitor values for normalization
 
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        else:
+            scan_number = str(scan_number)
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        key_path = sample_name + "_" + scan_number + ".1/measurement/"
+        try:
+            raw_data = setup.logfile[key_path + "mpx1x4"]
+        except KeyError:
+            print("Looking for mpxgaas key")
+            try:
+                raw_data = setup.logfile[key_path + "mpxgaas"]
+            except KeyError:
+                raise KeyError("No detector key found")
+
+        # find the number of images
+        nb_img = raw_data.shape[0]
+
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
+            detector=setup.detector,
+            setup=setup,
+            normalize=normalize,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
+        )
+
+        # loop over frames, mask the detector and normalize / bin
+        for idx in range(nb_img):
+            data[idx, :, :], mask2d, monitor[idx] = load_frame(
+                frame=raw_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=setup.detector,
+                loading_roi=loading_roi,
+                flatfield=flatfield,
+                background=background,
+                hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
+            sys.stdout.flush()
+        return data, mask2d, monitor, loading_roi
 
     def motor_positions(self, setup, **kwargs):
         """
         Load the scan data and extract motor positions.
-
-        Stages names for data previous to ?2017? start with a capital letter.
 
         :param setup: an instance of the class Setup
         :param kwargs:
@@ -1351,6 +1422,47 @@ class LoaderID01BLISS(Loader):
 
         :return: (mu, eta, phi, nu, delta, energy) values
         """
+        scan_number = kwargs.get("scan_number")
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        else:
+            scan_number = str(scan_number)
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        # load positioners
+        positioners = setup.logfile[
+            sample_name + "_" + scan_number + ".1/instrument/positioners"
+        ]
+        if not setup.custom_scan:
+            try:
+                mu = util.cast(positioners["mu"][()], target_type=float)
+            except KeyError:
+                print("mu not found in the logfile, use the default value of 0.")
+                mu = 0.0
+
+            nu = util.cast(positioners["nu"][()], target_type=float)
+            delta = util.cast(positioners["delta"][()], target_type=float)
+            eta = util.cast(positioners["eta"][()], target_type=float)
+            phi = util.cast(positioners["phi"][()], target_type=float)
+
+            # for now, return the setup.energy
+            energy = setup.energy
+
+        else:  # manually defined custom scan
+            mu = setup.custom_motors["mu"]
+            eta = setup.custom_motors["eta"]
+            phi = setup.custom_motors["phi"]
+            delta = setup.custom_motors["delta"]
+            nu = setup.custom_motors["nu"]
+            energy = setup.energy
+
+        # TODO: implement self.retrieve_distance when the distance becomes available
+        # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+        detector_distance = setup.distance
+        return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
     def read_device(logfile, device_name, **kwargs):

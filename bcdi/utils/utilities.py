@@ -218,6 +218,24 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
     return params
 
 
+def cast(val: Union[float, np.ndarray], target_type: type = float):
+    """
+    Cast val to a number or an array of numbers of the target type.
+
+    :param val: the value to be converted
+    :param target_type: the type to convert to
+    """
+    if not isinstance(target_type, type):
+        raise TypeError("target_type should be a type")
+    if target_type not in [int, float]:
+        raise ValueError(f"target_type should be 'int' or 'float', got {target_type}")
+    if isinstance(val, np.ndarray):
+        val = val.astype(target_type)
+    else:
+        val = target_type(val)
+    return val
+
+
 def catch_error(exception):
     """
     Process exception in asynchronous multiprocessing.
@@ -481,7 +499,7 @@ def dos2unix(input_file, output_file):
 
 def find_file(filename: str, default_folder: str) -> str:
     """
-    Localize a file.
+    Locate a file.
 
     The filename can be either the name of the file (including the extension) or the
     full path to the file.

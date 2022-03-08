@@ -71,7 +71,7 @@ strain_method: "default"  # 'default' or 'defect'.
 ######################################
 beamline: "P10"  # name of the beamline, used for data loading and normalization
 # by monitor and orthogonalisation
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
+# supported beamlines: 'ID01', 'ID01BLISS', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10', '34ID'
 is_series: True  # specific to series measurement at P10
 actuators: None
 # Optional dictionary that can be used to define the entries
@@ -146,6 +146,7 @@ roi_detector: [250, 250, 500, 500]
 # Use with center_fft='skip' if you want this exact size.
 template_imagefile: '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for ID01BLISS: 'ihhc3715_sample5.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
