@@ -1046,7 +1046,7 @@ def load_bcdi_data(
     background=None,
     normalize="skip",
     debugging=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
@@ -1103,7 +1103,7 @@ def load_bcdi_data(
         background=background,
         normalize=normalize,
         debugging=debugging,
-        sample_name=kwargs.get("sample_name")
+        sample_name=kwargs.get("sample_name"),
     )
 
     #####################################################

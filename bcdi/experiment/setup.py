@@ -2372,9 +2372,7 @@ class Setup:
         )
 
         return self.beamline.goniometer_values(
-            setup=self,
-            scan_number=scan_number,
-            sample_name=kwargs.get("sample_name")
+            setup=self, scan_number=scan_number, sample_name=kwargs.get("sample_name")
         )
 
     def transformation_bcdi(
