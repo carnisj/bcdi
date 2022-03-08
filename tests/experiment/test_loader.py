@@ -24,6 +24,9 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
     """Tests related to Loader.init_paths."""
 
     def setUp(self):
+        self.beamline = None
+        self.specfile_name = None
+        self.template_imagefile = None
         self.root_dir = "D:/data/test/"
         self.sample_name = "S"
         self.scan_number = 1
