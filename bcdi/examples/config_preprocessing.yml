@@ -63,7 +63,7 @@ save_as_int: False
 ######################################
 beamline: "P10"
 # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
+# supported beamlines: 'ID01', 'ID01BLISS', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
 # 'NANOMAX', '34ID'
 actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
@@ -129,6 +129,7 @@ hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
 template_imagefile: '_master.h5'
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+# template for ID01BLISS: 'ihhc3715_sample5.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
 # template for SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 # template for Cristal: 'S%d.nxs'
