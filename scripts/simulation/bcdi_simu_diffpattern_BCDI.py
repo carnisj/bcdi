@@ -18,7 +18,6 @@ import gc
 import os
 import sys
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
@@ -123,10 +122,8 @@ my_cmap = colormap.cmap
 ################
 # define setup #
 ################
-detector = create_detector(name=detector)
 setup = Setup(
     beamline=beamline,
-    detector=detector,
     energy=energy,
     outofplane_angle=outofplane_angle,
     inplane_angle=inplane_angle,
@@ -134,6 +131,7 @@ setup = Setup(
     rocking_angle=rocking_angle,
     grazing_angle=grazing_angle,
     distance=original_sdd,
+    detector_name=detector,
 )
 
 #########################
@@ -229,7 +227,7 @@ phase = util.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
 support[abs(amp) < support_threshold * abs(amp).max()] = 0
 del amp
 
-volume = support.sum() * voxel_size ** 3  # in nm3
+volume = support.sum() * voxel_size**3  # in nm3
 print("estimated volume", volume, " nm3")
 
 phase[support == 0] = 0
@@ -471,12 +469,14 @@ print("Multiplication factor for the real-space voxel size:  pad_size/original_s
 
 # compensate change in detector distance
 comment = comment + "_sdd_" + str("{:.2f}".format(simulated_sdd))
-print("\nCurrent detector pixel size", detector.unbinned_pixel_size[0] * 1e6, "um")
+print(
+    "\nCurrent detector pixel size", setup.detector.unbinned_pixel_size[0] * 1e6, "um"
+)
 print(
     "Detector pixel size to compensate the change in detector distance",
     str(
         "{:.2f}".format(
-            detector.unbinned_pixel_size[0] * 1e6 * original_sdd / simulated_sdd
+            setup.detector.unbinned_pixel_size[0] * 1e6 * original_sdd / simulated_sdd
         )
     ),
     "um",

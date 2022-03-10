@@ -9,29 +9,33 @@
 """
 Implementation of beamline-related classes.
 
-The class methods manage the initialization of the file system and the calculations
-related to reciprocal or direct space transformation (interpolation in an orthonormal
-grid). Generic method are implemented in the abstract base class Beamline, and
-beamline-dependent methods need to be implemented in each child class (they are
-decorated by @abstractmethod in the base class; they are indicated using @ in the
-following diagram). These classes are not meant to be instantiated directly but via a
-Setup instance.
+The class methods manage the calculations related to reciprocal or direct space
+transformation (interpolation in an orthonormal grid). Generic method are implemented
+in the abstract base class Beamline, and beamline-dependent methods need to be
+implemented in each child class (they are decorated by @abstractmethod in the base
+class; they are written in italic in the following diagram). These classes are not meant
+to be instantiated directly but via a Setup instance.
 
 .. mermaid::
   :align: center
 
   classDiagram
     class Beamline{
-      +str name
-      create_logfile(@)
-      detector_hor(@)
-      detector_ver(@)
-      init_paths(@)
-      process_positions(@)
-      transformation_matrix(@)
+      <<abstract>>
+      +diffractometer
+      +loader
+      +name
+      +sample_angles
+      +detector_angles
+      detector_hor()*
+      detector_ver()*
+      goniometer_values()*
+      process_positions()*
+      transformation_matrix()*
       exit_wavevector()
       find_inplane()
       find_outofplane()
+      flatten_sample()
       init_qconversion()
       inplane_coeff()
       outofplane_coeff()
@@ -44,14 +48,14 @@ API Reference
 
 """
 from abc import ABC, abstractmethod
-import h5py
 from math import hypot, isclose
 import numpy as np
 from numbers import Real
 import os
-from silx.io.specfile import SpecFile
 import xrayutilities as xu
 
+from bcdi.experiment.diffractometer import Diffractometer
+from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -65,7 +69,7 @@ def create_beamline(name, **kwargs):
     :param kwargs: optional beamline-dependent parameters
     :return: the corresponding beamline instance
     """
-    if name == "ID01":
+    if name in {"ID01", "ID01BLISS"}:
         return BeamlineID01(name=name, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
         return BeamlineSIXS(name=name, **kwargs)
@@ -98,29 +102,31 @@ class Beamline(ABC):
     # "y-" detector vertical axis down, as it should be in the CXI convention
 
     def __init__(self, name, **kwargs):
-        self._name = name
+        self.name = name
+        self.diffractometer = Diffractometer(
+            name=name, sample_offsets=kwargs.get("sample_offsets")
+        )
+        self.loader = create_loader(
+            name=name, sample_offsets=self.diffractometer.sample_offsets
+        )
+        self.sample_angles = None
+        self.detector_angles = None
 
-    @staticmethod
-    @abstractmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which can be a log/spec file or the data itself.
+    @property
+    def detector_angles(self):
+        """Tuple of goniometer angular values for the detector stages."""
+        return self._detector_angles
 
-        The nature of this file is beamline dependent.
-
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
-
-          - 'scan_number': the scan number to load.
-          - 'root_folder': the root directory of the experiment, where is e.g. the
-            specfile/.fio file.
-          - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
-          - 'datadir': the data directory
-          - 'template_imagefile': the template for data/image file names
-          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
-        """
+    @detector_angles.setter
+    def detector_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="detector_angles",
+        )
+        self._detector_angles = value
 
     @property
     @abstractmethod
@@ -146,25 +152,22 @@ class Beamline(ABC):
         :return: "y+" or "y-"
         """
 
-    def exit_wavevector(
-        self, diffractometer, wavelength, inplane_angle, outofplane_angle
-    ):
+    def exit_wavevector(self, wavelength, inplane_angle, outofplane_angle):
         """
         Calculate the exit wavevector kout.
 
         It uses the setup parameters. kout is expressed in 1/m in the
         laboratory frame (z downstream, y vertical, x outboard).
 
-        :param diffractometer: an instance of the class Diffractometer
         :param wavelength: float, X-ray wavelength in meters.
         :param inplane_angle: float, horizontal detector angle, in degrees.
         :param outofplane_angle: float, vertical detector angle, in degrees.
         :return: kout vector as a numpy array of shape (3)
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
 
-        factor = self.orientation_lookup[diffractometer.detector_circles[index]]
+        factor = self.orientation_lookup[self.diffractometer.detector_circles[index]]
 
         kout = (
             2
@@ -184,8 +187,7 @@ class Beamline(ABC):
         )
         return kout
 
-    @staticmethod
-    def find_inplane(diffractometer):
+    def find_inplane(self):
         """
         Find the index of the detector inplane circle.
 
@@ -193,17 +195,15 @@ class Beamline(ABC):
         property of the diffractometer ("y+" or "y-") . The coordinate
         convention is the laboratory  frame (z downstream, y vertical up, x outboard).
 
-        :param: diffractometer: an instance of the class Diffractometer
         :return: int, the index. None if not found.
         """
         index = None
-        for idx, val in enumerate(diffractometer.detector_circles):
+        for idx, val in enumerate(self.diffractometer.detector_circles):
             if val.startswith("y"):
                 index = idx
         return index
 
-    @staticmethod
-    def find_outofplane(diffractometer):
+    def find_outofplane(self):
         """
         Find the index of the detector out-of-plane circle.
 
@@ -214,56 +214,157 @@ class Beamline(ABC):
         detector rotations due to the beta circle. We need the index of the most inner
         circle, not beta.
 
-        :param: diffractometer: an instance of the class Diffractometer
         :return: int, the index. None if not found.
         """
         index = None
-        for idx, val in enumerate(diffractometer.detector_circles):
+        for idx, val in enumerate(self.diffractometer.detector_circles):
             if val.startswith("x"):
                 index = idx
         return index
 
-    @staticmethod
-    @abstractmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
-        """
-        Initialize paths used for data processing and logging.
-
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: beamline-dependent template for the data files:
-
-         - ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
-         - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-         - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-         - Cristal: 'S%d.nxs'
-         - P10: '_master.h5'
-         - NANOMAX: '%06d.h5'
-         - 34ID: 'Sample%dC_ES_data_51_256_256.npz'
-
-        :param kwargs: dictionnary of the setup parameters including the following keys:
-
-         - 'specfile_name': beamline-dependent string:
-
-           - ID01: name of the spec file without '.spec'
-           - SIXS_2018 and SIXS_2019: None or full path of the alias dictionnary (e.g.
-             root_folder+'alias_dict_2019.txt')
-           - empty string for all other beamlines
-
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
-        """
-
-    def init_qconversion(
-        self, conversion_table, beam_direction, offset_inplane, diffractometer
+    def flatten_sample(
+        self,
+        arrays,
+        voxel_size,
+        q_com,
+        rocking_angle,
+        central_angle=None,
+        fill_value=0,
+        is_orthogonal=True,
+        reciprocal_space=False,
+        debugging=False,
+        **kwargs,
     ):
+        """
+        Send all sample circles to zero degrees.
+
+        Arrays are rotatedsuch that all circles of the sample stage are at their zero
+        position.
+
+        :param arrays: tuple of 3D real arrays of the same shape.
+        :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
+         (CXI convention)
+        :param q_com: diffusion vector of the center of mass of the Bragg peak,
+         expressed in an orthonormal frame x y z
+        :param rocking_angle: angle which is tilted during the rocking curve in
+         {'outofplane', 'inplane'}
+        :param central_angle: if provided, angle to be used in the calculation
+         of the rotation matrix for the rocking angle. If None, it will be defined as
+         the angle value at the middle of the rocking curve.
+        :param fill_value: tuple of numeric values used in the RegularGridInterpolator
+         for points outside of the interpolation domain. The length of the tuple
+         should be equal to the number of input arrays.
+        :param is_orthogonal: set to True is the frame is orthogonal, False otherwise.
+         Used for plot labels.
+        :param reciprocal_space: True if the data is in reciprocal space,
+         False otherwise. Used for plot labels.
+        :param debugging: tuple of booleans of the same length as the number
+         of input arrays, True to see plots before and after rotation
+        :param kwargs:
+
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - 'scale': tuple of strings (either 'linear' or 'log'), scale for the
+           debugging plots, same length as the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle
+           of the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle
+           of the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle
+           of the initial array
+
+        :return: a rotated array (if a single array was provided) or a tuple of
+         rotated arrays (same length as the number of input arrays)
+        """
+        valid.valid_ndarray(arrays, ndim=3)
+
+        # check few parameters, the rest will be validated in rotate_crystal
+        valid.valid_container(
+            q_com,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name="q_com",
+        )
+        if np.linalg.norm(q_com) == 0:
+            raise ValueError("the norm of q_com is zero")
+        if self.sample_angles is None:
+            raise ValueError(
+                "call diffractometer.goniometer_values before calling this method"
+            )
+        valid.valid_item(
+            central_angle, allowed_types=Real, allow_none=True, name="central_angle"
+        )
+        # find the index of the circle which corresponds to the rocking angle
+        angles = self.sample_angles
+        rocking_circle = self.diffractometer.get_rocking_circle(
+            rocking_angle=rocking_angle, stage_name="sample", angles=angles
+        )
+
+        # get the relevant angle within the rocking circle.
+        # The reference point when orthogonalizing if the center of the array,
+        # but we do not know to which angle it corresponds if the data was cropped.
+        if central_angle is None:
+            print(
+                "central_angle=None, using the angle at half of the rocking curve"
+                " for the calculation of the rotation matrix"
+            )
+            nb_steps = len(angles[rocking_circle])
+            central_angle = angles[rocking_circle][int(nb_steps // 2)]
+
+        # use this angle in the calculation of the rotation matrix
+        angles = list(angles)
+        angles[rocking_circle] = central_angle
+        print(
+            f"sample stage circles: {self.diffractometer.sample_circles}\n"
+            f"sample stage angles:  {angles}"
+        )
+
+        # check that all angles are Real, not encapsulated in a list or an array
+        for idx, angle in enumerate(angles):
+            if not isinstance(angle, Real):  # list/tuple or ndarray, cannot be None
+                if len(angle) != 1:
+                    raise ValueError(
+                        "A list of angles was provided instead of a single value"
+                    )
+                angles[idx] = angle[0]
+
+        # calculate the rotation matrix
+        rotation_matrix = self.diffractometer.rotation_matrix(
+            stage_name="sample", angles=angles
+        )
+
+        # rotate the arrays
+        rotated_arrays = util.rotate_crystal(
+            arrays=arrays,
+            rotation_matrix=rotation_matrix,
+            voxel_size=voxel_size,
+            fill_value=fill_value,
+            debugging=debugging,
+            is_orthogonal=is_orthogonal,
+            reciprocal_space=reciprocal_space,
+            **kwargs,
+        )
+        rotated_q = util.rotate_vector(
+            vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix)
+        )
+        return rotated_arrays, rotated_q
+
+    @abstractmethod
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer values.
+
+        This method is beamline dependent. It must be implemented in the child classes.
+
+        :param setup: the experimental setup: Class Setup
+        :param kwargs: beamline_specific parameters
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+
+    def init_qconversion(self, conversion_table, beam_direction, offset_inplane):
         """
         Initialize the qconv object for xrayutilities depending on the setup parameters.
 
@@ -280,7 +381,6 @@ class Beamline(ABC):
          xrayutilities.
         :param offset_inplane: inplane offset of the detector defined as the outer angle
          in xrayutilities area detector calibration.
-        :param diffractometer: instance of the class Diffractometer
         :return: a tuple containing:
 
          - the qconv object for xrayutilities
@@ -288,14 +388,14 @@ class Beamline(ABC):
 
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
 
         # convert axes from the laboratory frame to the frame of xrayutilies
         sample_circles = [
-            conversion_table[val] for val in diffractometer.sample_circles
+            conversion_table[val] for val in self.diffractometer.sample_circles
         ]
         detector_circles = [
-            conversion_table[val] for val in diffractometer.detector_circles
+            conversion_table[val] for val in self.diffractometer.detector_circles
         ]
         qconv = xu.experiment.QConversion(
             sample_circles, detector_circles, r_i=beam_direction
@@ -313,7 +413,7 @@ class Beamline(ABC):
 
         return qconv, offsets
 
-    def inplane_coeff(self, diffractometer):
+    def inplane_coeff(self):
         """
         Coefficient related to the detector inplane orientation.
 
@@ -323,22 +423,16 @@ class Beamline(ABC):
 
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
-        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
         # look for the index of the inplane detector circle
-        index = self.find_inplane(diffractometer=diffractometer)
+        index = self.find_inplane()
         return (
-            self.orientation_lookup[diffractometer.detector_circles[index]]
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
             * self.orientation_lookup[self.detector_hor]
         )
 
-    @property
-    def name(self):
-        """Name of the beamline."""
-        return self._name
-
-    def outofplane_coeff(self, diffractometer):
+    def outofplane_coeff(self):
         """
         Coefficient related to the detector vertical orientation.
 
@@ -348,19 +442,18 @@ class Beamline(ABC):
 
         See scripts/postprocessing/correct_angles_detector.py for a use case.
 
-        :param diffractometer: Diffractometer instance of the beamline.
         :return: +1 or -1
         """
         # look for the index of the out-of-plane detector circle
-        index = self.find_outofplane(diffractometer=diffractometer)
+        index = self.find_outofplane()
         return (
-            self.orientation_lookup[diffractometer.detector_circles[index]]
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
             * self.orientation_lookup[self.detector_ver]
         )
 
     @staticmethod
     @abstractmethod
-    def process_positions(setup, logfile, nb_frames, scan_number, frames_logical=None):
+    def process_positions(setup, nb_frames, scan_number, frames_logical=None):
         """
         Load and crop/pad motor positions depending on the current number of frames.
 
@@ -368,7 +461,6 @@ class Beamline(ABC):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -377,7 +469,7 @@ class Beamline(ABC):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        motor_positions = setup.diffractometer.motor_positions(
+        motor_positions = setup.loader.motor_positions(
             setup=setup,
             scan_number=scan_number,
         )
@@ -427,6 +519,22 @@ class Beamline(ABC):
             # data has been cropped, we suppose it is centered in z dimension
             array = array[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
         return array
+
+    @property
+    def sample_angles(self):
+        """Tuple of goniometer angular values for the sample stages."""
+        return self._sample_angles
+
+    @sample_angles.setter
+    def sample_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="sample_angles",
+        )
+        self._sample_angles = value
 
     @abstractmethod
     def transformation_matrix(
@@ -479,35 +587,6 @@ class BeamlineCRISTAL(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for CRISTAL.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. 'S%d.nxs'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
-
     @property
     def detector_hor(self):
         """
@@ -529,32 +608,53 @@ class BeamlineCRISTAL(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at CRISTAL.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g. 'S%d.nxs'
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: not used at CRISTAL
-         - template_imagefile: the template for data/image file names
-
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
-        return homedir, default_dirname, None, template_imagefile
+        # load the motor positions
+        (
+            mgomega,
+            mgphi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # mgomega rocking curve
+            grazing = None  # nothing below mgomega at CRISTAL
+            tilt_angle = mgomega
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mgomega[0],)
+            tilt_angle = mgphi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # CRISTAL goniometer, 2S+2D (sample: mgomega, mgphi / detector: gamma, delta)
+        self.sample_angles = (mgomega, mgphi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -566,7 +666,6 @@ class BeamlineCRISTAL(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -577,7 +676,6 @@ class BeamlineCRISTAL(Beamline):
         """
         mgomega, mgphi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -793,31 +891,6 @@ class BeamlineID01(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the spec file for ID01.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the spec file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
-
     @property
     def detector_hor(self):
         """
@@ -839,38 +912,68 @@ class BeamlineID01(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at ID01.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g.
-         'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
+        :param setup: the experimental setup: Class Setup
         :param kwargs:
-         - 'specfile_name': name of the spec file without '.spec'
+         - 'scan_number': the scan number to load
 
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        specfile_name = kwargs.get("specfile_name")
+        # load kwargs
+        scan_number = kwargs["scan_number"]
 
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
-        return homedir, default_dirname, specfile_name, template_imagefile
+        # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
+
+        # load motor positions
+        (
+            mu,
+            eta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(
+            setup=setup,
+            scan_number=scan_number,
+        )
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # eta rocking curve
+            grazing = (mu,)  # mu below eta but not used at ID01
+            tilt_angle = eta
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mu, eta)  # mu below eta but not used at ID01
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # ID01 goniometer, 3S+2D (sample: eta, chi, phi / detector: nu,del)
+        self.sample_angles = (mu, eta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -882,7 +985,6 @@ class BeamlineID01(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -893,7 +995,6 @@ class BeamlineID01(Beamline):
         """
         mu, eta, phi, nu, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -1113,34 +1214,6 @@ class BeamlineNANOMAX(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for Nanomax.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. '%06d.h5'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
-
     @property
     def detector_hor(self):
         """
@@ -1162,32 +1235,53 @@ class BeamlineNANOMAX(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at Nanomax.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g. '%06d.h5'
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
-        default_dirname = "data/"
-        return homedir, default_dirname, None, template_imagefile
+        # load the motor positions
+        (
+            theta,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # theta rocking curve
+            grazing = None  # nothing below theta at NANOMAX
+            tilt_angle = theta
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (theta,)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # NANOMAX goniometer, 2S+2D (sample: theta, phi / detector: gamma,delta)
+        self.sample_angles = (theta, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -1199,7 +1293,6 @@ class BeamlineNANOMAX(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -1210,7 +1303,6 @@ class BeamlineNANOMAX(Beamline):
         """
         theta, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -1428,41 +1520,6 @@ class BeamlineP10(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the .fio file for P10.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where the scan
-           folders are located.
-         - 'filename': str, name of the .fio file or full path of the .fio file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        if os.path.isfile(filename):
-            # filename is already the full path to the .fio file
-            return filename
-        print(f"Could not find the fio file at: {filename}")
-
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-
-        # return the path to the .fio file
-        path = root_folder + filename + "/" + filename + ".fio"
-        print(f"Trying to load the fio file at: {path}")
-        return path
-
     @property
     def detector_hor(self):
         """
@@ -1484,44 +1541,55 @@ class BeamlineP10(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at P10.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g. '_master.h5'
-        :param kwargs:
-         - 'specfile_name': optional, full path of the .fio file
-
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        specfile = kwargs.get("specfile_name")
-        default_specfile = sample_name + "_{:05d}".format(scan_number)
-        if specfile is None or not os.path.isfile(specfile):
-            # default to the usual position of .fio at P10
-            specfile = default_specfile
+        # load the motor positions
+        (
+            mu,
+            om,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
 
-        homedir = root_folder + default_specfile + "/"
-        default_dirname = "e4m/"
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "outofplane":  # om rocking curve
+            grazing = (mu,)
+            tilt_angle = om
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (mu, om, chi)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        if template_imagefile is not None:
-            template_imagefile = default_specfile + template_imagefile
-        return homedir, default_dirname, specfile, template_imagefile
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # P10 goniometer, 4S+2D (sample: mu, omega, chi, phi / detector: gamma, delta)
+        self.sample_angles = (mu, om, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -1533,7 +1601,6 @@ class BeamlineP10(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -1544,7 +1611,6 @@ class BeamlineP10(Beamline):
         """
         mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -1958,7 +2024,7 @@ class BeamlineP10SAXS(BeamlineP10):
             alpha_f = np.arctan(
                 np.divide(
                     myy * pixelsize_y,
-                    np.sqrt(distance ** 2 + np.power(myx * pixelsize_x, 2)),
+                    np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2)),
                 )
             )
 
@@ -1997,6 +2063,41 @@ class BeamlineP10SAXS(BeamlineP10):
 
         return qx, qz, qy
 
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a CDI tomographic scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        phi, energy, detector_distance = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for CDI
+        # no circle yet below phi at P10
+        if setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (0,)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=0,
+            outofplane_angle=0,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
+        self.sample_angles = (phi,)
+        self.detector_angles = (0, 0)
+
+        return tilt_angle, grazing, 0, 0
+
 
 class BeamlineSIXS(Beamline):
     """
@@ -2007,62 +2108,6 @@ class BeamlineSIXS(Beamline):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the data itself for SIXS.
-
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name:
-
-           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
-
-         - 'scan_number': int, the scan number to load
-         - 'filename': str, absolute path of 'alias_dict.txt'
-         - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
-        """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-        filename = kwargs.get("filename")
-        name = kwargs.get("name")
-
-        if not os.path.isdir(datadir):
-            raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_container(filename, container_types=str, name="filename")
-        valid.valid_item(
-            scan_number, allowed_types=int, min_included=0, name="scan_number"
-        )
-
-        shortname = template_imagefile % scan_number
-        if name == "SIXS_2018":
-            # no specfile, load directly the dataset
-            import bcdi.preprocessing.nxsReady as nxsReady
-
-            return nxsReady.DataSet(
-                longname=datadir + shortname,
-                shortname=shortname,
-                alias_dict=filename,
-                scan="SBS",
-            )
-        if name == "SIXS_2019":
-            # no specfile, load directly the dataset
-            import bcdi.preprocessing.ReadNxs3 as ReadNxs3
-
-            return ReadNxs3.DataSet(
-                directory=datadir,
-                filename=shortname,
-                alias_dict=filename,
-            )
-        raise NotImplementedError(f"{name} is not implemented")
 
     @property
     def detector_hor(self):
@@ -2085,53 +2130,54 @@ class BeamlineSIXS(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at SIXS.
+        Retrieve goniometer motor positions for a BCDI rocking scan at SIXS.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g.
-         'align.spec_ascan_mu_%05d.nxs' (SIXS_2018), 'spare_ascan_mu_%05d.nxs'
-         (SIXS_2019).
-        :param kwargs:
-         - 'specfile_name': None or full path of the alias dictionnary (e.g.
-           root_folder+'alias_dict_2019.txt')
-
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        specfile_name = kwargs.get("specfile_name")
+        # load the motor positions
+        (
+            beta,
+            mu,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
 
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
-
-        if specfile_name is None:
-            # default to the alias dictionnary located within the package
-            specfile = os.path.abspath(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    os.pardir,
-                    "preprocessing/alias_dict_2021.txt",
-                )
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "inplane":  # mu rocking curve
+            grazing = (beta,)  # beta below the whole diffractomter at SIXS
+            tilt_angle = mu
+        elif setup.rocking_angle == "outofplane":
+            raise NotImplementedError(
+                "outofplane rocking curve not implemented for SIXS"
             )
         else:
-            specfile = specfile_name
+            raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
 
-        return homedir, default_dirname, specfile, template_imagefile
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # SIXS goniometer, 2S+3D (sample: beta, mu / detector: beta, gamma, del)
+        self.sample_angles = (beta, mu)
+        self.detector_angles = (beta, inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -2143,7 +2189,6 @@ class BeamlineSIXS(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -2154,7 +2199,6 @@ class BeamlineSIXS(Beamline):
         """
         beta, mu, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -2334,31 +2378,6 @@ class Beamline34ID(Beamline):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def create_logfile(**kwargs):
-        """
-        Create the logfile, which is the spec file for 34ID-C.
-
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the .spec file
-
-        :return: logfile
-        """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
-        valid.valid_container(
-            filename,
-            container_types=str,
-            min_length=1,
-            name="filename",
-        )
-
-        path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
-
     @property
     def detector_hor(self):
         """
@@ -2380,38 +2399,68 @@ class Beamline34ID(Beamline):
         """
         return "y-"
 
-    @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def goniometer_values(self, setup, **kwargs):
         """
-        Initialize paths used for data processing and logging at 34ID-C.
+        Retrieve goniometer motor positions for a BCDI rocking scan.
 
-        :param root_folder: folder of the experiment, where all scans are stored
-        :param sample_name: string in front of the scan number in the data folder
-         name.
-        :param scan_number: int, the scan number
-        :param template_imagefile: template for the data files, e.g.
-         'Sample%dC_ES_data_51_256_256.npz'.
+        :param setup: the experimental setup: Class Setup
         :param kwargs:
-         - 'specfile_name': name of the spec file without '.spec'
+         - 'scan_number': the scan number to load
 
-        :return: a tuple of strings:
-
-         - homedir: the path of the scan folder
-         - default_dirname: the name of the folder containing images / raw data
-         - specfile: the name of the specfile if it exists
-         - template_imagefile: the template for data/image file names
-
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
         """
-        specfile_name = kwargs.get("specfile_name")
+        # load kwargs
+        scan_number = kwargs["scan_number"]
 
-        homedir = root_folder + sample_name + str(scan_number) + "/"
-        default_dirname = "data/"
-        return homedir, default_dirname, specfile_name, template_imagefile
+        # check some parameter
+        valid.valid_item(
+            scan_number, allowed_types=int, min_excluded=0, name="scan_number"
+        )
+
+        # load the motor positions
+        (
+            theta,
+            chi,
+            phi,
+            inplane_angle,
+            outofplane_angle,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup, scan_number=scan_number)
+
+        # define the circles of interest for BCDI
+        if setup.rocking_angle == "inplane":
+            # theta is the inplane rotation around the vertical axis at 34ID
+            grazing = None  # theta (inplane) is below phi
+            tilt_angle = theta
+        elif setup.rocking_angle == "outofplane":
+            # phi is the incident angle (out of plane rotation) at 34ID
+            grazing = (theta, chi)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=inplane_angle,
+            outofplane_angle=outofplane_angle,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # 34ID-C goniometer, 3S+2D (sample: theta (inplane), chi (close to 90 deg),
+        # phi (out of plane)   detector: delta (inplane), gamma)
+        self.sample_angles = (theta, chi, phi)
+        self.detector_angles = (inplane_angle, outofplane_angle)
+
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
         setup,
-        logfile,
         nb_frames,
         scan_number,
         frames_logical=None,
@@ -2423,7 +2472,6 @@ class Beamline34ID(Beamline):
         if the data was cropped/padded, and motor values must be processed accordingly.
 
         :param setup: an instance of the class Setup
-        :param logfile: the logfile created in Setup.create_logfile()
         :param nb_frames: the number of frames in the current dataset
         :param scan_number: the scan number to load
         :param frames_logical: array of length the number of measured frames.
@@ -2434,7 +2482,6 @@ class Beamline34ID(Beamline):
         """
         theta, chi, phi, delta, gamma, energy, _ = super().process_positions(
             setup=setup,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,

@@ -12,19 +12,18 @@ import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
 
-from ..experiment import diffractometer as diff
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
+from bcdi.experiment import loader
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
 
 
-def beamstop_correction(data, detector, setup, debugging=False):
+def beamstop_correction(data, setup, debugging=False):
     """
     Correct absorption from the beamstops during P10 forward CDI experiment.
 
     :param data: the 3D stack of 2D CDI images, shape = (nbz, nby, nbx) or 2D image of
      shape (nby, nbx)
-    :param detector: the detector object: Class experiment_utils.Detector()
     :param setup: an instance of the class Setup
     :param debugging: set to True to see plots
     :return: the corrected data
@@ -52,8 +51,8 @@ def beamstop_correction(data, detector, setup, debugging=False):
         raise ValueError("2D or 3D data expected")
     nbz, nby, nbx = data.shape
 
-    directbeam_y = setup.direct_beam[0] - detector.roi[0]  # vertical
-    directbeam_x = setup.direct_beam[1] - detector.roi[2]  # horizontal
+    directbeam_y = setup.direct_beam[0] - setup.detector.roi[0]  # vertical
+    directbeam_x = setup.direct_beam[1] - setup.detector.roi[2]  # horizontal
 
     # at 8200eV, the transmission of 100um Si is 0.26273
     # at 8700eV, the transmission of 100um Si is 0.32478
@@ -387,7 +386,6 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
 def grid_cdi(
     data,
     mask,
-    detector,
     setup,
     frames_logical,
     correct_curvature=False,
@@ -403,9 +401,6 @@ def grid_cdi(
 
     :param data: the 3D data, already binned in the detector frame
     :param mask: the corresponding 3D mask
-    :param detector: an instance of the class Detector.
-     The detector orientation is supposed to follow the CXI convention: (z
-     downstream, y vertical up, x outboard) Y opposite to y, X opposite to x
     :param setup: an instance of the class Setup
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
@@ -423,12 +418,12 @@ def grid_cdi(
     """
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-    if setup.beamline == "P10_SAXS":
+    if setup.name == "P10_SAXS":
         if setup.rocking_angle == "inplane":
             if setup.custom_scan:
                 cdi_angle = setup.custom_motors["hprz"]
             else:
-                cdi_angle, _, _ = setup.diffractometer.motor_positions(setup=setup)
+                cdi_angle, _, _ = setup.loader.motor_positions(setup=setup)
                 # second return value is the X-ray energy, third the detector distance
         else:
             raise ValueError(
@@ -471,7 +466,9 @@ def grid_cdi(
     interp_data[np.nonzero(interp_mask)] = 0
 
     # calculate the position in pixels of the origin of the reciprocal space
-    pivot_z = int((setup.direct_beam[1] - detector.roi[2]) / detector.binning[2])
+    pivot_z = int(
+        (setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2]
+    )
     # 90 degrees conter-clockwise rotation of detector X around qz, downstream
     _, numy, numx = interp_data.shape
     pivot_y = int(numy - corrected_dirbeam[0])
@@ -485,9 +482,9 @@ def grid_cdi(
 
     # plot the gridded data
     final_binning = (
-        detector.preprocessing_binning[2] * detector.binning[2],
-        detector.preprocessing_binning[1] * detector.binning[1],
-        detector.preprocessing_binning[2] * detector.binning[2],
+        setup.detector.preprocessing_binning[2] * setup.detector.binning[2],
+        setup.detector.preprocessing_binning[1] * setup.detector.binning[1],
+        setup.detector.preprocessing_binning[2] * setup.detector.binning[2],
     )
     plot_comment = (
         f"_{numx}_{numy}_{numx}"
@@ -515,7 +512,7 @@ def grid_cdi(
         + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
         size=14,
     )
-    fig.savefig(detector.savedir + "reciprocal_space_sum" + plot_comment)
+    fig.savefig(setup.detector.savedir + "reciprocal_space_sum" + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.contour_slices(
@@ -539,7 +536,7 @@ def grid_cdi(
         + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
         size=14,
     )
-    fig.savefig(detector.savedir + "reciprocal_space_central" + plot_comment)
+    fig.savefig(setup.detector.savedir + "reciprocal_space_central" + plot_comment)
     plt.close(fig)
 
     fig, _, _ = gu.multislices_plot(
@@ -560,7 +557,7 @@ def grid_cdi(
         + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
         size=14,
     )
-    fig.savefig(detector.savedir + "reciprocal_space_central_pix" + plot_comment)
+    fig.savefig(setup.detector.savedir + "reciprocal_space_central_pix" + plot_comment)
     plt.close(fig)
     if debugging:
         gu.multislices_plot(
@@ -579,7 +576,6 @@ def grid_cdi(
 
 def load_cdi_data(
     scan_number,
-    detector,
     setup,
     bin_during_loading=False,
     flatfield=None,
@@ -596,7 +592,6 @@ def load_cdi_data(
     and binning.
 
     :param scan_number: the scan number to load
-    :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
     :param bin_during_loading: True to bin the data during loading (faster)
     :param flatfield: the 2D flatfield array
@@ -639,9 +634,8 @@ def load_cdi_data(
         frames_pattern, allow_none=True, allowed_values={0, 1}, name="frames_pattern"
     )
 
-    rawdata, rawmask, monitor, frames_logical = setup.diffractometer.load_check_dataset(
+    rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
-        detector=detector,
         setup=setup,
         frames_pattern=frames_pattern,
         bin_during_loading=bin_during_loading,
@@ -655,9 +649,7 @@ def load_cdi_data(
     #################################
     # apply the beamstop correction #
     #################################
-    rawdata = beamstop_correction(
-        data=rawdata, detector=detector, setup=setup, debugging=debugging
-    )
+    rawdata = beamstop_correction(data=rawdata, setup=setup, debugging=debugging)
 
     #####################################################
     # apply an optional photon threshold before binning #
@@ -672,19 +664,23 @@ def load_cdi_data(
     # binning in the stacking dimension is done at the very end of the data processing #
     ####################################################################################
     if not bin_during_loading and (
-        (detector.binning[1] != 1) or (detector.binning[2] != 1)
+        (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1)
     ):
         print(
             "Binning the data: detector vertical axis by",
-            detector.binning[1],
+            setup.detector.binning[1],
             ", detector horizontal axis by",
-            detector.binning[2],
+            setup.detector.binning[2],
         )
         rawdata = util.bin_data(
-            rawdata, (1, detector.binning[1], detector.binning[2]), debugging=False
+            rawdata,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask = util.bin_data(
-            rawmask, (1, detector.binning[1], detector.binning[2]), debugging=False
+            rawmask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=False,
         )
         rawmask[np.nonzero(rawmask)] = 1
 
@@ -693,8 +689,8 @@ def load_cdi_data(
     ################################################
     rawdata, rawmask = util.pad_from_roi(
         arrays=(rawdata, rawmask),
-        roi=detector.roi,
-        binning=detector.binning[1:],
+        roi=setup.detector.roi,
+        binning=setup.detector.binning[1:],
         pad_value=(0, 1),
     )
 
@@ -705,7 +701,6 @@ def reload_cdi_data(
     data,
     mask,
     scan_number,
-    detector,
     setup,
     normalize_method="skip",
     debugging=False,
@@ -717,7 +712,6 @@ def reload_cdi_data(
     :param data: the 3D data array
     :param mask: the 3D mask array
     :param scan_number: the scan number to load
-    :param detector: an instance of the class Detector
     :param setup: an instance of the class Setup
     :param normalize_method: 'skip' to skip, 'monitor'  to normalize by the default
      monitor, 'sum_roi' to normalize by the integrated intensity in a defined region
@@ -763,38 +757,42 @@ def reload_cdi_data(
         if normalize_method == "sum_roi":
             monitor = data[
                 :,
-                detector.sum_roi[0] : detector.sum_roi[1],
-                detector.sum_roi[2] : detector.sum_roi[3],
+                setup.detector.sum_roi[0] : setup.detector.sum_roi[1],
+                setup.detector.sum_roi[2] : setup.detector.sum_roi[3],
             ].sum(axis=(1, 2))
         else:  # use the default monitor of the beamline
-            monitor = setup.diffractometer.read_monitor(
+            monitor = setup.loader.read_monitor(
                 scan_number=scan_number,
                 setup=setup,
             )
 
         print("Intensity normalization using " + normalize_method)
-        data, monitor = diff.normalize_dataset(
+        data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
             norm_to_min=True,
-            savedir=detector.savedir,
+            savedir=setup.detector.savedir,
             debugging=True,
         )
 
     # pad the data to the shape defined by the ROI
     if (
-        detector.roi[1] - detector.roi[0] > nby
-        or detector.roi[3] - detector.roi[2] > nbx
+        setup.detector.roi[1] - setup.detector.roi[0] > nby
+        or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
-        start = (0, max(0, abs(detector.roi[0])), max(0, abs(detector.roi[2])))
+        start = (
+            0,
+            max(0, abs(setup.detector.roi[0])),
+            max(0, abs(setup.detector.roi[2])),
+        )
         print("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,
             output_shape=(
                 data.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
+                setup.detector.roi[1] - setup.detector.roi[0],
+                setup.detector.roi[3] - setup.detector.roi[2],
             ),
         )
         mask = util.crop_pad(
@@ -803,8 +801,8 @@ def reload_cdi_data(
             pad_start=start,
             output_shape=(
                 mask.shape[0],
-                detector.roi[1] - detector.roi[0],
-                detector.roi[3] - detector.roi[2],
+                setup.detector.roi[1] - setup.detector.roi[0],
+                setup.detector.roi[3] - setup.detector.roi[2],
             ),
         )
 
@@ -816,18 +814,22 @@ def reload_cdi_data(
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
-    if (detector.binning[1] != 1) or (detector.binning[2] != 1):
+    if (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1):
         print(
             "Binning the data: detector vertical axis by",
-            detector.binning[1],
+            setup.detector.binning[1],
             ", detector horizontal axis by",
-            detector.binning[2],
+            setup.detector.binning[2],
         )
         data = util.bin_data(
-            data, (1, detector.binning[1], detector.binning[2]), debugging=debugging
+            data,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask = util.bin_data(
-            mask, (1, detector.binning[1], detector.binning[2]), debugging=debugging
+            mask,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+            debugging=debugging,
         )
         mask[np.nonzero(mask)] = 1
 

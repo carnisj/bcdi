@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import Union, Sequence
+from typing import List, Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
@@ -216,6 +216,32 @@ def bin_parameters(binning, nb_frames, params, debugging=True):
         print(params)
 
     return params
+
+
+def cast(
+    val: Union[float, List, np.ndarray], target_type: type = float
+) -> Union[float, List, np.ndarray]:
+    """
+    Cast val to a number or an array of numbers of the target type.
+
+    :param val: the value to be converted
+    :param target_type: the type to convert to
+    """
+    if not isinstance(target_type, type):
+        raise TypeError("target_type should be a type")
+    if target_type not in [int, float]:
+        raise ValueError(f"target_type should be 'int' or 'float', got {target_type}")
+    try:
+        if isinstance(val, np.ndarray):
+            val = val.astype(target_type)
+        elif isinstance(val, (list, tuple)):
+            val = [cast(value, target_type=target_type) for value in val]
+        else:
+            val = target_type(val)
+        return val
+    except (TypeError, ValueError):
+        print(f"Cannot cast to {target_type}")
+        raise
 
 
 def catch_error(exception):
@@ -481,7 +507,7 @@ def dos2unix(input_file, output_file):
 
 def find_file(filename: str, default_folder: str) -> str:
     """
-    Localize a file.
+    Locate a file.
 
     The filename can be either the name of the file (including the extension) or the
     full path to the file.
@@ -702,7 +728,7 @@ def gaussian(x_axis, amp, cen, sig):
     :param sig: HWHM of the Gaussian
     :return: the Gaussian line shape at x_axis
     """
-    return amp * np.exp(-((x_axis - cen) ** 2) / (2.0 * sig ** 2))
+    return amp * np.exp(-((x_axis - cen) ** 2) / (2.0 * sig**2))
 
 
 def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=False):
@@ -756,7 +782,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
             np.linspace(-nbx, nbx, nbx) * voxel_size[1],
             indexing="ij",
         )
-        covariance = np.diag(sigma ** 2)
+        covariance = np.diag(sigma**2)
         window = multivariate_normal.pdf(
             np.column_stack([grid_y.flat, grid_x.flat]), mean=mu, cov=covariance
         )
@@ -772,7 +798,7 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
             np.linspace(-nbx, nbx, nbx) * voxel_size[2],
             indexing="ij",
         )
-        covariance = np.diag(sigma ** 2)
+        covariance = np.diag(sigma**2)
         window = multivariate_normal.pdf(
             np.column_stack([grid_z.flat, grid_y.flat, grid_x.flat]),
             mean=mu,
@@ -1220,7 +1246,7 @@ def lorentzian(x_axis, amp, cen, sig):
     :param sig: HWHM of the Lorentzian
     :return: the Lorentzian line shape at x_axis
     """
-    return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig ** 2))
+    return amp / (sig * np.pi) / (1 + (x_axis - cen) ** 2 / (sig**2))
 
 
 def make_support(
@@ -2238,7 +2264,7 @@ def skewed_gaussian(x_axis, amp, loc, sig, alpha):
     """
     return (
         amp
-        * np.exp(-((x_axis - loc) ** 2) / (2.0 * sig ** 2))
+        * np.exp(-((x_axis - loc) ** 2) / (2.0 * sig**2))
         * (1 + erf(alpha / np.sqrt(2) * (x_axis - loc) / sig))
     )
 

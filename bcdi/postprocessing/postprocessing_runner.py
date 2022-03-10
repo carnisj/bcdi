@@ -24,7 +24,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector, create_roi
+from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -138,24 +138,11 @@ def run(prm):
     colormap = gu.Colormap(bad_color=bad_color)
     my_cmap = colormap.cmap
 
-    #######################
-    # Initialize detector #
-    #######################
-    detector = create_detector(
-        name=detector_name,
-        template_imagefile=prm.get("template_imagefile"),
-        roi=roi_detector,
-        binning=phasing_binning,
-        preprocessing_binning=preprocessing_binning,
-        custom_pixelsize=prm.get("custom_pixelsize"),
-    )
-
-    ####################################
-    # define the experimental geometry #
-    ####################################
+    #################################
+    # define the experimental setup #
+    #################################
     setup = Setup(
         beamline=beamline_name,
-        detector=detector,
         energy=prm.get("energy"),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),
@@ -169,6 +156,12 @@ def run(prm):
         dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
         direct_beam=prm.get("direct_beam"),
         is_series=prm.get("is_series", False),
+        detector_name=detector_name,
+        template_imagefile=prm.get("template_imagefile"),
+        roi=roi_detector,
+        binning=phasing_binning,
+        preprocessing_binning=preprocessing_binning,
+        custom_pixelsize=prm.get("custom_pixelsize"),
     )
 
     ########################################
@@ -185,7 +178,7 @@ def run(prm):
     )
 
     setup.create_logfile(
-        scan_number=scan, root_folder=root_folder, filename=detector.specfile
+        scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
     )
 
     # load the goniometer positions needed in the calculation
@@ -199,7 +192,7 @@ def run(prm):
     print("\n##############\nSetup instance\n##############")
     pretty.pprint(setup.params)
     print("\n#################\nDetector instance\n#################")
-    pretty.pprint(detector.params)
+    pretty.pprint(setup.detector.params)
 
     ################
     # preload data #
@@ -210,9 +203,9 @@ def run(prm):
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilenames(
-            initialdir=detector.scandir
+            initialdir=setup.detector.scandir
             if prm.get("data_dir") is None
-            else detector.datadir,
+            else setup.detector.datadir,
             filetypes=[
                 ("NPZ", "*.npz"),
                 ("NPY", "*.npy"),
@@ -240,7 +233,7 @@ def run(prm):
             for index in range(len(phasing_binning))
         ]
     )
-    print("Binning used during phasing:", detector.binning)
+    print("Binning used during phasing:", setup.detector.binning)
     print("Padding back to original FFT size", original_size)
     obj = util.crop_pad(array=obj, output_shape=original_size)
 
@@ -452,7 +445,7 @@ def run(prm):
     # otherwise the object will be misaligned with the measurement #
     ################################################################
     np.savez_compressed(
-        detector.savedir + "S" + str(scan) + "_avg_obj_prtf" + comment,
+        setup.detector.savedir + "S" + str(scan) + "_avg_obj_prtf" + comment,
         obj=amp * np.exp(1j * phase),
     )
 
@@ -488,14 +481,14 @@ def run(prm):
         support[abs(avg_obj) / abs(avg_obj).max() > 0.01] = 1
         # low threshold because support will be cropped by shrinkwrap during phasing
         np.savez_compressed(
-            detector.savedir + "S" + str(scan) + "_support" + comment, obj=support
+            setup.detector.savedir + "S" + str(scan) + "_support" + comment, obj=support
         )
         del support
         gc.collect()
 
     if prm.get("save_rawdata", False):
         np.savez_compressed(
-            detector.savedir + "S" + str(scan) + "_raw_amp-phase" + comment,
+            setup.detector.savedir + "S" + str(scan) + "_raw_amp-phase" + comment,
             amp=abs(avg_obj),
             phase=np.angle(avg_obj),
         )
@@ -505,11 +498,11 @@ def run(prm):
             array_shape=original_size,
             tilt_angle=(
                 prm.get("tilt_angle")
-                * detector.preprocessing_binning[0]
-                * detector.binning[0]
+                * setup.detector.preprocessing_binning[0]
+                * setup.detector.binning[0]
             ),
-            pixel_x=detector.pixelsize_x,
-            pixel_y=detector.pixelsize_y,
+            pixel_x=setup.detector.pixelsize_x,
+            pixel_y=setup.detector.pixelsize_y,
             verbose=True,
         )
         # save raw amp & phase to VTK
@@ -517,7 +510,8 @@ def run(prm):
         # thus need to flip the last axis
         gu.save_to_vti(
             filename=os.path.join(
-                detector.savedir, "S" + str(scan) + "_raw_amp-phase" + comment + ".vti"
+                setup.detector.savedir,
+                "S" + str(scan) + "_raw_amp-phase" + comment + ".vti",
             ),
             voxel_size=(voxel_z, voxel_y, voxel_x),
             tuple_array=(abs(avg_obj), np.angle(avg_obj)),
@@ -593,11 +587,10 @@ def run(prm):
         if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
             print("Trying to correct detector angles using the direct beam")
             # corrected detector angles not provided
-            if bragg_peak is None and detector.template_imagefile is not None:
+            if bragg_peak is None and setup.detector.template_imagefile is not None:
                 # Bragg peak position not provided, find it from the data
-                data, _, _, _ = setup.diffractometer.load_check_dataset(
+                data, _, _, _ = setup.loader.load_check_dataset(
                     scan_number=scan,
-                    detector=detector,
                     setup=setup,
                     frames_pattern=prm.get("frames_pattern"),
                     bin_during_loading=False,
@@ -609,19 +602,21 @@ def run(prm):
                 bragg_peak = bu.find_bragg(
                     data=data,
                     peak_method="maxcom",
-                    roi=detector.roi,
+                    roi=setup.detector.roi,
                     binning=None,
                 )
                 roi_center = (
                     bragg_peak[0],
-                    bragg_peak[1] - detector.roi[0],  # no binning as in bu.find_bragg
-                    bragg_peak[2] - detector.roi[2],  # no binning as in bu.find_bragg
+                    bragg_peak[1]
+                    - setup.detector.roi[0],  # no binning as in bu.find_bragg
+                    bragg_peak[2]
+                    - setup.detector.roi[2],  # no binning as in bu.find_bragg
                 )
                 bu.show_rocking_curve(
                     data,
                     roi_center=roi_center,
                     tilt_values=setup.incident_angles,
-                    savedir=detector.savedir,
+                    savedir=setup.detector.savedir,
                 )
             setup.correct_detector_angles(bragg_peak_position=bragg_peak)
             prm["outofplane_angle"] = setup.outofplane_angle
@@ -645,7 +640,7 @@ def run(prm):
             print("Select the file containing QxQzQy")
             file_path = filedialog.askopenfilename(
                 title="Select the file containing QxQzQy",
-                initialdir=detector.savedir,
+                initialdir=setup.detector.savedir,
                 filetypes=[("NPZ", "*.npz")],
             )
             npzfile = np.load(file_path)
@@ -896,7 +891,7 @@ def run(prm):
     if save_frame == "lab_flat_sample":
         comment = comment + "_flat"
         print("\nSending sample stage circles to 0")
-        (amp, phase, strain), q_final = setup.diffractometer.flatten_sample(
+        (amp, phase, strain), q_final = setup.beamline.flatten_sample(
             arrays=(amp, phase, strain),
             voxel_size=voxel_size,
             q_com=q_lab[::-1],  # q_com needs to be in xyz order
@@ -969,21 +964,22 @@ def run(prm):
     if save:
         prm["comment"] = comment
         np.savez_compressed(
-            f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
+            f"{setup.detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}",
             amp=amp,
             phase=phase,
             bulk=bulk,
             strain=strain,
             q_com=q_final,
             voxel_sizes=voxel_size,
-            detector=detector.params,
+            detector=setup.detector.params,
             setup=setup.params,
             params=prm,
         )
 
         # save results in hdf5 file
         with h5py.File(
-            f"{detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}.h5", "w"
+            f"{setup.detector.savedir}S{scan}_amp{phase_fieldname}strain{comment}.h5",
+            "w",
         ) as hf:
             out = hf.create_group("output")
             par = hf.create_group("params")
@@ -993,7 +989,7 @@ def run(prm):
             out.create_dataset("strain", data=strain)
             out.create_dataset("q_com", data=q_final)
             out.create_dataset("voxel_sizes", data=voxel_size)
-            par.create_dataset("detector", data=str(detector.params))
+            par.create_dataset("detector", data=str(setup.detector.params))
             par.create_dataset("setup", data=str(setup.params))
             par.create_dataset("parameters", data=str(prm))
 
@@ -1002,7 +998,7 @@ def run(prm):
         # thus need to flip the last axis
         gu.save_to_vti(
             filename=os.path.join(
-                detector.savedir,
+                setup.detector.savedir,
                 "S"
                 + str(scan)
                 + "_amp-"
@@ -1081,7 +1077,9 @@ def run(prm):
     )
     plt.pause(0.1)
     if save:
-        plt.savefig(detector.savedir + "S" + str(scan) + "_bulk" + comment + ".png")
+        plt.savefig(
+            setup.detector.savedir + "S" + str(scan) + "_bulk" + comment + ".png"
+        )
 
     # amplitude
     fig, _, _ = gu.multislices_plot(
@@ -1123,7 +1121,7 @@ def run(prm):
         )
         fig.text(0.60, 0.05, f"Estimated T={temperature} C", size=20)
     if save:
-        plt.savefig(detector.savedir + f"S{scan}_amp" + comment + ".png")
+        plt.savefig(setup.detector.savedir + f"S{scan}_amp" + comment + ".png")
 
     # amplitude histogram
     fig, ax = plt.subplots(1, 1)
@@ -1140,7 +1138,7 @@ def run(prm):
     ax.spines["left"].set_linewidth(1.5)
     ax.spines["top"].set_linewidth(1.5)
     ax.spines["bottom"].set_linewidth(1.5)
-    fig.savefig(detector.savedir + f"S{scan}_histo_amp" + comment + ".png")
+    fig.savefig(setup.detector.savedir + f"S{scan}_histo_amp" + comment + ".png")
 
     # phase
     fig, _, _ = gu.multislices_plot(
@@ -1175,7 +1173,7 @@ def run(prm):
     else:
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if save:
-        plt.savefig(detector.savedir + f"S{scan}_displacement" + comment + ".png")
+        plt.savefig(setup.detector.savedir + f"S{scan}_displacement" + comment + ".png")
 
     # strain
     fig, _, _ = gu.multislices_plot(
@@ -1210,4 +1208,4 @@ def run(prm):
     else:
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if save:
-        plt.savefig(detector.savedir + f"S{scan}_strain" + comment + ".png")
+        plt.savefig(setup.detector.savedir + f"S{scan}_strain" + comment + ".png")

@@ -19,6 +19,68 @@ def run_tests(test_class):
     return runner.run(suite)
 
 
+class TestCast(unittest.TestCase):
+    """
+    Tests on the function utilities.cast.
+
+    def cast(
+    val: Union[float, List, np.ndarray], target_type: type = float
+    ) -> Union[float, List, np.ndarray]:
+    """
+
+    def test_not_type_None(self):
+        with self.assertRaises(TypeError):
+            util.cast(2, target_type=None)
+
+    def test_not_type_str(self):
+        with self.assertRaises(TypeError):
+            util.cast(2, target_type="float")
+
+    def test_wrong_type_str(self):
+        with self.assertRaises(ValueError):
+            util.cast(2, target_type=str)
+
+    def test_wrong_type_list(self):
+        with self.assertRaises(ValueError):
+            util.cast(2, target_type=list)
+
+    def test_list(self):
+        out = util.cast([1, 2, 3], target_type=float)
+        self.assertTrue(np.allclose(out, [1.0, 2.0, 3.0]))
+
+    def test_list_of_list(self):
+        out = util.cast([[1.2, 2.6, -3.1], [8.2, 0, 4.9]], target_type=int)
+        self.assertTrue(np.allclose(out, [[1, 2, -3], [8, 0, 4]]))
+
+    def test_array_int(self):
+        out = util.cast(np.ones((3, 3), dtype=int), target_type=float)
+        self.assertTrue(np.allclose(out, 1.0))
+
+    def test_array_float(self):
+        out = util.cast(np.ones((3, 3)) * 1.6, target_type=int)
+        self.assertTrue(np.allclose(out, 1))
+
+    def test_number_float(self):
+        out = util.cast(-1.6, target_type=int)
+        self.assertEqual(out, -1)
+
+    def test_number_int(self):
+        out = util.cast(-2, target_type=float)
+        self.assertTrue(np.isclose(out, -2.0))
+
+    def test_number_complex(self):
+        with self.assertRaises(TypeError):
+            util.cast(1 - 2 * 1j, target_type=float)
+
+    def test_number_str(self):
+        out = util.cast("2.0", target_type=float)
+        self.assertTrue(np.isclose(out, 2.0))
+
+    def test_not_a_number_str(self):
+        with self.assertRaises(ValueError):
+            util.cast("two", target_type=float)
+
+
 class TestFindFile(fake_filesystem_unittest.TestCase):
     """
     Tests on the function utilities.find_file.

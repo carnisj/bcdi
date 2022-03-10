@@ -39,7 +39,7 @@ window_type = "blackman"  # 'normal' or 'tukey' or 'blackman'
 #############################
 mu = np.array([0.0, 0.0, 0.0])
 sigma = np.array([0.30, 0.30, 0.30])
-covariance = np.diag(sigma ** 2)
+covariance = np.diag(sigma**2)
 ################################
 # parameter for a tukey window #
 ################################

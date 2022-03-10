@@ -7,18 +7,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
-import os
-from pyfakefs import fake_filesystem_unittest
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
-from bcdi.experiment.diffractometer import (
-    DiffractometerCRISTAL,
-    DiffractometerNANOMAX,
-    DiffractometerID01,
-    DiffractometerP10,
-    Diffractometer34ID,
-    DiffractometerSIXS,
-)
 
 # conversion table from the laboratory frame (CXI convention)
 # (z downstream, y vertical up, x outboard) to the frame of xrayutilities
@@ -48,63 +38,51 @@ class TestBeamline(unittest.TestCase):
 
     def test_find_inplane_CRISTAL(self):
         beamline = create_beamline("CRISTAL")
-        diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_CRISTAL(self):
         beamline = create_beamline("CRISTAL")
-        diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_ID01(self):
         beamline = create_beamline("ID01")
-        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_ID01(self):
         beamline = create_beamline("ID01")
-        diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_NANOMAX(self):
         beamline = create_beamline("NANOMAX")
-        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_NANOMAX(self):
         beamline = create_beamline("NANOMAX")
-        diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_P10(self):
         beamline = create_beamline("P10")
-        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_P10(self):
         beamline = create_beamline("P10")
-        diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
     def test_find_inplane_SIXS(self):
         beamline = create_beamline("SIXS_2019")
-        diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_inplane() == 1)
 
     def test_find_outofplane_SIXS(self):
         beamline = create_beamline("SIXS_2019")
-        diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 2)
+        self.assertTrue(beamline.find_outofplane() == 2)
 
     def test_find_inplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
-        self.assertTrue(beamline.find_inplane(diffractometer) == 0)
+        self.assertTrue(beamline.find_inplane() == 0)
 
     def test_find_outofplane_34ID(self):
         beamline = create_beamline("34ID")
-        diffractometer = Diffractometer34ID(sample_offsets=(0, 90, 0))
-        self.assertTrue(beamline.find_outofplane(diffractometer) == 1)
+        self.assertTrue(beamline.find_outofplane() == 1)
 
 
 class TestBeamlineCRISTAL(unittest.TestCase):
@@ -118,7 +96,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
         self.specfile_name = "anything"
         self.template_imagefile = self.sample_name + "%d.nxs"
         self.beamline = create_beamline("CRISTAL")
-        self.diffractometer = DiffractometerCRISTAL(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -140,7 +117,6 @@ class TestBeamlineCRISTAL(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -154,45 +130,23 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, None)
-        self.assertEqual(template_imagefile, self.sample_name + "%d.nxs")
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -314,7 +268,6 @@ class TestBeamlineID01(unittest.TestCase):
         self.template_imagefile = "data_mpx4_%05d.edf.gz"
         self.specfile_name = "test"
         self.beamline = create_beamline("ID01")
-        self.diffractometer = DiffractometerID01(sample_offsets=(0, 0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -336,7 +289,6 @@ class TestBeamlineID01(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -350,45 +302,23 @@ class TestBeamlineID01(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, "test")
-        self.assertEqual(template_imagefile, "data_mpx4_%05d.edf.gz")
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -519,7 +449,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
         self.template_imagefile = "%06d.h5"
         self.specfile_name = "anything"
         self.beamline = create_beamline("NANOMAX")
-        self.diffractometer = DiffractometerNANOMAX(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -541,7 +470,6 @@ class TestBeamlineNANOMAX(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -555,46 +483,23 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "{:06d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, None)
-        self.assertEqual(template_imagefile, "%06d.h5")
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -707,7 +612,7 @@ class TestBeamlineNANOMAX(unittest.TestCase):
             )
 
 
-class TestBeamlineP10(fake_filesystem_unittest.TestCase):
+class TestBeamlineP10(unittest.TestCase):
     """Tests related to P10 beamline instantiation."""
 
     def setUp(self):
@@ -718,7 +623,6 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
         self.template_imagefile = "_master.h5"
         self.specfile_name = ""
         self.beamline = create_beamline("P10")
-        self.diffractometer = DiffractometerP10(sample_offsets=(0, 0, 0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -740,7 +644,6 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -754,76 +657,23 @@ class TestBeamlineP10(fake_filesystem_unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(
-            specfile, self.sample_name + "_{:05d}".format(self.scan_number)
-        )
-        self.assertEqual(template_imagefile, "S_00001_master.h5")
-
-    def test_init_paths_specfile_full_path(self):
-        self.setUpPyfakefs()
-        valid_path = "/gpfs/bcdi/data"
-        os.makedirs(valid_path)
-        with open(valid_path + "/dummy.fio", "w") as f:
-            f.write("dummy")
-
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": valid_path + "/dummy.fio",
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
-        )
-        self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(specfile, params["specfile_name"])
-        self.assertEqual(template_imagefile, "S_00001_master.h5")
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), -1)
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_outofplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -991,7 +841,6 @@ class TestBeamlineSIXS(unittest.TestCase):
         self.specfile_name = self.root_dir + "alias_dict.txt"
         self.template_imagefile = "spare_ascan_mu_%05d.nxs"
         self.beamline = create_beamline("SIXS_2019")
-        self.diffractometer = DiffractometerSIXS(sample_offsets=(0, 0))
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -1013,7 +862,6 @@ class TestBeamlineSIXS(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1027,45 +875,23 @@ class TestBeamlineSIXS(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, self.specfile_name)
-        self.assertEqual(template_imagefile, self.template_imagefile)
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(
@@ -1187,7 +1013,6 @@ class TestBeamline34ID(unittest.TestCase):
         self.template_imagefile = None
         self.specfile_name = "test_spec"
         self.beamline = create_beamline("34ID")
-        self.diffractometer = Diffractometer34ID(sample_offsets=None)
         self.beam_direction = np.array([1, 0, 0])
         self.offset_inplane = 1
         self.params = {
@@ -1209,7 +1034,6 @@ class TestBeamline34ID(unittest.TestCase):
 
     def test_exit_wavevector(self):
         params = {
-            "diffractometer": self.diffractometer,
             "inplane_angle": 0.0,
             "outofplane_angle": 90.0,
             "wavelength": 2 * np.pi,
@@ -1223,45 +1047,23 @@ class TestBeamline34ID(unittest.TestCase):
             )
         )
 
-    def test_init_paths(self):
-        params = {
-            "root_folder": self.root_dir,
-            "sample_name": self.sample_name,
-            "scan_number": self.scan_number,
-            "specfile_name": self.specfile_name,
-            "template_imagefile": self.template_imagefile,
-        }
-        (
-            homedir,
-            default_dirname,
-            specfile,
-            template_imagefile,
-        ) = self.beamline.init_paths(**params)
-        self.assertEqual(
-            homedir, self.root_dir + self.sample_name + str(self.scan_number) + "/"
-        )
-        self.assertEqual(default_dirname, "data/")
-        self.assertEqual(specfile, self.specfile_name)
-        self.assertEqual(template_imagefile, None)
-
     def test_init_qconversion(self):
         _, offsets = self.beamline.init_qconversion(
             conversion_table=self.conversion_table,
             beam_direction=self.beam_direction,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
-        nb_circles = len(self.diffractometer.sample_circles) + len(
-            self.diffractometer.detector_circles
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
         )
         self.assertEqual(len(offsets), nb_circles)
         self.assertEqual(offsets, [0, 0, 0, self.offset_inplane, 0])
 
     def test_inplane_coeff(self):
-        self.assertEqual(self.beamline.inplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.inplane_coeff(), 1)
 
     def test_outofplane_coeff(self):
-        self.assertEqual(self.beamline.outofplane_coeff(self.diffractometer), 1)
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
 
     def test_transformation_matrix_inplane(self):
         matrix, q_offset = self.beamline.transformation_matrix(

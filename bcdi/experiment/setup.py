@@ -21,13 +21,13 @@ import numpy as np
 from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
-from typing import List, Optional, Tuple, Union
-from ..graph import graph_utils as gu
-from ..utils import utilities as util
-from ..utils import validation as valid
-from .diffractometer import create_diffractometer
-from .beamline import create_beamline
-from .detector import create_detector, Detector
+from typing import Optional, Tuple
+
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
+from bcdi.utils import validation as valid
+from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.detector import create_detector, Detector
 
 
 class Setup:
@@ -35,7 +35,7 @@ class Setup:
     Class for defining the experimental geometry.
 
     :param beamline: str, name of the beamline
-    :param detector: an instance of the cass experiment_utils.Detector()
+    :param detector_name: str, name of the detector
     :param beam_direction: direction of the incident X-ray beam in the frame
      (z downstream,y vertical up,x outboard)
     :param energy: energy setting of the beamline, in eV.
@@ -95,7 +95,7 @@ class Setup:
     def __init__(
         self,
         beamline,
-        detector=None,
+        detector_name="Dummy",
         beam_direction=(1, 0, 0),
         energy=None,
         distance=None,
@@ -123,6 +123,12 @@ class Setup:
                 "offset_inplane",
                 "actuators",
                 "is_series",
+                "template_imagefile",
+                "roi",
+                "binning",
+                "preprocessing_binning",
+                "custom_pixelsize",
+                "linearity_func",
             },
             name="Setup.__init__",
         )
@@ -136,20 +142,22 @@ class Setup:
         self.custom_monitor = kwargs.get("custom_monitor")  # list or tuple
         self.custom_motors = kwargs.get("custom_motors")  # dictionnary
         self.actuators = kwargs.get("actuators", {})  # list or tuple
+
         # kwargs for xrayutilities, delegate the test on their values to xrayutilities
         self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
         self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
         self.offset_inplane = kwargs.get("offset_inplane", 0)
+
         # kwargs for series (several frames per point) at P10
         self.is_series = kwargs.get("is_series", False)  # boolean
-        # load positional arguments corresponding to instance properties
-        self.beamline = beamline
-        # create the Diffractometer instance
-        self._diffractometer = create_diffractometer(
-            beamline=self.beamline,
-            sample_offsets=kwargs.get("sample_offsets"),
+
+        # create the detector and beamline instances
+        self.detector = create_detector(name=detector_name, **kwargs)
+        self.beamline = create_beamline(
+            name=beamline, sample_offsets=kwargs.get("sample_offsets")
         )
-        self.detector = detector or create_detector("Dummy")
+
+        # load positional arguments corresponding to instance properties
         self.beam_direction = beam_direction
         self.energy = energy
         self.distance = distance
@@ -218,13 +226,9 @@ class Setup:
         return u, w, v
 
     @property
-    def beamline(self):
-        """Create a beamline instance, but return the name only."""
-        return self._beamline.name
-
-    @beamline.setter
-    def beamline(self, name):
-        self._beamline = create_beamline(name=name)
+    def name(self):
+        """Name of the beamline."""
+        return self.beamline.name
 
     @property
     def custom_images(self):
@@ -340,7 +344,7 @@ class Setup:
 
         :return: "x+" or "x-" depending on the detector horizontal orientation
         """
-        return self.labframe_to_xrayutil[self._beamline.detector_hor]
+        return self.labframe_to_xrayutil[self.beamline.detector_hor]
 
     @property
     def detector_ver_xrutil(self):
@@ -353,12 +357,12 @@ class Setup:
 
         :return: "z+" or "z-" depending on the detector vertical orientation
         """
-        return self.labframe_to_xrayutil[self._beamline.detector_ver]
+        return self.labframe_to_xrayutil[self.beamline.detector_ver]
 
     @property
     def diffractometer(self):
         """Public interface to access the diffractometer instance."""
-        return self._diffractometer
+        return self.beamline.diffractometer
 
     @property
     def dirbeam_detector_angles(self):
@@ -453,8 +457,7 @@ class Setup:
 
         :return: kout vector
         """
-        return self._beamline.exit_wavevector(
-            diffractometer=self.diffractometer,
+        return self.beamline.exit_wavevector(
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
             wavelength=self.wavelength,
@@ -529,7 +532,7 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self._beamline.inplane_coeff(self.diffractometer)
+        return self.beamline.inplane_coeff()
 
     @property
     def is_series(self):
@@ -541,6 +544,11 @@ class Setup:
         if not isinstance(val, bool):
             raise TypeError(f"is_series should be a boolean, got {type(val)}")
         self._is_series = val
+
+    @property
+    def loader(self):
+        """Public interface to access the beamline data loader instance."""
+        return self.beamline.loader
 
     @property
     def outofplane_angle(self):
@@ -563,14 +571,14 @@ class Setup:
 
         :return: +1 or -1
         """
-        return self._beamline.outofplane_coeff(self.diffractometer)
+        return self.beamline.outofplane_coeff()
 
     @property
     def params(self):
         """Return a dictionnary with all parameters."""
         return {
             "Class": self.__class__.__name__,
-            "beamline": self.beamline,
+            "beamline": self.beamline.name,
             "detector": self.detector.name,
             "direct_beam": self.direct_beam,
             "dirbeam_detector_angles": self.dirbeam_detector_angles,
@@ -584,7 +592,6 @@ class Setup:
             "tilt_angle_deg": self.tilt_angle,
             "grazing_angles_deg": self.grazing_angle,
             "sample_offsets_deg": self.diffractometer.sample_offsets,
-            "direct_beam_pixel": self.direct_beam,
             "filtered_data": self.filtered_data,
             "custom_scan": self.custom_scan,
             "custom_images": self.custom_images,
@@ -653,9 +660,9 @@ class Setup:
     def __repr__(self):
         """Representation string of the Setup instance."""
         return (
-            f"{self.__class__.__name__}(beamline='{self.beamline}', "
-            f"detector='{self.detector.name}',"
-            f" beam_direction={self.beam_direction}, "
+            f"{self.__class__.__name__}(beamline='{self.beamline.name}', "
+            f"detector='{self.detector.name}', "
+            f"beam_direction={self.beam_direction}, "
             f"direct_beam={self.direct_beam}, "
             f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
             f"energy={self.energy}, distance={self.distance}, "
@@ -665,7 +672,6 @@ class Setup:
             f"rocking_angle='{self.rocking_angle}', "
             f"grazing_angle={self.grazing_angle},\n"
             f"pixel_size={self.detector.unbinned_pixel_size}, "
-            f"direct_beam={self.direct_beam}, "
             f"sample_offsets={self.diffractometer.sample_offsets}, "
             f"filtered_data={self.filtered_data},\n"
             f"custom_scan={self.custom_scan}, "
@@ -678,11 +684,10 @@ class Setup:
             f"is_series={self.is_series})"
         )
 
-    def calc_qvalues_xrutils(self, logfile, hxrd, nb_frames, **kwargs):
+    def calc_qvalues_xrutils(self, hxrd, nb_frames, **kwargs):
         """
         Calculate the 3D q values of the BCDI scan using xrayutilities.
 
-        :param logfile: the logfile created in Setup.create_logfile()
         :param hxrd: an initialized xrayutilities HXRD object used for the
          orthogonalization of the dataset
         :param nb_frames: length of axis 0 in the 3D dataset. If the data was cropped
@@ -720,9 +725,8 @@ class Setup:
             )
 
         # process motor positions
-        processed_positions = self._beamline.process_positions(
+        processed_positions = self.beamline.process_positions(
             setup=self,
-            logfile=logfile,
             nb_frames=nb_frames,
             scan_number=scan_number,
             frames_logical=frames_logical,
@@ -925,7 +929,7 @@ class Setup:
         if self.custom_scan:
             logfile = None
         else:
-            logfile = self._beamline.create_logfile(
+            logfile = self.loader.create_logfile(
                 scan_number=scan_number,
                 root_folder=root_folder,
                 filename=filename,
@@ -1285,7 +1289,7 @@ class Setup:
             default_dirname,
             specfile,
             template_imagefile,
-        ) = self._beamline.init_paths(
+        ) = self.beamline.loader.init_paths(
             root_folder=root_folder,
             sample_name=sample_name,
             scan_number=scan_number,
@@ -1334,11 +1338,10 @@ class Setup:
          - a tuple of motor offsets used later for q calculation
 
         """
-        return self._beamline.init_qconversion(
+        return self.beamline.init_qconversion(
             conversion_table=self.labframe_to_xrayutil,
             beam_direction=self.beam_direction_xrutils,
             offset_inplane=self.offset_inplane,
-            diffractometer=self.diffractometer,
         )
 
     @staticmethod
@@ -2368,10 +2371,7 @@ class Setup:
             name="scan_number",
         )
 
-        return self.diffractometer.goniometer_values(
-            setup=self,
-            scan_number=scan_number,
-        )
+        return self.beamline.goniometer_values(setup=self, scan_number=scan_number)
 
     def transformation_bcdi(
         self, array_shape, tilt_angle, pixel_x, pixel_y, direct_space, verbose=True
@@ -2416,7 +2416,7 @@ class Setup:
         ###########################################################
         # calculate the transformation matrix in reciprocal space #
         ###########################################################
-        mymatrix, q_offset = self._beamline.transformation_matrix(
+        mymatrix, q_offset = self.beamline.transformation_matrix(
             wavelength=wavelength,
             distance=distance,
             pixel_x=pixel_x,
@@ -2547,7 +2547,7 @@ class Setup:
         ##############################################################
         # find the corresponding polar coordinates of a cartesian 2D grid
         # perpendicular to the rotation axis
-        interp_angle, interp_radius = self._beamline.cartesian2polar(
+        interp_angle, interp_radius = self.beamline.cartesian2polar(
             nb_pixels=numx,
             pivot=pivot,
             offset_angle=cdi_angle.min(),
@@ -2597,7 +2597,7 @@ class Setup:
         print("\nData shape after regridding:", numx, numy, numx)
 
         # calculate exact q values for each voxel of the 3D dataset
-        old_qx, old_qz, old_qy = self._beamline.ewald_curvature_saxs(
+        old_qx, old_qz, old_qy = self.beamline.ewald_curvature_saxs(
             wavelength=self.wavelength * 1e9,
             pixelsize_x=self.detector.pixelsize_x * 1e9,
             pixelsize_y=self.detector.pixelsize_y * 1e9,

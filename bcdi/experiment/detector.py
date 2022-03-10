@@ -13,7 +13,7 @@ These classes handle the detector-dependent paths and data filenames, on top of 
 detector-dependent properties (e.g., number and size of the pixels, gaps between
 tiles...). Generic methods are implemented in the abstract base class Detector, and
 detector-dependent properties need to be implemented in each child class (they are
-decoracted by @abstractmethod in the base class, they are indicated using @ in the
+decoracted by @abstractmethod in the base class, they are written in italic in the
 following diagram).
 
 .. mermaid::
@@ -21,6 +21,7 @@ following diagram).
 
   classDiagram
     class Detector{
+      <<abstract>>
       +str name
       +tuple binning
       +str datadir
@@ -38,8 +39,8 @@ following diagram).
       +tuple sum_roi
       +str template_file
       +str template_imagefile
-      unbinned_pixel_number(@)
-      unbinned_pixel_size(@)
+      unbinned_pixel_number()*
+      unbinned_pixel_size()*
       _background_subtraction()
       _flatfield_correction()
       _hotpixels_correction()
@@ -288,9 +289,9 @@ class Detector(ABC):
             :return: the updated 1D array
             """
             return (
-                coeffs[0] * array_1d ** 4
-                + coeffs[1] * array_1d ** 3
-                + coeffs[2] * array_1d ** 2
+                coeffs[0] * array_1d**4
+                + coeffs[1] * array_1d**3
+                + coeffs[2] * array_1d**2
                 + coeffs[3] * array_1d
                 + coeffs[4]
             )

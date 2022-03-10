@@ -9,41 +9,60 @@
 This module provides classes and methods for the definition of the experimental setup.
 The following classes are implemented:
 
- * Beamline and corresponding child classes (one per supported beamline)
- * Detector and corresponding child classes (one per supported detector)
- * Diffractometer and corresponding child classes (one per supported beamline)
+ * Beamline and corresponding child classes: calculations related to reciprocal or
+   direct space transformation.
+ * Detector and corresponding child classes: implementation of the 2D detectors.
+ * Diffractometer and Geometry with corresponding child classes: implementation of the
+   diffractometer geometry.
+ * Loader and corresponding child classes: initialization of the file system and loading
+   of data and motor positions.
  * RotationMatrix: used in methods from Diffractometer to generate rotation matrices
- * Setup
+ * Setup: the manager of the analysis
 
 .. mermaid::
   :align: center
 
   classDiagram
     class Setup{
-      +str beamline
+      +name : beamline name
+      +detector_name
   }
     class Beamline{
-      +str name
+      <<abstract>>
+      +name
+  }
+    class Loader{
+      <<abstract>>
+      +name
+      +sample_offsets
   }
     class Diffractometer{
-      +tuple sample_offsets
+      +name
+      +sample_offsets
+  }
+    class Geometry{
+      +name
   }
     class Detector{
-      +str name
+      <<abstract>>
+      +name
   }
     class RotationMatrix{
-      +str circle
-      +float angle
+      +angle
+      +circle
   }
     Setup *-- Beamline : create_beamline()
-    Setup *-- Diffractometer : create_diffractometer()
-    Setup o-- Detector : create_detector()
-    Diffractometer o-- RotationMatrix
+    Setup *-- Detector : create_detector()
+    Beamline *-- Diffractometer
+    Diffractometer *-- Geometry : create_geometry()
+    Beamline *-- Loader : create_loader()
+    Diffractometer *-- RotationMatrix
 
 In scripts, the initial step is to declare a detector instance and a setup instance with
-the related parameters (see the class documentation). The beamline and the
-diffractometer are not meant to be instantiated directly, this is done internally in
-Setup.
+the related parameters (see the class documentation). The beamline and the detector are
+instantiated in the Setup instance. The Loader and Diffractometer are instantiated in
+the Beamline instance. However, you are free to instantiate these classes outside of a
+Setup instance if needed.
 
 The geometry of the following beamlines is implemented:
 
@@ -73,7 +92,8 @@ General organization of the module:
 
   classDiagram
     class Beamline{
-      +str name
+      <<abstract>>
+      +name : beamline name
   }
     ABC <|-- Beamline
     Beamline <|-- BeamlineID01
@@ -97,7 +117,8 @@ General organization of the module:
 
   classDiagram
     class Detector{
-      +str name : detector_name
+      <<abstract>>
+      +name : detector_name
   }
     ABC <|-- Detector
     Detector <|-- Maxipix
@@ -113,26 +134,35 @@ General organization of the module:
 diffractometer
 ^^^^^^^^^^^^^^
 
+.. automodule:: bcdi.experiment.diffractometer
+    :members:
+
+loader
+^^^^^^
+
 General organization of the module:
 
 .. mermaid::
   :align: center
 
   classDiagram
-    class Diffractometer{
-      +tuple sample_offsets
+    class Loader{
+      <<abstract>>
+      +name
+      +sample_offsets
   }
-    ABC <|-- Diffractometer
-    Diffractometer <|-- DiffractometerID01
-    Diffractometer <|-- DiffractometerSIXS
-    Diffractometer <|-- Diffractometer34ID
-    Diffractometer <|-- DiffractometerP10
-    DiffractometerP10 <|-- DiffractometerP10SAXS
-    Diffractometer <|-- DiffractometerCRISTAL
-    Diffractometer <|-- DiffractometerNANOMAX
+    ABC <|-- Loader
+    Loader <|-- LoaderID01
+    Loader <|-- LoaderID01BLISS
+    Loader <|-- LoaderSIXS
+    Loader <|-- Loader34ID
+    Loader <|-- LoaderP10
+    LoaderP10 <|-- LoaderP10SAXS
+    Loader <|-- LoaderCRISTAL
+    Loader <|-- LoaderNANOMAX
 
-.. automodule:: bcdi.experiment.diffractometer
-    :members:
+.. automodule:: bcdi.experiment.loader
+   :members:
 
 rotation_matrix
 ^^^^^^^^^^^^^^^
