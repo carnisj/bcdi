@@ -63,6 +63,7 @@ from tkinter import filedialog
 from typing import Optional, Union
 
 from bcdi.graph import graph_utils as gu
+from bcdi.utils.io_helper import ContextFile, safeload, safeload_static
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
@@ -964,7 +965,7 @@ class LoaderID01(Loader):
         )
 
         path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
+        return ContextFile(filename=path, open_func=SpecFile)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -994,9 +995,9 @@ class LoaderID01(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
         flatfield=None,
         hotpixels=None,
         background=None,
@@ -1027,6 +1028,8 @@ class LoaderID01(Loader):
          - the monitor values for normalization
 
         """
+        file = kwargs.get("file")
+        setup = kwargs.get("setup")
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -1038,8 +1041,8 @@ class LoaderID01(Loader):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1110,7 +1113,8 @@ class LoaderID01(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(self, **kwargs):
         """
         Load the scan data and extract motor positions.
 
@@ -1123,16 +1127,18 @@ class LoaderID01(Loader):
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
+        file = kwargs.get("file")
+        setup = kwargs.get("setup")
         scan_number = kwargs["scan_number"]
 
         old_names = False
         if not setup.custom_scan:
-            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
+            motor_names = file[str(scan_number) + ".1"].motor_names
             # positioners
-            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            motor_values = file[str(scan_number) + ".1"].motor_positions
             # positioners
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             try:
                 _ = motor_values[motor_names.index("nu")]  # positioner
@@ -1197,7 +1203,8 @@ class LoaderID01(Loader):
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(device_name, **kwargs):
         """
         Extract the scanned device positions/values at ID01 beamline.
 
@@ -1208,12 +1215,13 @@ class LoaderID01(Loader):
 
         :return: the positions/values of the device as a numpy 1D array
         """
+        file = kwargs.get("file")
         scan_number = kwargs.get("scan_number")
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
-        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+        labels = file[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = file[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
@@ -1223,6 +1231,7 @@ class LoaderID01(Loader):
             device_values = []
         return np.asarray(device_values)
 
+    @safeload
     def read_monitor(self, setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
