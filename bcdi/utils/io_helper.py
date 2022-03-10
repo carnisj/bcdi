@@ -14,14 +14,14 @@ from inspect import signature
 
 class ContextFile:
 
-    def __init__(self, filename, open_func, mode, encoding="utf-8"):
+    def __init__(self, filename, open_func, mode="r", encoding="utf-8"):
         self.filename = filename
         self.open_func = open_func
         self.mode = mode
         self.encoding = encoding
 
-    def __enter__(self, open_func, mode, encoding="utf-8"):
-        self.file = open_func(self.filename, mode=mode, encoding=encoding)
+    def __enter__(self):
+        self.file = self.open_func(self.filename) #, mode=self.mode, encoding=self.encoding)
         return self.file
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -29,14 +29,27 @@ class ContextFile:
         return False
 
 
-def decorator(func):
+def safeload(func):
     @wraps(func)
-    def helper(self, *args, setup, **kwargs):
+    def helper(self, *args, **kwargs):
+        setup = kwargs.get("setup")
+        if setup is None:
+            raise ValueError
         if not isinstance(setup.logfile, ContextFile):
             raise TypeError("setup.logfile undefined")
         with setup.logfile as file:
-            if 'self' in signature(func).parameters:
-                return func(self, *args, file=file, **kwargs)
-            else:
-                return func(*args, file=file, **kwargs)
+            return func(self, *args, file=file, **kwargs)
+    return helper
+
+
+def safeload_static(func):
+    @wraps(func)
+    def helper(*args, **kwargs):
+        setup = kwargs.get("setup")
+        if setup is None:
+            raise ValueError
+        if not isinstance(setup.logfile, ContextFile):
+            raise TypeError("setup.logfile undefined")
+        with setup.logfile as file:
+            return func(*args, file=file, **kwargs)
     return helper
