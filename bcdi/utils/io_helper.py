@@ -31,9 +31,12 @@ class ContextFile:
 
 def decorator(func):
     @wraps(func)
-    def helper(*args, setup, **kwargs):
+    def helper(self, *args, setup, **kwargs):
         if not isinstance(setup.logfile, ContextFile):
             raise TypeError("setup.logfile undefined")
         with setup.logfile as file:
-            return func(*args, file=file, **kwargs)
+            if 'self' in signature(func).parameters:
+                return func(self, *args, file=file, **kwargs)
+            else:
+                return func(*args, file=file, **kwargs)
     return helper
