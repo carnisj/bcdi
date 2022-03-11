@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 #         Clement Atlan, c.atlan@outlook.com
+from __future__ import annotations
 
 """
 Implementation of beamline-dependent data loading classes.
@@ -60,12 +61,15 @@ from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import Optional, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils.io_helper import ContextFile, safeload, safeload_static
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+if TYPE_CHECKING:
+    from bcdi.experiment.setup import Setup
 
 
 def create_loader(name, sample_offsets):
@@ -943,32 +947,44 @@ class LoaderID01(Loader):
     }
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        root_folder: str, filename: str, scan_number: int, **kwargs
+    ) -> ContextFile:
         """
         Create the logfile, which is the spec file for ID01.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+        :param root_folder: str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file or full path of the spec file
-
-        :return: logfile
+        :param filename: str, name of the spec file or full path of the spec file
+        :param scan_number: the scan number to load
+        :return: an instance of a context manager for opening the file later
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
         path = util.find_file(filename=filename, default_folder=root_folder)
-        return ContextFile(filename=path, open_func=SpecFile)
+        return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def init_paths(
+        root_folder: str,
+        sample_name: str,
+        scan_number: int,
+        template_imagefile: str,
+        **kwargs,
+    ) -> Tuple[str, str, Optional[str], str]:
         """
         Initialize paths used for data processing and logging at ID01.
 
@@ -998,14 +1014,15 @@ class LoaderID01(Loader):
     @safeload
     def load_data(
         self,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, Union[np.ndarray, List], List]:
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -1019,20 +1036,20 @@ class LoaderID01(Loader):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
 
         """
-        file = kwargs.get("file")
-        setup = kwargs.get("setup")
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
         if setup.detector.template_imagefile is None:
             raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(
@@ -1068,8 +1085,8 @@ class LoaderID01(Loader):
             if len(setup.custom_images) > 1:
                 nb_img = len(setup.custom_images)
             else:  # the data is stacked into a single file
-                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
-                data_stack = npzfile[list(npzfile.files)[0]]
+                with np.load(ccdfiletmp % setup.custom_images[0]) as npzfile:
+                    data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
@@ -1092,8 +1109,8 @@ class LoaderID01(Loader):
                     i = int(setup.custom_images[idx])
                 else:
                     i = int(ccdn[idx])
-                e = fabio.open(ccdfiletmp % i)
-                ccdraw = e.data
+                with fabio.open(ccdfiletmp % i) as e:
+                    ccdraw = e.data
 
             data[idx, :, :], mask2d, monitor[idx] = load_frame(
                 frame=ccdraw,
@@ -1114,22 +1131,26 @@ class LoaderID01(Loader):
         return data, mask2d, monitor, loading_roi
 
     @safeload
-    def motor_positions(self, **kwargs):
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         Stages names for data previous to ?2017? start with a capital letter.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': the scan number to load
-
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
-        file = kwargs.get("file")
-        setup = kwargs.get("setup")
-        scan_number = kwargs["scan_number"]
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
 
         old_names = False
         if not setup.custom_scan:
@@ -1199,26 +1220,26 @@ class LoaderID01(Loader):
             energy = setup.energy
 
         detector_distance = self.retrieve_distance(setup=setup) or setup.distance
-
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
     @safeload_static
-    def read_device(device_name, **kwargs):
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at ID01 beamline.
 
         :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the positions/values of the device as a numpy 1D array
         """
-        file = kwargs.get("file")
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
 
         labels = file[str(scan_number) + ".1"].labels  # motor scanned
         labels_data = file[str(scan_number) + ".1"].data  # motor scanned
@@ -1231,20 +1252,18 @@ class LoaderID01(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    @safeload
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the default monitor values
         """
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "exp1")
         else:
