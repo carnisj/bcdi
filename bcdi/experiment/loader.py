@@ -911,7 +911,7 @@ class Loader(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_monitor(setup, **kwargs):
+    def read_monitor(setup: Setup, **kwargs) -> np.ndarray:
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
@@ -965,6 +965,8 @@ class LoaderID01(Loader):
             min_length=1,
             name="root_folder",
         )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
@@ -1022,7 +1024,7 @@ class LoaderID01(Loader):
         bin_during_loading: bool = False,
         debugging: bool = False,
         **kwargs,
-    ) -> Tuple[np.ndarray, np.ndarray, Union[np.ndarray, List], List]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -1235,6 +1237,7 @@ class LoaderID01(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
+
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -2091,20 +2094,25 @@ class LoaderP10(Loader):
     """Loader for PETRAIII P10 beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+            root_folder: str, filename: str, **kwargs
+    ) -> ContextFile:
         """
         Create the logfile, which is the .fio file for P10.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where the scan
+        :param root_folder: str, the root directory of the experiment, where the scan
            folders are located.
-         - 'filename': str, name of the .fio file or full path of the .fio file
-
-        :return: logfile
+        :param filename: str, name of the .fio file or full path of the .fio file
+        :return: an instance of a context manager for opening the file later
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
@@ -2114,16 +2122,26 @@ class LoaderP10(Loader):
 
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
-            return filename
+            return ContextFile(
+                filename=filename,
+                open_func=open,
+                mode="r",
+                encoding="utf-8"
+            )
+
         print(f"Could not find the fio file at: {filename}")
 
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-
-        # return the path to the .fio file
+        # try the default path to the .fio file
         path = root_folder + filename + "/" + filename + ".fio"
         print(f"Trying to load the fio file at: {path}")
-        return path
+        if not os.path.isfile(path):
+            raise ValueError(f"Could not find the fio file at: {path}")
+        return ContextFile(
+            filename=path,
+            open_func=open,
+            mode="r",
+            encoding="utf-8"
+        )
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -2161,15 +2179,15 @@ class LoaderP10(Loader):
 
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load P10 data, apply filters and concatenate it for phasing.
 
@@ -2198,25 +2216,23 @@ class LoaderP10(Loader):
         )
         is_series = setup.is_series
         if not setup.custom_scan:
-            h5file = h5py.File(ccdfiletmp, "r")
-
-            # find the number of images
-            # (i.e. points, not including series at each point)
-            if is_series:
-                nb_img = len(list(h5file["entry/data"]))
-            else:
-                idx = 0
-                nb_img = 0
-                while True:
-                    data_path = "data_" + str("{:06d}".format(idx + 1))
-                    try:
-                        nb_img += len(h5file["entry"]["data"][data_path])
-                        idx += 1
-                    except KeyError:
-                        break
+            with h5py.File(ccdfiletmp, "r") as h5file:
+                # find the number of images
+                # (i.e. points, not including series at each point)
+                if is_series:
+                    nb_img = len(list(h5file["entry/data"]))
+                else:
+                    idx = 0
+                    nb_img = 0
+                    while True:
+                        data_path = "data_" + str("{:06d}".format(idx + 1))
+                        try:
+                            nb_img += len(h5file["entry"]["data"][data_path])
+                            idx += 1
+                        except KeyError:
+                            break
             print("Number of points :", nb_img)
         else:
-            h5file = None  # this will be define directly in the while loop
             # create the template for the image files
             if len(setup.custom_images) > 0:
                 nb_img = len(setup.custom_images)
@@ -2239,8 +2255,8 @@ class LoaderP10(Loader):
             series_data = []
             series_monitor = []
             if setup.custom_scan:
-                # custom scan with one file per frame/series of frame, no master file in
-                # this case, load directly data files.
+                # custom scan with one file per frame/series of frame,
+                # no master file in this case, load directly data files.
                 i = int(setup.custom_images[idx])
                 ccdfiletmp = (
                     setup.detector.rootdir
@@ -2251,47 +2267,47 @@ class LoaderP10(Loader):
                     + "_{:05d}".format(i)
                     + setup.detector.template_file
                 )
-                h5file = h5py.File(ccdfiletmp, "r")  # load the data file
                 data_path = "data_000001"
             else:
-                # normal scan, h5file is in this case the master .h5 file
+                # normal scan, ccdfiletmp points to the master .h5 file
                 data_path = "data_" + str("{:06d}".format(point_idx + 1))
 
-            while True:
-                try:
+            with h5py.File(ccdfiletmp, "r") as h5file:
+                while True:
                     try:
-                        tmp_data = h5file["entry"]["data"][data_path][idx]
-                    except OSError:
-                        raise OSError("hdf5plugin is not installed")
+                        try:
+                            tmp_data = h5file["entry"]["data"][data_path][idx]
+                        except OSError:
+                            raise OSError("hdf5plugin is not installed")
 
-                    # a single frame from the (eventual) series is loaded
-                    ccdraw, mask2d, temp_mon = load_frame(
-                        frame=tmp_data,
-                        mask2d=mask2d,
-                        monitor=monitor[idx],
-                        frames_per_point=1,
-                        detector=setup.detector,
-                        loading_roi=loading_roi,
-                        flatfield=flatfield,
-                        background=background,
-                        hotpixels=hotpixels,
-                        normalize=normalize,
-                        bin_during_loading=bin_during_loading,
-                        debugging=debugging,
-                    )
-                    series_data.append(ccdraw)
-                    series_monitor.append(temp_mon)
-
-                    if not is_series:
-                        sys.stdout.write(
-                            "\rLoading frame {:d}".format(start_index + idx + 1)
+                        # a single frame from the (eventual) series is loaded
+                        ccdraw, mask2d, temp_mon = load_frame(
+                            frame=tmp_data,
+                            mask2d=mask2d,
+                            monitor=monitor[idx],
+                            frames_per_point=1,
+                            detector=setup.detector,
+                            loading_roi=loading_roi,
+                            flatfield=flatfield,
+                            background=background,
+                            hotpixels=hotpixels,
+                            normalize=normalize,
+                            bin_during_loading=bin_during_loading,
+                            debugging=debugging,
                         )
-                        sys.stdout.flush()
-                    idx = idx + 1
-                except IndexError:  # reached the end of the series
-                    break
-                except ValueError:  # something went wrong
-                    break
+                        series_data.append(ccdraw)
+                        series_monitor.append(temp_mon)
+
+                        if not is_series:
+                            sys.stdout.write(
+                                "\rLoading frame {:d}".format(start_index + idx + 1)
+                            )
+                            sys.stdout.flush()
+                        idx = idx + 1
+                    except IndexError:  # reached the end of the series
+                        break
+                    except ValueError:  # something went wrong
+                        break
 
             if len(series_data) == 0:
                 raise ValueError(
@@ -2318,90 +2334,97 @@ class LoaderP10(Loader):
                     break
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+            self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
-            with open(setup.logfile, "r") as fio:
-                index_om = None
-                index_phi = None
-                om = []
-                phi = []
-                chi = None
-                mu = None
-                gamma = None
-                delta = None
-                energy = None
+            index_om = None
+            index_phi = None
+            om = []
+            phi = []
+            chi = None
+            mu = None
+            gamma = None
+            delta = None
+            energy = None
 
-                fio_lines = fio.readlines()
-                for line in fio_lines:
-                    this_line = line.strip()
-                    words = this_line.split()
+            lines = file.readlines()
+            for line in lines:
+                this_line = line.strip()
+                words = this_line.split()
 
-                    if (
-                        "Col" in words and "om" in words
-                    ):  # om scanned, template = ' Col 0 om DOUBLE\n'
-                        index_om = int(words[1]) - 1  # python index starts at 0
-                    if (
-                        "om" in words
-                        and "=" in words
-                        and setup.rocking_angle == "inplane"
-                    ):  # om is a positioner
-                        om = float(words[2])
+                if (
+                    "Col" in words and "om" in words
+                ):  # om scanned, template = ' Col 0 om DOUBLE\n'
+                    index_om = int(words[1]) - 1  # python index starts at 0
+                if (
+                    "om" in words
+                    and "=" in words
+                    and setup.rocking_angle == "inplane"
+                ):  # om is a positioner
+                    om = float(words[2])
 
-                    if (
-                        "Col" in words and "phi" in words
-                    ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
-                        index_phi = int(words[1]) - 1  # python index starts at 0
-                    if (
-                        "phi" in words
-                        and "=" in words
-                        and setup.rocking_angle == "outofplane"
-                    ):  # phi is a positioner
-                        phi = float(words[2])
+                if (
+                    "Col" in words and "phi" in words
+                ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                if (
+                    "phi" in words
+                    and "=" in words
+                    and setup.rocking_angle == "outofplane"
+                ):  # phi is a positioner
+                    phi = float(words[2])
 
-                    if (
-                        "chi" in words and "=" in words
-                    ):  # template for positioners: 'chi = 90.0\n'
-                        chi = float(words[2])
-                    if (
-                        "del" in words and "=" in words
-                    ):  # template for positioners: 'del = 30.05\n'
-                        delta = float(words[2])
-                    if (
-                        "gam" in words and "=" in words
-                    ):  # template for positioners: 'gam = 4.05\n'
-                        gamma = float(words[2])
-                    if (
-                        "mu" in words and "=" in words
-                    ):  # template for positioners: 'mu = 0.0\n'
-                        mu = float(words[2])
-                    if (
-                        "fmbenergy" in words and "=" in words
-                    ):  # template for positioners: 'mu = 0.0\n'
-                        energy = float(words[2])
+                if (
+                    "chi" in words and "=" in words
+                ):  # template for positioners: 'chi = 90.0\n'
+                    chi = float(words[2])
+                if (
+                    "del" in words and "=" in words
+                ):  # template for positioners: 'del = 30.05\n'
+                    delta = float(words[2])
+                if (
+                    "gam" in words and "=" in words
+                ):  # template for positioners: 'gam = 4.05\n'
+                    gamma = float(words[2])
+                if (
+                    "mu" in words and "=" in words
+                ):  # template for positioners: 'mu = 0.0\n'
+                    mu = float(words[2])
+                if (
+                    "fmbenergy" in words and "=" in words
+                ):  # template for positioners: 'mu = 0.0\n'
+                    energy = float(words[2])
 
-                    if index_om is not None and util.is_float(words[0]):
-                        # reading data and index_om is defined (outofplane case)
-                        om.append(float(words[index_om]))
-                    if index_phi is not None and util.is_float(words[0]):
-                        # reading data and index_phi is defined (inplane case)
-                        phi.append(float(words[index_phi]))
+                if index_om is not None and util.is_float(words[0]):
+                    # reading data and index_om is defined (outofplane case)
+                    om.append(float(words[index_om]))
+                if index_phi is not None and util.is_float(words[0]):
+                    # reading data and index_phi is defined (inplane case)
+                    phi.append(float(words[index_phi]))
 
-                if setup.rocking_angle == "outofplane":
-                    om = np.asarray(om, dtype=float)
-                else:  # phi
-                    phi = np.asarray(phi, dtype=float)
+            if setup.rocking_angle == "outofplane":
+                om = np.asarray(om, dtype=float)
+            else:  # phi
+                phi = np.asarray(phi, dtype=float)
 
-                # remove user-defined sample offsets (sample: mu, om, chi, phi)
-                mu = mu - self.sample_offsets[0]
-                om = om - self.sample_offsets[1]
-                chi = chi - self.sample_offsets[2]
-                phi = phi - self.sample_offsets[3]
+            # remove user-defined sample offsets (sample: mu, om, chi, phi)
+            mu = mu - self.sample_offsets[0]
+            om = om - self.sample_offsets[1]
+            chi = chi - self.sample_offsets[2]
+            phi = phi - self.sample_offsets[3]
 
         else:  # manually defined custom scan
             om = setup.custom_motors["om"]
@@ -2415,7 +2438,8 @@ class LoaderP10(Loader):
         return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at P10 beamline.
 
@@ -2423,22 +2447,26 @@ class LoaderP10(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         device_values = []
         index_device = None  # index of the column corresponding to the device in .fio
         print(f"Trying to load values for {device_name}...", end="")
-        with open(setup.logfile, "r") as fio:
-            fio_lines = fio.readlines()
-            for line in fio_lines:
-                this_line = line.strip()
-                words = this_line.split()
 
-                if "Col" in words and device_name in words:
-                    # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
-                    index_device = int(words[1]) - 1  # python index starts at 0
+        lines = file.readlines()
+        for line in lines:
+            this_line = line.strip()
+            words = this_line.split()
 
-                if index_device is not None and util.is_float(words[0]):
-                    # we are reading data and index_motor is defined
-                    device_values.append(float(words[index_device]))
+            if "Col" in words and device_name in words:
+                # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+                index_device = int(words[1]) - 1  # python index starts at 0
+
+            if index_device is not None and util.is_float(words[0]):
+                # we are reading data and index_motor is defined
+                device_values.append(float(words[index_device]))
 
         if index_device is None:
             print(f"no device {device_name} in the logfile")
@@ -2446,7 +2474,7 @@ class LoaderP10(Loader):
             print("found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs):
         """
         Load the default monitor for a dataset measured at P10.
 
@@ -2462,13 +2490,21 @@ class LoaderP10(Loader):
 class LoaderP10SAXS(LoaderP10):
     """Loader for PETRAIII P10 SAXS beamline."""
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+            self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (phi, energy) values
         """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if setup.rocking_angle != "inplane":
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -2476,20 +2512,19 @@ class LoaderP10SAXS(LoaderP10):
             index_phi = None
             phi = []
 
-            with open(setup.logfile, "r") as fio:
-                fio_lines = fio.readlines()
-                for line in fio_lines:
-                    this_line = line.strip()
-                    words = this_line.split()
+            lines = file.readlines()
+            for line in lines:
+                this_line = line.strip()
+                words = this_line.split()
 
-                    if "Col" in words and ("sprz" in words or "hprz" in words):
-                        # sprz or hprz (SAXS) scanned
-                        # template = ' Col 0 sprz DOUBLE\n'
-                        index_phi = int(words[1]) - 1  # python index starts at 0
-                        print(words, "  Index Phi=", index_phi)
-                    if index_phi is not None and util.is_float(words[0]):
-                        # we are reading data and index_phi is defined
-                        phi.append(float(words[index_phi]))
+                if "Col" in words and ("sprz" in words or "hprz" in words):
+                    # sprz or hprz (SAXS) scanned
+                    # template = ' Col 0 sprz DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                    print(words, "  Index Phi=", index_phi)
+                if index_phi is not None and util.is_float(words[0]):
+                    # we are reading data and index_phi is defined
+                    phi.append(float(words[index_phi]))
 
             phi = np.asarray(phi, dtype=float)
         else:
