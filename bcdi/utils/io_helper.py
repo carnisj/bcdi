@@ -36,11 +36,17 @@ class ContextFile:
             and self.open_func.__name__ == "SpecFile"
         ):
             self.file = self.open_func(self.filename)
-        elif self.open_func.__name__ == "open":
+        elif (
+                self.open_func.__module__ == "io"
+                and self.open_func.__name__ == "open"
+        ):
             self.file = self.open_func(
                 self.filename, mode=self.mode, encoding=self.encoding
             )
-        elif self.open_func.__name__ == "File":
+        elif (
+                self.open_func.__module__ == "h5py"
+                and self.open_func.__name__ == "File"
+        ):
             self.file = self.open_func(self.filename, mode=self.mode)
         else:
             raise NotImplementedError(f"open function {self.open_func} not supported")
