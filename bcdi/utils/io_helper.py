@@ -42,21 +42,15 @@ class ContextFile:
             and self.open_func.__name__ == "SpecFile"
         ):
             self.file = self.open_func(self.filename)
-        elif (
-                self.open_func.__module__ == "io"
-                and self.open_func.__name__ == "open"
-        ):
+        elif self.open_func.__module__ == "io" and self.open_func.__name__ == "open":
             self.file = self.open_func(
                 self.filename, mode=self.mode, encoding=self.encoding
             )
-        elif (
-                self.open_func.__module__ == "h5py"
-                and self.open_func.__name__ == "File"
-        ):
+        elif self.open_func.__module__ == "h5py" and self.open_func.__name__ == "File":
             self.file = self.open_func(self.filename, mode=self.mode)
         elif (
-                self.open_func.__module__ == "nxsReady"
-                and self.open_func.__name__ == "DataSet"
+            self.open_func.__module__ == "nxsReady"
+            and self.open_func.__name__ == "DataSet"
         ):
             self.file = self.open_func(
                 longname=self.longname,
@@ -65,8 +59,8 @@ class ContextFile:
                 scan="SBS",
             )
         elif (
-                self.open_func.__module__ == "ReadNxs3"
-                and self.open_func.__name__ == "DataSet"
+            self.open_func.__module__ == "ReadNxs3"
+            and self.open_func.__name__ == "DataSet"
         ):
             self.file = self.open_func(
                 directory=self.directory,
