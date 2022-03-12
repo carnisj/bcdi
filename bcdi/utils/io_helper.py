@@ -22,6 +22,9 @@ class ContextFile:
         scan_number: Optional[int] = None,
         mode: str = "r",
         encoding: str = "utf-8",
+        longname: Optional[str] = None,
+        shortname: Optional[str] = None,
+        directory: Optional[str] = None,
     ):
         self.filename = filename
         self.file = None
@@ -29,6 +32,9 @@ class ContextFile:
         self.scan_number = scan_number
         self.mode = mode
         self.encoding = encoding
+        self.longname = longname
+        self.shortname = shortname
+        self.directory = directory
 
     def __enter__(self):
         if (
@@ -48,6 +54,25 @@ class ContextFile:
                 and self.open_func.__name__ == "File"
         ):
             self.file = self.open_func(self.filename, mode=self.mode)
+        elif (
+                self.open_func.__module__ == "nxsReady"
+                and self.open_func.__name__ == "DataSet"
+        ):
+            self.file = self.open_func(
+                longname=self.longname,
+                shortname=self.shortname,
+                alias_dict=self.filename,
+                scan="SBS",
+            )
+        elif (
+                self.open_func.__module__ == "ReadNxs3"
+                and self.open_func.__name__ == "DataSet"
+        ):
+            self.file = self.open_func(
+                directory=self.directory,
+                filename=self.shortname,
+                alias_dict=self.filename,
+            )
         else:
             raise NotImplementedError(f"open function {self.open_func} not supported")
         return self.file
