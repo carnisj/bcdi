@@ -1820,29 +1820,37 @@ class Loader34ID(Loader):
     }
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        root_folder: str, filename: str, scan_number: int, **kwargs
+    ) -> ContextFile:
         """
         Create the logfile, which is the spec file for 34ID-C.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+        :param root_folder: str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file or full path of the .spec file
-
-        :return: logfile
+        :param filename: str, name of the spec file or full path of the spec file
+        :param scan_number: the scan number to load
+        :return: an instance of a context manager for opening the file later
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
         path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
+        return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1872,17 +1880,18 @@ class Loader34ID(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
-        **kwargs,
-    ):
+            setup: Setup,
+            flatfield: Optional[np.ndarray] = None,
+            hotpixels: Optional[np.ndarray] = None,
+            background: Optional[np.ndarray] = None,
+            normalize: str = "skip",
+            bin_during_loading: bool = False,
+            debugging: bool = False,
+            **kwargs,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load 34ID-C data including detector/background corrections.
 
@@ -1897,7 +1906,11 @@ class Loader34ID(Loader):
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         if setup.detector.template_imagefile is None:
@@ -1908,8 +1921,8 @@ class Loader34ID(Loader):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1931,8 +1944,8 @@ class Loader34ID(Loader):
             if len(setup.custom_images) > 1:
                 nb_img = len(setup.custom_images)
             else:  # the data is stacked into a single file
-                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
-                data_stack = npzfile[list(npzfile.files)[0]]
+                with np.load(ccdfiletmp % setup.custom_images[0]) as npzfile:
+                    data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
@@ -1986,26 +1999,30 @@ class Loader34ID(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': the scan number to load
-
         :return: (theta, phi, delta, gamma, energy) values
         """
         # load and check kwargs
-        scan_number = kwargs["scan_number"]
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
 
         if not setup.custom_scan:
-            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
+            motor_names = file[str(scan_number) + ".1"].motor_names
             # positioners
-            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            motor_values = file[str(scan_number) + ".1"].motor_positions
             # positioners
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             if self.motor_table["theta"] in labels:  # scanned
                 theta = labels_data[labels.index(self.motor_table["theta"]), :]
@@ -2060,23 +2077,25 @@ class Loader34ID(Loader):
         return theta, chi, phi, delta, gamma, energy, detector_distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at 34ID-C beamline.
 
         :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the positions/values of the device as a numpy 1D array
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
-        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+        labels = file[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = file[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
