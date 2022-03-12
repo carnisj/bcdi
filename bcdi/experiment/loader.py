@@ -1042,6 +1042,7 @@ class LoaderID01(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
         file = kwargs.get("file")  # this kwarg is provided by @safeload
@@ -1386,6 +1387,7 @@ class LoaderID01BLISS(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
         file = kwargs.get("file")  # this kwarg is provided by @safeload
@@ -1548,29 +1550,28 @@ class LoaderSIXS(Loader):
     """Loader for SOLEIL SIXS beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+            datadir: str,
+            template_imagefile: str,
+            scan_number: int,
+            filename: str,
+            name: str,
+            **kwargs
+    ) -> ContextFile:
         """
         Create the logfile, which is the data itself for SIXS.
 
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name:
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name:
 
-           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+          - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+          - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 
-         - 'scan_number': int, the scan number to load
-         - 'filename': str, absolute path of 'alias_dict.txt'
-         - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
+        :param scan_number: int, the scan number to load
+        :param filename: str, absolute path of 'alias_dict.txt'
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :return: an instance of a context manager for opening the file later
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-        filename = kwargs.get("filename")
-        name = kwargs.get("name")
-
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
         valid.valid_container(
@@ -1585,22 +1586,15 @@ class LoaderSIXS(Loader):
         if name == "SIXS_2018":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.nxsReady as nxsReady
-
-            return nxsReady.DataSet(
-                longname=datadir + shortname,
-                shortname=shortname,
-                alias_dict=filename,
-                scan="SBS",
-            )
+            return ContextFile(filename=filename, open_func=nxsReady.DataSet,
+                               longname=datadir+shortname, shortname=shortname,
+                               scan_number=scan_number)
         if name == "SIXS_2019":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.ReadNxs3 as ReadNxs3
-
-            return ReadNxs3.DataSet(
-                directory=datadir,
-                filename=shortname,
-                alias_dict=filename,
-            )
+            return ContextFile(filename=filename, open_func=ReadNxs3.DataSet,
+                               shortname=shortname, directory=datadir,
+                               scan_number=scan_number)
         raise NotImplementedError(f"{name} is not implemented")
 
     @staticmethod
@@ -1646,17 +1640,18 @@ class LoaderSIXS(Loader):
 
         return homedir, default_dirname, specfile, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load data, apply filters and concatenate it for phasing at SIXS.
 
@@ -1675,25 +1670,30 @@ class LoaderSIXS(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         # load the data
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
         if setup.detector.name == "Merlin":
-            tmp_data = setup.logfile.merlin[:]
+            tmp_data = file.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
-                tmp_data = setup.logfile.mfilm[:]
+                tmp_data = file.mfilm[:]
             else:
                 try:
-                    tmp_data = setup.logfile.mpx_image[:]
+                    tmp_data = file.mpx_image[:]
                 except AttributeError:
                     try:
-                        tmp_data = setup.logfile.maxpix[:]
+                        tmp_data = file.maxpix[:]
                     except AttributeError:
                         # the alias dictionnary was probably not provided
-                        tmp_data = setup.logfile.image[:]
+                        tmp_data = file.image[:]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -1727,22 +1727,29 @@ class LoaderSIXS(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions at SIXS.
 
         :param setup: an instance of the class Setup
         :return: (beta, mu, gamma, delta, energy) values
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
-            mu = setup.logfile.mu[:]  # scanned
-            delta = setup.logfile.delta[0]  # not scanned
-            gamma = setup.logfile.gamma[0]  # not scanned
+            mu = file.mu[:]  # scanned
+            delta = file.delta[0]  # not scanned
+            gamma = file.gamma[0]  # not scanned
             try:
-                beta = setup.logfile.basepitch[0]  # not scanned
+                beta = file.basepitch[0]  # not scanned
             except AttributeError:  # data recorder changed after 11/03/2019
                 try:
-                    beta = setup.logfile.beta[0]  # not scanned
+                    beta = file.beta[0]  # not scanned
                 except AttributeError:
                     # the alias dictionnary was probably not provided
                     beta = 0
@@ -1759,7 +1766,8 @@ class LoaderSIXS(Loader):
         return beta, mu, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at SIXS beamline.
 
@@ -1767,9 +1775,13 @@ class LoaderSIXS(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = getattr(setup.logfile, device_name)
+            device_values = getattr(file, device_name)
             print("found!")
         except AttributeError:
             print(f"No device {device_name} in the logfile")
@@ -2212,6 +2224,7 @@ class LoaderP10(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
         if setup.detector.template_imagefile is None:
