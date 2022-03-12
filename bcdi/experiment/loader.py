@@ -1334,8 +1334,10 @@ class LoaderID01BLISS(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
-        path = util.find_file(filename=template_imagefile, default_folder=datadir)
-        return ContextFile(filename=path, open_func=h5py.File, scan_number=scan_number)
+        filename = util.find_file(filename=template_imagefile, default_folder=datadir)
+        return ContextFile(
+            filename=filename, open_func=h5py.File, scan_number=scan_number
+        )
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -2595,19 +2597,19 @@ class LoaderCRISTAL(Loader):
         )
 
         # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
+        filename = os.path.join(datadir + template_imagefile % scan_number)
         return ContextFile(
-            filename=ccdfiletmp, open_func=h5py.File, scan_number=scan_number
+            filename=filename, open_func=h5py.File, scan_number=scan_number
         )
 
     @staticmethod
     @safeload_static
     def cristal_load_motor(
-            setup: Setup,
-            root: str,
-            actuator_name: str,
-            field_name: str,
-            **kwargs,
+        setup: Setup,
+        root: str,
+        actuator_name: str,
+        field_name: str,
+        **kwargs,
     ) -> Union[float, List[float], np.ndarray]:
         """
         Try to load the dataset at the defined entry and returns it.
@@ -2647,9 +2649,7 @@ class LoaderCRISTAL(Loader):
                     print(
                         f"\nCould not find the entry for the actuator'{actuator_name}'"
                     )
-                    print(
-                        f"list of available actuators: {list(file[root].keys())}\n"
-                    )
+                    print(f"list of available actuators: {list(file[root].keys())}\n")
                     return 0
 
         # check if the field is a valid entry for the actuator
@@ -2657,9 +2657,7 @@ class LoaderCRISTAL(Loader):
             dataset = file[root + "/" + actuator_name + "/" + field_name][:]
         except KeyError:  # try lowercase
             try:
-                dataset = file[
-                    root + "/" + actuator_name + "/" + field_name.lower()
-                ][:]
+                dataset = file[root + "/" + actuator_name + "/" + field_name.lower()][:]
             except KeyError:  # try uppercase
                 try:
                     dataset = file[
@@ -2791,6 +2789,7 @@ class LoaderCRISTAL(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
         file = kwargs.get("file")  # this kwarg is provided by @safeload
@@ -2946,9 +2945,7 @@ class LoaderCRISTAL(Loader):
         group_key = list(file.keys())[0]
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = file[
-                "/" + group_key + "/scan_data/" + device_name
-            ][:]
+            device_values = file["/" + group_key + "/scan_data/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"no device {device_name} in the logfile")
@@ -2973,21 +2970,18 @@ class LoaderNANOMAX(Loader):
     """Loader for MAX IV NANOMAX beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str, template_imagefile: str, scan_number: int, **kwargs
+    ) -> ContextFile:
         """
         Create the logfile, which is the data itself for Nanomax.
 
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. '%06d.h5'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
+        :param scan_number: int, the scan number to load
+        :return: an instance of a context manager for opening the file later
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
+        valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
         valid.valid_container(
@@ -2996,9 +2990,8 @@ class LoaderNANOMAX(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
-
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
+        path = os.path.join(datadir + template_imagefile % scan_number)
+        return ContextFile(filename=path, open_func=h5py.File, scan_number=scan_number)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -3024,15 +3017,15 @@ class LoaderNANOMAX(Loader):
 
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load NANOMAX data, apply filters and concatenate it for phasing.
 
@@ -3051,20 +3044,25 @@ class LoaderNANOMAX(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if debugging:
             print(
-                str(setup.logfile["entry"]["description"][()])[3:-2]
+                str(file["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
-        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+        group_key = list(file.keys())[0]  # currently 'entry'
         try:
-            tmp_data = setup.logfile["/" + group_key + "/measurement/merlin/frames"][:]
+            tmp_data = file["/" + group_key + "/measurement/merlin/frames"][:]
         except KeyError:
-            tmp_data = setup.logfile["/" + group_key + "measurement/Merlin/data"][()]
+            tmp_data = file["/" + group_key + "measurement/Merlin/data"][()]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -3097,40 +3095,47 @@ class LoaderNANOMAX(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (theta, phi, gamma, delta, energy) values
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
             # Detector positions
-            group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+            group_key = list(file.keys())[0]  # currently 'entry'
 
             # positionners
-            delta = setup.logfile["/" + group_key + "/snapshot/delta"][:]
-            gamma = setup.logfile["/" + group_key + "/snapshot/gamma"][:]
-            energy = setup.logfile["/" + group_key + "/snapshot/energy"][:]
+            delta = file["/" + group_key + "/snapshot/delta"][:]
+            gamma = file["/" + group_key + "/snapshot/gamma"][:]
+            energy = file["/" + group_key + "/snapshot/energy"][:]
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = setup.logfile["/" + group_key + "/measurement/gonphi"][:]
+                    phi = file["/" + group_key + "/measurement/gonphi"][:]
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = setup.logfile["/" + group_key + "/snapshot/gontheta"][:]
+                theta = file["/" + group_key + "/snapshot/gontheta"][:]
             else:
                 try:
-                    theta = setup.logfile["/" + group_key + "/measurement/gontheta"][:]
+                    theta = file["/" + group_key + "/measurement/gontheta"][:]
                 except KeyError:
                     raise KeyError(
                         "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                phi = setup.logfile["/" + group_key + "/snapshot/gonphi"][:]
+                phi = file["/" + group_key + "/snapshot/gonphi"][:]
 
             # remove user-defined sample offsets (sample: theta, phi)
             theta = theta - self.sample_offsets[0]
@@ -3146,7 +3151,8 @@ class LoaderNANOMAX(Loader):
         return theta, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at Nanomax beamline.
 
@@ -3154,12 +3160,14 @@ class LoaderNANOMAX(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
-        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        group_key = list(file.keys())[0]  # currently 'entry'
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = setup.logfile[
-                "/" + group_key + "/measurement/" + device_name
-            ][:]
+            device_values = file["/" + group_key + "/measurement/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"No device {device_name} in the logfile")
