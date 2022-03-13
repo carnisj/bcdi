@@ -2673,6 +2673,8 @@ class LoaderCRISTAL(Loader):
                         f" {list(file[root + '/' + actuator_name].keys())}\n"
                     )
                     return 0
+        if isinstance(dataset, (list, tuple, np.ndarray)) and len(dataset) == 1:
+            dataset = dataset[0]
         return dataset
 
     @staticmethod
@@ -2860,7 +2862,7 @@ class LoaderCRISTAL(Loader):
                 )
                 * 1000
             )  # in eV
-            if abs(energy - setup.energy) > 1:
+            if setup.energy is not None and abs(energy - setup.energy) > 1:
                 # difference larger than 1 eV
                 print(
                     f"\nWarning: user-defined energy = {setup.energy:.1f} eV different "
