@@ -1204,12 +1204,12 @@ class LoaderID01(Loader):
                 nu = motor_values[motor_names.index(motor_table["nu"])]
 
             if motor_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(motor_table["energy"]), :]
+                energy = labels_data[labels.index(motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
-                energy = raw_energy * 1000.0  # switch to eV
             else:  # positioner
                 energy = motor_values[motor_names.index(motor_table["energy"])]
 
+            energy = energy * 1000.0  # switch to eV
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
             eta = eta - self.sample_offsets[1]
@@ -2063,12 +2063,12 @@ class Loader34ID(Loader):
                 gamma = motor_values[motor_names.index(self.motor_table["gamma"])]
 
             if self.motor_table["energy"] in labels:  # scanned
-                raw_energy = labels_data[labels.index(self.motor_table["energy"]), :]
+                energy = labels_data[labels.index(self.motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
-                energy = raw_energy * 1000.0  # switch to eV
             else:  # positioner
                 energy = motor_values[motor_names.index(self.motor_table["energy"])]
 
+            energy = energy * 1000.0  # switch to eV
             detector_distance = motor_values[
                 motor_names.index(self.motor_table["detector_distance"])
             ]
