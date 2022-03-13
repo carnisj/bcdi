@@ -2071,7 +2071,7 @@ class Loader34ID(Loader):
             energy = energy * 1000.0  # switch to eV
             detector_distance = motor_values[
                 motor_names.index(self.motor_table["detector_distance"])
-            ]
+            ] / 1000  # convert to m
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
