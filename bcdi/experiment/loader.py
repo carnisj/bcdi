@@ -278,6 +278,13 @@ def check_pixels(data, mask, debugging=False):
     return data, mask
 
 
+def unpack_array(dataset):
+    """Unpack an array of length 1 into a single element."""
+    if isinstance(dataset, (list, tuple, np.ndarray)) and len(dataset) == 1:
+        return dataset[0]
+    return dataset
+
+
 def load_filtered_data(detector):
     """
     Load a filtered dataset and the corresponding mask.
@@ -2674,9 +2681,7 @@ class LoaderCRISTAL(Loader):
                         f" {list(file[root + '/' + actuator_name].keys())}\n"
                     )
                     return 0
-        if isinstance(dataset, (list, tuple, np.ndarray)) and len(dataset) == 1:
-            dataset = dataset[0]
-        return dataset
+        return unpack_array(dataset)
 
     @staticmethod
     @safeload_static
@@ -3117,28 +3122,30 @@ class LoaderNANOMAX(Loader):
             group_key = list(file.keys())[0]  # currently 'entry'
 
             # positionners
-            delta = file["/" + group_key + "/snapshot/delta"][:]
-            gamma = file["/" + group_key + "/snapshot/gamma"][:]
-            energy = file["/" + group_key + "/snapshot/energy"][:]
+            delta = unpack_array(file["/" + group_key + "/snapshot/delta"][:])
+            gamma = unpack_array(file["/" + group_key + "/snapshot/gamma"][:])
+            energy = unpack_array(file["/" + group_key + "/snapshot/energy"][:])
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = file["/" + group_key + "/measurement/gonphi"][:]
+                    phi = unpack_array(file["/" + group_key + "/measurement/gonphi"][:])
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = file["/" + group_key + "/snapshot/gontheta"][:]
+                theta = unpack_array(file["/" + group_key + "/snapshot/gontheta"][:])
             else:
                 try:
-                    theta = file["/" + group_key + "/measurement/gontheta"][:]
+                    theta = unpack_array(
+                        file["/" + group_key + "/measurement/gontheta"][:]
+                    )
                 except KeyError:
                     raise KeyError(
                         "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                phi = file["/" + group_key + "/snapshot/gonphi"][:]
+                phi = unpack_array(file["/" + group_key + "/snapshot/gonphi"][:])
 
             # remove user-defined sample offsets (sample: theta, phi)
             theta = theta - self.sample_offsets[0]
