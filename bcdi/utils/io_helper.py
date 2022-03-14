@@ -92,7 +92,7 @@ class ContextFile:
 
     @open_func.setter
     def open_func(self, value):
-        if not isinstance(value, type) and not isinstance(value, Callable):
+        if not isinstance(value, type) and not callable(value):
             raise TypeError("open_func should be a class or a function")
         self._open_func = value
 
