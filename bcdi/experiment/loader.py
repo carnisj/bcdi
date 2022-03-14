@@ -60,7 +60,7 @@ from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils.io_helper import ContextFile, safeload, safeload_static
