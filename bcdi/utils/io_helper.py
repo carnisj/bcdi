@@ -137,7 +137,7 @@ class ContextFile:
         ):
             self.file = self.open_func(self.filename, mode=self.mode)
         elif (
-            self.open_func.__module__ == "nxsReady"
+            "nxsReady" in self.open_func.__module__
             and self.open_func.__name__ == "DataSet"
         ):
             self.file = self.open_func(
@@ -147,7 +147,7 @@ class ContextFile:
                 scan="SBS",
             )
         elif (
-            self.open_func.__module__ == "ReadNxs3"
+            "ReadNxs3" in self.open_func.__module__
             and self.open_func.__name__ == "DataSet"
         ):
             self.file = self.open_func(
