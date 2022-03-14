@@ -51,7 +51,10 @@ class ContextFile:
             self.file = self.open_func(
                 self.filename, mode=self.mode, encoding=self.encoding
             )
-        elif self.open_func.__module__ == "h5py._hl.files" and self.open_func.__name__ == "File":
+        elif (
+            self.open_func.__module__ == "h5py._hl.files"
+            and self.open_func.__name__ == "File"
+        ):
             self.file = self.open_func(self.filename, mode=self.mode)
         elif (
             self.open_func.__module__ == "nxsReady"
