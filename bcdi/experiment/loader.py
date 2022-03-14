@@ -3023,6 +3023,7 @@ class LoaderNANOMAX(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, None, template_imagefile
 
+    @safeload
     def load_data(
         self,
         setup: Setup,
