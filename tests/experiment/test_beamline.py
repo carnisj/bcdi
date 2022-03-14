@@ -9,6 +9,8 @@
 import numpy as np
 import unittest
 from bcdi.experiment.beamline import create_beamline, Beamline
+from tests.config import run_tests
+
 
 # conversion table from the laboratory frame (CXI convention)
 # (z downstream, y vertical up, x outboard) to the frame of xrayutilities
@@ -21,12 +23,6 @@ labframe_to_xrayutil = {
     "z+": "x+",
     "z-": "x-",
 }
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
 
 
 class TestBeamline(unittest.TestCase):

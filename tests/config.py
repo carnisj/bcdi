@@ -7,16 +7,9 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-import bcdi.simulation.simulation_utils as simu
-from tests.config import run_tests
 
 
-class Test(unittest.TestCase):
-    """Tests."""
-
-    def test_dummy(self):
-        self.assertTrue(True)
-
-
-if __name__ == "__main__":
-    run_tests(Test)
+def run_tests(test_class):
+    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+    runner = unittest.TextTestRunner(verbosity=2)
+    return runner.run(suite)

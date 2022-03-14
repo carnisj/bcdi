@@ -9,12 +9,7 @@
 import numpy as np
 import unittest
 import bcdi.utils.image_registration as reg
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
+from tests.config import run_tests
 
 
 class TestCalcNewPositions(unittest.TestCase):
