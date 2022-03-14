@@ -9,7 +9,10 @@
 """Module containing decorators and context manager classes for input-output."""
 
 from functools import wraps
+import os
 from typing import Callable, Optional, Union
+
+import bcdi.utils.validation as valid
 
 
 class ContextFile:
@@ -40,6 +43,83 @@ class ContextFile:
         self.longname = longname
         self.shortname = shortname
         self.directory = directory
+
+    @property
+    def directory(self):
+        return self._directory
+
+    @directory.setter
+    def directory(self, value):
+        if value is not None and not isinstance(value, str):
+            raise TypeError("directory should be a str")
+        self._directory = value
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if not isinstance(value, str):
+            raise TypeError("filename should be a str")
+        if not os.path.isfile(value):
+            raise ValueError(f"Could not find the file at: {value}")
+        self._filename = value
+
+    @property
+    def longname(self):
+        return self._longname
+
+    @longname.setter
+    def longname(self, value):
+        if value is not None and not isinstance(value, str):
+            raise TypeError("longname should be a str")
+        self._longname = value
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        if not isinstance(value, str):
+            raise TypeError("mode should be a str")
+        self._mode = value
+
+    @property
+    def open_func(self):
+        return self._open_func
+
+    @open_func.setter
+    def open_func(self, value):
+        if not isinstance(value, type) and not isinstance(value, Callable):
+            raise TypeError("open_func should be a class or a function")
+        self._open_func = value
+
+    @property
+    def scan_number(self):
+        return self._scan_number
+
+    @scan_number.setter
+    def scan_number(self, value):
+        valid.valid_item(
+            value,
+            allowed_types=int,
+            min_included=1,
+            allow_none=True,
+            name="scan_number",
+        )
+        self._scan_number = value
+
+    @property
+    def shortname(self):
+        return self._shortname
+
+    @shortname.setter
+    def shortname(self, value):
+        if value is not None and not isinstance(value, str):
+            raise TypeError("shortname should be a str")
+        self._shortname = value
 
     def __enter__(self):
         if (
@@ -90,7 +170,7 @@ def safeload(func: Callable) -> Callable:
 
     :param func: a class method accessing the file
     """
-    if not isinstance(func, Callable):
+    if not callable(func):
         raise ValueError("func should be a callable")
 
     @wraps(func)
@@ -114,7 +194,7 @@ def safeload_static(func: Callable) -> Callable:
 
     :param func: a class static method accessing the file
     """
-    if not isinstance(func, Callable):
+    if not callable(func):
         raise ValueError("func should be a callable")
 
     @wraps(func)
