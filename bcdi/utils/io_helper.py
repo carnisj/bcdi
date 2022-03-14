@@ -13,7 +13,12 @@ from typing import Callable, Optional, Union
 
 
 class ContextFile:
-    """Convenience context manager to open files."""
+    """
+    Convenience context manager to open files.
+
+    The supported opening callables are silx.io.specfile.Specfile, io.open, h5py.File
+    and SIXS (nxsReady.Dataset, ReadNxs3.Dataset).
+    """
 
     def __init__(
         self,
@@ -76,7 +81,15 @@ class ContextFile:
         return False
 
 
-def safeload(func):
+def safeload(func: Callable) -> Callable:
+    """
+    Decorator for safely opening files within class methods.
+
+    :param func: a class method accessing the file
+    """
+    if not isinstance(func, Callable):
+        raise ValueError("func should be a callable")
+
     @wraps(func)
     def helper(self, *args, **kwargs):
         setup = kwargs.get("setup")
@@ -92,7 +105,15 @@ def safeload(func):
     return helper
 
 
-def safeload_static(func):
+def safeload_static(func: Callable) -> Callable:
+    """
+    Decorator for safely opening files within class static methods.
+
+    :param func: a class static method accessing the file
+    """
+    if not isinstance(func, Callable):
+        raise ValueError("func should be a callable")
+
     @wraps(func)
     def helper(*args, **kwargs):
         setup = kwargs.get("setup")
