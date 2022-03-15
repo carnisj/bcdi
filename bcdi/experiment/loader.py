@@ -293,17 +293,16 @@ def load_filtered_data(detector):
         title="Select data file",
         filetypes=[("NPZ", "*.npz")],
     )
-    data = np.load(file_path)
-    npz_key = data.files
-    data = data[npz_key[0]]
+    with np.load(file_path) as npzfile:
+        data = npzfile[list(npzfile.files)[0]]
+
     file_path = filedialog.askopenfilename(
         initialdir=detector.datadir,
         title="Select mask file",
         filetypes=[("NPZ", "*.npz")],
     )
-    mask = np.load(file_path)
-    npz_key = mask.files
-    mask = mask[npz_key[0]]
+    with np.load(file_path) as npzfile:
+        mask = npzfile[list(npzfile.files)[0]]
 
     monitor = np.ones(data.shape[0])
     frames_logical = np.ones(data.shape[0])
@@ -3122,13 +3121,17 @@ class LoaderNANOMAX(Loader):
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = util.unpack_array(file["/" + group_key + "/measurement/gonphi"][:])
+                    phi = util.unpack_array(
+                        file["/" + group_key + "/measurement/gonphi"][:]
+                    )
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = util.unpack_array(file["/" + group_key + "/snapshot/gontheta"][:])
+                theta = util.unpack_array(
+                    file["/" + group_key + "/snapshot/gontheta"][:]
+                )
             else:
                 try:
                     theta = util.unpack_array(
