@@ -11,12 +11,7 @@ import numpy as np
 import os
 import pathlib
 import bcdi.graph.graph_utils as gu
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
+from tests.config import run_tests
 
 
 class TestSaveToVti(unittest.TestCase):

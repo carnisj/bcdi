@@ -9,15 +9,9 @@
 import numpy as np
 import os
 from pyfakefs import fake_filesystem_unittest
-import unittest
 from bcdi.experiment.beamline import create_beamline
 from bcdi.experiment.setup import Setup
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
+from tests.config import run_tests
 
 
 class TestInitPath(fake_filesystem_unittest.TestCase):

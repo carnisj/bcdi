@@ -42,6 +42,8 @@ API Reference
 
 """
 
+from __future__ import annotations
+
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -55,16 +57,19 @@ from numbers import Integral
 import numpy as np
 import os
 import re
-import silx
 from silx.io.specfile import SpecFile
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from typing import Optional, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 from bcdi.graph import graph_utils as gu
+from bcdi.utils.io_helper import ContextFile, safeload, safeload_static
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+if TYPE_CHECKING:
+    from bcdi.experiment.setup import Setup
 
 
 def create_loader(name, sample_offsets):
@@ -289,17 +294,16 @@ def load_filtered_data(detector):
         title="Select data file",
         filetypes=[("NPZ", "*.npz")],
     )
-    data = np.load(file_path)
-    npz_key = data.files
-    data = data[npz_key[0]]
+    with np.load(file_path) as npzfile:
+        data = npzfile[list(npzfile.files)[0]]
+
     file_path = filedialog.askopenfilename(
         initialdir=detector.datadir,
         title="Select mask file",
         filetypes=[("NPZ", "*.npz")],
     )
-    mask = np.load(file_path)
-    npz_key = mask.files
-    mask = mask[npz_key[0]]
+    with np.load(file_path) as npzfile:
+        mask = npzfile[list(npzfile.files)[0]]
 
     monitor = np.ones(data.shape[0])
     frames_logical = np.ones(data.shape[0])
@@ -512,24 +516,26 @@ class Loader(ABC):
 
     @staticmethod
     @abstractmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ):
         """
         Create the logfile, which can be a log/spec file or the data itself.
 
         The nature of this file is beamline dependent.
 
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
-
-          - 'scan_number': the scan number to load.
-          - 'root_folder': the root directory of the experiment, where is e.g. the
-            specfile/.fio file.
-          - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
-          - 'datadir': the data directory
-          - 'template_imagefile': the template for data/image file names
-          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
 
     def init_data_mask(
@@ -904,9 +910,8 @@ class Loader(ABC):
         :return: the positions/values of the device as a numpy 1D array
         """
 
-    @staticmethod
     @abstractmethod
-    def read_monitor(setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs) -> np.ndarray:
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
@@ -942,32 +947,54 @@ class LoaderID01(Loader):
     }
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the spec file for ID01.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :param root_folder: str, the root directory of the experiment, where is e.g. the
            specfile file.
-         - 'filename': str, name of the spec file or full path of the spec file
-
-        :return: logfile
+        :param scan_number: the scan number to load
+        :param filename: str, name of the spec file or full path of the spec file
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
         path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
+        return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
-    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+    def init_paths(
+        root_folder: str,
+        sample_name: str,
+        scan_number: int,
+        template_imagefile: str,
+        **kwargs,
+    ) -> Tuple[str, str, Optional[str], str]:
         """
         Initialize paths used for data processing and logging at ID01.
 
@@ -994,17 +1021,18 @@ class LoaderID01(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load ID01 data, apply filters and concatenate it for phasing.
 
@@ -1018,18 +1046,22 @@ class LoaderID01(Loader):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
         if setup.detector.template_imagefile is None:
             raise ValueError("'template_imagefile' must be defined to load the images.")
         ccdfiletmp = os.path.join(
@@ -1038,8 +1070,8 @@ class LoaderID01(Loader):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1065,8 +1097,8 @@ class LoaderID01(Loader):
             if len(setup.custom_images) > 1:
                 nb_img = len(setup.custom_images)
             else:  # the data is stacked into a single file
-                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
-                data_stack = npzfile[list(npzfile.files)[0]]
+                with np.load(ccdfiletmp % setup.custom_images[0]) as npzfile:
+                    data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
@@ -1089,8 +1121,8 @@ class LoaderID01(Loader):
                     i = int(setup.custom_images[idx])
                 else:
                     i = int(ccdn[idx])
-                e = fabio.open(ccdfiletmp % i)
-                ccdraw = e.data
+                with fabio.open(ccdfiletmp % i) as e:
+                    ccdraw = e.data
 
             data[idx, :, :], mask2d, monitor[idx] = load_frame(
                 frame=ccdraw,
@@ -1110,29 +1142,37 @@ class LoaderID01(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         Stages names for data previous to ?2017? start with a capital letter.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': the scan number to load
-
         :return: (mu, eta, phi, nu, delta, energy) values
         """
         # load and check kwargs
-        scan_number = kwargs["scan_number"]
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
 
         old_names = False
         if not setup.custom_scan:
-            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
+            motor_names = file[str(scan_number) + ".1"].motor_names
             # positioners
-            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            motor_values = file[str(scan_number) + ".1"].motor_positions
             # positioners
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             try:
                 _ = motor_values[motor_names.index("nu")]  # positioner
@@ -1173,12 +1213,12 @@ class LoaderID01(Loader):
                 nu = motor_values[motor_names.index(motor_table["nu"])]
 
             if motor_table["energy"] in labels:
-                raw_energy = labels_data[labels.index(motor_table["energy"]), :]
+                energy = labels_data[labels.index(motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
-                energy = raw_energy * 1000.0  # switch to eV
             else:  # positioner
                 energy = motor_values[motor_names.index(motor_table["energy"])]
 
+            energy = energy * 1000.0  # switch to eV
             # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
             eta = eta - self.sample_offsets[1]
@@ -1193,27 +1233,30 @@ class LoaderID01(Loader):
             energy = setup.energy
 
         detector_distance = self.retrieve_distance(setup=setup) or setup.distance
-
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at ID01 beamline.
 
         :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the positions/values of the device as a numpy 1D array
         """
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
 
-        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
+
+        labels = file[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = file[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
@@ -1223,19 +1266,18 @@ class LoaderID01(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the default monitor values
         """
-        scan_number = kwargs.get("scan_number")
-        if scan_number is None:
-            raise ValueError("'scan_number' parameter required")
+        scan_number = setup.logfile.scan_number
+        if not isinstance(scan_number, int):
+            raise TypeError(
+                "scan_number should be an integer, got " f"{type(scan_number)}"
+            )
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "exp1")
         else:
@@ -1280,29 +1322,39 @@ class LoaderID01BLISS(Loader):
     """Loader for ESRF ID01 beamline after the deployement of BLISS."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the h5 file for ID01BLISS.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the spec file
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'ID01BLISS'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for data file name,
+         e.g. 'ihhc3715_sample5.h5'
+        :return: an instance of a context manager ContextFile
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-
+        valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-
         valid.valid_container(
             template_imagefile, container_types=str, name="template_imagefile"
         )
-
-        path = util.find_file(filename=template_imagefile, default_folder=datadir)
-        return silx.io.open(path)
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+        filename = util.find_file(filename=template_imagefile, default_folder=datadir)
+        return ContextFile(
+            filename=filename, open_func=h5py.File, scan_number=scan_number
+        )
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1326,17 +1378,18 @@ class LoaderID01BLISS(Loader):
         default_dirname = ""
         return homedir, default_dirname, None, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load ID01 BLISS data, apply filters and concatenate it for phasing.
 
@@ -1350,16 +1403,18 @@ class LoaderID01BLISS(Loader):
         :param bin_during_loading: if True, the data will be binned in the detector
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return:
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
@@ -1369,11 +1424,11 @@ class LoaderID01BLISS(Loader):
 
         key_path = sample_name + "_" + str(scan_number) + ".1/measurement/"
         try:
-            raw_data = setup.logfile[key_path + "mpx1x4"]
+            raw_data = file[key_path + "mpx1x4"]
         except KeyError:
             print("Looking for mpxgaas key")
             try:
-                raw_data = setup.logfile[key_path + "mpxgaas"]
+                raw_data = file[key_path + "mpxgaas"]
             except KeyError:
                 raise KeyError("No detector key found")
 
@@ -1409,17 +1464,22 @@ class LoaderID01BLISS(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': the scan number to load
-
         :return: (mu, eta, phi, nu, delta, energy) values
         """
-        scan_number = kwargs.get("scan_number")
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
@@ -1428,7 +1488,7 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'sample_name' parameter required")
 
         # load positioners
-        positioners = setup.logfile[
+        positioners = file[
             sample_name + "_" + str(scan_number) + ".1/instrument/positioners"
         ]
         if not setup.custom_scan:
@@ -1459,23 +1519,25 @@ class LoaderID01BLISS(Loader):
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @staticmethod
-    def read_device(setup, device_name: str, **kwargs) -> np.ndarray:
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device values at ID01 BLISS beamline.
 
         :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the positions/values of the device as a numpy 1D array
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
         # load positioners
-        positioners = setup.logfile[
+        positioners = file[
             setup.detector.sample_name + "_" + str(scan_number) + ".1/measurement"
         ]
         try:
@@ -1485,17 +1547,14 @@ class LoaderID01BLISS(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs):
         """
         Load the default monitor for a dataset measured at ID01 BLISS.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the default monitor values
         """
-        scan_number = kwargs.get("scan_number")
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
@@ -1511,35 +1570,37 @@ class LoaderSIXS(Loader):
     """Loader for SOLEIL SIXS beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the data itself for SIXS.
 
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name:
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path of 'alias_dict.txt'
+        :param template_imagefile: str, template for data file name:
 
-           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
-           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
+          - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
+          - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 
-         - 'scan_number': int, the scan number to load
-         - 'filename': str, absolute path of 'alias_dict.txt'
-         - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
+        :return: an instance of a context manager ContextFile
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-        filename = kwargs.get("filename")
-        name = kwargs.get("name")
-
+        if datadir is None:
+            raise ValueError("'datadir' parameter required for SIXS")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_container(filename, container_types=str, name="filename")
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
+        if filename is None or not isinstance(filename, str):
+            raise TypeError("'filename' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
@@ -1549,20 +1610,23 @@ class LoaderSIXS(Loader):
             # no specfile, load directly the dataset
             import bcdi.preprocessing.nxsReady as nxsReady
 
-            return nxsReady.DataSet(
+            return ContextFile(
+                filename=filename,
+                open_func=nxsReady.DataSet,
                 longname=datadir + shortname,
                 shortname=shortname,
-                alias_dict=filename,
-                scan="SBS",
+                scan_number=scan_number,
             )
         if name == "SIXS_2019":
             # no specfile, load directly the dataset
             import bcdi.preprocessing.ReadNxs3 as ReadNxs3
 
-            return ReadNxs3.DataSet(
+            return ContextFile(
+                filename=filename,
+                open_func=ReadNxs3.DataSet,
+                shortname=shortname,
                 directory=datadir,
-                filename=shortname,
-                alias_dict=filename,
+                scan_number=scan_number,
             )
         raise NotImplementedError(f"{name} is not implemented")
 
@@ -1609,17 +1673,18 @@ class LoaderSIXS(Loader):
 
         return homedir, default_dirname, specfile, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load data, apply filters and concatenate it for phasing at SIXS.
 
@@ -1638,25 +1703,30 @@ class LoaderSIXS(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         # load the data
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
         if setup.detector.name == "Merlin":
-            tmp_data = setup.logfile.merlin[:]
+            tmp_data = file.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
-                tmp_data = setup.logfile.mfilm[:]
+                tmp_data = file.mfilm[:]
             else:
                 try:
-                    tmp_data = setup.logfile.mpx_image[:]
+                    tmp_data = file.mpx_image[:]
                 except AttributeError:
                     try:
-                        tmp_data = setup.logfile.maxpix[:]
+                        tmp_data = file.maxpix[:]
                     except AttributeError:
                         # the alias dictionnary was probably not provided
-                        tmp_data = setup.logfile.image[:]
+                        tmp_data = file.image[:]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -1690,22 +1760,29 @@ class LoaderSIXS(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions at SIXS.
 
         :param setup: an instance of the class Setup
         :return: (beta, mu, gamma, delta, energy) values
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
-            mu = setup.logfile.mu[:]  # scanned
-            delta = setup.logfile.delta[0]  # not scanned
-            gamma = setup.logfile.gamma[0]  # not scanned
+            mu = file.mu[:]  # scanned
+            delta = file.delta[0]  # not scanned
+            gamma = file.gamma[0]  # not scanned
             try:
-                beta = setup.logfile.basepitch[0]  # not scanned
+                beta = file.basepitch[0]  # not scanned
             except AttributeError:  # data recorder changed after 11/03/2019
                 try:
-                    beta = setup.logfile.beta[0]  # not scanned
+                    beta = file.beta[0]  # not scanned
                 except AttributeError:
                     # the alias dictionnary was probably not provided
                     beta = 0
@@ -1722,7 +1799,8 @@ class LoaderSIXS(Loader):
         return beta, mu, gamma, delta, setup.energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at SIXS beamline.
 
@@ -1730,9 +1808,13 @@ class LoaderSIXS(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = getattr(setup.logfile, device_name)
+            device_values = getattr(file, device_name)
             print("found!")
         except AttributeError:
             print(f"No device {device_name} in the logfile")
@@ -1771,29 +1853,44 @@ class Loader34ID(Loader):
     }
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the spec file for 34ID-C.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where is e.g. the
-           specfile file.
-         - 'filename': str, name of the spec file or full path of the .spec file
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. '34ID'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
         path = util.find_file(filename=filename, default_folder=root_folder)
-        return SpecFile(path)
+        return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -1823,17 +1920,18 @@ class Loader34ID(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, specfile_name, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load 34ID-C data including detector/background corrections.
 
@@ -1848,7 +1946,11 @@ class Loader34ID(Loader):
          frame while loading. It saves a lot of memory space for large 2D detectors.
         :param debugging: set to True to see plots
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         if setup.detector.template_imagefile is None:
@@ -1859,8 +1961,8 @@ class Loader34ID(Loader):
         data_stack = None
         if not setup.custom_scan:
             # create the template for the image files
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             # find the number of images
             try:
@@ -1882,8 +1984,8 @@ class Loader34ID(Loader):
             if len(setup.custom_images) > 1:
                 nb_img = len(setup.custom_images)
             else:  # the data is stacked into a single file
-                npzfile = np.load(ccdfiletmp % setup.custom_images[0])
-                data_stack = npzfile[list(npzfile.files)[0]]
+                with np.load(ccdfiletmp % setup.custom_images[0]) as npzfile:
+                    data_stack = npzfile[list(npzfile.files)[0]]
                 nb_img = data_stack.shape[0]
 
         data, mask2d, monitor, loading_roi = self.init_data_mask(
@@ -1937,26 +2039,30 @@ class Loader34ID(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
-        :param kwargs:
-         - 'scan_number': the scan number to load
-
         :return: (theta, phi, delta, gamma, energy) values
         """
         # load and check kwargs
-        scan_number = kwargs["scan_number"]
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
 
         if not setup.custom_scan:
-            motor_names = setup.logfile[str(scan_number) + ".1"].motor_names
+            motor_names = file[str(scan_number) + ".1"].motor_names
             # positioners
-            motor_values = setup.logfile[str(scan_number) + ".1"].motor_positions
+            motor_values = file[str(scan_number) + ".1"].motor_positions
             # positioners
-            labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-            labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+            labels = file[str(scan_number) + ".1"].labels  # motor scanned
+            labels_data = file[str(scan_number) + ".1"].data  # motor scanned
 
             if self.motor_table["theta"] in labels:  # scanned
                 theta = labels_data[labels.index(self.motor_table["theta"]), :]
@@ -1984,15 +2090,16 @@ class Loader34ID(Loader):
                 gamma = motor_values[motor_names.index(self.motor_table["gamma"])]
 
             if self.motor_table["energy"] in labels:  # scanned
-                raw_energy = labels_data[labels.index(self.motor_table["energy"]), :]
+                energy = labels_data[labels.index(self.motor_table["energy"]), :]
                 # energy scanned, override the user-defined energy
-                energy = raw_energy * 1000.0  # switch to eV
             else:  # positioner
                 energy = motor_values[motor_names.index(self.motor_table["energy"])]
 
-            detector_distance = motor_values[
-                motor_names.index(self.motor_table["detector_distance"])
-            ]
+            energy = energy * 1000.0  # switch to eV
+            detector_distance = (
+                motor_values[motor_names.index(self.motor_table["detector_distance"])]
+                / 1000
+            )  # convert to m
 
             # remove user-defined sample offsets (sample: mu, eta, phi)
             theta = theta - self.sample_offsets[0]
@@ -2011,23 +2118,25 @@ class Loader34ID(Loader):
         return theta, chi, phi, delta, gamma, energy, detector_distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at 34ID-C beamline.
 
         :param setup: an instance of the class Setup
         :param device_name: name of the scanned device
-        :param kwargs:
-         - 'scan_number': int, the scan number to load
-
         :return: the positions/values of the device as a numpy 1D array
         """
-        scan_number = kwargs.get("scan_number")
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
 
-        labels = setup.logfile[str(scan_number) + ".1"].labels  # motor scanned
-        labels_data = setup.logfile[str(scan_number) + ".1"].data  # motor scanned
+        labels = file[str(scan_number) + ".1"].labels  # motor scanned
+        labels_data = file[str(scan_number) + ".1"].data  # motor scanned
         print(f"Trying to load values for {device_name}...", end="")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
@@ -2063,39 +2172,62 @@ class LoaderP10(Loader):
     """Loader for PETRAIII P10 beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the .fio file for P10.
 
-        :param kwargs:
-         - 'root_folder': str, the root directory of the experiment, where the scan
-           folders are located.
-         - 'filename': str, name of the .fio file or full path of the .fio file
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'P10'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, name of the .fio file or full path of the .fio file
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
-        root_folder = kwargs.get("root_folder")
-        filename = kwargs.get("filename")
-
+        valid.valid_container(
+            root_folder,
+            container_types=str,
+            min_length=1,
+            name="root_folder",
+        )
+        if not os.path.isdir(root_folder):
+            raise ValueError(f"The directory {root_folder} does not exist")
         valid.valid_container(
             filename,
             container_types=str,
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
+        if filename is None or not isinstance(filename, str):
+            raise TypeError("'filename' should be a string")
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
-            return filename
+            return ContextFile(
+                filename=filename,
+                open_func=open,
+                scan_number=scan_number,
+                mode="r",
+                encoding="utf-8",
+            )
+
         print(f"Could not find the fio file at: {filename}")
 
-        if not os.path.isdir(root_folder):
-            raise ValueError(f"The directory {root_folder} does not exist")
-
-        # return the path to the .fio file
+        # try the default path to the .fio file
         path = root_folder + filename + "/" + filename + ".fio"
         print(f"Trying to load the fio file at: {path}")
-        return path
+        if not os.path.isfile(path):
+            raise ValueError(f"Could not find the fio file at: {path}")
+        return ContextFile(filename=path, open_func=open, mode="r", encoding="utf-8")
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -2133,15 +2265,15 @@ class LoaderP10(Loader):
 
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load P10 data, apply filters and concatenate it for phasing.
 
@@ -2160,6 +2292,7 @@ class LoaderP10(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
         if setup.detector.template_imagefile is None:
@@ -2170,25 +2303,23 @@ class LoaderP10(Loader):
         )
         is_series = setup.is_series
         if not setup.custom_scan:
-            h5file = h5py.File(ccdfiletmp, "r")
-
-            # find the number of images
-            # (i.e. points, not including series at each point)
-            if is_series:
-                nb_img = len(list(h5file["entry/data"]))
-            else:
-                idx = 0
-                nb_img = 0
-                while True:
-                    data_path = "data_" + str("{:06d}".format(idx + 1))
-                    try:
-                        nb_img += len(h5file["entry"]["data"][data_path])
-                        idx += 1
-                    except KeyError:
-                        break
+            with h5py.File(ccdfiletmp, "r") as h5file:
+                # find the number of images
+                # (i.e. points, not including series at each point)
+                if is_series:
+                    nb_img = len(list(h5file["entry/data"]))
+                else:
+                    idx = 0
+                    nb_img = 0
+                    while True:
+                        data_path = "data_" + str("{:06d}".format(idx + 1))
+                        try:
+                            nb_img += len(h5file["entry"]["data"][data_path])
+                            idx += 1
+                        except KeyError:
+                            break
             print("Number of points :", nb_img)
         else:
-            h5file = None  # this will be define directly in the while loop
             # create the template for the image files
             if len(setup.custom_images) > 0:
                 nb_img = len(setup.custom_images)
@@ -2211,8 +2342,8 @@ class LoaderP10(Loader):
             series_data = []
             series_monitor = []
             if setup.custom_scan:
-                # custom scan with one file per frame/series of frame, no master file in
-                # this case, load directly data files.
+                # custom scan with one file per frame/series of frame,
+                # no master file in this case, load directly data files.
                 i = int(setup.custom_images[idx])
                 ccdfiletmp = (
                     setup.detector.rootdir
@@ -2223,47 +2354,47 @@ class LoaderP10(Loader):
                     + "_{:05d}".format(i)
                     + setup.detector.template_file
                 )
-                h5file = h5py.File(ccdfiletmp, "r")  # load the data file
                 data_path = "data_000001"
             else:
-                # normal scan, h5file is in this case the master .h5 file
+                # normal scan, ccdfiletmp points to the master .h5 file
                 data_path = "data_" + str("{:06d}".format(point_idx + 1))
 
-            while True:
-                try:
+            with h5py.File(ccdfiletmp, "r") as h5file:
+                while True:
                     try:
-                        tmp_data = h5file["entry"]["data"][data_path][idx]
-                    except OSError:
-                        raise OSError("hdf5plugin is not installed")
+                        try:
+                            tmp_data = h5file["entry"]["data"][data_path][idx]
+                        except OSError:
+                            raise OSError("hdf5plugin is not installed")
 
-                    # a single frame from the (eventual) series is loaded
-                    ccdraw, mask2d, temp_mon = load_frame(
-                        frame=tmp_data,
-                        mask2d=mask2d,
-                        monitor=monitor[idx],
-                        frames_per_point=1,
-                        detector=setup.detector,
-                        loading_roi=loading_roi,
-                        flatfield=flatfield,
-                        background=background,
-                        hotpixels=hotpixels,
-                        normalize=normalize,
-                        bin_during_loading=bin_during_loading,
-                        debugging=debugging,
-                    )
-                    series_data.append(ccdraw)
-                    series_monitor.append(temp_mon)
-
-                    if not is_series:
-                        sys.stdout.write(
-                            "\rLoading frame {:d}".format(start_index + idx + 1)
+                        # a single frame from the (eventual) series is loaded
+                        ccdraw, mask2d, temp_mon = load_frame(
+                            frame=tmp_data,
+                            mask2d=mask2d,
+                            monitor=monitor[idx],
+                            frames_per_point=1,
+                            detector=setup.detector,
+                            loading_roi=loading_roi,
+                            flatfield=flatfield,
+                            background=background,
+                            hotpixels=hotpixels,
+                            normalize=normalize,
+                            bin_during_loading=bin_during_loading,
+                            debugging=debugging,
                         )
-                        sys.stdout.flush()
-                    idx = idx + 1
-                except IndexError:  # reached the end of the series
-                    break
-                except ValueError:  # something went wrong
-                    break
+                        series_data.append(ccdraw)
+                        series_monitor.append(temp_mon)
+
+                        if not is_series:
+                            sys.stdout.write(
+                                "\rLoading frame {:d}".format(start_index + idx + 1)
+                            )
+                            sys.stdout.flush()
+                        idx = idx + 1
+                    except IndexError:  # reached the end of the series
+                        break
+                    except ValueError:  # something went wrong
+                        break
 
             if len(series_data) == 0:
                 raise ValueError(
@@ -2290,91 +2421,112 @@ class LoaderP10(Loader):
                     break
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (om, phi, chi, mu, gamma, delta, energy) values
         """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
-            with open(setup.logfile, "r") as fio:
-                index_om = None
-                index_phi = None
-                om = []
-                phi = []
-                chi = None
-                mu = None
-                gamma = None
-                delta = None
-                energy = None
+            index_om = None
+            index_phi = None
+            rocking_positions: List[float] = []
+            om: Optional[Union[float, np.ndarray]] = None
+            phi: Optional[Union[float, np.ndarray]] = None
+            chi = None
+            mu = None
+            gamma = None
+            delta = None
+            energy = None
 
-                fio_lines = fio.readlines()
-                for line in fio_lines:
-                    this_line = line.strip()
-                    words = this_line.split()
+            lines = file.readlines()
+            for line in lines:
+                this_line = line.strip()
+                words = this_line.split()
 
-                    if (
-                        "Col" in words and "om" in words
-                    ):  # om scanned, template = ' Col 0 om DOUBLE\n'
-                        index_om = int(words[1]) - 1  # python index starts at 0
-                    if (
-                        "om" in words
-                        and "=" in words
-                        and setup.rocking_angle == "inplane"
-                    ):  # om is a positioner
-                        om = float(words[2])
+                if (
+                    "Col" in words and "om" in words
+                ):  # om scanned, template = ' Col 0 om DOUBLE\n'
+                    index_om = int(words[1]) - 1  # python index starts at 0
+                if (
+                    "om" in words and "=" in words and setup.rocking_angle == "inplane"
+                ):  # om is a positioner
+                    om = float(words[2])
 
-                    if (
-                        "Col" in words and "phi" in words
-                    ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
-                        index_phi = int(words[1]) - 1  # python index starts at 0
-                    if (
-                        "phi" in words
-                        and "=" in words
-                        and setup.rocking_angle == "outofplane"
-                    ):  # phi is a positioner
-                        phi = float(words[2])
+                if (
+                    "Col" in words and "phi" in words
+                ):  # phi scanned, template = ' Col 0 phi DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                if (
+                    "phi" in words
+                    and "=" in words
+                    and setup.rocking_angle == "outofplane"
+                ):  # phi is a positioner
+                    phi = float(words[2])
 
-                    if (
-                        "chi" in words and "=" in words
-                    ):  # template for positioners: 'chi = 90.0\n'
-                        chi = float(words[2])
-                    if (
-                        "del" in words and "=" in words
-                    ):  # template for positioners: 'del = 30.05\n'
-                        delta = float(words[2])
-                    if (
-                        "gam" in words and "=" in words
-                    ):  # template for positioners: 'gam = 4.05\n'
-                        gamma = float(words[2])
-                    if (
-                        "mu" in words and "=" in words
-                    ):  # template for positioners: 'mu = 0.0\n'
-                        mu = float(words[2])
-                    if (
-                        "fmbenergy" in words and "=" in words
-                    ):  # template for positioners: 'mu = 0.0\n'
-                        energy = float(words[2])
+                if (
+                    "chi" in words and "=" in words
+                ):  # template for positioners: 'chi = 90.0\n'
+                    chi = float(words[2])
+                if (
+                    "del" in words and "=" in words
+                ):  # template for positioners: 'del = 30.05\n'
+                    delta = float(words[2])
+                if (
+                    "gam" in words and "=" in words
+                ):  # template for positioners: 'gam = 4.05\n'
+                    gamma = float(words[2])
+                if (
+                    "mu" in words and "=" in words
+                ):  # template for positioners: 'mu = 0.0\n'
+                    mu = float(words[2])
+                if (
+                    "fmbenergy" in words and "=" in words
+                ):  # template for positioners: 'mu = 0.0\n'
+                    energy = float(words[2])
 
-                    if index_om is not None and util.is_float(words[0]):
-                        # reading data and index_om is defined (outofplane case)
-                        om.append(float(words[index_om]))
-                    if index_phi is not None and util.is_float(words[0]):
-                        # reading data and index_phi is defined (inplane case)
-                        phi.append(float(words[index_phi]))
+                if index_om is not None and util.is_float(words[0]):
+                    if index_phi is not None:
+                        raise NotImplementedError(
+                            "d2scan with om and phi not supported"
+                        )
+                    # reading data and index_om is defined (outofplane case)
+                    rocking_positions.append(float(words[index_om]))
+                if index_phi is not None and util.is_float(words[0]):
+                    if index_om is not None:
+                        raise NotImplementedError(
+                            "d2scan with om and phi not supported"
+                        )
+                    # reading data and index_phi is defined (inplane case)
+                    rocking_positions.append(float(words[index_phi]))
 
-                if setup.rocking_angle == "outofplane":
-                    om = np.asarray(om, dtype=float)
-                else:  # phi
-                    phi = np.asarray(phi, dtype=float)
+            if setup.rocking_angle == "outofplane":
+                om = np.asarray(rocking_positions, dtype=float)
+            else:  # phi
+                phi = np.asarray(rocking_positions, dtype=float)
 
-                # remove user-defined sample offsets (sample: mu, om, chi, phi)
-                mu = mu - self.sample_offsets[0]
-                om = om - self.sample_offsets[1]
-                chi = chi - self.sample_offsets[2]
-                phi = phi - self.sample_offsets[3]
-
+            # remove user-defined sample offsets (sample: mu, om, chi, phi)
+            if mu is None:
+                raise ValueError("Problem reading the fio file, mu is None")
+            mu = mu - self.sample_offsets[0]
+            if om is None:
+                raise ValueError("Problem reading the fio file, om is None")
+            om = om - self.sample_offsets[1]
+            if chi is None:
+                raise ValueError("Problem reading the fio file, chi is None")
+            chi = chi - self.sample_offsets[2]
+            if phi is None:
+                raise ValueError("Problem reading the fio file, phi is None")
+            phi = phi - self.sample_offsets[3]
         else:  # manually defined custom scan
             om = setup.custom_motors["om"]
             chi = setup.custom_motors["chi"]
@@ -2384,10 +2536,22 @@ class LoaderP10(Loader):
             mu = setup.custom_motors["mu"]
             energy = setup.energy
 
+        if (
+            mu is None
+            or om is None
+            or chi is None
+            or phi is None
+            or gamma is None
+            or delta is None
+            or energy is None
+        ):
+            # mypy does not understand 'any(val is None for val in ...)'
+            raise ValueError("Problem loading P10 motor positions (None)")
         return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at P10 beamline.
 
@@ -2395,22 +2559,26 @@ class LoaderP10(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         device_values = []
         index_device = None  # index of the column corresponding to the device in .fio
         print(f"Trying to load values for {device_name}...", end="")
-        with open(setup.logfile, "r") as fio:
-            fio_lines = fio.readlines()
-            for line in fio_lines:
-                this_line = line.strip()
-                words = this_line.split()
 
-                if "Col" in words and device_name in words:
-                    # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
-                    index_device = int(words[1]) - 1  # python index starts at 0
+        lines = file.readlines()
+        for line in lines:
+            this_line = line.strip()
+            words = this_line.split()
 
-                if index_device is not None and util.is_float(words[0]):
-                    # we are reading data and index_motor is defined
-                    device_values.append(float(words[index_device]))
+            if "Col" in words and device_name in words:
+                # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
+                index_device = int(words[1]) - 1  # python index starts at 0
+
+            if index_device is not None and util.is_float(words[0]):
+                # we are reading data and index_motor is defined
+                device_values.append(float(words[index_device]))
 
         if index_device is None:
             print(f"no device {device_name} in the logfile")
@@ -2418,7 +2586,7 @@ class LoaderP10(Loader):
             print("found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: Setup, **kwargs):
         """
         Load the default monitor for a dataset measured at P10.
 
@@ -2434,36 +2602,43 @@ class LoaderP10(Loader):
 class LoaderP10SAXS(LoaderP10):
     """Loader for PETRAIII P10 SAXS beamline."""
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (phi, energy) values
         """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if setup.rocking_angle != "inplane":
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
         if not setup.custom_scan:
             index_phi = None
-            phi = []
+            positions: List[float] = []
 
-            with open(setup.logfile, "r") as fio:
-                fio_lines = fio.readlines()
-                for line in fio_lines:
-                    this_line = line.strip()
-                    words = this_line.split()
+            lines = file.readlines()
+            for line in lines:
+                this_line = line.strip()
+                words = this_line.split()
 
-                    if "Col" in words and ("sprz" in words or "hprz" in words):
-                        # sprz or hprz (SAXS) scanned
-                        # template = ' Col 0 sprz DOUBLE\n'
-                        index_phi = int(words[1]) - 1  # python index starts at 0
-                        print(words, "  Index Phi=", index_phi)
-                    if index_phi is not None and util.is_float(words[0]):
-                        # we are reading data and index_phi is defined
-                        phi.append(float(words[index_phi]))
+                if "Col" in words and ("sprz" in words or "hprz" in words):
+                    # sprz or hprz (SAXS) scanned
+                    # template = ' Col 0 sprz DOUBLE\n'
+                    index_phi = int(words[1]) - 1  # python index starts at 0
+                    print(words, "  Index Phi=", index_phi)
+                if index_phi is not None and util.is_float(words[0]):
+                    # we are reading data and index_phi is defined
+                    positions.append(float(words[index_phi]))
 
-            phi = np.asarray(phi, dtype=float)
+            phi = np.asarray(positions, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
         return phi, setup.energy, setup.distance
@@ -2473,42 +2648,55 @@ class LoaderCRISTAL(Loader):
     """Loader for SOLEIL CRISTAL beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the data itself for CRISTAL.
 
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. 'S%d.nxs'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'CRISTAL'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for data file name, e.g. 'S%d.nxs'
+        :return: an instance of a context manager ContextFile
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
+        valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
 
         # no specfile, load directly the dataset
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
+        filename = os.path.join(datadir + template_imagefile % scan_number)
+        return ContextFile(
+            filename=filename, open_func=h5py.File, scan_number=scan_number
+        )
 
     @staticmethod
-    def cristal_load_motor(datafile, root, actuator_name, field_name):
+    @safeload_static
+    def cristal_load_motor(
+        setup: Setup,
+        root: str,
+        actuator_name: str,
+        field_name: str,
+        **kwargs,
+    ) -> Union[float, List[float], np.ndarray]:
         """
         Try to load the dataset at the defined entry and returns it.
 
         Patterns keep changing at CRISTAL.
 
-        :param datafile: h5py File object of CRISTAL .nxs scan file
+        :param setup: an instance of the class Setup
         :param root: string, path of the data up to the last subfolder
          (not included). This part is expected to not change over time
         :param actuator_name: string, name of the actuator
@@ -2517,6 +2705,11 @@ class LoaderCRISTAL(Loader):
         :param field_name: name of the field under the actuator name (e.g. 'position')
         :return: the dataset if found or 0
         """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         # check input arguments
         valid.valid_container(
             root, container_types=str, min_length=1, name="cristal_load_motor"
@@ -2528,30 +2721,26 @@ class LoaderCRISTAL(Loader):
         )
 
         # check if there is an entry for the actuator
-        if actuator_name not in datafile[root].keys():
+        if actuator_name not in file[root].keys():
             actuator_name = actuator_name.lower()
-            if actuator_name not in datafile[root].keys():
+            if actuator_name not in file[root].keys():
                 actuator_name = actuator_name.upper()
-                if actuator_name not in datafile[root].keys():
+                if actuator_name not in file[root].keys():
                     print(
                         f"\nCould not find the entry for the actuator'{actuator_name}'"
                     )
-                    print(
-                        f"list of available actuators: {list(datafile[root].keys())}\n"
-                    )
+                    print(f"list of available actuators: {list(file[root].keys())}\n")
                     return 0
 
         # check if the field is a valid entry for the actuator
         try:
-            dataset = datafile[root + "/" + actuator_name + "/" + field_name][:]
+            dataset = file[root + "/" + actuator_name + "/" + field_name][:]
         except KeyError:  # try lowercase
             try:
-                dataset = datafile[
-                    root + "/" + actuator_name + "/" + field_name.lower()
-                ][:]
+                dataset = file[root + "/" + actuator_name + "/" + field_name.lower()][:]
             except KeyError:  # try uppercase
                 try:
-                    dataset = datafile[
+                    dataset = file[
                         root + "/" + actuator_name + "/" + field_name.upper()
                     ][:]
                 except KeyError:  # nothing else that we can do
@@ -2561,46 +2750,41 @@ class LoaderCRISTAL(Loader):
                     )
                     print(
                         "list of available fields:"
-                        f" {list(datafile[root + '/' + actuator_name].keys())}\n"
+                        f" {list(file[root + '/' + actuator_name].keys())}\n"
                     )
                     return 0
-        return dataset
+        return util.unpack_array(dataset)
 
     @staticmethod
+    @safeload_static
     def find_detector(
-        logfile,
-        actuators,
-        root,
-        detector_shape,
-        data_path="scan_data",
-        pattern="^data_[0-9][0-9]$",
+        setup: Setup,
+        root: str,
+        data_path: str = "scan_data",
+        pattern: str = "^data_[0-9][0-9]$",
+        **kwargs,
     ):
         """
         Look for the entry corresponding to the detector data in CRISTAL dataset.
 
-        :param logfile: the logfile created in Setup.create_logfile()
-        :param actuators: dictionary defining the entries corresponding to actuators
+        :param setup: an instance of the class Setup
         :param root: root folder name in the data file
-        :param detector_shape: tuple or list of two integer (nb_pixels_vertical,
-         nb_pixels_horizontal)
         :param data_path: string, name of the subfolder when the scan data is located
         :param pattern: string, pattern corresponding to the entries where the detector
          data could be located
         :return: numpy array of the shape of the detector dataset
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         # check input arguments
         valid.valid_container(
             root, container_types=str, min_length=1, name="cristal_find_data"
         )
         if not root.startswith("/"):
             root = "/" + root
-        valid.valid_container(
-            detector_shape,
-            container_types=(tuple, list),
-            item_types=int,
-            length=2,
-            name="cristal_find_data",
-        )
+
         valid.valid_container(
             data_path, container_types=str, min_length=1, name="cristal_find_data"
         )
@@ -2610,22 +2794,22 @@ class LoaderCRISTAL(Loader):
             pattern, container_types=str, min_length=1, name="cristal_find_data"
         )
 
-        if "detector" in actuators:
-            return logfile[root + data_path + "/" + actuators["detector"]][:]
+        if isinstance(setup.actuators, dict) and "detector" in setup.actuators:
+            return file[root + data_path + "/" + setup.actuators["detector"]][:]
 
         # loop over the available keys at the defined path in the file
         # and check the shape of the corresponding dataset
-        nb_pix_ver, nb_pix_hor = detector_shape
-        for key in list(logfile[root + data_path]):
+        nb_pix_ver, nb_pix_hor = (setup.detector.nb_pixel_y, setup.detector.nb_pixel_x)
+        for key in list(file[root + data_path]):
             if bool(re.match(pattern, key)):
-                obj_shape = logfile[root + data_path + "/" + key][:].shape
+                obj_shape = file[root + data_path + "/" + key][:].shape
                 if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
                     # founc the key corresponding to the detector
                     print(
                         f"subdirectory '{key}' contains the detector images,"
                         f" shape={obj_shape}"
                     )
-                    return logfile[root + data_path + "/" + key][:]
+                    return file[root + data_path + "/" + key][:]
         raise ValueError(
             f"Could not find detector data using data_path={data_path} "
             f"and pattern={pattern}"
@@ -2653,17 +2837,18 @@ class LoaderCRISTAL(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, None, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load CRISTAL data including detector/background corrections.
 
@@ -2684,21 +2869,21 @@ class LoaderCRISTAL(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if setup.actuators is None:
             raise ValueError("'actuators' parameter required")
 
         # look for the detector entry (keep changing at CRISTAL)
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for CRISTAL")
-        group_key = list(setup.logfile.keys())[0]
-        tmp_data = self.find_detector(
-            logfile=setup.logfile,
-            actuators=setup.actuators,
-            root=group_key,
-            detector_shape=(setup.detector.nb_pixel_y, setup.detector.nb_pixel_x),
-        )
+        group_key = list(file.keys())[0]
+        tmp_data = self.find_detector(setup=setup, root=group_key)
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2731,7 +2916,9 @@ class LoaderCRISTAL(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **kwargs):
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
@@ -2742,17 +2929,18 @@ class LoaderCRISTAL(Loader):
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
         if not setup.custom_scan:
-            group_key = list(setup.logfile.keys())[0]
+            with setup.logfile as file:
+                group_key = list(file.keys())[0]
             energy = (
                 self.cristal_load_motor(
-                    datafile=setup.logfile,
+                    setup=setup,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="Monochromator",
                     field_name="energy",
                 )
                 * 1000
             )  # in eV
-            if abs(energy - setup.energy) > 1:
+            if setup.energy is not None and abs(energy - setup.energy) > 1:
                 # difference larger than 1 eV
                 print(
                     f"\nWarning: user-defined energy = {setup.energy:.1f} eV different "
@@ -2760,7 +2948,7 @@ class LoaderCRISTAL(Loader):
                 )
 
             scanned_motor = self.cristal_load_motor(
-                datafile=setup.logfile,
+                setup=setup,
                 root="/" + group_key,
                 actuator_name="scan_data",
                 field_name=setup.actuators.get("rocking_angle", "actuator_1_1"),
@@ -2769,7 +2957,7 @@ class LoaderCRISTAL(Loader):
             if setup.rocking_angle == "outofplane":
                 mgomega = scanned_motor  # mgomega is scanned
                 mgphi = self.cristal_load_motor(
-                    datafile=setup.logfile,
+                    setup=setup,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_phi",
                     field_name="position",
@@ -2777,7 +2965,7 @@ class LoaderCRISTAL(Loader):
             elif setup.rocking_angle == "inplane":
                 mgphi = scanned_motor  # mgphi is scanned
                 mgomega = self.cristal_load_motor(
-                    datafile=setup.logfile,
+                    setup=setup,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_omega",
                     field_name="position",
@@ -2786,13 +2974,13 @@ class LoaderCRISTAL(Loader):
                 raise ValueError('Wrong value for "rocking_angle" parameter')
 
             delta = self.cristal_load_motor(
-                datafile=setup.logfile,
+                setup=setup,
                 root="/" + group_key + "/CRISTAL/Diffractometer/",
                 actuator_name="I06-C-C07-EX-DIF-DELTA",
                 field_name="position",
             )
             gamma = self.cristal_load_motor(
-                datafile=setup.logfile,
+                setup=setup,
                 root="/" + group_key + "/CRISTAL/Diffractometer/",
                 actuator_name="I06-C-C07-EX-DIF-GAMMA",
                 field_name="position",
@@ -2816,12 +3004,13 @@ class LoaderCRISTAL(Loader):
         elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(
             abs(val) > 360 for val in mgomega
         ):
-            mgomega = mgomega / 1e6
+            mgomega = np.asarray(mgomega) / 1e6
 
         return mgomega, mgphi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at CRISTAL beamline.
 
@@ -2829,12 +3018,14 @@ class LoaderCRISTAL(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
-        group_key = list(setup.logfile.keys())[0]
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        group_key = list(file.keys())[0]
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = setup.logfile[
-                "/" + group_key + "/scan_data/" + device_name
-            ][:]
+            device_values = file["/" + group_key + "/scan_data/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"no device {device_name} in the logfile")
@@ -2859,32 +3050,35 @@ class LoaderNANOMAX(Loader):
     """Loader for MAX IV NANOMAX beamline."""
 
     @staticmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the data itself for Nanomax.
 
-        :param kwargs:
-         - 'datadir': str, the data directory
-         - 'template_imagefile': str, template for data file name, e.g. '%06d.h5'
-         - 'scan_number': int, the scan number to load
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'Nanomax'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
+        :return: an instance of a context manager ContextFile
         """
-        datadir = kwargs.get("datadir")
-        template_imagefile = kwargs.get("template_imagefile")
-        scan_number = kwargs.get("scan_number")
-
+        valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
-
-        ccdfiletmp = os.path.join(datadir + template_imagefile % scan_number)
-        return h5py.File(ccdfiletmp, "r")
+        path = os.path.join(datadir + template_imagefile % scan_number)
+        return ContextFile(filename=path, open_func=h5py.File, scan_number=scan_number)
 
     @staticmethod
     def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
@@ -2908,17 +3102,18 @@ class LoaderNANOMAX(Loader):
         default_dirname = "data/"
         return homedir, default_dirname, None, template_imagefile
 
+    @safeload
     def load_data(
         self,
-        setup,
-        flatfield=None,
-        hotpixels=None,
-        background=None,
-        normalize="skip",
-        bin_during_loading=False,
-        debugging=False,
+        setup: Setup,
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
         """
         Load NANOMAX data, apply filters and concatenate it for phasing.
 
@@ -2937,20 +3132,25 @@ class LoaderNANOMAX(Loader):
          - the 3D data array in the detector frame
          - the 2D mask array
          - the monitor values for normalization
+         - the detector region of interest used for loading the data
 
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if debugging:
             print(
-                str(setup.logfile["entry"]["description"][()])[3:-2]
+                str(file["entry"]["description"][()])[3:-2]
             )  # Reading only useful symbols
 
         if setup.custom_scan:
             raise NotImplementedError("custom scan not implemented for NANOMAX")
-        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+        group_key = list(file.keys())[0]  # currently 'entry'
         try:
-            tmp_data = setup.logfile["/" + group_key + "/measurement/merlin/frames"][:]
+            tmp_data = file["/" + group_key + "/measurement/merlin/frames"][:]
         except KeyError:
-            tmp_data = setup.logfile["/" + group_key + "measurement/Merlin/data"][()]
+            tmp_data = file["/" + group_key + "measurement/Merlin/data"][()]
 
         # find the number of images
         nb_img = tmp_data.shape[0]
@@ -2983,40 +3183,53 @@ class LoaderNANOMAX(Loader):
             sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
-    def motor_positions(self, setup, **_):
+    @safeload
+    def motor_positions(
+        self, setup: Setup, **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
         """
         Load the scan data and extract motor positions.
 
         :param setup: an instance of the class Setup
         :return: (theta, phi, gamma, delta, energy) values
         """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
         if not setup.custom_scan:
             # Detector positions
-            group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+            group_key = list(file.keys())[0]  # currently 'entry'
 
             # positionners
-            delta = setup.logfile["/" + group_key + "/snapshot/delta"][:]
-            gamma = setup.logfile["/" + group_key + "/snapshot/gamma"][:]
-            energy = setup.logfile["/" + group_key + "/snapshot/energy"][:]
+            delta = util.unpack_array(file["/" + group_key + "/snapshot/delta"][:])
+            gamma = util.unpack_array(file["/" + group_key + "/snapshot/gamma"][:])
+            energy = util.unpack_array(file["/" + group_key + "/snapshot/energy"][:])
 
             if setup.rocking_angle == "inplane":
                 try:
-                    phi = setup.logfile["/" + group_key + "/measurement/gonphi"][:]
+                    phi = util.unpack_array(
+                        file["/" + group_key + "/measurement/gonphi"][:]
+                    )
                 except KeyError:
                     raise KeyError(
                         "phi not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                theta = setup.logfile["/" + group_key + "/snapshot/gontheta"][:]
+                theta = util.unpack_array(
+                    file["/" + group_key + "/snapshot/gontheta"][:]
+                )
             else:
                 try:
-                    theta = setup.logfile["/" + group_key + "/measurement/gontheta"][:]
+                    theta = util.unpack_array(
+                        file["/" + group_key + "/measurement/gontheta"][:]
+                    )
                 except KeyError:
                     raise KeyError(
                         "theta not in measurement data,"
                         ' check the parameter "rocking_angle"'
                     )
-                phi = setup.logfile["/" + group_key + "/snapshot/gonphi"][:]
+                phi = util.unpack_array(file["/" + group_key + "/snapshot/gonphi"][:])
 
             # remove user-defined sample offsets (sample: theta, phi)
             theta = theta - self.sample_offsets[0]
@@ -3032,7 +3245,8 @@ class LoaderNANOMAX(Loader):
         return theta, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
-    def read_device(setup, device_name, **kwargs):
+    @safeload_static
+    def read_device(setup: Setup, device_name: str, **kwargs) -> np.ndarray:
         """
         Extract the scanned device positions/values at Nanomax beamline.
 
@@ -3040,12 +3254,14 @@ class LoaderNANOMAX(Loader):
         :param device_name: name of the scanned device
         :return: the positions/values of the device as a numpy 1D array
         """
-        group_key = list(setup.logfile.keys())[0]  # currently 'entry'
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        group_key = list(file.keys())[0]  # currently 'entry'
         print(f"Trying to load values for {device_name}...", end="")
         try:
-            device_values = setup.logfile[
-                "/" + group_key + "/measurement/" + device_name
-            ][:]
+            device_values = file["/" + group_key + "/measurement/" + device_name][:]
             print("found!")
         except KeyError:
             print(f"No device {device_name} in the logfile")

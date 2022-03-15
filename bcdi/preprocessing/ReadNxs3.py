@@ -20,6 +20,7 @@ import os
 import numpy as np
 import pickle
 import time
+from typing import Optional
 from matplotlib import pyplot as plt
 import bcdi.utils.utilities as util
 import inspect
@@ -57,6 +58,7 @@ class DataSet:
         self.directory = directory
         self.filename = filename
         self.end_time = 2
+        self.file: Optional[tables.File] = None
         self.start_time = 1
         self.attlist = []
         self._list2d = []
@@ -95,13 +97,13 @@ class DataSet:
 
         # Load the file
         fullpath = os.path.join(self.directory, self.filename)
-        ff = tables.open_file(fullpath, "r")
-        f = ff.list_nodes("/")[0]
+        self.file = tables.open_file(fullpath, "r")
+        f = self.file.list_nodes("/")[0]
 
         # check if any scanned data a are present
         if not hasattr(f, "scan_data"):
             self.scantype = "unknown"
-            ff.close()
+            self.file.close()
             return
 
         # Discriminating between SBS or FLY scans
@@ -602,11 +604,15 @@ class DataSet:
         except tables.NoSuchNodeError:
             print("No Xpad Publisher defined")
         print("### End of ReadNxs3 ###\n")
-        ff.close()
+        self.file.close()
 
     ############################################
     # down here useful function in the NxsRead #
     ############################################
+    def close(self):
+        """Close the data file."""
+        self.file.close()
+
     def get_stack(self, det2d_name):
         """
         Check in the attribute-list for a given 2D detector.

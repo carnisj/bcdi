@@ -9,15 +9,10 @@
 from pathlib import Path
 import unittest
 from bcdi.utils.parser import ConfigParser
+from tests.config import run_tests
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "bcdi/examples/config_postprocessing.yml")
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
 
 
 class TestConfigParser(unittest.TestCase):

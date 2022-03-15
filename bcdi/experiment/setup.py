@@ -930,12 +930,12 @@ class Setup:
             logfile = None
         else:
             logfile = self.loader.create_logfile(
+                datadir=self.detector.datadir,
+                name=self.beamline.name,
                 scan_number=scan_number,
                 root_folder=root_folder,
                 filename=filename,
-                datadir=self.detector.datadir,
                 template_imagefile=self.detector.template_imagefile,
-                name=self.beamline,
             )
         self.logfile = logfile
 

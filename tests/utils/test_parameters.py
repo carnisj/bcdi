@@ -9,15 +9,10 @@
 from pathlib import Path
 import unittest
 from bcdi.utils.parameters import valid_param
+from tests.config import run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
 
 
 class TestParameters(unittest.TestCase):

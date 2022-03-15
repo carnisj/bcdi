@@ -61,9 +61,9 @@ class DataSet:
         if scan == "HCS":
             shift = 1
         try:
-            fichier = tables.open_file(longname, "r")
+            self.file = tables.open_file(longname, "r")
             self.nodedatasizes = []  # list of data array lengths
-            for leaf in fichier.list_nodes("/")[0].scan_data:
+            for leaf in self.file.list_nodes("/")[0].scan_data:
                 self.nodedatasizes.append(leaf.shape[0])
             self.npts = max(self.nodedatasizes)
 
@@ -77,15 +77,15 @@ class DataSet:
             # shortening of the long name AKA the last part of longname
             self.alias = []
             self.data = numpy.empty(0)  # empty table creation
-            self.waveL = fichier.list_nodes("/")[0].SIXS.Monochromator.wavelength[0]
-            self.energymono = fichier.list_nodes("/")[0].SIXS.Monochromator.energy[0]
-            if fichier.list_nodes("/")[0].end_time.shape == ():
-                self.end_time = fichier.list_nodes("/")[0].end_time.read().tostring()
-            if fichier.list_nodes("/")[0].end_time.shape == (1,):
-                self.end_time = fichier.list_nodes("/")[0].end_time[0]
+            self.waveL = self.file.list_nodes("/")[0].SIXS.Monochromator.wavelength[0]
+            self.energymono = self.file.list_nodes("/")[0].SIXS.Monochromator.energy[0]
+            if self.file.list_nodes("/")[0].end_time.shape == ():
+                self.end_time = self.file.list_nodes("/")[0].end_time.read().tostring()
+            if self.file.list_nodes("/")[0].end_time.shape == (1,):
+                self.end_time = self.file.list_nodes("/")[0].end_time[0]
 
             # here we assign the values to the attributes previously generated
-            for leaf in fichier.list_nodes("/")[0].scan_data:
+            for leaf in self.file.list_nodes("/")[0].scan_data:
                 nodelongname = ""
                 nodenickname = ""
                 if len(leaf.shape) == 1:
@@ -166,7 +166,7 @@ class DataSet:
             self.mins = numpy.empty(0)
             self.maxs = numpy.empty(0)
             self.data = numpy.empty(0)
-            fichier.close()
+            self.file.close()
             return
 
         except tables.exceptions.NoSuchNodeError:
@@ -176,11 +176,11 @@ class DataSet:
             self.mins = numpy.empty(0)
             self.maxs = numpy.empty(0)
             self.data = numpy.empty(0)
-            fichier.close()
+            self.file.close()
             return
 
         else:
-            fichier.close()
+            self.file.close()
 
         self.npts = self.npts - 1  # remove the 1st point that is uncorrect due to
         # the operation strategy of simplescan
@@ -248,3 +248,7 @@ class DataSet:
             self.maxs = numpy.amax(self.data, axis=1)
 
         self.namelist = self.alias
+
+    def close(self):
+        """Close the data file."""
+        self.file.close()

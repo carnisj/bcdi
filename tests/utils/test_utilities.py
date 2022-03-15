@@ -11,12 +11,7 @@ import os
 from pyfakefs import fake_filesystem_unittest
 import unittest
 import bcdi.utils.utilities as util
-
-
-def run_tests(test_class):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-    runner = unittest.TextTestRunner(verbosity=2)
-    return runner.run(suite)
+from tests.config import run_tests
 
 
 class TestCast(unittest.TestCase):
@@ -243,8 +238,41 @@ class TestGaussianWindow(unittest.TestCase):
         self.assertTrue(np.unravel_index(abs(data).argmax(), data.shape) == (1, 25, 23))
 
 
+class TestUnpackArray(unittest.TestCase):
+    """
+    Tests on the function utilities.unpack_array.
+
+    def unpack_array(array: Any) -> Any
+    """
+
+    def test_array_longer_than_one(self):
+        arr = util.unpack_array(np.ones(2))
+        self.assertTrue(np.array_equal(arr, np.ones(2)))
+
+    def test_array_length_one(self):
+        arr = util.unpack_array(np.array([33]))
+        self.assertEqual(arr, 33)
+
+    def test_list_length_one(self):
+        arr = util.unpack_array([2])
+        self.assertEqual(arr, 2)
+
+    def test_str_length_one(self):
+        val = util.unpack_array("s")
+        self.assertEqual(val, "s")
+
+    def test_none(self):
+        val = util.unpack_array(None)
+        self.assertEqual(val, None)
+
+    def test_number(self):
+        val = util.unpack_array(5)
+        self.assertEqual(val, 5)
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestIsFloat)
     run_tests(TestFindFile)
     run_tests(TestGaussianWindow)
+    run_tests(TestUnpackArray)

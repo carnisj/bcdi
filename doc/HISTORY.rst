@@ -1,5 +1,17 @@
-Future:
+Version 0.2.4:
 -------
+
+* Refactor: open files within context managers in `utilities.load_file`.
+
+* Create the class ContextFile implementing the context manager protocol. The method
+  `loader.create_logfile` returns an instance of ContextFile, allowing its safe usage
+  in other methods via the decorators `@safeload` and `@safeload_static`.
+
+* Refactor the signature of `loader.create_logfile`, so that all overriding methods
+  share the same signature with the overriden base class abstract method.
+
+* Implement the function `utilities.unpack_array`, to avoid hard-coding array slices
+  in methods using motor positions.
 
 * Feature: add support for the BLISS flavor of ID01 beamline.
 

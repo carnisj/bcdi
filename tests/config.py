@@ -5,5 +5,11 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""The main bcdi package, which contains the whole framework."""
-__version__ = "0.2.4"
+
+import unittest
+
+
+def run_tests(test_class):
+    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+    runner = unittest.TextTestRunner(verbosity=2)
+    return runner.run(suite)

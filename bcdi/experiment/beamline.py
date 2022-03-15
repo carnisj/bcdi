@@ -632,7 +632,7 @@ class BeamlineCRISTAL(Beamline):
             grazing = None  # nothing below mgomega at CRISTAL
             tilt_angle = mgomega
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            grazing = (mgomega[0],)
+            grazing = (mgomega,)
             tilt_angle = mgphi
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -650,7 +650,7 @@ class BeamlineCRISTAL(Beamline):
         self.sample_angles = (mgomega, mgphi)
         self.detector_angles = (inplane_angle, outofplane_angle)
 
-        return tilt_angle, grazing, inplane_angle[0], outofplane_angle[0]
+        return tilt_angle, grazing, inplane_angle, outofplane_angle
 
     def process_positions(
         self,
