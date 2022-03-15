@@ -177,10 +177,10 @@ def safeload(func: Callable) -> Callable:
     def helper(self, *args, **kwargs):
         setup = kwargs.get("setup")
         if setup is None:
-            raise ValueError
+            raise ValueError("setup undefined")
         if not isinstance(setup.logfile, ContextFile):
             raise TypeError(
-                "setup.logfile should be a ContextFile, " f"got {type(setup.logfile)}"
+                f"setup.logfile should be a ContextFile, got {type(setup.logfile)}"
             )
         with setup.logfile as file:
             return func(self, *args, file=file, **kwargs)
@@ -201,10 +201,10 @@ def safeload_static(func: Callable) -> Callable:
     def helper(*args, **kwargs):
         setup = kwargs.get("setup")
         if setup is None:
-            raise ValueError
+            raise ValueError("setup undefined")
         if not isinstance(setup.logfile, ContextFile):
             raise TypeError(
-                "setup.logfile should be a ContextFile, " f"got {type(setup.logfile)}"
+                f"setup.logfile should be a ContextFile, got {type(setup.logfile)}"
             )
         with setup.logfile as file:
             return func(*args, file=file, **kwargs)
