@@ -6,7 +6,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 #         Clement Atlan, c.atlan@outlook.com
-from __future__ import annotations
 
 """
 Implementation of beamline-dependent data loading classes.
@@ -42,6 +41,8 @@ API Reference
 -------------
 
 """
+
+from __future__ import annotations
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables

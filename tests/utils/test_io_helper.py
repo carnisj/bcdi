@@ -35,7 +35,10 @@ class TestContextFile(unittest.TestCase):
 
     def test_open_function(self):
         with ContextFile(filename=self.filename, open_func=self.open_func) as file:
-            first_line = next(file).split()
+            try:
+                first_line = next(file).split()
+            except StopIteration:
+                pass
         self.assertTrue(first_line[0] == "scans:" and first_line[1] == "11")
 
     def test_open_function_wrong_type(self):
@@ -59,7 +62,11 @@ class TestContextFile(unittest.TestCase):
         with ContextFile(filename=self.filename, open_func=self.open_func) as file:
             pass
         with self.assertRaises(ValueError):
-            next(file)
+            # file already closed
+            try:
+                next(file)
+            except StopIteration:
+                pass
 
 
 if __name__ == "__main__":
