@@ -515,24 +515,26 @@ class Loader(ABC):
 
     @staticmethod
     @abstractmethod
-    def create_logfile(**kwargs):
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ):
         """
         Create the logfile, which can be a log/spec file or the data itself.
 
         The nature of this file is beamline dependent.
 
-        :param kwargs: beamline_specific parameters, which may include part of the
-         totality of the following keys:
-
-          - 'scan_number': the scan number to load.
-          - 'root_folder': the root directory of the experiment, where is e.g. the
-            specfile/.fio file.
-          - 'filename': the file name to load, or the path of 'alias_dict.txt' for SIXS.
-          - 'datadir': the data directory
-          - 'template_imagefile': the template for data/image file names
-          - 'name': str, the name of the beamline, e.g. 'SIXS_2019'
-
-        :return: logfile
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
 
     def init_data_mask(
@@ -946,16 +948,24 @@ class LoaderID01(Loader):
 
     @staticmethod
     def create_logfile(
-        root_folder: str, filename: str, scan_number: int, **kwargs
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the spec file for ID01.
 
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
         :param root_folder: str, the root directory of the experiment, where is e.g. the
            specfile file.
-        :param filename: str, name of the spec file or full path of the spec file
         :param scan_number: the scan number to load
-        :return: an instance of a context manager for opening the file later
+        :param filename: str, name of the spec file or full path of the spec file
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(
             root_folder,
@@ -1313,16 +1323,24 @@ class LoaderID01BLISS(Loader):
 
     @staticmethod
     def create_logfile(
-        datadir: str, template_imagefile: str, scan_number: int, **kwargs
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the h5 file for ID01BLISS.
 
         :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'ID01BLISS'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
         :param template_imagefile: str, template for data file name,
          e.g. 'ihhc3715_sample5.h5'
-        :param scan_number: the scan number to load
-        :return: an instance of a context manager for opening the file later
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
@@ -1554,25 +1572,26 @@ class LoaderSIXS(Loader):
     @staticmethod
     def create_logfile(
         datadir: str,
-        template_imagefile: str,
-        scan_number: int,
-        filename: str,
         name: str,
-        **kwargs,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the data itself for SIXS.
 
         :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path of 'alias_dict.txt'
         :param template_imagefile: str, template for data file name:
 
           - SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
           - SIXS_2019: 'spare_ascan_mu_%05d.nxs'
 
-        :param scan_number: int, the scan number to load
-        :param filename: str, absolute path of 'alias_dict.txt'
-        :param name: str, the name of the beamline, e.g. 'SIXS_2019'
-        :return: an instance of a context manager for opening the file later
+        :return: an instance of a context manager ContextFile
         """
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
@@ -1833,16 +1852,23 @@ class Loader34ID(Loader):
 
     @staticmethod
     def create_logfile(
-        root_folder: str, filename: str, scan_number: int, **kwargs
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the spec file for 34ID-C.
 
-        :param root_folder: str, the root directory of the experiment, where is e.g. the
-           specfile file.
-        :param filename: str, name of the spec file or full path of the spec file
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. '34ID'
+        :param root_folder: str, the root directory of the experiment
         :param scan_number: the scan number to load
-        :return: an instance of a context manager for opening the file later
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(
             root_folder,
@@ -2144,14 +2170,24 @@ class LoaderP10(Loader):
     """Loader for PETRAIII P10 beamline."""
 
     @staticmethod
-    def create_logfile(root_folder: str, filename: str, **kwargs) -> ContextFile:
+    def create_logfile(
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
         """
         Create the logfile, which is the .fio file for P10.
 
-        :param root_folder: str, the root directory of the experiment, where the scan
-           folders are located.
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'P10'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
         :param filename: str, name of the .fio file or full path of the .fio file
-        :return: an instance of a context manager for opening the file later
+        :param template_imagefile: str, template for the data file name
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(
             root_folder,
@@ -2167,11 +2203,17 @@ class LoaderP10(Loader):
             min_length=1,
             name="filename",
         )
-
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=1, name="scan_number"
+        )
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
             return ContextFile(
-                filename=filename, open_func=open, mode="r", encoding="utf-8"
+                filename=filename,
+                open_func=open,
+                scan_number=scan_number,
+                mode="r",
+                encoding="utf-8",
             )
 
         print(f"Could not find the fio file at: {filename}")
@@ -2576,15 +2618,23 @@ class LoaderCRISTAL(Loader):
 
     @staticmethod
     def create_logfile(
-        datadir: str, template_imagefile: str, scan_number: int, **kwargs
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the data itself for CRISTAL.
 
         :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'CRISTAL'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
         :param template_imagefile: str, template for data file name, e.g. 'S%d.nxs'
-        :param scan_number: int, the scan number to load
-        :return: logfile
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
@@ -2971,15 +3021,23 @@ class LoaderNANOMAX(Loader):
 
     @staticmethod
     def create_logfile(
-        datadir: str, template_imagefile: str, scan_number: int, **kwargs
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
     ) -> ContextFile:
         """
         Create the logfile, which is the data itself for Nanomax.
 
         :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'Nanomax'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
         :param template_imagefile: str, template for data file name, e.g. '%06d.h5'
-        :param scan_number: int, the scan number to load
-        :return: an instance of a context manager for opening the file later
+        :return: an instance of a context manager ContextFile
         """
         valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
