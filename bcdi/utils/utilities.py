@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import List, Union, Sequence
+from typing import Any, List, Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
@@ -2385,6 +2385,13 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
             if number % k != 0:
                 return False
     return True
+
+
+def unpack_array(array: Any) -> Any:
+    """Unpack an array or Sequence of length 1 into a single element."""
+    if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
+        return array[0]
+    return array
 
 
 def wrap(obj, start_angle, range_angle):

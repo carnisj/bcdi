@@ -9,6 +9,7 @@
 from pathlib import Path
 import unittest
 from bcdi.utils.io_helper import ContextFile
+from tests.config import run_tests
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
@@ -59,3 +60,7 @@ class TestContextFile(unittest.TestCase):
             pass
         with self.assertRaises(ValueError):
             next(file)
+
+
+if __name__ == "__main__":
+    run_tests(TestContextFile)
