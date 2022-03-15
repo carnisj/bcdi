@@ -1124,11 +1124,8 @@ def load_background(background_file):
     :return: a 2D background
     """
     if background_file:
-        background = np.load(background_file)
-        if background_file.endswith("npz"):
-            npz_key = background.files
-            background = background[npz_key[0]]
-            valid.valid_ndarray(background, ndim=2)
+        background, _ = load_file(background_file)
+        valid.valid_ndarray(background, ndim=2)
     else:
         background = None
     return background
@@ -1148,34 +1145,33 @@ def load_file(file_path, fieldname=None):
     """
     _, extension = os.path.splitext(file_path)
     if extension == ".npz":  # could be anything
-        if fieldname is None:  # output of PyNX phasing
-            npzfile = np.load(file_path)
-            dataset = npzfile[list(npzfile.files)[0]]
-        else:  # could be anything
-            try:
-                dataset = np.load(file_path)[fieldname]
-                return dataset, extension
-            except KeyError:
-                npzfile = np.load(file_path)
+        with np.load(file_path) as npzfile:
+            if fieldname is None:  # output of PyNX phasing or flatfield/background
                 dataset = npzfile[list(npzfile.files)[0]]
+            else:  # could be anything
+                try:
+                    dataset = npzfile[fieldname]
+                except KeyError:
+                    dataset = npzfile[list(npzfile.files)[0]]
     elif extension == ".npy":  # could be anything
+        # no need to close the file for .npy extension, see np.load docstring
         dataset = np.load(file_path)
     elif extension == ".cxi":  # output of PyNX phasing
-        h5file = h5py.File(file_path, "r")
-        # group_key = list(h5file.keys())[1]
-        # subgroup_key = list(h5file[group_key])
-        # dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
-        dataset = h5file["/entry_1/data_1/data"][()]
+        with h5py.File(file_path, "r") as h5file:
+            # group_key = list(h5file.keys())[1]
+            # subgroup_key = list(h5file[group_key])
+            # dataset = h5file['/'+group_key+'/'+subgroup_key[0]+'/data'].value
+            dataset = h5file["/entry_1/data_1/data"][()]
     elif extension == ".h5":  # modes.h5
-        h5file = h5py.File(file_path, "r")
-        group_key = list(h5file.keys())[0]
-        if group_key == "mask":  # mask object for Nanomax data
-            dataset = h5file["/" + group_key][:]
-        else:  # modes.h5 file output of PyNX phase retrieval
-            subgroup_key = list(h5file[group_key])
-            dataset = h5file["/" + group_key + "/" + subgroup_key[0] + "/data"][
-                0
-            ]  # select only first mode
+        with h5py.File(file_path, "r") as h5file:
+            group_key = list(h5file.keys())[0]
+            if group_key == "mask":  # mask object for Nanomax data
+                dataset = h5file["/" + group_key][:]
+            else:  # modes.h5 file output of PyNX phase retrieval
+                subgroup_key = list(h5file[group_key])
+                dataset = h5file["/" + group_key + "/" + subgroup_key[0] + "/data"][
+                    0
+                ]  # select only first mode
     else:
         raise ValueError(
             "File format not supported: "
@@ -1200,12 +1196,9 @@ def load_flatfield(flatfield_file):
     :param flatfield_file: the path of the flatfield file
     :return: a 2D flatfield
     """
-    if flatfield_file:
-        flatfield = np.load(flatfield_file)
-        if flatfield_file.endswith(".npz"):
-            npz_key = flatfield.files
-            flatfield = flatfield[npz_key[0]]
-            valid.valid_ndarray(flatfield, ndim=2)
+    if flatfield_file and os.path.isfile(flatfield_file):
+        flatfield, _ = load_file(flatfield_file)
+        valid.valid_ndarray(flatfield, ndim=2)
     else:
         flatfield = None
     return flatfield
