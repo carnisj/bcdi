@@ -22,7 +22,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import Any, List, Union, Sequence
+from typing import Any, List, Optional, Union, Sequence
 from ..graph import graph_utils as gu
 from ..utils import validation as valid
 
@@ -505,7 +505,7 @@ def dos2unix(input_file, output_file):
             output.write(row + str.encode("\n"))
 
 
-def find_file(filename: str, default_folder: str) -> str:
+def find_file(filename: Optional[str], default_folder: str) -> str:
     """
     Locate a file.
 
@@ -2380,7 +2380,9 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
     return True
 
 
-def unpack_array(array: Any) -> Any:
+def unpack_array(
+    array: Union[float, List[float], np.ndarray]
+) -> Union[float, List[float], np.ndarray]:
     """Unpack an array or Sequence of length 1 into a single element."""
     if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
         return array[0]

@@ -909,9 +909,8 @@ class Loader(ABC):
         :return: the positions/values of the device as a numpy 1D array
         """
 
-    @staticmethod
     @abstractmethod
-    def read_monitor(setup: Setup, **kwargs) -> np.ndarray:
+    def read_monitor(self, setup: Setup, **kwargs) -> np.ndarray:
         """
         Load the default monitor for intensity normalization of the considered beamline.
 
@@ -1593,12 +1592,14 @@ class LoaderSIXS(Loader):
 
         :return: an instance of a context manager ContextFile
         """
+        if datadir is None:
+            raise ValueError("'datadir' parameter required for SIXS")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
-        valid.valid_container(filename, container_types=str, name="filename")
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
+        if filename is None or not isinstance(filename, str):
+            raise TypeError("'filename' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
@@ -2206,6 +2207,8 @@ class LoaderP10(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=1, name="scan_number"
         )
+        if filename is None or not isinstance(filename, str):
+            raise TypeError("'filename' should be a string")
         if os.path.isfile(filename):
             # filename is already the full path to the .fio file
             return ContextFile(
@@ -2435,8 +2438,9 @@ class LoaderP10(Loader):
         if not setup.custom_scan:
             index_om = None
             index_phi = None
-            om = []
-            phi = []
+            rocking_positions: List[float] = []
+            om: Optional[Union[float, np.ndarray]] = None
+            phi: Optional[Union[float, np.ndarray]] = None
             chi = None
             mu = None
             gamma = None
@@ -2490,23 +2494,38 @@ class LoaderP10(Loader):
                     energy = float(words[2])
 
                 if index_om is not None and util.is_float(words[0]):
+                    if index_phi is not None:
+                        raise NotImplementedError(
+                            "d2scan with om and phi not supported"
+                        )
                     # reading data and index_om is defined (outofplane case)
-                    om.append(float(words[index_om]))
+                    rocking_positions.append(float(words[index_om]))
                 if index_phi is not None and util.is_float(words[0]):
+                    if index_om is not None:
+                        raise NotImplementedError(
+                            "d2scan with om and phi not supported"
+                        )
                     # reading data and index_phi is defined (inplane case)
-                    phi.append(float(words[index_phi]))
+                    rocking_positions.append(float(words[index_phi]))
 
             if setup.rocking_angle == "outofplane":
-                om = np.asarray(om, dtype=float)
+                om = np.asarray(rocking_positions, dtype=float)
             else:  # phi
-                phi = np.asarray(phi, dtype=float)
+                phi = np.asarray(rocking_positions, dtype=float)
 
             # remove user-defined sample offsets (sample: mu, om, chi, phi)
+            if mu is None:
+                raise ValueError("Problem reading the fio file, mu is None")
             mu = mu - self.sample_offsets[0]
+            if om is None:
+                raise ValueError("Problem reading the fio file, om is None")
             om = om - self.sample_offsets[1]
+            if chi is None:
+                raise ValueError("Problem reading the fio file, chi is None")
             chi = chi - self.sample_offsets[2]
+            if phi is None:
+                raise ValueError("Problem reading the fio file, phi is None")
             phi = phi - self.sample_offsets[3]
-
         else:  # manually defined custom scan
             om = setup.custom_motors["om"]
             chi = setup.custom_motors["chi"]
@@ -2516,6 +2535,17 @@ class LoaderP10(Loader):
             mu = setup.custom_motors["mu"]
             energy = setup.energy
 
+        if (
+            mu is None
+            or om is None
+            or chi is None
+            or phi is None
+            or gamma is None
+            or delta is None
+            or energy is None
+        ):
+            # mypy does not understand 'any(val is None for val in ...)'
+            raise ValueError("Problem loading P10 motor positions (None)")
         return mu, om, chi, phi, gamma, delta, energy, setup.distance
 
     @staticmethod
@@ -2591,7 +2621,7 @@ class LoaderP10SAXS(LoaderP10):
 
         if not setup.custom_scan:
             index_phi = None
-            phi = []
+            positions: List[float] = []
 
             lines = file.readlines()
             for line in lines:
@@ -2605,9 +2635,9 @@ class LoaderP10SAXS(LoaderP10):
                     print(words, "  Index Phi=", index_phi)
                 if index_phi is not None and util.is_float(words[0]):
                     # we are reading data and index_phi is defined
-                    phi.append(float(words[index_phi]))
+                    positions.append(float(words[index_phi]))
 
-            phi = np.asarray(phi, dtype=float)
+            phi = np.asarray(positions, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
         return phi, setup.energy, setup.distance
@@ -2639,9 +2669,8 @@ class LoaderCRISTAL(Loader):
         valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
@@ -2974,7 +3003,7 @@ class LoaderCRISTAL(Loader):
         elif isinstance(mgomega, (tuple, list, np.ndarray)) and any(
             abs(val) > 360 for val in mgomega
         ):
-            mgomega = mgomega / 1e6
+            mgomega = np.asarray(mgomega) / 1e6
 
         return mgomega, mgphi, gamma, delta, energy, setup.distance
 
@@ -3042,9 +3071,8 @@ class LoaderNANOMAX(Loader):
         valid.valid_container(datadir, container_types=str, name="datadir")
         if not os.path.isdir(datadir):
             raise ValueError(f"The directory {datadir} does not exist")
-        valid.valid_container(
-            template_imagefile, container_types=str, name="template_imagefile"
-        )
+        if template_imagefile is None or not isinstance(template_imagefile, str):
+            raise TypeError("'template_imagefile' should be a string")
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
