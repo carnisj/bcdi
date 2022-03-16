@@ -407,9 +407,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", template_imagefile="S")
         self.assertEqual(det.template_imagefile, "S")
 
-    def test_repr(self):
-        self.assertIsInstance(self.det.__repr__(), str)
-
     def test_background_subtraction_correct(self):
         data = np.ones((3, 3))
         background = np.ones((3, 3))
@@ -727,6 +724,9 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         mask = np.zeros((3, 3))
         with self.assertRaises(ValueError):
             det._saturation_correction(data, mask, nb_frames=0)
+
+    def test_repr(self):
+        self.assertIsInstance(eval(repr(self.det)), Maxipix)
 
 
 class TestMaxipix(unittest.TestCase):
