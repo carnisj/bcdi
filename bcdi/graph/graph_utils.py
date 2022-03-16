@@ -1872,7 +1872,7 @@ def multislices_plot(
     ##########
     # axis 3 #
     ##########
-    if not ipynb_layout:
+    if not ipynb_layout and ax3 is not None:
         # hide axis 3
         ax3.set_visible(False)
 
