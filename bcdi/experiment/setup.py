@@ -208,16 +208,17 @@ class Setup:
     def beam_direction(self, value):
         valid.valid_container(
             value,
-            container_types=(tuple, list),
+            container_types=(tuple, list, np.ndarray),
             length=3,
             item_types=Real,
             name="Setup.beam_direction",
         )
+        value = np.asarray(value)
         if np.linalg.norm(value) == 0:
             raise ValueError(
                 "At least of component of beam_direction should be non null."
             )
-        self._beam_direction = list(value / np.linalg.norm(value))
+        self._beam_direction = value / np.linalg.norm(value)
 
     @property
     def beam_direction_xrutils(self):
