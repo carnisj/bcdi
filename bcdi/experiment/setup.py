@@ -94,7 +94,7 @@ class Setup:
 
     def __init__(
         self,
-        beamline,
+        beamline_name,
         detector_name="Dummy",
         beam_direction=(1, 0, 0),
         energy=None,
@@ -151,10 +151,14 @@ class Setup:
         # kwargs for series (several frames per point) at P10
         self.is_series = kwargs.get("is_series", False)  # boolean
 
-        # create the detector and beamline instances
+        # create the detector instance
+        self.detector_name = detector_name
         self.detector = create_detector(name=detector_name, **kwargs)
+
+        # create the beamline instance
+        self.beamline_name = beamline_name
         self.beamline = create_beamline(
-            name=beamline, sample_offsets=kwargs.get("sample_offsets")
+            name=beamline_name, sample_offsets=kwargs.get("sample_offsets")
         )
 
         # load positional arguments corresponding to instance properties
@@ -204,7 +208,7 @@ class Setup:
     def beam_direction(self, value):
         valid.valid_container(
             value,
-            container_types=(tuple, list, np.ndarray),
+            container_types=(tuple, list),
             length=3,
             item_types=Real,
             name="Setup.beam_direction",
@@ -213,7 +217,7 @@ class Setup:
             raise ValueError(
                 "At least of component of beam_direction should be non null."
             )
-        self._beam_direction = value / np.linalg.norm(value)
+        self._beam_direction = list(value / np.linalg.norm(value))
 
     @property
     def beam_direction_xrutils(self):
@@ -659,39 +663,7 @@ class Setup:
 
     def __repr__(self):
         """Representation string of the Setup instance."""
-        return (
-            self.__class__.__name__ + "("
-            f'beamline="{self.beamline.name}", '
-            f'detector_name="{self.detector.name}", '
-            f"beam_direction={list(self.beam_direction)}, "
-            f"energy={self.energy}, "
-            f"distance={self.distance}, "
-            f"outofplane_angle={self.outofplane_angle}, "
-            f"inplane_angle={self.inplane_angle}, "
-            f"tilt_angle={self.tilt_angle}, "
-            "rocking_angle="
-            + (
-                f'"{self.rocking_angle}"'
-                if self.rocking_angle is not None
-                else str(self.rocking_angle)
-            )
-            + ", "
-            f"grazing_angle={self.grazing_angle}, "
-            f"direct_beam={self.direct_beam}, "
-            f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
-            f"filtered_data={self.filtered_data}, "
-            f"custom_scan={self.custom_scan}, "
-            f"custom_images={self.custom_images}, "
-            f"custom_monitor={self.custom_monitor}, "
-            f"custom_motors={self.custom_motors}, "
-            f"sample_inplane={self.sample_inplane}, "
-            f"sample_outofplane={self.sample_outofplane}, "
-            f"sample_offsets={self.diffractometer.sample_offsets}, "
-            f"offset_inplane={self.offset_inplane}, "
-            f"actuators={self.actuators}, "
-            f"is_series={self.is_series}, "
-            ")"
-        )
+        return util.create_repr(self, Setup)
 
     def calc_qvalues_xrutils(self, hxrd, nb_frames, **kwargs):
         """
