@@ -728,6 +728,10 @@ class TestDetector(fake_filesystem_unittest.TestCase):
     def test_repr(self):
         self.assertIsInstance(eval(repr(self.det)), Maxipix)
 
+    def test_repr_str_not_None(self):
+        self.det.template_file = "test"
+        self.assertIsInstance(eval(repr(self.det)), Maxipix)
+
 
 class TestMaxipix(unittest.TestCase):
     """Tests related to the Maxipix detector."""
