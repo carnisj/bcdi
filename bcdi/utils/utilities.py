@@ -688,7 +688,7 @@ def create_repr(obj: Any, cls: type) -> str:
     output = obj.__class__.__name__ + "("
     for _, param in enumerate(signature(cls.__init__).parameters.keys()):
         if param not in ["self", "args", "kwargs"]:
-            value =  getattr(obj, param)
+            value = getattr(obj, param)
             if isinstance(value, np.ndarray):
                 value = ndarray_to_list(value)
             output += format_repr(param, value)

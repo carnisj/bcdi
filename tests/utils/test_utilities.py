@@ -137,9 +137,9 @@ class TestCreateRepr(unittest.TestCase):
         det = create_detector(name="Maxipix")
         valid = (
             'Maxipix(name="Maxipix", rootdir=None, datadir=None, savedir=None, '
-            'template_file=None, template_imagefile=None, specfile=None, '
-            'sample_name=None, roi=[0, 516, 0, 516], sum_roi=[0, 516, 0, 516], '
-            'binning=(1, 1, 1), )'
+            "template_file=None, template_imagefile=None, specfile=None, "
+            "sample_name=None, roi=[0, 516, 0, 516], sum_roi=[0, 516, 0, 516], "
+            "binning=(1, 1, 1), )"
         )
         out = util.create_repr(obj=det, cls=Detector)
         self.assertEqual(out, valid)
@@ -148,9 +148,9 @@ class TestCreateRepr(unittest.TestCase):
         setup = Setup(beamline_name="34ID", detector_name="Timepix")
         valid = (
             'Setup(beamline_name="34ID", detector_name="Timepix", '
-            'beam_direction=[1.0, 0.0, 0.0], energy=None, distance=None, '
-            'outofplane_angle=None, inplane_angle=None, tilt_angle=None, '
-            'rocking_angle=None, grazing_angle=None, )'
+            "beam_direction=[1.0, 0.0, 0.0], energy=None, distance=None, "
+            "outofplane_angle=None, inplane_angle=None, tilt_angle=None, "
+            "rocking_angle=None, grazing_angle=None, )"
         )
         out = util.create_repr(obj=setup, cls=Setup)
         self.assertEqual(out, valid)
@@ -161,7 +161,7 @@ class TestCreateRepr(unittest.TestCase):
             util.create_repr(obj=det, cls="Detector")
 
     def test_empty_init(self):
-        valid = 'Empty()'
+        valid = "Empty()"
 
         class Empty:
             """This is an empty class"""
@@ -187,15 +187,15 @@ class TestFormatRepr(unittest.TestCase):
 
     def test_float(self):
         out = util.format_repr("field", 0.4)
-        self.assertEqual(out, 'field=0.4, ')
+        self.assertEqual(out, "field=0.4, ")
 
     def test_none(self):
         out = util.format_repr("field", None)
-        self.assertEqual(out, 'field=None, ')
+        self.assertEqual(out, "field=None, ")
 
     def test_tuple(self):
         out = util.format_repr("field", (1.0, 2.0))
-        self.assertEqual(out, 'field=(1.0, 2.0), ')
+        self.assertEqual(out, "field=(1.0, 2.0), ")
 
 
 class TestInRange(unittest.TestCase):
