@@ -371,6 +371,15 @@ class Diffractometer:
             )
             del self.__getattribute__(self.valid_names[stage_name])[index]
 
+    def __repr__(self):
+        """Representation string of the Diffractometer instance."""
+        return (
+            self.__class__.__name__ + '('
+            f'name="{self.name}", '
+            f'sample_offsets={self.sample_offsets}, '                      
+            ')'
+        )
+
     def rotation_matrix(self, stage_name, angles):
         """
         Calculate a 3D rotation matrix given rotation axes and angles.

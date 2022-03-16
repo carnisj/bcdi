@@ -9,3 +9,18 @@
 import unittest
 from bcdi.experiment.diffractometer import Diffractometer
 from tests.config import run_tests
+
+
+class TestRepr(unittest.TestCase):
+    """Tests related to __repr__."""
+
+    def setUp(self) -> None:
+        self.diffractometer = Diffractometer(name="ID01")
+
+    def test_return_type(self):
+        print(repr(self.diffractometer))
+        self.assertIsInstance(eval(repr(self.diffractometer)), Diffractometer)
+
+
+if __name__ == "__main__":
+    run_tests(TestRepr)
