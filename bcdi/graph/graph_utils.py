@@ -8,7 +8,7 @@
 """Functions related to visualization."""
 
 import numpy as np
-from numbers import Number, Real
+from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -20,10 +20,13 @@ import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 from operator import itemgetter
+from pathlib import Path
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 import sys
-from ..utils import validation as valid
+from typing import Optional
+
+from bcdi.utils import validation as valid
 
 # define a colormap
 color_dict = {
@@ -1546,7 +1549,7 @@ def multislices_plot(
     is_orthogonal=False,
     reciprocal_space=False,
     ipynb_layout=False,
-    save_as=False,
+    save_as: Optional[str] = None,
     **kwargs,
 ):
     """
@@ -1875,8 +1878,8 @@ def multislices_plot(
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     if isinstance(save_as, str):
-        plt.savefig(save_as)
-        print("Saved figure as", save_as)
+        Path(save_as).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_as)
     plt.pause(0.5)
     plt.ioff()
 

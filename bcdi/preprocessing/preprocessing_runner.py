@@ -831,7 +831,7 @@ def run(prm):
                 + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
         else:
-            save_path = False
+            save_path = None
 
         fig, _, _ = gu.multislices_plot(
             data,
@@ -889,7 +889,7 @@ def run(prm):
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
         else:
-            save_path = False
+            save_path = None
 
         fig, _, _ = gu.multislices_plot(
             mask,
