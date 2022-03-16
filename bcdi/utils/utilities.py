@@ -686,7 +686,7 @@ def create_repr(obj: Any, cls: type) -> str:
     if not isinstance(cls, type):
         raise TypeError(f"'cls' should be a class, for {type(cls)}")
     output = obj.__class__.__name__ + "("
-    for _, param in enumerate(signature(cls.__init__).parameters.keys()):
+    for _, param in enumerate(signature(cls.__init__).parameters.keys()):  # type: ignore
         if param not in ["self", "args", "kwargs"]:
             value = getattr(obj, param)
             if isinstance(value, np.ndarray):
@@ -694,7 +694,7 @@ def create_repr(obj: Any, cls: type) -> str:
             output += format_repr(param, value)
 
     output += ")"
-    return output
+    return str(output)
 
 
 def format_repr(field: str, value: Optional[Any]) -> str:
@@ -2427,11 +2427,11 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def unpack_array(
     array: Union[float, List[float], np.ndarray]
-) -> Union[float, List[float], np.ndarray]:
+) -> Union[float, np.ndarray]:
     """Unpack an array or Sequence of length 1 into a single element."""
     if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
         return array[0]
-    return array
+    return np.asarray(array)
 
 
 def wrap(obj, start_angle, range_angle):
