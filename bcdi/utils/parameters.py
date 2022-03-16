@@ -69,7 +69,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "custom_scan",
         "debug",
         "flag_interact",
-        "flip_reconstruction",
+        # "flip_reconstruction",
         "get_temperature",
         "grey_background",
         "invert_phase",
@@ -89,6 +89,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "use_rawdata",
     }:
         valid.valid_item(value, allowed_types=bool, name=key)
+    elif key == "flip_reconstruction":
+        pass # bog on slurm
     elif key == "absorption":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "actuators":
