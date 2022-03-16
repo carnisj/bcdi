@@ -12,6 +12,7 @@ from functools import wraps
 import os
 from typing import Callable, Optional, Union
 
+from bcdi.utils.utilities import create_repr
 import bcdi.utils.validation as valid
 
 
@@ -56,7 +57,7 @@ class ContextFile:
 
     @property
     def filename(self):
-        return self._filename
+        return self._filename.replace("\\", "/")
 
     @filename.setter
     def filename(self, value):
@@ -165,37 +166,7 @@ class ContextFile:
 
     def __repr__(self):
         """Representation string of the ContextFile instance."""
-        filename = self.filename.replace("\\", "/")
-        return (
-            self.__class__.__name__ + "("
-            f'filename="{filename}", '
-            f'open_func={self.open_func.__module__ + "." + self.open_func.__name__}, '
-            f"scan_number={self.scan_number}, "
-            f'mode="{self.mode}", '
-            f'encoding="{self.encoding}", '
-            "longname="
-            + (
-                f'"{self.longname}"'
-                if self.longname is not None
-                else str(self.longname)
-            )
-            + ", "
-            "shortname="
-            + (
-                f'"{self.shortname}"'
-                if self.shortname is not None
-                else str(self.shortname)
-            )
-            + ", "
-            "directory="
-            + (
-                f'"{self.directory}"'
-                if self.directory is not None
-                else str(self.directory)
-            )
-            + ", "
-            ")"
-        )
+        return create_repr(obj=self, cls=ContextFile)
 
 
 def safeload(func: Callable) -> Callable:
