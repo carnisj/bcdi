@@ -686,7 +686,9 @@ def create_repr(obj: Any, cls: type) -> str:
     if not isinstance(cls, type):
         raise TypeError(f"'cls' should be a class, for {type(cls)}")
     output = obj.__class__.__name__ + "("
-    for _, param in enumerate(signature(cls.__init__).parameters.keys()):  # type: ignore
+    for _, param in enumerate(
+        signature(cls.__init__).parameters.keys()  # type: ignore
+    ):
         if param not in ["self", "args", "kwargs"]:
             value = getattr(obj, param)
             if isinstance(value, np.ndarray):
