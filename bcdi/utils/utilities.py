@@ -11,6 +11,7 @@ from collections import OrderedDict
 import ctypes
 from functools import reduce
 import gc
+from inspect import signature
 import json
 import h5py
 from matplotlib import pyplot as plt
@@ -681,6 +682,30 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
         + m * x_axis[1] ** 4
         + n * x_axis[2] ** 4
     )
+
+
+def create_repr(obj: Any, cls: type) -> str:
+    """
+    Generate the string representation of the object.
+
+    It uses the parameters given to __init__, except kwargs.
+
+    :param obj: the object for which the string representation should be generated
+    :param cls: the cls from which __init__ parameters should be extracted (e.g., base
+     class in case of inheritance)
+    :return: the string representation
+    """
+    if not isinstance(cls, type):
+        raise TypeError(f"'cls' should be a class, for {type(cls)}")
+    output = obj.__class__.__name__ + "("
+    params = signature(cls.__init__).parameters.keys()  # type:ignore
+    print(params)
+    for _, param in enumerate(signature(cls.__init__).parameters.keys()):
+        if param not in ["self", "kwargs"]:
+            output += format_repr(param, getattr(obj, param))
+
+    output += ")"
+    return output
 
 
 def format_repr(field: str, value: Optional[Any]) -> str:

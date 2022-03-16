@@ -64,9 +64,9 @@ import numpy as np
 from numbers import Real, Integral
 import os
 import pathlib
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
-from bcdi.utils.utilities import format_repr
+from bcdi.utils.utilities import create_repr
 from bcdi.utils import validation as valid
 
 
@@ -558,24 +558,7 @@ class Detector(ABC):
 
     def __repr__(self):
         """Representation string of the Detector instance."""
-        return (
-            self.__class__.__name__ + "("
-            + format_repr("name", self.name)
-            + format_repr("rootdir", self.rootdir)
-            + format_repr("datadir", self.datadir)
-            + format_repr("savedir", self.savedir)
-            + format_repr("template_file", self.template_file)
-            + format_repr("template_imagefile", self.template_imagefile)
-            + format_repr("specfile", self.specfile)
-            + format_repr("sample_name", self.sample_name)
-            + format_repr("roi", self.sample_name)
-            + format_repr("sum_roi", self.sum_roi)
-            + format_repr("binning", self.binning)
-            + format_repr("preprocessing_binning", self.preprocessing_binning)
-            + format_repr("offsets", self.offsets)
-            + format_repr("linearity_func", self.linearity_func)
-            + ")"
-        )
+        return create_repr(self, Detector)
 
     @staticmethod
     def _background_subtraction(data, background):

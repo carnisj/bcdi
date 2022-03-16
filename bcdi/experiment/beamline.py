@@ -522,7 +522,7 @@ class Beamline(ABC):
 
     def __repr__(self):
         """Representation string of the Beamline instance."""
-        return self.__class__.__name__ + f'(name="{self.name}")'
+        return util.create_repr(self, Beamline)
 
     @property
     def sample_angles(self):

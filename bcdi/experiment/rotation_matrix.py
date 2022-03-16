@@ -10,6 +10,7 @@
 import numpy as np
 from numbers import Real
 
+from bcdi.utils.utilities import create_repr
 from bcdi.utils import validation as valid
 
 
@@ -110,9 +111,4 @@ class RotationMatrix:
 
     def __repr__(self):
         """Representation string of the RotationMatrix instance."""
-        return (
-            self.__class__.__name__ + "("
-            f'circle="{self.circle}", '
-            f"angle={self.angle}, "
-            ")"
-        )
+        return create_repr(self, RotationMatrix)
