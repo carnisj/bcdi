@@ -660,28 +660,30 @@ class Setup:
     def __repr__(self):
         """Representation string of the Setup instance."""
         return (
-            f"{self.__class__.__name__}(beamline='{self.beamline.name}', "
-            f"detector='{self.detector.name}', "
-            f"beam_direction={self.beam_direction}, "
-            f"direct_beam={self.direct_beam}, "
-            f"dirbeam_detector_angles={self.dirbeam_detector_angles}, "
-            f"energy={self.energy}, distance={self.distance}, "
-            f"outofplane_angle={self.outofplane_angle},\n"
-            f"inplane_angle={self.inplane_angle}, "
-            f"tilt_angle={self.tilt_angle}, "
-            f"rocking_angle='{self.rocking_angle}', "
-            f"grazing_angle={self.grazing_angle},\n"
-            f"pixel_size={self.detector.unbinned_pixel_size}, "
-            f"sample_offsets={self.diffractometer.sample_offsets}, "
-            f"filtered_data={self.filtered_data},\n"
-            f"custom_scan={self.custom_scan}, "
-            f"custom_images={self.custom_images},\n"
-            f"custom_monitor={self.custom_monitor},\n"
-            f"custom_motors={self.custom_motors},\n"
-            f"sample_inplane={self.sample_inplane}, "
-            f"sample_outofplane={self.sample_outofplane}, "
-            f"offset_inplane={self.offset_inplane}, "
-            f"is_series={self.is_series})"
+            self.__class__.__name__ + '(beamline="' + self.beamline.name + '", '
+            'detector_name="' + self.detector.name + '", '
+            f'beam_direction={list(self.beam_direction)}, '
+            f'energy={self.energy}, '
+            f'distance={self.distance}, '
+            f'outofplane_angle={self.outofplane_angle}, '
+            f'inplane_angle={self.inplane_angle}, '
+            f'tilt_angle={self.tilt_angle}, '
+            'rocking_angle="' + self.rocking_angle + '", '
+            f'grazing_angle={self.grazing_angle}, '
+            f'direct_beam={self.direct_beam}, '
+            f'dirbeam_detector_angles={self.dirbeam_detector_angles}, '
+            f'filtered_data={self.filtered_data}, '
+            f'custom_scan={self.custom_scan}, '
+            f'custom_images={self.custom_images}, '
+            f'custom_monitor={self.custom_monitor}, '
+            f'custom_motors={self.custom_motors}, '
+            f'sample_inplane={self.sample_inplane}, '
+            f'sample_outofplane={self.sample_outofplane}, '
+            f'sample_offsets={self.diffractometer.sample_offsets}, '
+            f'offset_inplane={self.offset_inplane}, '
+            f'actuators={self.actuators}, '
+            f'is_series={self.is_series}, '
+            ')'
         )
 
     def calc_qvalues_xrutils(self, hxrd, nb_frames, **kwargs):
