@@ -20,7 +20,7 @@ import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 from operator import itemgetter
-from pathlib import Path
+import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 import sys
@@ -1878,7 +1878,7 @@ def multislices_plot(
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     if isinstance(save_as, str):
-        Path(save_as).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(save_as).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_as)
     plt.pause(0.5)
     plt.ioff()
