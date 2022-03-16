@@ -34,25 +34,13 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
         """Override the JSONEncoder.default method to support more types."""
         if isinstance(obj, np.ndarray):
-            return CustomEncoder.ndarray_to_list(obj)
+            return ndarray_to_list(obj)
             # Let the base class default method raise the TypeError
         if isinstance(obj, set):
             return list(obj)
         if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
-
-    @staticmethod
-    def ndarray_to_list(obj):
-        """Convert a numpy ndarray of any dimension to a nested list."""
-        if not isinstance(obj, np.ndarray):
-            raise TypeError("a numpy ndarray is expected")
-        if obj.ndim == 1:
-            return list(obj)
-        output = []
-        for idx in range(obj.shape[0]):
-            output.append(CustomEncoder.ndarray_to_list(obj[idx]))
-        return output
 
 
 def apply_logical_array(arrays, frames_logical):
@@ -700,7 +688,10 @@ def create_repr(obj: Any, cls: type) -> str:
     output = obj.__class__.__name__ + "("
     for _, param in enumerate(signature(cls.__init__).parameters.keys()):
         if param not in ["self", "args", "kwargs"]:
-            output += format_repr(param, getattr(obj, param))
+            value =  getattr(obj, param)
+            if isinstance(value, np.ndarray):
+                value = ndarray_to_list(value)
+            output += format_repr(param, value)
 
     output += ")"
     return output
@@ -1450,6 +1441,22 @@ def mean_filter(
         )
 
     return data, nb_pixels, mask
+
+
+def ndarray_to_list(array: np.ndarray) -> List:
+    """
+    Convert a numpy ndarray of any dimension to a nested list.
+
+    :param array: the array to be converted
+    """
+    if not isinstance(array, np.ndarray):
+        raise TypeError("a numpy ndarray is expected")
+    if array.ndim == 1:
+        return list(array)
+    output = []
+    for idx in range(array.shape[0]):
+        output.append(ndarray_to_list(array[idx]))
+    return output
 
 
 def objective_lmfit(params, x_axis, data, distribution):

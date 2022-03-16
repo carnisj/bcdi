@@ -13,7 +13,8 @@ import unittest
 import bcdi.utils.utilities as util
 from tests.config import run_tests
 
-from bcdi.experiment.detector import create_detector, Detector, Maxipix
+from bcdi.experiment.detector import create_detector, Detector
+from bcdi.experiment.setup import Setup
 
 
 class TestCast(unittest.TestCase):
@@ -141,6 +142,17 @@ class TestCreateRepr(unittest.TestCase):
             'binning=(1, 1, 1), )'
         )
         out = util.create_repr(obj=det, cls=Detector)
+        self.assertEqual(out, valid)
+
+    def test_setup(self):
+        setup = Setup(beamline_name="34ID", detector_name="Timepix")
+        valid = (
+            'Setup(beamline_name="34ID", detector_name="Timepix", '
+            'beam_direction=[1.0, 0.0, 0.0], energy=None, distance=None, '
+            'outofplane_angle=None, inplane_angle=None, tilt_angle=None, '
+            'rocking_angle=None, grazing_angle=None, )'
+        )
+        out = util.create_repr(obj=setup, cls=Setup)
         self.assertEqual(out, valid)
 
     def test_not_a_class(self):
@@ -333,6 +345,37 @@ class TestUnpackArray(unittest.TestCase):
         self.assertEqual(val, 5)
 
 
+class TestNdarrayToList(unittest.TestCase):
+    """
+    Tests on the function utilities.ndarray_to_list.
+
+    def ndarray_to_list(array: np.ndarray) -> List
+    """
+
+    def test_not_an_array(self):
+        with self.assertRaises(TypeError):
+            util.ndarray_to_list(array=2.3)
+
+    def test_none(self):
+        with self.assertRaises(TypeError):
+            util.ndarray_to_list(array=None)
+
+    def test_1d_array_int(self):
+        valid = [1, 2, 3]
+        out = util.ndarray_to_list(array=np.array(valid))
+        self.assertTrue(out == valid)
+
+    def test_1d_array_float(self):
+        valid = [1.12333333333333333333333333, 2.77, 3.5]
+        out = util.ndarray_to_list(array=np.array(valid))
+        self.assertTrue(out == valid)
+
+    def test_2d_array_int(self):
+        valid = [[1, 2, 3], [1.2, 3.333333333, 0]]
+        out = util.ndarray_to_list(array=np.array(valid))
+        self.assertTrue(out == valid)
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestIsFloat)
@@ -341,3 +384,4 @@ if __name__ == "__main__":
     run_tests(TestUnpackArray)
     run_tests(TestCreateRepr)
     run_tests(TestFormatRepr)
+    run_tests(TestNdarrayToList)
