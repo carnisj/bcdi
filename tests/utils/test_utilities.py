@@ -15,6 +15,7 @@ from tests.config import run_tests
 
 from bcdi.experiment.detector import create_detector, Detector
 from bcdi.experiment.setup import Setup
+from bcdi.utils.io_helper import ContextFile
 
 
 class TestCast(unittest.TestCase):
@@ -126,12 +127,31 @@ class TestFindFile(fake_filesystem_unittest.TestCase):
             util.find_file(filename="dum.spec", default_folder=self.valid_path)
 
 
-class TestCreateRepr(unittest.TestCase):
+class TestCreateRepr(fake_filesystem_unittest.TestCase):
     """
     Tests on the function utilities.create_repr.
 
     def create_repr(obj: type) -> str
     """
+
+    def setUp(self):
+        self.setUpPyfakefs()
+        self.valid_path = "/gpfs/bcdi/data/"
+        self.filename = "dummy.spec"
+        os.makedirs(self.valid_path)
+        with open(self.valid_path + self.filename, "w") as f:
+            f.write("dummy")
+
+    def test_contextfile(self):
+        ctx = ContextFile(filename=self.valid_path + self.filename, open_func=open)
+        valid = (
+            'ContextFile(filename="/gpfs/bcdi/data/dummy.spec", '
+            'open_func=pyfakefs.fake_filesystem.open, scan_number=None, mode="r", '
+            'encoding="utf-8", longname=None, shortname=None, directory=None, )'
+        )
+        out = util.create_repr(obj=ctx, cls=ContextFile)
+        print(out)
+        self.assertEqual(out, valid)
 
     def test_detector(self):
         det = create_detector(name="Maxipix")
@@ -184,6 +204,10 @@ class TestFormatRepr(unittest.TestCase):
     def test_str(self):
         out = util.format_repr("field", "test")
         self.assertEqual(out, 'field="test", ')
+
+    def test_str_quote_mark_false(self):
+        out = util.format_repr("field", "test", quote_mark=False)
+        self.assertEqual(out, "field=test, ")
 
     def test_float(self):
         out = util.format_repr("field", 0.4)

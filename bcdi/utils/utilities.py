@@ -689,27 +689,34 @@ def create_repr(obj: Any, cls: type) -> str:
     for _, param in enumerate(
         signature(cls.__init__).parameters.keys()  # type: ignore
     ):
+        quote_mark = True
         if param not in ["self", "args", "kwargs"]:
             value = getattr(obj, param)
             if isinstance(value, np.ndarray):
                 value = ndarray_to_list(value)
-            output += format_repr(param, value)
+            if callable(value):
+                value = value.__module__ + "." + value.__name__
+                # it's a string but we don't want to put it in quote mark in order to
+                # be able to call it directly
+                quote_mark = False
+            output += format_repr(param, value, quote_mark=quote_mark)
 
     output += ")"
     return str(output)
 
 
-def format_repr(field: str, value: Optional[Any]) -> str:
+def format_repr(field: str, value: Optional[Any], quote_mark: bool = True) -> str:
     """
     Format a string for the __repr__ method depending on its value.
 
     :param field: str, the value of the field in __repr__
     :param value: string or None
+    :param quote_mark: True to put quote marks around strings
     :return: a string
     """
     if not isinstance(field, str):
         raise TypeError(f"'field should be a string, got {type(field)}'")
-    if isinstance(value, str):
+    if isinstance(value, str) and quote_mark:
         return f'{field}="{value}", '
     return f"{field}={value}, "
 
