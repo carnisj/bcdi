@@ -14,9 +14,15 @@ from tests.config import run_tests
 class Test(unittest.TestCase):
     """Tests related to rotation matrix instantiation."""
 
+    def setUp(self) -> None:
+        self.rotmat = RotationMatrix(circle="x+", angle=34)
+
     def test_instantiation_missing_parameter(self):
         with self.assertRaises(TypeError):
             RotationMatrix()
+
+    def test_repr(self):
+        self.assertIsInstance(eval(repr(self.rotmat)), RotationMatrix)
 
 
 if __name__ == "__main__":

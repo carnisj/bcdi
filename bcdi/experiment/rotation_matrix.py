@@ -29,7 +29,7 @@ class RotationMatrix:
     valid_circles = {"x+", "x-", "y+", "y-", "z+", "z-"}
     # + counter-clockwise, - clockwise
 
-    def __init__(self, circle, angle):
+    def __init__(self, circle: str, angle: Real) -> None:
         self.angle = angle
         self.circle = circle
 
@@ -107,3 +107,12 @@ class RotationMatrix:
                 f" {list(RotationMatrix.valid_circles)}"
             )
         return matrix
+
+    def __repr__(self):
+        """Representation string of the RotationMatrix instance."""
+        return (
+            self.__class__.__name__ + '('
+            f'circle="{self.circle}", '
+            f'angle={self.angle}, '                      
+            ')'
+        )
