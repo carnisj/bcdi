@@ -265,6 +265,10 @@ class TestRepr(unittest.TestCase):
     def test_return_type(self):
         self.assertIsInstance(eval(repr(self.setup)), Setup)
 
+    def test_rocking_angle_str(self):
+        self.setup.rocking_angle = "outofplane"
+        self.assertIsInstance(eval(repr(self.setup)), Setup)
+
 
 if __name__ == "__main__":
     run_tests(Test)
