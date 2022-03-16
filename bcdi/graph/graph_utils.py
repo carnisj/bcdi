@@ -1546,6 +1546,7 @@ def multislices_plot(
     is_orthogonal=False,
     reciprocal_space=False,
     ipynb_layout=False,
+    save_as=False,
     **kwargs,
 ):
     """
@@ -1577,6 +1578,7 @@ def multislices_plot(
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
+    :param save_as: if string, saves figure at this path
     :param kwargs:
      - 'invert_y': boolean, True to invert the vertical axis of the plot.
        Will overwrite the default behavior.
@@ -1872,8 +1874,12 @@ def multislices_plot(
         ax3.set_visible(False)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
+    if isinstance(save_as, str):
+        plt.savefig(save_as)
+        print("Saved figure as", save_as)
     plt.pause(0.5)
     plt.ioff()
+
 
     if ipynb_layout:
         return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
