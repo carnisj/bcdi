@@ -182,7 +182,7 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 # Initialize setup #
 ####################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,

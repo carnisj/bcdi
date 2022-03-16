@@ -263,7 +263,7 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
 
         with open(self.valid_path + "undefined.spec", "w") as f:
             f.write("test\n#this,is,bad")
-        self.setup = Setup("ID01", detector_name="Maxipix")
+        self.setup = Setup(beamline_name="ID01", detector_name="Maxipix")
         self.setup.detector.rootdir = self.valid_path
         self.beamline = create_beamline(name="ID01")
 

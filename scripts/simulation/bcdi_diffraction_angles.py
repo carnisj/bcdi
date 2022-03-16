@@ -60,7 +60,7 @@ bounds = (
 # Initialize setup #
 ####################
 setup = exp.Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     energy=energy,
     beam_direction=beam_direction,
     sample_inplane=sample_inplane,

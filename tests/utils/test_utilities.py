@@ -13,6 +13,8 @@ import unittest
 import bcdi.utils.utilities as util
 from tests.config import run_tests
 
+from bcdi.experiment.detector import create_detector, Detector, Maxipix
+
 
 class TestCast(unittest.TestCase):
     """
@@ -121,6 +123,18 @@ class TestFindFile(fake_filesystem_unittest.TestCase):
     def test_filename_file_name_inexisting_default_dir_existing(self):
         with self.assertRaises(ValueError):
             util.find_file(filename="dum.spec", default_folder=self.valid_path)
+
+
+class TestCreateRepr(unittest.TestCase):
+    """
+    Tests on the function utilities.create_repr.
+
+    def create_repr(obj: type) -> str
+    """
+
+    def test_detector(self):
+        det = create_detector(name="Maxipix")
+        out = util.create_repr(obj=det, cls=Detector)
 
 
 class TestFormatRepr(unittest.TestCase):
@@ -304,4 +318,5 @@ if __name__ == "__main__":
     run_tests(TestFindFile)
     run_tests(TestGaussianWindow)
     run_tests(TestUnpackArray)
+    run_tests(TestCreateRepr)
     run_tests(TestFormatRepr)

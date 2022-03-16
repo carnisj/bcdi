@@ -622,7 +622,7 @@ if not all(
 
     else:  # data in detector frame
         setup = Setup(
-            beamline=beamline,
+            beamline_name=beamline,
             energy=energy,
             outofplane_angle=outofplane_angle,
             inplane_angle=inplane_angle,

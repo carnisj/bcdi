@@ -36,7 +36,7 @@ class TestCheckSetup(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.setup = Setup(beamline="ID01")
+        self.setup = Setup(beamline_name="ID01")
         self.params = {
             "grazing_angle": (1, 2),
             "inplane_angle": 1.23,
@@ -162,7 +162,7 @@ class TestCorrectDirectBeam(unittest.TestCase):
 
     def setUp(self) -> None:
         self.setup = Setup(
-            beamline="ID01",
+            beamline_name="ID01",
             direct_beam=[12, 324],
             dirbeam_detector_angles=[-1, 1],
             distance=1.23,
@@ -198,7 +198,7 @@ class TestCorrectDetectorAngles(unittest.TestCase):
 
     def setUp(self) -> None:
         self.setup = Setup(
-            beamline="ID01",
+            beamline_name="ID01",
             direct_beam=[12, 324],
             dirbeam_detector_angles=[0.5, 1],
             distance=1.23,
@@ -260,7 +260,7 @@ class TestRepr(unittest.TestCase):
     """Tests related to __repr__."""
 
     def setUp(self) -> None:
-        self.setup = Setup(beamline="ID01")
+        self.setup = Setup(beamline_name="ID01")
 
     def test_return_type(self):
         self.assertIsInstance(eval(repr(self.setup)), Setup)
