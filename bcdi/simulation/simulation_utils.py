@@ -792,6 +792,6 @@ def triclinic_to_basis(alpha, beta, gamma, a1, a2, a3):
         )
         / np.sin(gamma * np.pi / 180)
     )
-    cz = np.sqrt(a3 ** 2 - cx ** 2 - cy ** 2)
+    cz = np.sqrt(a3**2 - cx**2 - cy**2)
     v3 = cx * np.array([1, 0, 0]) + cy * np.array([0, 1, 0]) + cz * np.array([0, 0, 1])
     return v1, v2, v3

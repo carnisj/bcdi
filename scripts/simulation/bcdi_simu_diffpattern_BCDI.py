@@ -227,7 +227,7 @@ phase = util.wrap(phase, start_angle=-np.pi, range_angle=2 * np.pi)
 support[abs(amp) < support_threshold * abs(amp).max()] = 0
 del amp
 
-volume = support.sum() * voxel_size ** 3  # in nm3
+volume = support.sum() * voxel_size**3  # in nm3
 print("estimated volume", volume, " nm3")
 
 phase[support == 0] = 0
