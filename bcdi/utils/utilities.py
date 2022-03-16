@@ -688,7 +688,7 @@ def create_repr(obj: Any, cls: type) -> str:
     """
     Generate the string representation of the object.
 
-    It uses the parameters given to __init__, except kwargs.
+    It uses the parameters given to __init__, except self, args and kwargs.
 
     :param obj: the object for which the string representation should be generated
     :param cls: the cls from which __init__ parameters should be extracted (e.g., base
@@ -698,10 +698,8 @@ def create_repr(obj: Any, cls: type) -> str:
     if not isinstance(cls, type):
         raise TypeError(f"'cls' should be a class, for {type(cls)}")
     output = obj.__class__.__name__ + "("
-    params = signature(cls.__init__).parameters.keys()  # type:ignore
-    print(params)
     for _, param in enumerate(signature(cls.__init__).parameters.keys()):
-        if param not in ["self", "kwargs"]:
+        if param not in ["self", "args", "kwargs"]:
             output += format_repr(param, getattr(obj, param))
 
     output += ")"
