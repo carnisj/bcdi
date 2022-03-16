@@ -111,8 +111,8 @@ class RotationMatrix:
     def __repr__(self):
         """Representation string of the RotationMatrix instance."""
         return (
-            self.__class__.__name__ + '('
+            self.__class__.__name__ + "("
             f'circle="{self.circle}", '
-            f'angle={self.angle}, '                      
-            ')'
+            f"angle={self.angle}, "
+            ")"
         )

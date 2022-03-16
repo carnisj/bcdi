@@ -123,6 +123,34 @@ class TestFindFile(fake_filesystem_unittest.TestCase):
             util.find_file(filename="dum.spec", default_folder=self.valid_path)
 
 
+class TestFormatRepr(unittest.TestCase):
+    """
+    Tests on the function utilities.format_repr.
+
+    def format_repr(field: str, value: Optional[Any]) -> str
+    """
+
+    def test_field_undefined(self):
+        with self.assertRaises(TypeError):
+            util.format_repr(None, "test")
+
+    def test_str(self):
+        out = util.format_repr("field", "test")
+        self.assertEqual(out, 'field="test", ')
+
+    def test_float(self):
+        out = util.format_repr("field", 0.4)
+        self.assertEqual(out, 'field=0.4, ')
+
+    def test_none(self):
+        out = util.format_repr("field", None)
+        self.assertEqual(out, 'field=None, ')
+
+    def test_tuple(self):
+        out = util.format_repr("field", (1.0, 2.0))
+        self.assertEqual(out, 'field=(1.0, 2.0), ')
+
+
 class TestInRange(unittest.TestCase):
     """Tests on the function utilities.in_range."""
 
@@ -276,3 +304,4 @@ if __name__ == "__main__":
     run_tests(TestFindFile)
     run_tests(TestGaussianWindow)
     run_tests(TestUnpackArray)
+    run_tests(TestFormatRepr)

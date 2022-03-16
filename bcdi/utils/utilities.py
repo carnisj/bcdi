@@ -683,6 +683,21 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
     )
 
 
+def format_repr(field: str, value: Optional[Any]) -> str:
+    """
+    Format a string for the __repr__ method depending on its value.
+
+    :param field: str, the value of the field in __repr__
+    :param value: string or None
+    :return: a string
+    """
+    if not isinstance(field, str):
+        raise TypeError(f"'field should be a string, got {type(field)}'")
+    if isinstance(value, str):
+        return f'{field}="{value}", '
+    return f"{field}={value}, "
+
+
 def function_lmfit(params, x_axis, distribution, iterator=0):
     """
     Calculate distribution defined by lmfit Parameters.

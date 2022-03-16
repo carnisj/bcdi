@@ -926,10 +926,10 @@ class Loader(ABC):
     def __repr__(self):
         """Representation string of the Loader instance."""
         return (
-            self.__class__.__name__ + '('
+            self.__class__.__name__ + "("
             f'name="{self.name}", '
-            f'sample_offsets={self.sample_offsets}, '                      
-            ')'
+            f"sample_offsets={self.sample_offsets}, "
+            ")"
         )
 
 

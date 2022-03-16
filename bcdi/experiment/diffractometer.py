@@ -374,10 +374,10 @@ class Diffractometer:
     def __repr__(self):
         """Representation string of the Diffractometer instance."""
         return (
-            self.__class__.__name__ + '('
+            self.__class__.__name__ + "("
             f'name="{self.name}", '
-            f'sample_offsets={self.sample_offsets}, '                      
-            ')'
+            f"sample_offsets={self.sample_offsets}, "
+            ")"
         )
 
     def rotation_matrix(self, stage_name, angles):

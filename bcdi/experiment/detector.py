@@ -66,6 +66,7 @@ import os
 import pathlib
 from typing import Any, Dict, List, Union
 
+from bcdi.utils.utilities import format_repr
 from bcdi.utils import validation as valid
 
 
@@ -558,22 +559,22 @@ class Detector(ABC):
     def __repr__(self):
         """Representation string of the Detector instance."""
         return (
-            self.__class__.__name__ + '('
-            f'name="{self.name}", '
-            f'rootdir = {self.rootdir}, '
-            f'datadir = {self.datadir}, '
-            f'savedir = {self.savedir}, '
-            f'template_file = {self.template_file}, '
-            f'template_imagefile = {self.template_imagefile}, '
-            f'specfile = {self.specfile}, '
-            f'sample_name = {self.sample_name}, '
-            f'roi={self.roi}, '
-            f'sum_roi={self.sum_roi}, '
-            f'binning={self.binning}, '
-            f'preprocessing_binning={self.preprocessing_binning}, '
-            f'offsets={self.offsets}, '
-            f'linearity_func={self.linearity_func}, '
-            ')'
+            self.__class__.__name__ + "("
+            + format_repr("name", self.name)
+            + format_repr("rootdir", self.rootdir)
+            + format_repr("datadir", self.datadir)
+            + format_repr("savedir", self.savedir)
+            + format_repr("template_file", self.template_file)
+            + format_repr("template_imagefile", self.template_imagefile)
+            + format_repr("specfile", self.specfile)
+            + format_repr("sample_name", self.sample_name)
+            + format_repr("roi", self.sample_name)
+            + format_repr("sum_roi", self.sum_roi)
+            + format_repr("binning", self.binning)
+            + format_repr("preprocessing_binning", self.preprocessing_binning)
+            + format_repr("offsets", self.offsets)
+            + format_repr("linearity_func", self.linearity_func)
+            + ")"
         )
 
     @staticmethod
