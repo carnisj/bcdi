@@ -1347,7 +1347,10 @@ def run(prm):
                     "detector_data_COM", data=metadata["detector_data_COM"]
                 )
                 out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
-            out.create_dataset("bragg_peak", data=bragg_peak)
+            try:
+                out.create_dataset("bragg_peak", data=bragg_peak)
+            except TypeError:
+                print("Bragg peak not computed.")
             out.create_dataset("q", data=q)
             out.create_dataset("qnorm", data=qnorm)
             out.create_dataset("dist_plane", data=dist_plane)
