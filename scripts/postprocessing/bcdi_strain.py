@@ -152,14 +152,6 @@ Usage:
      optional dictionary that can be used to define the entries corresponding to
      actuators in data files (useful at CRISTAL where the location of data keeps
      changing, or to declare a non-standard monitor)
-    :param is_series: e.g. True
-     specific to series measurement at P10
-    :param custom_scan: e.g. False
-     True for a stack of images acquired without scan, e.g. with ct in a
-     macro, or when there is no spec/log file available
-    :param custom_images: list of image numbers for the custom_scan, None otherwise
-    :param custom_monitor: list of monitor values for normalization for the custom_scan,
-     None otherwise
     :param rocking_angle: e.g. "outofplane"
      "outofplane" for a sample rotation around x outboard, "inplane" for a sample
      rotation around y vertical up
@@ -210,6 +202,9 @@ Usage:
     :param custom_scan: e.g. False
      True for a stack of images acquired without scan, e.g. with ct in a
      macro, or when there is no spec/log file available
+    :param custom_images: list of image numbers for the custom_scan, None otherwise
+    :param custom_monitor: list of monitor values for normalization for the custom_scan,
+     None otherwise
     :param custom_motors: e.g. {"delta": 5.5, "gamma": 42.2, "theta": 1.1, "phi": 0}
      dictionary providing the goniometer positions of the beamline
 
@@ -288,8 +283,6 @@ Usage:
 
     Parameters related to data visualization:
 
-    :param debug: e.g. False
-     True to show all plots for debugging
     :param align_axis: e.g. False
      True to rotate the crystal to align axis_to_align along ref_axis for visualization.
      This is done after the calculation of the strain and has no effect on it.
