@@ -256,8 +256,19 @@ class TestCorrectDetectorAngles(unittest.TestCase):
         )
 
 
+class TestRepr(unittest.TestCase):
+    """Tests related to __repr__."""
+
+    def setUp(self) -> None:
+        self.setup = Setup(beamline="ID01")
+
+    def test_return_type(self):
+        self.assertIsInstance(eval(repr(self.setup)), Setup)
+
+
 if __name__ == "__main__":
     run_tests(Test)
     run_tests(TestCheckSetup)
     run_tests(TestCorrectDirectBeam)
     run_tests(TestCorrectDetectorAngles)
+    run_tests(TestRepr)

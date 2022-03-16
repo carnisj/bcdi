@@ -660,15 +660,16 @@ class Setup:
     def __repr__(self):
         """Representation string of the Setup instance."""
         return (
-            self.__class__.__name__ + '(beamline="' + self.beamline.name + '", '
-            'detector_name="' + self.detector.name + '", '
+            self.__class__.__name__ + '('
+            f'beamline="{self.beamline.name}", '
+            f'detector_name="{self.detector.name}", '
             f'beam_direction={list(self.beam_direction)}, '
             f'energy={self.energy}, '
             f'distance={self.distance}, '
             f'outofplane_angle={self.outofplane_angle}, '
             f'inplane_angle={self.inplane_angle}, '
             f'tilt_angle={self.tilt_angle}, '
-            'rocking_angle="' + self.rocking_angle + '", '
+            f'rocking_angle={self.rocking_angle}, '
             f'grazing_angle={self.grazing_angle}, '
             f'direct_beam={self.direct_beam}, '
             f'dirbeam_detector_angles={self.dirbeam_detector_angles}, '
