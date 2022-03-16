@@ -9,7 +9,10 @@
 import numpy as np
 import os
 from pyfakefs import fake_filesystem_unittest
+import unittest
+
 from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.loader import create_loader, LoaderID01
 from bcdi.experiment.setup import Setup
 from tests.config import run_tests
 
@@ -277,6 +280,18 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
         self.assertTrue(distance is None)
 
 
+class TestRepr(unittest.TestCase):
+    """Tests related to __repr__."""
+
+    def setUp(self) -> None:
+        self.loader = create_loader(name="ID01", sample_offsets=(0, 0, 0))
+
+    def test_return_type(self):
+        print(repr(self.loader))
+        self.assertIsInstance(eval(repr(self.loader)), LoaderID01)
+
+
 if __name__ == "__main__":
     run_tests(TestRetrieveDistance)
     run_tests(TestInitPath)
+    run_tests(TestRepr)

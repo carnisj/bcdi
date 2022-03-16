@@ -510,7 +510,7 @@ class Loader(ABC):
      the sample offsets will be subtracted to measurement the motor values.
     """
 
-    def __init__(self, name, sample_offsets):
+    def __init__(self, name: str, sample_offsets: Tuple[float, ...]) -> None:
         self.name = name
         self.sample_offsets = sample_offsets
 
@@ -922,6 +922,15 @@ class Loader(ABC):
 
         :return: the default monitor values
         """
+
+    def __repr__(self):
+        """Representation string of the Loader instance."""
+        return (
+            self.__class__.__name__ + '('
+            f'name="{self.name}", '
+            f'sample_offsets={self.sample_offsets}, '                      
+            ')'
+        )
 
 
 class LoaderID01(Loader):
