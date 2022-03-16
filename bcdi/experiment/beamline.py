@@ -520,6 +520,10 @@ class Beamline(ABC):
             array = array[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
         return array
 
+    def __repr__(self):
+        """Representation string of the Beamline instance."""
+        return self.__class__.__name__ + f'(name="{self.name}")'
+
     @property
     def sample_angles(self):
         """Tuple of goniometer angular values for the sample stages."""
