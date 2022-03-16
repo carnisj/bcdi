@@ -1393,7 +1393,9 @@ class Facets:
 
             except (AttributeError, TypeError):
                 try:
-                    print("Particle not rotated, some attributes could not be saved ...")
+                    print(
+                        "Particle not rotated, some attributes could not be saved ..."
+                    )
                     facets.create_dataset("u0", data=np.zeros(3))
                     facets.create_dataset("v0", data=np.zeros(3))
                     facets.create_dataset("w0", data=np.zeros(3))

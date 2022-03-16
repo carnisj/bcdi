@@ -1880,7 +1880,6 @@ def multislices_plot(
     plt.pause(0.5)
     plt.ioff()
 
-
     if ipynb_layout:
         return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)

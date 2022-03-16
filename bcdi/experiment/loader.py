@@ -214,7 +214,7 @@ def check_pixels(data, mask, debugging=False):
     # use the value 0.99 to be inclusive
     mean_singlephoton = min_count / nbz
     var_singlephoton = (
-        ((nbz - 1) * mean_singlephoton**2 + (min_count - mean_singlephoton) ** 2)
+        ((nbz - 1) * mean_singlephoton ** 2 + (min_count - mean_singlephoton) ** 2)
         * 1
         / nbz
     )

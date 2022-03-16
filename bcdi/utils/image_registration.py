@@ -535,16 +535,19 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
             np.ceil(ups_factor * 1.5) / 2
         )  # Center of output array at dftshift+1
         # Matrix multiply DFT around the current shift estimate
-        crosscorr = np.conj(
-            dftups(
-                buf2ft * np.conj(buf1ft),
-                np.ceil(ups_factor * 1.5),
-                np.ceil(ups_factor * 1.5),
-                ups_factor,
-                dftshift - row_shift * ups_factor,
-                dftshift - col_shift * ups_factor,
+        crosscorr = (
+            np.conj(
+                dftups(
+                    buf2ft * np.conj(buf1ft),
+                    np.ceil(ups_factor * 1.5),
+                    np.ceil(ups_factor * 1.5),
+                    ups_factor,
+                    dftshift - row_shift * ups_factor,
+                    dftshift - col_shift * ups_factor,
+                )
             )
-        ) / (md2 * nd2 * ups_factor**2)
+            / (md2 * nd2 * ups_factor ** 2)
+        )
         # Locate maximum and map back to original pixel grid
         _, indices = index_max(np.abs(crosscorr))
         row_max = indices[0]
@@ -552,10 +555,10 @@ def dft_registration(buf1ft, buf2ft, ups_factor=100):
 
         crosscorr_max = crosscorr[row_max, column_max]
         rg00 = dftups(buf1ft * np.conj(buf1ft), 1, 1, ups_factor) / (
-            md2 * nd2 * ups_factor**2
+            md2 * nd2 * ups_factor ** 2
         )
         rf00 = dftups(buf2ft * np.conj(buf2ft), 1, 1, ups_factor) / (
-            md2 * nd2 * ups_factor**2
+            md2 * nd2 * ups_factor ** 2
         )
         row_max = row_max - dftshift
         column_max = column_max - dftshift

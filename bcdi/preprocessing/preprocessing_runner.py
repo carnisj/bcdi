@@ -627,9 +627,12 @@ def run(prm):
                 )  # do not modify the raw data before the interpolation
                 tmp_data[mask == 1] = 0
 
-                save_path = setup.detector.savedir \
-                    + f"data_before_gridding_S{scan_nb}_{nz}_{ny}_{nx}" \
-                    + binning_comment + ".png"
+                save_path = (
+                    setup.detector.savedir
+                    + f"data_before_gridding_S{scan_nb}_{nz}_{ny}_{nx}"
+                    + binning_comment
+                    + ".png"
+                )
 
                 fig, _, _ = gu.multislices_plot(
                     tmp_data,
@@ -640,7 +643,7 @@ def run(prm):
                     title="Data before gridding\n",
                     is_orthogonal=False,
                     reciprocal_space=True,
-                    save_as = save_path
+                    save_as=save_path,
                 )
                 plt.close(fig)
                 del tmp_data
@@ -821,10 +824,12 @@ def run(prm):
         # save data and mask before alien removal #
         ###########################################
         if debug:
-            save_path = setup.detector.savedir \
-                + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_" \
-                + f"{setup.detector.binning[0]}_" \
+            save_path = (
+                setup.detector.savedir
+                + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_"
+                + f"{setup.detector.binning[0]}_"
                 + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
+            )
         else:
             save_path = False
 
@@ -837,7 +842,7 @@ def run(prm):
             title="Data before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
-            save_as = save_path,
+            save_as=save_path,
         )
 
         if flag_interact:
@@ -877,10 +882,12 @@ def run(prm):
         plt.close(fig)
 
         if debug:
-            save_path = setup.detector.savedir \
-                + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_" \
-                f"{setup.detector.binning[0]}" \
+            save_path = (
+                setup.detector.savedir
+                + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
+                f"{setup.detector.binning[0]}"
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
+            )
         else:
             save_path = False
 
@@ -894,7 +901,7 @@ def run(prm):
             title="Mask before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
-            save_as = save_path,
+            save_as=save_path,
         )
 
         if flag_interact:
@@ -1170,10 +1177,13 @@ def run(prm):
         if debug:
             z0, y0, x0 = center_of_mass(data)
 
-            save_path = setup.detector.savedir \
-                + f"middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_" \
-                + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}" \
-                + comment + ".png"
+            save_path = (
+                setup.detector.savedir
+                + f"middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
+                + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
+                + comment
+                + ".png"
+            )
 
             fig, _, _ = gu.multislices_plot(
                 data,
@@ -1185,17 +1195,19 @@ def run(prm):
                 slice_position=[int(z0), int(y0), int(x0)],
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
-                save_as = save_path,
+                save_as=save_path,
             )
-
 
             if not flag_interact:
                 plt.close(fig)
 
-            save_path = setup.detector.savedir \
-                + f"sum_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_" \
-                + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}" \
-                + comment + ".png"
+            save_path = (
+                setup.detector.savedir
+                + f"sum_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
+                + f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
+                + comment
+                + ".png"
+            )
 
             fig, _, _ = gu.multislices_plot(
                 data,
@@ -1206,15 +1218,17 @@ def run(prm):
                 title="Masked data",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
-                save_as = save_path,
+                save_as=save_path,
             )
 
             if not flag_interact:
                 plt.close(fig)
 
-            save_path = setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_" \
-                f"{setup.detector.binning[0]}_{setup.detector.binning[1]}_" \
+            save_path = (
+                setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
+                f"{setup.detector.binning[0]}_{setup.detector.binning[1]}_"
                 f"{setup.detector.binning[2]}" + comment + ".png"
+            )
 
             fig, _, _ = gu.multislices_plot(
                 mask,
@@ -1226,7 +1240,7 @@ def run(prm):
                 title="Mask",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
-                save_as = save_path,
+                save_as=save_path,
             )
 
             if not flag_interact:
@@ -1382,7 +1396,7 @@ def run(prm):
             title="Final data",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
-            save_as = setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png"
+            save_as=setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png",
         )
         if not flag_interact:
             plt.close(fig)
@@ -1397,7 +1411,7 @@ def run(prm):
             title="Final mask",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
-            save_as = setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png"
+            save_as=setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png",
         )
         if not flag_interact:
             plt.close(fig)

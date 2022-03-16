@@ -2024,7 +2024,7 @@ class BeamlineP10SAXS(BeamlineP10):
             alpha_f = np.arctan(
                 np.divide(
                     myy * pixelsize_y,
-                    np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2)),
+                    np.sqrt(distance ** 2 + np.power(myx * pixelsize_x, 2)),
                 )
             )
 

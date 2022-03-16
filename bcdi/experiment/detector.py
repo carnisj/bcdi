@@ -289,9 +289,9 @@ class Detector(ABC):
             :return: the updated 1D array
             """
             return (
-                coeffs[0] * array_1d**4
-                + coeffs[1] * array_1d**3
-                + coeffs[2] * array_1d**2
+                coeffs[0] * array_1d ** 4
+                + coeffs[1] * array_1d ** 3
+                + coeffs[2] * array_1d ** 2
                 + coeffs[3] * array_1d
                 + coeffs[4]
             )
