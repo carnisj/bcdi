@@ -8,7 +8,7 @@
 
 import numpy as np
 import unittest
-from bcdi.experiment.beamline import create_beamline, Beamline
+from bcdi.experiment.beamline import create_beamline, Beamline, BeamlineID01
 from tests.config import run_tests
 
 
@@ -79,6 +79,10 @@ class TestBeamline(unittest.TestCase):
     def test_find_outofplane_34ID(self):
         beamline = create_beamline("34ID")
         self.assertTrue(beamline.find_outofplane() == 1)
+
+    def test_repr(self):
+        beamline = create_beamline("ID01")
+        self.assertIsInstance(eval(repr(beamline)), BeamlineID01)
 
 
 class TestBeamlineCRISTAL(unittest.TestCase):

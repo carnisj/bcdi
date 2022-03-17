@@ -10,6 +10,7 @@
 import numpy as np
 from numbers import Real
 
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 
@@ -29,7 +30,7 @@ class RotationMatrix:
     valid_circles = {"x+", "x-", "y+", "y-", "z+", "z-"}
     # + counter-clockwise, - clockwise
 
-    def __init__(self, circle, angle):
+    def __init__(self, circle: str, angle: Real) -> None:
         self.angle = angle
         self.circle = circle
 
@@ -107,3 +108,7 @@ class RotationMatrix:
                 f" {list(RotationMatrix.valid_circles)}"
             )
         return matrix
+
+    def __repr__(self):
+        """Representation string of the RotationMatrix instance."""
+        return util.create_repr(self, RotationMatrix)

@@ -414,7 +414,7 @@ plt.rcParams["keymap.fullscreen"] = [""]
 # Initialize setup #
 ####################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     energy=energy,
     rocking_angle="inplane",
     distance=sdd,

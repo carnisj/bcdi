@@ -142,7 +142,7 @@ def run(prm):
     # define the experimental setup #
     #################################
     setup = Setup(
-        beamline=beamline_name,
+        beamline_name=beamline_name,
         energy=prm.get("energy"),
         outofplane_angle=prm.get("outofplane_angle"),
         inplane_angle=prm.get("inplane_angle"),

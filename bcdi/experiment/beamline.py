@@ -51,7 +51,6 @@ from abc import ABC, abstractmethod
 from math import hypot, isclose
 import numpy as np
 from numbers import Real
-import os
 import xrayutilities as xu
 
 from bcdi.experiment.diffractometer import Diffractometer
@@ -519,6 +518,10 @@ class Beamline(ABC):
             # data has been cropped, we suppose it is centered in z dimension
             array = array[(nb_steps - nb_frames) // 2 : (nb_steps + nb_frames) // 2]
         return array
+
+    def __repr__(self):
+        """Representation string of the Beamline instance."""
+        return util.create_repr(self, Beamline)
 
     @property
     def sample_angles(self):

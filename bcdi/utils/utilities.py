@@ -11,6 +11,7 @@ from collections import OrderedDict
 import ctypes
 from functools import reduce
 import gc
+from inspect import signature
 import json
 import h5py
 from matplotlib import pyplot as plt
@@ -33,25 +34,13 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
         """Override the JSONEncoder.default method to support more types."""
         if isinstance(obj, np.ndarray):
-            return CustomEncoder.ndarray_to_list(obj)
+            return ndarray_to_list(obj)
             # Let the base class default method raise the TypeError
         if isinstance(obj, set):
             return list(obj)
         if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
-
-    @staticmethod
-    def ndarray_to_list(obj):
-        """Convert a numpy ndarray of any dimension to a nested list."""
-        if not isinstance(obj, np.ndarray):
-            raise TypeError("a numpy ndarray is expected")
-        if obj.ndim == 1:
-            return list(obj)
-        output = []
-        for idx in range(obj.shape[0]):
-            output.append(CustomEncoder.ndarray_to_list(obj[idx]))
-        return output
 
 
 def apply_logical_array(arrays, frames_logical):
@@ -681,6 +670,55 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
         + m * x_axis[1] ** 4
         + n * x_axis[2] ** 4
     )
+
+
+def create_repr(obj: Any, cls: type) -> str:
+    """
+    Generate the string representation of the object.
+
+    It uses the parameters given to __init__, except self, args and kwargs.
+
+    :param obj: the object for which the string representation should be generated
+    :param cls: the cls from which __init__ parameters should be extracted (e.g., base
+     class in case of inheritance)
+    :return: the string representation
+    """
+    if not isinstance(cls, type):
+        raise TypeError(f"'cls' should be a class, for {type(cls)}")
+    output = obj.__class__.__name__ + "("
+    for _, param in enumerate(
+        signature(cls.__init__).parameters.keys()  # type: ignore
+    ):
+        quote_mark = True
+        if param not in ["self", "args", "kwargs"]:
+            value = getattr(obj, param)
+            if isinstance(value, np.ndarray):
+                value = ndarray_to_list(value)
+            if callable(value):
+                value = value.__module__ + "." + value.__name__
+                # it's a string but we don't want to put it in quote mark in order to
+                # be able to call it directly
+                quote_mark = False
+            output += format_repr(param, value, quote_mark=quote_mark)
+
+    output += ")"
+    return str(output)
+
+
+def format_repr(field: str, value: Optional[Any], quote_mark: bool = True) -> str:
+    """
+    Format a string for the __repr__ method depending on its value.
+
+    :param field: str, the value of the field in __repr__
+    :param value: string or None
+    :param quote_mark: True to put quote marks around strings
+    :return: a string
+    """
+    if not isinstance(field, str):
+        raise TypeError(f"'field should be a string, got {type(field)}'")
+    if isinstance(value, str) and quote_mark:
+        return f'{field}="{value}", '.replace("\\", "/")
+    return f"{field}={value}, ".replace("\\", "/")
 
 
 def function_lmfit(params, x_axis, distribution, iterator=0):
@@ -1412,6 +1450,22 @@ def mean_filter(
         )
 
     return data, nb_pixels, mask
+
+
+def ndarray_to_list(array: np.ndarray) -> List:
+    """
+    Convert a numpy ndarray of any dimension to a nested list.
+
+    :param array: the array to be converted
+    """
+    if not isinstance(array, np.ndarray):
+        raise TypeError("a numpy ndarray is expected")
+    if array.ndim == 1:
+        return list(array)
+    output = []
+    for idx in range(array.shape[0]):
+        output.append(ndarray_to_list(array[idx]))
+    return output
 
 
 def objective_lmfit(params, x_axis, data, distribution):
@@ -2382,11 +2436,11 @@ def try_smaller_primes(number, maxprime=13, required_dividers=(4,)):
 
 def unpack_array(
     array: Union[float, List[float], np.ndarray]
-) -> Union[float, List[float], np.ndarray]:
+) -> Union[float, np.ndarray]:
     """Unpack an array or Sequence of length 1 into a single element."""
     if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
         return array[0]
-    return array
+    return np.asarray(array)
 
 
 def wrap(obj, start_angle, range_angle):

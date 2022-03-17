@@ -95,6 +95,9 @@ class TestConfigParser(unittest.TestCase):
         self.parser = ConfigParser(CONFIG)
         self.assertIsNone(self.parser.arguments)
 
+    def test_repr(self):
+        self.assertIsInstance(eval(repr(self.parser)), ConfigParser)
+
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)

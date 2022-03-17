@@ -42,6 +42,7 @@ from numbers import Number, Real
 import numpy as np
 
 from bcdi.experiment.rotation_matrix import RotationMatrix
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 Geometry = namedtuple(
@@ -370,6 +371,10 @@ class Diffractometer:
                 name="index",
             )
             del self.__getattribute__(self.valid_names[stage_name])[index]
+
+    def __repr__(self):
+        """Representation string of the Diffractometer instance."""
+        return util.create_repr(self, Diffractometer)
 
     def rotation_matrix(self, stage_name, angles):
         """

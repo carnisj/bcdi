@@ -250,7 +250,7 @@ plt.ion()
 # initialize the setup #
 ########################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     is_series=is_series,
     detector_name=detector,
     datadir="",

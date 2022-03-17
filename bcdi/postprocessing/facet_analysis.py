@@ -15,12 +15,14 @@ import ipywidgets as widgets
 from ipywidgets import Layout, interactive
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pathlib
 import pandas as pd
 from pandas import DataFrame
 from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
 import vtk
 
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 
@@ -83,9 +85,6 @@ class Facets:
 
         # Check input parameters
         valid.valid_container(
-            filename, container_types=str, min_length=1, name="filename"
-        )
-        valid.valid_container(
             pathdir, container_types=str, min_length=1, name="pathdir"
         )
         if not pathdir.endswith("/"):
@@ -96,10 +95,12 @@ class Facets:
         if savedir is not None and not savedir.endswith("/"):
             savedir += "/"
         valid.valid_item(lattice, allowed_types=float, min_excluded=0, name="lattice")
+        self.filename = filename
         self.pathsave = savedir or pathdir + "facets_analysis/"
         self.path_to_data = pathdir + filename
-        self.filename = filename
         self.lattice = lattice
+        self.pathdir = pathdir
+        self.savedir = savedir
 
         # Plotting options
         self.strain_range = 0.001
@@ -175,6 +176,16 @@ class Facets:
                 style={"description_width": "initial"},
             ),
         )
+
+    @property
+    def filename(self):
+        """Path to the VTK file."""
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        valid.valid_container(value, container_types=str, min_length=1, name="filename")
+        self._filename = value
 
     def load_vtk(self) -> None:
         """
@@ -1448,9 +1459,7 @@ class Facets:
 
     def __repr__(self):
         """Unambiguous representation of the class."""
-        return "Facets {}\n".format(
-            self.filename,
-        )
+        return util.create_repr(obj=self, cls=Facets)
 
     def __str__(self):
         """Readable representation of the class."""

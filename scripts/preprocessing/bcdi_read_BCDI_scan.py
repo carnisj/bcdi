@@ -140,7 +140,7 @@ if normalize not in {"skip", "monitor"}:
 # Initialize setup #
 ####################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     rocking_angle=rocking_angle,
     custom_scan=custom_scan,
     custom_images=custom_images,

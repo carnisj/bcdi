@@ -123,7 +123,7 @@ my_cmap = colormap.cmap
 # define setup #
 ################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     energy=energy,
     outofplane_angle=outofplane_angle,
     inplane_angle=inplane_angle,

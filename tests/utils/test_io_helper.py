@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import io
 from pathlib import Path
 import unittest
 from bcdi.utils.io_helper import ContextFile
@@ -67,6 +68,20 @@ class TestContextFile(unittest.TestCase):
                 next(file)
             except StopIteration:
                 pass
+
+    def test_repr(self):
+        ctx = ContextFile(
+            filename=self.filename, open_func=self.open_func, shortname="test"
+        )
+        print(repr(ctx))
+        self.assertIsInstance(eval(repr(ctx)), ContextFile)
+
+    def test_repr_str_none(self):
+        ctx = ContextFile(
+            filename=self.filename, open_func=self.open_func, shortname=None
+        )
+        print(repr(ctx))
+        self.assertIsInstance(eval(repr(ctx)), ContextFile)
 
 
 if __name__ == "__main__":

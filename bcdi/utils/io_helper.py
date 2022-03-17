@@ -12,6 +12,7 @@ from functools import wraps
 import os
 from typing import Callable, Optional, Union
 
+from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
 
 
@@ -162,6 +163,10 @@ class ContextFile:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.file.close()
         return False
+
+    def __repr__(self):
+        """Representation string of the ContextFile instance."""
+        return util.create_repr(obj=self, cls=ContextFile)
 
 
 def safeload(func: Callable) -> Callable:

@@ -234,7 +234,7 @@ def press_key(event):
 # Initialize setup #
 ####################
 setup = Setup(
-    beamline=beamline,
+    beamline_name=beamline,
     energy=energy,
     rocking_angle=rocking_angle,
     distance=sdd,

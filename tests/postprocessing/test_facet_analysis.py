@@ -220,6 +220,9 @@ class TestInitFacetsAttributes(unittest.TestCase):
     def test_init_particle_cmap(self):
         self.assertTrue(self.facets.particle_cmap == "gist_ncar")
 
+    def test_repr(self):
+        self.assertIsInstance(eval(repr(self.facets)), Facets)
+
 
 if __name__ == "__main__":
     run_tests(TestInitFacetsParams)

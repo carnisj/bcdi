@@ -322,7 +322,7 @@ def run(prm):
     # Initialize setup #
     ####################
     setup = Setup(
-        beamline=beamline_name,
+        beamline_name=beamline_name,
         energy=prm.get("energy"),
         rocking_angle=rocking_angle,
         distance=prm.get("sdd"),
