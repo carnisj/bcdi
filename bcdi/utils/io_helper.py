@@ -123,6 +123,11 @@ class ContextFile:
         self._shortname = value
 
     def __enter__(self):
+        """
+        Enter the context manager.
+
+        This method returns a handle to the opened file.
+        """
         if (
             self.open_func.__module__ == "silx.io.specfile"
             and self.open_func.__name__ == "SpecFile"
@@ -161,7 +166,17 @@ class ContextFile:
         return self.file
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.file.close()
+        """
+        Exit the context manager.
+
+        The open_func needs to implement a method 'close'.
+        """
+        try:
+            self.file.close()
+        except AttributeError:
+            raise NotImplementedError(
+                "couldn't close the file, 'close' is not implemented"
+            )
         return False
 
     def __repr__(self):
@@ -171,7 +186,7 @@ class ContextFile:
 
 def safeload(func: Callable) -> Callable:
     """
-    Decorator for safely opening files within class methods.
+    Decorate a class method to safely opening files.
 
     :param func: a class method accessing the file
     """
@@ -195,7 +210,7 @@ def safeload(func: Callable) -> Callable:
 
 def safeload_static(func: Callable) -> Callable:
     """
-    Decorator for safely opening files within class static methods.
+    Decorate a class static method or a function to safely opening files.
 
     :param func: a class static method accessing the file
     """
