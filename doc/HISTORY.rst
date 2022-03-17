@@ -7,7 +7,6 @@ Future:
 * Refactor: implement correctly the `__repr__` methods so that eval(repr(instance)) is
   itself an instance.
 
-
 Version 0.2.4:
 --------------
 
