@@ -16,6 +16,7 @@ from typing import Any, ByteString, Dict, Optional
 import yaml
 
 from bcdi.utils.parameters import valid_param
+from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
 
 
@@ -190,7 +191,7 @@ class ConfigParser:
     @property
     def file_path(self):
         """Path of the configuration file."""
-        return self._file_path
+        return self._file_path.replace("\\", "/")
 
     @file_path.setter
     def file_path(self, value):
@@ -250,3 +251,7 @@ class ConfigParser:
         with open(self.file_path, "rb") as f:
             raw_config = f.read()
         return raw_config
+
+    def __repr__(self):
+        """Representation string of the ConfigParser instance."""
+        return util.create_repr(self, ConfigParser)
