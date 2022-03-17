@@ -191,7 +191,7 @@ class ConfigParser:
     @property
     def file_path(self):
         """Path of the configuration file."""
-        return self._file_path.replace("\\", "/")
+        return self._file_path
 
     @file_path.setter
     def file_path(self, value):

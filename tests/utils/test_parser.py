@@ -27,7 +27,7 @@ class TestConfigParser(unittest.TestCase):
         self.parser = ConfigParser(CONFIG, self.command_line_args)
 
     def test_init_file_path(self):
-        self.assertTrue(self.parser.file_path == CONFIG.replace("\\", "/"))
+        self.assertTrue(self.parser.file_path == CONFIG)
 
     def test_init_file_path_2(self):
         self.assertTrue(self.parser.arguments is None)

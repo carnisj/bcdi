@@ -717,8 +717,8 @@ def format_repr(field: str, value: Optional[Any], quote_mark: bool = True) -> st
     if not isinstance(field, str):
         raise TypeError(f"'field should be a string, got {type(field)}'")
     if isinstance(value, str) and quote_mark:
-        return f'{field}="{value}", '
-    return f"{field}={value}, "
+        return f'{field}="{value}", '.replace("\\", "/")
+    return f"{field}={value}, ".replace("\\", "/")
 
 
 def function_lmfit(params, x_axis, distribution, iterator=0):

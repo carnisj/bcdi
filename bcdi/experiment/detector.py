@@ -66,7 +66,7 @@ import os
 import pathlib
 from typing import Any, Dict
 
-from bcdi.utils.utilities import create_repr
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 
@@ -558,7 +558,7 @@ class Detector(ABC):
 
     def __repr__(self):
         """Representation string of the Detector instance."""
-        return create_repr(self, Detector)
+        return util.create_repr(self, Detector)
 
     @staticmethod
     def _background_subtraction(data, background):

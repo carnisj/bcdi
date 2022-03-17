@@ -51,7 +51,6 @@ from abc import ABC, abstractmethod
 from math import hypot, isclose
 import numpy as np
 from numbers import Real
-import os
 import xrayutilities as xu
 
 from bcdi.experiment.diffractometer import Diffractometer

@@ -25,7 +25,7 @@ class TestContextFile(unittest.TestCase):
 
     def test_instantiate_class(self):
         ctx = ContextFile(filename=self.filename, open_func=self.open_func)
-        self.assertTrue(ctx.filename == self.filename.replace("\\", "/"))
+        self.assertTrue(ctx.filename == self.filename)
         self.assertTrue(ctx.mode == "r")
         self.assertTrue(ctx.encoding == "utf-8")
         self.assertIsNone(ctx.file)
