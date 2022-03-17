@@ -1,5 +1,14 @@
-Version 0.2.4:
+Future:
 -------
+
+* Bug: use explicitely the figure handle to save figures in `bcdi_strain.py` and
+  `bcdi_preprocessing_BCDI.py`
+
+* Refactor: implement correctly the `__repr__` methods so that eval(repr(instance)) is
+  itself an instance.
+
+Version 0.2.4:
+--------------
 
 * Refactor: open files within context managers in `utilities.load_file`.
 

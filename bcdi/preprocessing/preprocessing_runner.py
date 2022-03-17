@@ -636,7 +636,7 @@ def run(prm):
                     is_orthogonal=False,
                     reciprocal_space=True,
                 )
-                plt.savefig(
+                fig.savefig(
                     setup.detector.savedir
                     + f"data_before_gridding_S{scan_nb}_{nz}_{ny}_{nx}"
                     + binning_comment
@@ -831,7 +831,7 @@ def run(prm):
             reciprocal_space=True,
         )
         if debug:
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir
                 + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}_"
@@ -860,7 +860,7 @@ def run(prm):
             reciprocal_space=False,
         )
         if debug:
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir
                 + f"data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}"
@@ -885,7 +885,7 @@ def run(prm):
             reciprocal_space=True,
         )
         if debug:
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir
                 + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}"
@@ -1175,7 +1175,7 @@ def run(prm):
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
             )
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir
                 + f"middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
                 f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
@@ -1195,7 +1195,7 @@ def run(prm):
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
             )
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir
                 + f"sum_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
                 f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
@@ -1216,7 +1216,7 @@ def run(prm):
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
             )
-            plt.savefig(
+            fig.savefig(
                 setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}_{setup.detector.binning[1]}_"
                 f"{setup.detector.binning[2]}" + comment + ".png"
@@ -1347,7 +1347,10 @@ def run(prm):
                     "detector_data_COM", data=metadata["detector_data_COM"]
                 )
                 out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
-            out.create_dataset("bragg_peak", data=bragg_peak)
+            try:
+                out.create_dataset("bragg_peak", data=bragg_peak)
+            except TypeError:
+                print("Bragg peak not computed.")
             out.create_dataset("q", data=q)
             out.create_dataset("qnorm", data=qnorm)
             out.create_dataset("dist_plane", data=dist_plane)
@@ -1372,7 +1375,7 @@ def run(prm):
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
         )
-        plt.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
         if not flag_interact:
             plt.close(fig)
 
@@ -1387,7 +1390,7 @@ def run(prm):
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
         )
-        plt.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
         if not flag_interact:
             plt.close(fig)
 

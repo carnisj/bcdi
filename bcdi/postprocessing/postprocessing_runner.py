@@ -1077,7 +1077,7 @@ def run(prm):
     )
     plt.pause(0.1)
     if save:
-        plt.savefig(
+        fig.savefig(
             setup.detector.savedir + "S" + str(scan) + "_bulk" + comment + ".png"
         )
 
@@ -1121,7 +1121,7 @@ def run(prm):
         )
         fig.text(0.60, 0.05, f"Estimated T={temperature} C", size=20)
     if save:
-        plt.savefig(setup.detector.savedir + f"S{scan}_amp" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"S{scan}_amp" + comment + ".png")
 
     # amplitude histogram
     fig, ax = plt.subplots(1, 1)
@@ -1173,7 +1173,7 @@ def run(prm):
     else:
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if save:
-        plt.savefig(setup.detector.savedir + f"S{scan}_displacement" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"S{scan}_displacement" + comment + ".png")
 
     # strain
     fig, _, _ = gu.multislices_plot(
@@ -1208,4 +1208,4 @@ def run(prm):
     else:
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if save:
-        plt.savefig(setup.detector.savedir + f"S{scan}_strain" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"S{scan}_strain" + comment + ".png")

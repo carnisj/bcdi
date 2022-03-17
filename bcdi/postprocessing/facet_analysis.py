@@ -1403,19 +1403,36 @@ class Facets:
                 print("Saved Facets class attributes")
 
             except (AttributeError, TypeError):
-                print("Particle not rotated, some attributes could not be saved ...")
-                facets.create_dataset("u0", data=np.zeros(3))
-                facets.create_dataset("v0", data=np.zeros(3))
-                facets.create_dataset("w0", data=np.zeros(3))
-                facets.create_dataset("u", data=np.zeros(3))
-                facets.create_dataset("v", data=np.zeros(3))
-                facets.create_dataset("norm_u", data=np.zeros(3))
-                facets.create_dataset("norm_v", data=np.zeros(3))
-                facets.create_dataset("norm_w", data=np.zeros(3))
-                facets.create_dataset("rotation_matrix", data=np.zeros((3, 3)))
-                facets.create_dataset("hkl_reference", data=[])
-                facets.create_dataset("planar_dist", data="")
-                facets.create_dataset("ref_normal", data=np.zeros(3))
+                try:
+                    print(
+                        "Particle not rotated, some attributes could not be saved ..."
+                    )
+                    facets.create_dataset("u0", data=np.zeros(3))
+                    facets.create_dataset("v0", data=np.zeros(3))
+                    facets.create_dataset("w0", data=np.zeros(3))
+                    facets.create_dataset("u", data=np.zeros(3))
+                    facets.create_dataset("v", data=np.zeros(3))
+                    facets.create_dataset("norm_u", data=np.zeros(3))
+                    facets.create_dataset("norm_v", data=np.zeros(3))
+                    facets.create_dataset("norm_w", data=np.zeros(3))
+                    facets.create_dataset("rotation_matrix", data=np.zeros((3, 3)))
+                    facets.create_dataset("hkl_reference", data=[])
+                    facets.create_dataset("planar_dist", data="")
+                    facets.create_dataset("ref_normal", data=np.zeros(3))
+                except ValueError:
+                    f["/entry_1/process_4/u0"][...] = np.zeros(3)
+                    f["/entry_1/process_4/v0"][...] = np.zeros(3)
+                    f["/entry_1/process_4/w0"][...] = np.zeros(3)
+                    f["/entry_1/process_4/u"][...] = np.zeros(3)
+                    f["/entry_1/process_4/v"][...] = np.zeros(3)
+                    f["/entry_1/process_4/norm_u"][...] = np.zeros(3)
+                    f["/entry_1/process_4/norm_v"][...] = np.zeros(3)
+                    f["/entry_1/process_4/norm_w"][...] = np.zeros(3)
+                    f["/entry_1/process_4/rotation_matrix"][...] = np.zeros((3, 3))
+                    f["/entry_1/process_4/hkl_reference"][...] = []
+                    f["/entry_1/process_4/planar_dist"][...] = ""
+                    f["/entry_1/process_4/planar_dist"].attrs["units"] = "Angstrom"
+                    f["/entry_1/process_4/ref_normal"][...] = np.zeros(3)
 
         # Save field data
         try:
