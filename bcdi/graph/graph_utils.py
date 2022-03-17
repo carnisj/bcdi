@@ -8,7 +8,7 @@
 """Functions related to visualization."""
 
 import numpy as np
-from numbers import Number, Real
+from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -20,10 +20,13 @@ import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from matplotlib.colors import LinearSegmentedColormap
 from operator import itemgetter
+import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 import sys
-from ..utils import validation as valid
+from typing import Optional
+
+from bcdi.utils import validation as valid
 
 # define a colormap
 color_dict = {
@@ -1546,6 +1549,7 @@ def multislices_plot(
     is_orthogonal=False,
     reciprocal_space=False,
     ipynb_layout=False,
+    save_as: Optional[str] = None,
     **kwargs,
 ):
     """
@@ -1577,6 +1581,7 @@ def multislices_plot(
     :param vmin: lower boundary for the colorbar. Float or tuple of 3 floats
     :param vmax: higher boundary for the colorbar. Float or tuple of 3 floats
     :param ipynb_layout: toggle for 3 plots in a row, cleaner in an Jupyter Notebook
+    :param save_as: if string, saves figure at this path
     :param kwargs:
      - 'invert_y': boolean, True to invert the vertical axis of the plot.
        Will overwrite the default behavior.
@@ -1867,13 +1872,17 @@ def multislices_plot(
     ##########
     # axis 3 #
     ##########
-    if not ipynb_layout:
+    if not ipynb_layout and ax3 is not None:
         # hide axis 3
         ax3.set_visible(False)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.5)
     plt.ioff()
+
+    if isinstance(save_as, str):
+        pathlib.Path(save_as).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_as)
 
     if ipynb_layout:
         return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
