@@ -1,6 +1,6 @@
 numpy
 scipy
-scikit-image<=0.18.3
+scikit-image
 matplotlib
 hdf5plugin
 h5py
