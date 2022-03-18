@@ -7,9 +7,10 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Definition of the correct parameters for the config files.
+Validation of configuration parameters.
 
-Parameter validation is performed over the excepted parameters.
+The validation is performed only on the expected parameters. Other parameters are simply
+discarded.
 """
 from numbers import Number, Real
 import numpy as np

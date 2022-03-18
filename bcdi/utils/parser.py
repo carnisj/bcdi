@@ -164,7 +164,7 @@ class ConfigParser:
     file. Some validation is also realized in the class.
 
     :param file_path: path of the configuration file that contains
-    the arguments, str.
+     the arguments, str.
     :param command_line_args: an optional dictionary of command-line arguments
     """
 

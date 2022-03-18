@@ -30,6 +30,39 @@ API Reference
 .. automodule:: bcdi.utils.image_registration
    :members:
 
+io_helper
+^^^^^^^^^
+
+Class and decorators related to the safe opening of files.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.utils.io_helper
+   :members:
+
+parameters
+^^^^^^^^^^
+
+Function related to the validation of configuration parameters.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.utils.parameters
+   :members:
+
+parser
+^^^^^^
+
+Class and functions related to loading of the config file and command line parameters.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.utils.parser
+   :members:
+
 validation
 ^^^^^^^^^^
 
