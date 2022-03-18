@@ -127,11 +127,11 @@ setup(
          6. Creating figures for publication using templates.""",
     url="https://github.com/carnisj/bcdi",
     project_urls={"Documentation": "https://bcdi.readthedocs.io/en/latest/"},
-    python_requires=">=3.6*",
+    python_requires=">=3.6*, <3.10",
     install_requires=[
         "numpy",
         "scipy",
-        "scikit-image<=0.18.3",
+        "scikit-image",
         "matplotlib",
         "hdf5plugin",
         "h5py",
