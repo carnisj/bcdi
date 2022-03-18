@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Release the constraint on scikit-image version in the requirements.
+
 * Bug: use explicitely the figure handle to save figures in `bcdi_strain.py` and
   `bcdi_preprocessing_BCDI.py`
 
