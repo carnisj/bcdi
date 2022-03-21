@@ -6,4 +6,4 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """The main bcdi package, which contains the whole framework."""
-__version__ = "0.2.4"
+__version__ = "0.2.5"
