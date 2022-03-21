@@ -1,7 +1,10 @@
-Future:
--------
+Version 0.2.5:
+--------------
 
-* Release the constraint on scikit-image version in the requirements.
+* Remove support for Python 3.6 and Python 3.7
+
+* Use exact versions of dependencies in `setup.py` and `requirements.txt` to improve the
+  reproducibility of results.
 
 * Bug: use explicitely the figure handle to save figures in `bcdi_strain.py` and
   `bcdi_preprocessing_BCDI.py`
