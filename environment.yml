@@ -6,35 +6,35 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - black=22.1.0
-  - coverage=6.3.2
-  - doit=0.34.2
-  - fabio=0.13.0
-  - h5py=3.6.0
-  - importlib_resources=5.4.0
-  - ipywidgets=7.7.0
-  - lmfit=1.0.3
-  - matplotlib=3.5.1
-  - moviepy=1.0.1
-  - mypy=0.941
-  - numpy=1.22.3
-  - pandas=1.4.1
-  - Pillow=9.0.1
-  - pycodestyle=2.8.0
-  - pydocstyle=6.1.1
-  - pyfakefs=4.5.5
-  - pyqt=5.9.2
-  - pyyaml=6.0
-  - scikit-image=0.18.3
-  - scipy=1.8.0
-  - silx=1.0.0
-  - Sphinx=4.4.0
-  - pytables=3.6.1
-  - traits=6.3.2
-  - twine=3.8.0
-  - vtk=9.1.0
-  - wheel=0.37.1
-  - xrayutilities=1.7.3
+  - black=19.10b0=py_0
+  - coverage=6.3.2=py39h2bbff1b_0
+  - doit=0.33.1=py39haa95532_0
+  - fabio=0.13.0=py39h5d4886f_0
+  - h5py=3.6.0=py39h3de5c98_0
+  - importlib_resources=5.2.0=pyhd3eb1b0_1
+  - ipywidgets=7.6.5=pyhd3eb1b0_1
+  - lmfit=1.0.3=pyhd8ed1ab_0
+  - matplotlib=3.5.1=py39haa95532_1
+  - moviepy=1.0.1=py_0
+  - mypy=0.910=pyhd3eb1b0_0
+  - numpy=1.21.5=py39ha4e8547_0
+  - pandas=1.4.1=py39hd77b12b_0
+  - pillow=9.0.1=py39hdc2b20a_0
+  - pycodestyle=2.8.0=pyhd3eb1b0_0
+  - pydocstyle=6.1.1=pyhd3eb1b0_0
+  - pyfakefs=4.5.5=pyhd8ed1ab_0
+  - pyqt=5.9.2=py39hd77b12b_6
+  - pytables=3.6.1=py39h56d22b6_1
+  - pyyaml=6.0=py39h2bbff1b_1
+  - scikit-image=0.18.3=py39hf11a4ad_0
+  - scipy=1.7.3=py39h0a974cb_0
+  - silx=1.0.0=hd8ed1ab_1
+  - sphinx=4.4.0=pyhd3eb1b0_0
+  - traits=6.2.0=py39h2bbff1b_0
+  - twine=3.7.1=pyhd3eb1b0_0
+  - vtk=9.0.3=py39h84a6d72_201
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - xrayutilities=1.7.3=py39h5d4886f_0
   - pip:
     - hdf5plugin==3.2.0
     - sphinxcontrib-mermaid==0.7.1
