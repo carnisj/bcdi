@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.6]
 
     steps:
     - uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
       id: myCache
       uses: actions/cache@v2
       with:
-        path: /opt/hostedtoolcache/Python/3.9.10/x64/lib/python3.9/site-packages
+        path: /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
