@@ -24,8 +24,8 @@ dependencies:
   - pydocstyle=6.1.1
   - pyfakefs=4.5.5
   - pyqt=5.9.2
-  - PyYAML=6.0
-  - scikit-image=0.19.2
+  - pyyaml=6.0
+  - scikit-image=0.18.3
   - scipy=1.8.0
   - silx=1.0.0
   - Sphinx=4.4.0
