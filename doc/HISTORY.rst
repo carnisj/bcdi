@@ -1,3 +1,9 @@
+Future:
+-------
+
+* Change the default colormap for the turbo colormap.
+  See https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
+
 Version 0.2.5:
 --------------
 
