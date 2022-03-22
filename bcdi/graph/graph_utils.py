@@ -26,6 +26,7 @@ from scipy.ndimage import map_coordinates
 import sys
 from typing import Optional
 
+from bcdi.graph.turbo_colormap import turbo_colormap as my_cmap
 from bcdi.utils import validation as valid
 
 # define a colormap
@@ -55,8 +56,8 @@ color_dict = {
         (1.0, 0.0, 0.0),
     ),
 }
-my_cmap = LinearSegmentedColormap("my_colormap", color_dict, 256)
-my_cmap.set_bad(color="0.7")
+custom_cmap = LinearSegmentedColormap("my_colormap", color_dict, 256)
+custom_cmap.set_bad(color="0.7")
 
 
 class Colormap:
