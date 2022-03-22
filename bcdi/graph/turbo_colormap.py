@@ -4,6 +4,8 @@
 # Author: Anton Mikhailov
 # Code-style, type hinting and docstrings: Jerome Carnis
 
+"""Implementation of the turbo colormap."""
+
 from matplotlib.colors import ListedColormap
 from typing import List
 
@@ -289,7 +291,6 @@ turbo_colormap = ListedColormap(turbo_colormap_data)
 def interpolate(colormap: List[List[float]], x: float) -> List[float]:
     """
     Interpolate linearly between the colormap entries.
-
 
     :param colormap: a valid colormap to be used for the interpolation
     :param x: a floating point value in the range [0, 1]
