@@ -88,6 +88,9 @@ We would like to acknowledge the following packages:
 * Some functions were adapted from PyNX: (c) Vincent Favre-Nicolin.
   See: http://ftp.esrf.fr/pub/scisoft/PyNX/ and J. Appl. Cryst. 49, 1842-1848 (2016).
 
+* Anton Mikhailov for the turbo colormap.
+  See https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
+
 The following third-party packages are required:
 
 * numpy, scipy, scikit-image, matplotlib, pyqt5, vtk, h5py, hdf5plugin, fabio,

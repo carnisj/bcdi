@@ -200,7 +200,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     elif key == "comment":
         valid.valid_container(value, container_types=str, name=key)
-        if value and not value.startwith("_"):
+        if value and not value.startswith("_"):
             value += "_"
     elif key == "config_file":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
