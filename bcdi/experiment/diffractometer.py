@@ -20,7 +20,6 @@ The beamline-specific geometry is defined via a named tuple.
       +detector_circles
       +name
       +sample_circles
-      +sample_offsets
       +tuple sample_offsets
       -_geometry
       add_circle()
@@ -30,6 +29,19 @@ The beamline-specific geometry is defined via a named tuple.
       rotation_matrix()
       valid_name()
   }
+
+'sample_offsets' is a list or tuple of angles in degrees, corresponding to the offsets
+of each of the sample circles (the offset for the most outer circle should be at
+index 0). The number of circles is beamline dependent, as indicated below with default
+values in degrees:
+
+- ID01: (mu=0, eta=0, phi=0,)
+- SIXS: (beta=0, mu=0,)
+- 34ID-C: (theta=0, chi=90, phi=0,)
+- P10: (mu=0, om=0, chi=90, phi=0,)
+- P10_SAXS: (phi=0,)
+- CRISTAL: (mgomega=0, mgphi=0,)
+- NANOMAX: (theta=0, phi=0,)
 
 API Reference
 -------------
