@@ -2,6 +2,7 @@ include *.gitignore
 include *.ini
 include *.md
 recursive-include .github *.md
+include *.cff
 include *.rst
 include *.txt
 recursive-include doc *.rst

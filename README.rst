@@ -159,6 +159,7 @@ Related package `Cohere <https://github.com/AdvancedPhotonSource/cohere>`_:
 
 License
 =======
+
 The BCDI library is distributed with a CeCILL-B license
 (an open-source license similar to the FreeBSD one).
 See http://cecill.info/licences/Licence_CeCILL-B_V1-en.html
