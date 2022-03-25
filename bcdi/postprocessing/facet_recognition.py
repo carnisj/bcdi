@@ -14,7 +14,7 @@ from scipy.interpolate import griddata
 from scipy import stats
 from scipy import ndimage
 from skimage.feature import corner_peaks
-from skimage.morphology import watershed
+from skimage.segmentation import watershed
 from numbers import Real
 import numpy as np
 from matplotlib import pyplot as plt
