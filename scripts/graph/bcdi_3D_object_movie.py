@@ -15,6 +15,7 @@ import tkinter as tk
 import sys
 from tkinter import filedialog
 
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -57,8 +58,7 @@ output_format = "gif"  # 'gif', 'mp4'
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 ###############
 # load FFMpeg #

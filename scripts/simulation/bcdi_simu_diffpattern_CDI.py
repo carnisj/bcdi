@@ -9,6 +9,8 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -82,8 +84,7 @@ print("Data shape:", nbz, nby, nbx)
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 plt.ion()
 
 ######################

@@ -2498,14 +2498,14 @@ class LoaderP10(Loader):
                 ):  # template for positioners: 'mu = 0.0\n'
                     energy = float(words[2])
 
-                if index_om is not None and util.is_float(words[0]):
+                if index_om is not None and valid.is_float(words[0]):
                     if index_phi is not None:
                         raise NotImplementedError(
                             "d2scan with om and phi not supported"
                         )
                     # reading data and index_om is defined (outofplane case)
                     rocking_positions.append(float(words[index_om]))
-                if index_phi is not None and util.is_float(words[0]):
+                if index_phi is not None and valid.is_float(words[0]):
                     if index_om is not None:
                         raise NotImplementedError(
                             "d2scan with om and phi not supported"
@@ -2580,7 +2580,7 @@ class LoaderP10(Loader):
                 # device_name scanned, template = ' Col 0 motor_name DOUBLE\n'
                 index_device = int(words[1]) - 1  # python index starts at 0
 
-            if index_device is not None and util.is_float(words[0]):
+            if index_device is not None and valid.is_float(words[0]):
                 # we are reading data and index_motor is defined
                 device_values.append(float(words[index_device]))
 
@@ -2638,7 +2638,7 @@ class LoaderP10SAXS(LoaderP10):
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
                     print(words, "  Index Phi=", index_phi)
-                if index_phi is not None and util.is_float(words[0]):
+                if index_phi is not None and valid.is_float(words[0]):
                     # we are reading data and index_phi is defined
                     positions.append(float(words[index_phi]))
 

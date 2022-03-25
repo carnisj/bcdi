@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 
 helptext = """
@@ -41,8 +42,7 @@ comment = ""  # should start with _
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 #################
 # load the data #

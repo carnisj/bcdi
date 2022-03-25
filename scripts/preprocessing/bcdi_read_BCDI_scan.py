@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -120,8 +121,7 @@ width = None  # [50, 50]  # [vertical, horizontal], leave None for default
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 plt.ion()
 
 ########################################

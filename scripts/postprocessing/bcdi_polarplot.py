@@ -21,6 +21,8 @@ import tkinter as tk
 from tkinter import filedialog
 from numpy.fft import fftn, fftshift
 import gc
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.facet_recognition as fu
@@ -260,8 +262,7 @@ tilt = 0  # tilt parameter from xrayutilities 2D detector calibration
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 
 ####################
 # Initialize setup #

@@ -934,12 +934,6 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     if array.ndim == 3 and convert_grey:
         print("converting image to gray")
         array = rgb2gray(array)
-
-    if debug:
-        print(f"Image shape after conversion to ndarray: {array.shape}")
-        gu.imshow_plot(
-            array, sum_axis=2, plot_colorbar=True, cmap=cmap, reciprocal_space=False
-        )
     return array
 
 
@@ -991,22 +985,6 @@ def in_range(point, extent):
         ):
             return True
     return False
-
-
-def is_float(string):
-    """
-    Return True is the string represents a number.
-
-    :param string: the string to be checked
-    :return: True of False
-    """
-    if not isinstance(string, str):
-        raise TypeError("the input should be a string")
-    try:
-        float(string)
-        return True
-    except ValueError:
-        return False
 
 
 def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):

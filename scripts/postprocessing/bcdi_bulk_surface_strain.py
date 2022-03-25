@@ -14,6 +14,8 @@ import pathlib
 import tkinter as tk
 from tkinter import filedialog
 import os
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -69,8 +71,7 @@ pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 #############
 # load data #

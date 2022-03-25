@@ -13,6 +13,7 @@ from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
 from tkinter import filedialog
 import gc
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -249,8 +250,7 @@ valid.valid_container(
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 #################
 # load the data #

@@ -18,7 +18,6 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
-from matplotlib.colors import LinearSegmentedColormap
 from operator import itemgetter
 import pathlib
 from scipy.interpolate import griddata
@@ -26,57 +25,10 @@ from scipy.ndimage import map_coordinates
 import sys
 from typing import Optional, Tuple
 
-from bcdi.graph.turbo_colormap import turbo_colormap as my_cmap
+from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import validation as valid
 
-# define a colormap
-color_dict = {
-    "red": (
-        (0.0, 1.0, 1.0),
-        (0.11, 0.0, 0.0),
-        (0.36, 0.0, 0.0),
-        (0.62, 1.0, 1.0),
-        (0.87, 1.0, 1.0),
-        (1.0, 0.0, 0.0),
-    ),
-    "green": (
-        (0.0, 1.0, 1.0),
-        (0.11, 0.0, 0.0),
-        (0.36, 1.0, 1.0),
-        (0.62, 1.0, 1.0),
-        (0.87, 0.0, 0.0),
-        (1.0, 0.0, 0.0),
-    ),
-    "blue": (
-        (0.0, 1.0, 1.0),
-        (0.11, 1.0, 1.0),
-        (0.36, 1.0, 1.0),
-        (0.62, 0.0, 0.0),
-        (0.87, 0.0, 0.0),
-        (1.0, 0.0, 0.0),
-    ),
-}
-custom_cmap = LinearSegmentedColormap("my_colormap", color_dict, 256)
-custom_cmap.set_bad(color="0.7")
-
-
-class Colormap:
-    """
-    Class to define a colormap.
-
-    :param colormap: a colormap string. Available choices at the moment: 'default'
-    :param bad_color: a string which defines the grey level for nan pixels, e.g. '0.7'
-    """
-
-    def __init__(self, bad_color="0.7", colormap="default"):
-        if colormap == "default":
-            cdict = color_dict
-        else:
-            raise ValueError('Only available colormaps: "default"')
-        self.cdict = cdict
-        self.bad_color = bad_color
-        self.cmap = LinearSegmentedColormap("my_colormap", self.cdict, 256)
-        self.cmap.set_bad(color=self.bad_color)
+default_cmap = ColormapFactory().generate_cmap()
 
 
 def close_event(event):
@@ -126,7 +78,7 @@ def combined_plots(
     tuple_title,
     tuple_scale,
     tuple_sum_axis=None,
-    cmap=my_cmap,
+    cmap=default_cmap,
     tick_direction="out",
     tick_width=1,
     tick_length=4,
@@ -577,7 +529,7 @@ def contour_slices(
     width_y=None,
     width_x=None,
     plot_colorbar=False,
-    cmap=my_cmap,
+    cmap=default_cmap,
     title="",
     scale="linear",
     is_orthogonal=False,
@@ -763,7 +715,7 @@ def contour_stereographic(
     plot_planes=True,
     contour_range=None,
     max_angle=95,
-    cmap=my_cmap,
+    cmap=default_cmap,
     uv_labels=("", ""),
     hide_axis=False,
     scale="linear",
@@ -812,7 +764,7 @@ def contour_stereographic(
             euclidian_v,
             s=6,
             c=color2,
-            cmap=my_cmap,
+            cmap=default_cmap,
             norm=colors.LogNorm(
                 vmin=max(color2[~np.isnan(color2)].min(), 1),
                 vmax=color2[~np.isnan(color2)].max(),
@@ -1058,7 +1010,7 @@ def imshow_plot(
     plot_colorbar=False,
     vmin=np.nan,
     vmax=np.nan,
-    cmap=my_cmap,
+    cmap=default_cmap,
     title="",
     labels=None,
     scale="linear",
@@ -1391,7 +1343,16 @@ def linecut(
 
 
 def loop_thru_scan(
-    key, array, figure, scale, dim, idx, savedir, cmap=my_cmap, vmin=None, vmax=None
+    key,
+    array,
+    figure,
+    scale,
+    dim,
+    idx,
+    savedir,
+    cmap=default_cmap,
+    vmin=None,
+    vmax=None,
 ):
     """
     Update the plot while removing the parasitic diffraction intensity in 3D dataset.
@@ -1544,7 +1505,7 @@ def multislices_plot(
     width_y=None,
     width_x=None,
     plot_colorbar=False,
-    cmap=my_cmap,
+    cmap=default_cmap,
     title="",
     scale="linear",
     vmin=np.nan,
@@ -2490,7 +2451,7 @@ def scatter_stereographic(
     color,
     title="",
     max_angle=95,
-    cmap=my_cmap,
+    cmap=default_cmap,
     uv_labels=("", ""),
 ):
     """
@@ -2801,7 +2762,7 @@ def update_aliens_combined(
     frame_index,
     vmax,
     vmin=0,
-    cmap=my_cmap,
+    cmap=default_cmap,
     invert_yaxis=False,
 ):
     """
@@ -3623,7 +3584,7 @@ def update_mask_combined(
     info_text,
     vmax,
     vmin=0,
-    cmap=my_cmap,
+    cmap=default_cmap,
     invert_yaxis=False,
 ):
     """

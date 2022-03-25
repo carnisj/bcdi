@@ -21,6 +21,8 @@ import sys
 from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
@@ -406,8 +408,7 @@ valid.valid_container(
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 plt.rcParams["keymap.fullscreen"] = [""]
 
 ####################

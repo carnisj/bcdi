@@ -15,6 +15,7 @@ from tkinter import filedialog
 import matplotlib.ticker as ticker
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.utils import image_registration as reg
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -92,8 +93,7 @@ if grey_background:
     bad_color = "0.7"
 else:
     bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 
 #############
 # load data #

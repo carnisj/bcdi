@@ -26,6 +26,7 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
@@ -314,8 +315,7 @@ def run(prm):
     ###################
     # define colormap #
     ###################
-    colormap = gu.Colormap()
-    my_cmap = colormap.cmap
+    my_cmap = ColormapFactory().generate_cmap()
     plt.rcParams["keymap.fullscreen"] = [""]
 
     ####################
