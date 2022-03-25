@@ -79,7 +79,6 @@ setup(
         "scripts/simulation/bcdi_simu_diffpattern_BCDI.py",
         "scripts/simulation/bcdi_simu_diffpattern_CDI.py",
         "scripts/simulation/bcdi_simu_signe_phase.py",
-        "scripts/utils/bcdi_apodize.py",
         "scripts/utils/bcdi_angular_avg_3Dto1D.py",
         "scripts/utils/bcdi_calibration_grid_SEM.py",
         "scripts/utils/bcdi_center_of_rotation.py",

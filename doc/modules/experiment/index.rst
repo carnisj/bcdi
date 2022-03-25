@@ -58,11 +58,11 @@ The following classes are implemented:
     Beamline *-- Loader : create_loader()
     Diffractometer *-- RotationMatrix
 
-In scripts, the initial step is to declare a detector instance and a setup instance with
-the related parameters (see the class documentation). The beamline and the detector are
-instantiated in the Setup instance. The Loader and Diffractometer are instantiated in
-the Beamline instance. However, you are free to instantiate these classes outside of a
-Setup instance if needed.
+In scripts, the initial step is to declare a setup instance with the related parameters
+(see the class documentation). The beamline and the detector are instantiated in the
+Setup instance. The Loader and Diffractometer are instantiated in the Beamline instance.
+However, you are free to instantiate these classes outside of a Setup instance if
+needed.
 
 The geometry of the following beamlines is implemented:
 
