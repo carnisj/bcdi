@@ -21,6 +21,8 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
 import bcdi.utils.image_registration as reg
@@ -296,8 +298,7 @@ hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 ###################################
 # load experimental data and mask #

@@ -21,6 +21,8 @@ from skimage import measure
 import logging
 import sys
 import gc
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.facet_recognition as fu
 import bcdi.simulation.simulation_utils as simu
@@ -155,8 +157,7 @@ logger = logging.getLogger()
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(.generate_cmap())
 
 #############
 # load data #

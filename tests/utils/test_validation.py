@@ -13,6 +13,37 @@ import bcdi.utils.validation as valid
 from tests.config import run_tests
 
 
+class TestIsFloat(unittest.TestCase):
+    """
+    Tests on the function utilities.is_float.
+
+    def is_float(string)
+    """
+
+    def test_string_float(self):
+        self.assertTrue(util.is_float("12.0"))
+
+    def test_string_int(self):
+        self.assertTrue(util.is_float("12"))
+
+    def test_string_complex(self):
+        self.assertFalse(util.is_float("12 + 1j"))
+
+    def test_string_none(self):
+        self.assertFalse(util.is_float("None"))
+
+    def test_string_not_numeric(self):
+        self.assertFalse(util.is_float("abc"))
+
+    def test_none(self):
+        with self.assertRaises(TypeError):
+            util.is_float(None)
+
+    def test_array(self):
+        with self.assertRaises(TypeError):
+            util.is_float(np.ones(3))
+
+
 class TestValidContainer(unittest.TestCase):
     """
     Tests on valid_container.
@@ -812,6 +843,7 @@ class TestValidNdArray(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    run_tests(TestIsFloat)
     run_tests(TestValidContainer)
     run_tests(TestValidKwargs)
     run_tests(TestValidItem)

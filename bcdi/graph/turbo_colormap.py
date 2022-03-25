@@ -6,7 +6,6 @@
 
 """Implementation of the turbo colormap."""
 
-from matplotlib.colors import ListedColormap
 from typing import List
 
 turbo_colormap_data = [
@@ -268,8 +267,6 @@ turbo_colormap_data = [
     [0.47960, 0.01583, 0.01055],
 ]
 
-turbo_colormap = ListedColormap(turbo_colormap_data)
-# turbo_colormap.set_bad(color="0.7")
 
 # The look-up table contains 256 entries. Each entry is a floating point sRGB triplet.
 # To use it with matplotlib, pass cmap=ListedColormap(turbo_colormap_data) as an arg

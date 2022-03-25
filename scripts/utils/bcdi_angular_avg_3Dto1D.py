@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
@@ -59,8 +61,7 @@ subtract_median = False  # if True, will subtract the median to the mean at each
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 ##############################
 # load reciprocal space data #

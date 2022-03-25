@@ -14,6 +14,7 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 import sys
 import bcdi.postprocessing.postprocessing_utils as pu
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.algorithms.algorithms_utils as algu
 import bcdi.utils.utilities as util
@@ -257,8 +258,7 @@ def press_key(event):
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 plt.rcParams["keymap.fullscreen"] = [""]
 
 #################

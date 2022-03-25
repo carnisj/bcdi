@@ -20,12 +20,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches
 import sys
+from bcdi.graph.colormap import ColormapFactory
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
-colormap = gu.Colormap()
-default_cmap = colormap.cmap
+default_cmap = ColormapFactory().generate_cmap()
 
 
 def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):

@@ -14,6 +14,7 @@ from tkinter import filedialog
 from scipy.stats import pearsonr
 import bcdi.utils.utilities as util
 from bcdi.utils import image_registration as reg
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 
 helptext = """
@@ -26,8 +27,7 @@ threshold_correlation = 0.05
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 #############
 # load data #

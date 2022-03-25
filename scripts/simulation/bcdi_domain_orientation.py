@@ -16,6 +16,8 @@ import gc
 import time
 import datetime
 import sys
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.detector import create_detector
 import bcdi.utils.utilities as util
@@ -105,8 +107,7 @@ detector = create_detector(name=detector, binning=binning, roi=roi_detector)
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 plt.ion()
 
 ###################################

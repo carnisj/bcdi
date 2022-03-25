@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
 import matplotlib.ticker as ticker
 import os
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
@@ -242,8 +243,7 @@ def press_key(event):
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 plt.ion()
 
 ########################

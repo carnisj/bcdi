@@ -17,6 +17,8 @@ from scipy.interpolate import RegularGridInterpolator
 import gc
 import os
 import sys
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
@@ -116,8 +118,7 @@ comment = ""  # should start with _
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 
 ################
 # define setup #

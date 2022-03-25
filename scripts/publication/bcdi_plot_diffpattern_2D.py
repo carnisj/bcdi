@@ -16,6 +16,8 @@ import pathlib
 import tkinter as tk
 from tkinter import filedialog
 from scipy.ndimage.measurements import center_of_mass
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -138,8 +140,7 @@ if grey_background:
 else:
     bad_color = "1.0"  # white background
 
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 
 if is_orthogonal:
     labels = ("Qx", "Qz", "Qy")

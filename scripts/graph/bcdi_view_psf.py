@@ -16,6 +16,7 @@ import h5py
 import pathlib
 import tkinter as tk
 from tkinter import filedialog
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
 
@@ -46,8 +47,7 @@ linewidth = 2  # linewidth for the plot frame
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 mpl.rcParams["axes.linewidth"] = tick_width  # set the linewidth globally
 
 #########################

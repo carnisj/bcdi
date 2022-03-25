@@ -17,6 +17,7 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -138,8 +139,7 @@ energy = 10300  # in eV, offset of 6eV at ID01
 ###################
 bad_color = "1.0"  # white
 bckg_color = "0.7"  # grey
-colormap = gu.Colormap(bad_color=bad_color)
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
 
 ########################################
 # check and initialize some parameters #

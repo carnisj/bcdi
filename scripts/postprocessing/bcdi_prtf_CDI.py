@@ -21,6 +21,8 @@ from tkinter import filedialog
 from scipy.interpolate import interp1d
 import gc
 import sys
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 
@@ -66,8 +68,7 @@ q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max
 ###################
 # define colormap #
 ###################
-colormap = gu.Colormap()
-my_cmap = colormap.cmap
+my_cmap = ColormapFactory().generate_cmap()
 
 #########################
 # check some parameters #
