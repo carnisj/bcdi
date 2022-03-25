@@ -24,7 +24,7 @@ import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 import sys
-from typing import Optional
+from typing import Optional, Tuple
 
 from bcdi.graph.turbo_colormap import turbo_colormap as my_cmap
 from bcdi.utils import validation as valid
@@ -1284,7 +1284,13 @@ def imshow_plot(
     return fig, axis, plot
 
 
-def linecut(array, start_indices, stop_indices, interp_order=3, debugging=False):
+def linecut(
+    array: np.ndarray,
+    start_indices: Tuple[int, ...],
+    stop_indices: Tuple[int, ...],
+    interp_order: int = 3,
+    debugging: bool = False,
+) -> np.ndarray:
     """
     Linecut through a 2D or 3D array.
 
