@@ -23,7 +23,7 @@ import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 import sys
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import validation as valid
@@ -1238,8 +1238,7 @@ def imshow_plot(
 
 def linecut(
     array: np.ndarray,
-    start_indices: Tuple[int, ...],
-    stop_indices: Tuple[int, ...],
+    indices: List[Tuple[int, int]],
     interp_order: int = 3,
     debugging: bool = False,
 ) -> np.ndarray:
@@ -1248,97 +1247,38 @@ def linecut(
 
     The user must input indices of the starting voxel and of the end voxel.
 
-    :param array: a 2D or 3D array
-    :param start_indices: tuple of indices, of the same length as the number of
-     dimension of array
-    :param stop_indices: tuple of indices, of the same length as the number of
-     dimension of array
+    :param array: a numpy array
+    :param indices: list of tuples of (start, stop) indices, one tuple for each
+     dimension of the array. e.g [(start0, stop0), (start1, stop1)] for a 2D array
     :param interp_order: order of the spline interpolation, default is 3.
      The order has to be in the range 0-5.
     :param debugging: True to see plots
     :return: a 1D array interpolated between the start and stop indices
     """
-    valid.valid_ndarray(array, ndim=(2, 3))
-    if array.ndim == 2:
-        if len(start_indices) != 2 or len(stop_indices) != 2:
-            raise ValueError(
-                "ndim=2, start_indices and stop_indices should be of length 2"
-            )
-
-        num_points = 2 * int(
-            np.sqrt(
-                (stop_indices[0] - start_indices[0]) ** 2
-                + (stop_indices[1] - start_indices[1]) ** 2
-            )
-        )
-        cut = map_coordinates(
-            array,
-            np.vstack(
-                (
-                    np.linspace(start_indices[0], stop_indices[0], num_points),
-                    np.linspace(start_indices[1], stop_indices[1], num_points),
-                )
-            ),
-        )
-    else:  # array is 3D
-        if len(start_indices) != 3 or len(stop_indices) != 3:
-            raise ValueError(
-                "ndim=3, start_indices and stop_indices should be of length 3"
-            )
-
-        num_points = int(
-            np.sqrt(
-                (stop_indices[0] - start_indices[0]) ** 2
-                + (stop_indices[1] - start_indices[1]) ** 2
-                + (stop_indices[2] - start_indices[2]) ** 2
-            )
-        )
-        cut = map_coordinates(
-            array,
-            np.vstack(
-                (
-                    np.linspace(start_indices[0], stop_indices[0], num_points),
-                    np.linspace(start_indices[1], stop_indices[1], num_points),
-                    np.linspace(start_indices[2], stop_indices[2], num_points),
-                )
-            ),
-            order=interp_order,
+    # check parameters
+    valid.valid_ndarray(array)
+    if not isinstance(indices, list):
+        raise TypeError(f"'indices' should be a list, got {type(indices)}")
+    for _, item in enumerate(indices):
+        valid.valid_container(
+            item,
+            container_types=Tuple,
+            item_types=int,
+            min_included=0,
+            length=2,
+            name="indices",
         )
 
-    if debugging:
-        plt.ion()
-        if array.ndim == 2:
-            _, (ax0, ax1) = plt.subplots(ncols=2)
-            ax0.imshow(array)
-            ax0.plot(
-                [start_indices[0], stop_indices[0]],
-                [start_indices[1], stop_indices[1]],
-                "ro-",
-            )
-            ax1.plot(cut)
-        else:
-            _, (ax0, ax1, ax2, ax3), _ = multislices_plot(array, sum_frames=False)
-            ax0.plot(
-                [start_indices[2], stop_indices[2]],
-                [start_indices[1], stop_indices[1]],
-                "ro-",
-            )  # sum axis 0
-            ax1.plot(
-                [start_indices[2], stop_indices[2]],
-                [start_indices[0], stop_indices[0]],
-                "ro-",
-            )  # sum axis 1
-            ax2.plot(
-                [start_indices[1], stop_indices[1]],
-                [start_indices[0], stop_indices[0]],
-                "ro-",
-            )  # sum axis 2
-            ax3.set_visible(True)
-            ax3.cla()
-            ax3.plot(cut)
-            ax3.axis("auto")
-            plt.draw()
+    num_points = 2 * int(
+        np.sqrt(sum((val[1] - val[0]) ** 2 for _, val in enumerate(indices)))
+    )
 
+    cut = map_coordinates(
+        array,
+        np.vstack(
+            ([np.linspace(val[0], val[1], num_points) for _, val in enumerate(indices)])
+        ),
+    )
     return cut
 
 
@@ -1886,6 +1826,42 @@ def plot_3dmesh(
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0
+
+
+def plot_linecut(
+    array: np.ndarray,
+    indices: Optional[List[Tuple[int, int]]] = None,
+    fit_derivative: bool = False,
+    filename: Optional[str] = None,
+):
+    # check parameters
+    valid.valid_ndarray(array, fix_shape=True, name="array")
+    shape = array[0].shape
+    if indices is None:
+        # default to the linecut through the center of the array
+        indices = [(0, val - 1) for _, val in enumerate(shape)]
+    if not isinstance(indices, list):
+        raise TypeError(f"'indices' should be a list, got {type(indices)}")
+    for _, item in enumerate(indices):
+        valid.valid_container(
+            item,
+            container_types=Tuple,
+            item_types=int,
+            min_included=0,
+            length=2,
+            name="indices",
+        )
+    if not isinstance(fit_derivative, bool):
+        raise TypeError(f"fit_derivative should be a bool, got {type(fit_derivative)}")
+    if filename is not None and not isinstance(filename, str):
+        raise TypeError(f"filename should be a string, got {type(filename)}")
+
+    # generate the list of indices for the linecut
+    cut = linecut(array=array, indices=indices)
+
+    # perform a linecut in each dimension of the array, for each array
+    if fit_derivative:
+        dcut = np.gradient(cut)
 
 
 def savefig(
