@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to visualization."""
 
+from lmfit import minimize, Parameters
 import numpy as np
 from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -22,10 +23,12 @@ from operator import itemgetter
 import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
+from scipy.signal import find_peaks
 import sys
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 default_cmap = ColormapFactory().generate_cmap()
@@ -1001,6 +1004,106 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
     return slice_names, ver_labels, hor_labels
 
 
+def fit_linecut(
+    array: np.ndarray,
+    indices: Optional[List[Tuple[int, int]]] = None,
+    fit_derivative: bool = False,
+    support_threshold: float = 0.25,
+    filename: Optional[str] = None,
+) -> Dict:
+    # check parameters
+    valid.valid_ndarray(array, fix_shape=True, name="array")
+    shape = array.shape
+    ndim = len(shape)
+    if indices is None:
+        # default to the linecut through the center of the array
+        indices = [(0, val - 1) for _, val in enumerate(shape)]
+    if not isinstance(indices, list):
+        raise TypeError(f"'indices' should be a list, got {type(indices)}")
+    for _, item in enumerate(indices):
+        valid.valid_container(
+            item,
+            container_types=tuple,
+            item_types=int,
+            min_included=0,
+            length=2,
+            name="indices",
+        )
+    if not isinstance(fit_derivative, bool):
+        raise TypeError(f"fit_derivative should be a bool, got {type(fit_derivative)}")
+    if filename is not None and not isinstance(filename, str):
+        raise TypeError(f"filename should be a string, got {type(filename)}")
+
+    # generate a linecut for each dimension of the array
+    result = {}
+    for idx in range(ndim):
+        result[f"dimension_{idx}"] = {}
+        # generate the list of indices for the linecut
+        cut = linecut(array=array, indices=indices)
+        result[f"dimension_{idx}"][f"linecut"] = cut
+
+        # optionally fit the derivative at the edge of the support
+        if fit_derivative:
+            support = np.zeros(shape)
+            support[array > support_threshold] = 1
+            support_cut = linecut(array=support, indices=indices)
+
+            peaks, metadata = find_peaks(
+                abs(np.gradient(support_cut)), height=0.1, distance=10, width=1
+            )
+            dcut = np.gradient(cut)
+
+            # setup data and parameters for fitting
+            combined_xaxis = []
+            combined_data = []
+            fit_params = Parameters()
+            for peak_id, peak in enumerate(peaks):
+                cropped_dcut = dcut[peak - 10 : peak + 10]
+                result[f"dimension_{idx}"][f"derivative_{peak_id}"] = cropped_dcut
+                combined_data.append(cropped_dcut)
+                combined_xaxis.append(
+                    np.linspace(
+                        peak - 10,
+                        peak + 10,
+                        num=len(cropped_dcut),
+                        endpoint=False,
+                    )
+                )
+                cen = peak
+                fit_params.add("amp_%i" % (peak_id + 1), value=1, min=0.0, max=10)
+                fit_params.add(
+                    "cen_%i" % (peak_id + 1), value=cen, min=cen - 1, max=cen + 1
+                )
+                fit_params.add("sig_%i" % (peak_id + 1), value=2, min=0.1, max=10)
+
+            # fit the data
+            combined_xaxis = np.asarray(combined_xaxis)
+            combined_data = np.asarray(combined_data)
+            fit_result = minimize(
+                util.objective_lmfit,
+                fit_params,
+                args=(
+                    combined_xaxis,
+                    combined_data,
+                    "gaussian",
+                ),
+            )
+
+            # generate fit curves
+            for peak_id, peak in enumerate(peaks):
+                y_fit = util.function_lmfit(
+                    params=fit_result.params,
+                    iterator=peak_id,
+                    x_axis=combined_xaxis[peak_id],
+                    distribution="gaussian",
+                )
+                result[f"dimension_{idx}"][f"fit_{peak_id}"] = y_fit
+
+    # plot the cut and optionally the fits
+    plot_linecut(result, fit_derivative)
+    return result
+
+
 def imshow_plot(
     array,
     sum_frames=False,
@@ -1240,7 +1343,6 @@ def linecut(
     array: np.ndarray,
     indices: List[Tuple[int, int]],
     interp_order: int = 3,
-    debugging: bool = False,
 ) -> np.ndarray:
     """
     Linecut through a 2D or 3D array.
@@ -1252,7 +1354,6 @@ def linecut(
      dimension of the array. e.g [(start0, stop0), (start1, stop1)] for a 2D array
     :param interp_order: order of the spline interpolation, default is 3.
      The order has to be in the range 0-5.
-    :param debugging: True to see plots
     :return: a 1D array interpolated between the start and stop indices
     """
     # check parameters
@@ -1262,7 +1363,7 @@ def linecut(
     for _, item in enumerate(indices):
         valid.valid_container(
             item,
-            container_types=Tuple,
+            container_types=tuple,
             item_types=int,
             min_included=0,
             length=2,
@@ -1274,12 +1375,13 @@ def linecut(
     )
 
     cut = map_coordinates(
-        array,
-        np.vstack(
+        input=array,
+        coordinates=np.vstack(
             ([np.linspace(val[0], val[1], num_points) for _, val in enumerate(indices)])
         ),
+        order=interp_order,
     )
-    return cut
+    return np.asarray(cut)
 
 
 def loop_thru_scan(
@@ -1826,42 +1928,6 @@ def plot_3dmesh(
     plt.pause(0.5)
     plt.ioff()
     return fig, ax0
-
-
-def plot_linecut(
-    array: np.ndarray,
-    indices: Optional[List[Tuple[int, int]]] = None,
-    fit_derivative: bool = False,
-    filename: Optional[str] = None,
-):
-    # check parameters
-    valid.valid_ndarray(array, fix_shape=True, name="array")
-    shape = array[0].shape
-    if indices is None:
-        # default to the linecut through the center of the array
-        indices = [(0, val - 1) for _, val in enumerate(shape)]
-    if not isinstance(indices, list):
-        raise TypeError(f"'indices' should be a list, got {type(indices)}")
-    for _, item in enumerate(indices):
-        valid.valid_container(
-            item,
-            container_types=Tuple,
-            item_types=int,
-            min_included=0,
-            length=2,
-            name="indices",
-        )
-    if not isinstance(fit_derivative, bool):
-        raise TypeError(f"fit_derivative should be a bool, got {type(fit_derivative)}")
-    if filename is not None and not isinstance(filename, str):
-        raise TypeError(f"filename should be a string, got {type(filename)}")
-
-    # generate the list of indices for the linecut
-    cut = linecut(array=array, indices=indices)
-
-    # perform a linecut in each dimension of the array, for each array
-    if fit_derivative:
-        dcut = np.gradient(cut)
 
 
 def savefig(
