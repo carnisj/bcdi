@@ -633,11 +633,11 @@ if flag_interact:
 
     plt.ioff()
     max_colorbar = 5
+    starting_point = [z0, y0, x0]
     endpoint = [0, 0, 0]
     cut = gu.linecut(
         prtf_matrix,
-        start_indices=(z0, y0, x0),
-        stop_indices=endpoint,
+        indices=list(zip(starting_point, endpoint)),
         interp_order=1,
         debugging=False,
     )
