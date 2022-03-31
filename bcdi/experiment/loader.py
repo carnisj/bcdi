@@ -2016,8 +2016,6 @@ class Loader34ID(Loader):
                     ccdraw = util.image_to_ndarray(
                         filename=ccdfiletmp % i,
                         convert_grey=True,
-                        cmap="gray",
-                        debug=False,
                     )
                 except TypeError:
                     raise ValueError(
