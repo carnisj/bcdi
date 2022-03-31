@@ -912,7 +912,7 @@ def higher_primes(number, maxprime=13, required_dividers=(4,)):
     return number
 
 
-def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
+def image_to_ndarray(filename, convert_grey=True):
     """
     Convert an image to a numpy array using pillow.
 
@@ -921,13 +921,8 @@ def image_to_ndarray(filename, convert_grey=True, cmap=None, debug=False):
     :param filename: absolute path of the image to open
     :param convert_grey: if True and the number of layers is 3, it will be converted
      to a single layer of grey
-    :param cmap: colormap for the plots
-    :param debug: True to see plots
     :return:
     """
-    if cmap is None:
-        cmap = gu.Colormap(bad_color="1.0").cmap
-
     im = Image.open(filename)
 
     array = np.asarray(im)
