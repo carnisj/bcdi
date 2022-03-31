@@ -363,8 +363,7 @@ starting_point = starting_point or [nz // 2, 0, nx // 2]
 endpoint = endpoint or [nz // 2, ny - 1, nx // 2]
 cut = gu.linecut(
     diff_pattern,
-    start_indices=starting_point,
-    stop_indices=endpoint,
+    indices=list(zip(starting_point, endpoint)),
     interp_order=1,
     debugging=False,
 )
