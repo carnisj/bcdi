@@ -24,8 +24,9 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
 from typing import Any, List, Optional, Union, Sequence
-from ..graph import graph_utils as gu
-from ..utils import validation as valid
+
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import validation as valid
 
 
 class CustomEncoder(json.JSONEncoder):
