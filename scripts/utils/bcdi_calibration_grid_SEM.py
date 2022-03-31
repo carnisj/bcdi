@@ -133,9 +133,7 @@ file_path = filedialog.askopenfilename(
 
 _, ext = os.path.splitext(file_path)
 if ext in {".png", ".jpg", ".tif"}:
-    obj = util.image_to_ndarray(
-        filename=file_path, convert_grey=True, cmap="gray", debug=False
-    )
+    obj = util.image_to_ndarray(filename=file_path, convert_grey=True)
 else:
     obj, _ = util.load_file(file_path)
 ndim = obj.ndim
