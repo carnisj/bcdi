@@ -207,10 +207,10 @@ def run(prm):
             if prm.get("data_dir") is None
             else setup.detector.datadir,
             filetypes=[
+                ("HDF5", "*.h5"),
+                ("CXI", "*.cxi"),
                 ("NPZ", "*.npz"),
                 ("NPY", "*.npy"),
-                ("CXI", "*.cxi"),
-                ("HDF5", "*.h5"),
             ],
         )
 
@@ -1023,6 +1023,15 @@ def run(prm):
     volume = temp_amp.sum() * reduce(lambda x, y: x * y, voxel_size)  # in nm3
     del temp_amp
     gc.collect()
+
+    ################################
+    # plot linecuts of the results #
+    ################################
+    _ = gu.fit_linecut(
+        array=amp,
+        fit_derivative=True,
+        filename=setup.detector.savedir + "linecut_amp.png",
+    )
 
     ##############################
     # plot slices of the results #
