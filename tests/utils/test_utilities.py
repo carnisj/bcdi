@@ -369,11 +369,54 @@ class TestNdarrayToList(unittest.TestCase):
         self.assertTrue(out == valid)
 
 
+class TestUpsample(unittest.TestCase):
+    """
+    Tests on the function utilities.upsample.
+
+    def upsample(
+    array: Union[np.ndarray, List], factor: int = 2, interp_order: int = 1
+    ) -> np.ndarray:
+    """
+
+    def test_1d_array_factor_1_odd(self):
+        array = np.arange(9)
+        output = util.upsample(array=array, factor=1)
+        self.assertTrue(np.allclose(output, array))
+
+    def test_1d_array_factor_1_even(self):
+        array = np.arange(8)
+        output = util.upsample(array=array, factor=1)
+        self.assertTrue(np.allclose(output, array))
+
+    def test_1d_array_factor_2_odd(self):
+        array = np.arange(3)
+        expected = np.linspace(0, 2, num=6, endpoint=True)
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
+
+    def test_1d_array_factor_2_even(self):
+        array = np.arange(6)
+        expected = np.linspace(0, 5, num=12, endpoint=True)
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
+
+    def test_1d_array_complex_factor_2_even(self):
+        array = np.arange(6) * (1 + 1j)
+        expected = np.linspace(0, 5, num=12, endpoint=True) * (1 + 1j)
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
+
+    def test_2d_array(self):
+        with self.assertRaises(NotImplementedError):
+            util.upsample(array=np.vstack([np.arange(5) for _ in range(6)]), factor=2)
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestFindFile)
     run_tests(TestGaussianWindow)
     run_tests(TestUnpackArray)
+    run_tests(TestUpsample)
     run_tests(TestCreateRepr)
     run_tests(TestFormatRepr)
     run_tests(TestNdarrayToList)

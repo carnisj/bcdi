@@ -20,6 +20,7 @@ import numpy as np
 import os
 from PIL import Image
 from scipy.interpolate import interp1d, RegularGridInterpolator
+from scipy.ndimage import map_coordinates
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
@@ -2415,6 +2416,37 @@ def unpack_array(
     if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
         return array[0]
     return np.asarray(array)
+
+
+def upsample(
+    array: Union[np.ndarray, List], factor: int = 2, interp_order: int = 1
+) -> np.ndarray:
+    # check parameters
+    array = np.asarray(array)
+    if array.ndim > 1:
+        raise NotImplementedError
+    if array.dtype in ["int8", "int16", "int32", "int64"]:
+        array = array.astype(float)
+
+    valid.valid_item(factor, allowed_types=int, min_excluded=0, name="factor")
+    valid.valid_item(
+        interp_order, allowed_types=int, min_excluded=0, name="interp_order"
+    )
+    # FIXME: currently for ndim > 1 it works only if for identical size in each dim
+    result = map_coordinates(
+        input=array,
+        coordinates=np.vstack(
+            (
+                [
+                    np.linspace(0, shape - 1, endpoint=True, num=shape * factor)
+                    for shape in array.shape
+                ]
+            )
+        ),
+        order=interp_order,
+    )
+    print("\n", array, "\n", result)
+    return np.asarray(result)
 
 
 def wrap(obj, start_angle, range_angle):
