@@ -516,7 +516,7 @@ def combined_plots(
             cbar.ax.tick_params(length=tick_length, width=tick_width)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
 
     return fig
@@ -703,7 +703,7 @@ def contour_slices(
     ax3.set_visible(False)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
@@ -930,7 +930,7 @@ def contour_stereographic(
     else:
         ax0.set_title(title)
     ax0.axis("scaled")
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, ax0
 
@@ -1006,9 +1006,10 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
 
 def fit_linecut(
     array: np.ndarray,
-    indices: Optional[List[Tuple[int, int]]] = None,
+    indices: Optional[List[Tuple[int, ...]]] = None,
     fit_derivative: bool = False,
     support_threshold: float = 0.25,
+    voxel_sizes: Optional[List[float]] = None,
     filename: Optional[str] = None,
 ) -> Dict:
     # check parameters
@@ -1016,59 +1017,66 @@ def fit_linecut(
     shape = array.shape
     ndim = len(shape)
     if indices is None:
-        # default to the linecut through the center of the array
-        indices = [(0, val - 1) for _, val in enumerate(shape)]
-    if not isinstance(indices, list):
-        raise TypeError(f"'indices' should be a list, got {type(indices)}")
+        # default to the linecut through the center of the array in each dimension
+        indices = []
+
+        for idx, shp in enumerate(shape):
+            default = [(val // 2, val // 2) for val in shape]
+            default[idx] = (0, shp)
+            indices.append(default)
+
+    valid.valid_container(
+        indices,
+        container_types=list,
+        item_types=list,
+        length=ndim,
+        name="indices",
+    )
     for _, item in enumerate(indices):
         valid.valid_container(
             item,
-            container_types=tuple,
-            item_types=int,
-            min_included=0,
-            length=2,
-            name="indices",
+            container_types=list,
+            item_types=tuple,
+            length=ndim,
+            name="indices sublists",
         )
     if not isinstance(fit_derivative, bool):
         raise TypeError(f"fit_derivative should be a bool, got {type(fit_derivative)}")
-    if filename is not None and not isinstance(filename, str):
-        raise TypeError(f"filename should be a string, got {type(filename)}")
 
     # generate a linecut for each dimension of the array
     result = {}
     for idx in range(ndim):
         result[f"dimension_{idx}"] = {}
-        # generate the list of indices for the linecut
-        cut = linecut(array=array, indices=indices)
-        result[f"dimension_{idx}"][f"linecut"] = cut
+        # generate the linecut
+        cut = linecut(array=array, indices=indices[idx])
+        result[f"dimension_{idx}"][f"linecut"] = np.vstack(
+            (np.arange(indices[idx][idx][0], indices[idx][idx][1]), cut)
+        )
 
         # optionally fit the derivative at the edge of the support
         if fit_derivative:
             support = np.zeros(shape)
             support[array > support_threshold] = 1
-            support_cut = linecut(array=support, indices=indices)
+            support_cut = linecut(array=support, indices=indices[idx])
 
             peaks, metadata = find_peaks(
                 abs(np.gradient(support_cut)), height=0.1, distance=10, width=1
             )
-            dcut = np.gradient(cut)
+            dcut = abs(np.gradient(cut))
 
             # setup data and parameters for fitting
             combined_xaxis = []
             combined_data = []
             fit_params = Parameters()
             for peak_id, peak in enumerate(peaks):
+                cropped_xaxis = np.arange(peak - 10, peak + 10)
                 cropped_dcut = dcut[peak - 10 : peak + 10]
-                result[f"dimension_{idx}"][f"derivative_{peak_id}"] = cropped_dcut
-                combined_data.append(cropped_dcut)
-                combined_xaxis.append(
-                    np.linspace(
-                        peak - 10,
-                        peak + 10,
-                        num=len(cropped_dcut),
-                        endpoint=False,
-                    )
+                result[f"dimension_{idx}"][f"derivative_{peak_id}"] = np.vstack(
+                    (cropped_xaxis, cropped_dcut)
                 )
+                combined_xaxis.append(cropped_xaxis)
+                combined_data.append(cropped_dcut)
+
                 cen = peak
                 fit_params.add("amp_%i" % (peak_id + 1), value=1, min=0.0, max=10)
                 fit_params.add(
@@ -1091,16 +1099,25 @@ def fit_linecut(
 
             # generate fit curves
             for peak_id, peak in enumerate(peaks):
+                interp_xaxis = util.upsample(combined_xaxis[peak_id], factor=4)
+                # interp_xaxis = combined_xaxis[peak_id]
                 y_fit = util.function_lmfit(
                     params=fit_result.params,
                     iterator=peak_id,
-                    x_axis=combined_xaxis[peak_id],
+                    x_axis=interp_xaxis,
                     distribution="gaussian",
                 )
-                result[f"dimension_{idx}"][f"fit_{peak_id}"] = y_fit
+                result[f"dimension_{idx}"][f"fit_{peak_id}"] = np.vstack(
+                    (interp_xaxis, y_fit)
+                )
+                result[f"dimension_{idx}"][f"param_{peak_id}"] = {
+                    "amp": fit_result.params[f"amp_{peak_id}"].value,
+                    "sig": fit_result.params[f"sig_{peak_id}"].value,
+                    "cen": fit_result.params[f"cen_{peak_id}"].value,
+                }
 
     # plot the cut and optionally the fits
-    plot_linecut(result, fit_derivative)
+    plot_linecut(linecuts=result, filename=filename, voxel_sizes=voxel_sizes)
     return result
 
 
@@ -1334,7 +1351,7 @@ def imshow_plot(
     if plot_colorbar:
         cbar = colorbar(plot, numticks=5)
         cbar.ax.tick_params(length=tick_length, width=tick_width)
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, axis, plot
 
@@ -1370,14 +1387,19 @@ def linecut(
             name="indices",
         )
 
-    num_points = 2 * int(
+    num_points = int(
         np.sqrt(sum((val[1] - val[0]) ** 2 for _, val in enumerate(indices)))
     )
 
     cut = map_coordinates(
         input=array,
         coordinates=np.vstack(
-            ([np.linspace(val[0], val[1], num_points) for _, val in enumerate(indices)])
+            (
+                [
+                    np.linspace(val[0], val[1], endpoint=False, num=num_points)
+                    for _, val in enumerate(indices)
+                ]
+            )
         ),
         order=interp_order,
     )
@@ -1887,7 +1909,7 @@ def multislices_plot(
         ax3.set_visible(False)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
 
     if isinstance(save_as, str):
@@ -1897,6 +1919,73 @@ def multislices_plot(
     if ipynb_layout:
         return fig, (ax0, ax1, ax2), (plt0, plt1, plt2)
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
+
+
+def plot_linecut(linecuts: Dict, filename: Optional[str] = None) -> None:
+    """
+    Plot linecuts and optionally corresponding fits.
+
+    linecuts = {
+        'dimension_0': {
+            'linecut': np.ndarray (2, M),
+            'derivative_0': np.ndarray (2, N),
+            'derivative_1': np.ndarray (2, O),
+            'fit_0': np.ndarray (2, P),
+            'fit_1': np.ndarray (2, P),
+        },
+        'dimension_1': {...}
+        ...
+    }
+
+    :param linecuts: a dictionary containing cuts, with keys 'dim_0', 'dim_1', ...
+    :param filename: str, the figure will be saved there
+    """
+    if filename is not None and not isinstance(filename, str):
+        raise TypeError(f"filename should be a string, got {type(filename)}")
+    if not isinstance(linecuts, dict):
+        raise TypeError("expected a dictionary, got {type(linecuts)}")
+    labels = {"dimension_0": "Z", "dimension_1": "Y", "dimension_0": "X"}
+    # plot the linecuts
+    fig, axes = plt.subplots(nrows=len(linecuts), ncols=1, figsize=(12, 9))
+    for idx, key in enumerate(linecuts.keys()):
+        axes[idx].plot(linecuts[key]["linecut"][0], linecuts[key]["linecut"][1], ".-b")
+        axes[idx].set_xlabel(labels.get(key, key))
+        axes[idx].set_ylabel("linecut")
+
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
+    plt.pause(0.1)
+    plt.ioff()
+
+    if filename:
+        fig.savefig(filename)
+
+    nb_deriv = (len(linecuts["dimension_0"]) - 1) // 2
+
+    # plot the derivatives and the fits
+    fig, axes = plt.subplots(nrows=len(linecuts), ncols=nb_deriv, figsize=(12, 9))
+    for idx, key in enumerate(linecuts.keys()):
+        for idy in range(nb_deriv):
+            (line1,) = axes[idx][idy].plot(
+                linecuts[key][f"derivative_{idy}"][0],
+                linecuts[key][f"derivative_{idy}"][1],
+                ".b",
+                label="derivative",
+            )
+            (line2,) = axes[idx][idy].plot(
+                linecuts[key][f"fit_{idy}"][0],
+                linecuts[key][f"fit_{idy}"][1],
+                "-r",
+                label="fit",
+            )
+            axes[idx][idy].set_xlabel(labels.get(key, key))
+            axes[idx][idy].legend(handles=[line1, line2])
+
+    plt.tight_layout()  # avoids the overlap of subplots with axes labels
+    plt.pause(0.1)
+    plt.ioff()
+
+    if filename:
+        fig.savefig(filename)
 
 
 def plot_3dmesh(
@@ -1925,7 +2014,7 @@ def plot_3dmesh(
     ax0.set_zlabel("X")
     plt.title(title)
 
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, ax0
 
@@ -2373,7 +2462,7 @@ def scatter_plot(array, labels, markersize=4, markercolor="b", title=""):
             labels[0]
         )  # first dimension is x for scatter plots, but z for NEXUS convention
         ax.set_ylabel(labels[1])
-        plt.pause(0.5)
+        plt.pause(0.1)
     elif ndim == 3:
         ax = plt.subplot(111, projection="3d")
         ax.scatter(
@@ -2389,7 +2478,7 @@ def scatter_plot(array, labels, markersize=4, markercolor="b", title=""):
         raise ValueError("There should be 2 or 3 columns in the array")
     if ndim == 2:
         plt.axis("scaled")
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, ax
 
@@ -2482,7 +2571,7 @@ def scatter_plot_overlaid(arrays, markersizes, markercolors, labels, title=""):
         ax.set_zlabel(labels[2])
     if ndim == 2:
         plt.axis("scaled")
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, ax
 
@@ -2533,7 +2622,7 @@ def scatter_stereographic(
     ax0.set_ylabel("v " + uv_labels[1])
     ax0.set_title(title)
     colorbar(plt0, scale="log", numticks=5)
-    plt.pause(0.5)
+    plt.pause(0.1)
     plt.ioff()
     return fig, ax0
 
