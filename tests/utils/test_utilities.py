@@ -407,8 +407,24 @@ class TestUpsample(unittest.TestCase):
         self.assertTrue(np.allclose(output, expected))
 
     def test_2d_array(self):
-        with self.assertRaises(NotImplementedError):
-            util.upsample(array=np.vstack([np.arange(5) for _ in range(6)]), factor=2)
+        array = np.asarray([np.arange(6) for _ in range(5)])
+        expected = np.asarray([np.linspace(0, 5, num=12) for _ in range(10)])
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
+
+    def test_2d_array_vertical(self):
+        array = np.asarray([np.ones(6) * idx for idx in range(5)])
+        expected = np.asarray([np.ones(12) * idx for idx in np.linspace(0, 4, num=10)])
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
+
+    def test_3d_array(self):
+        array = np.asarray([[np.arange(6) for _ in range(5)] for _ in range(4)])
+        expected = np.asarray(
+            [[np.linspace(0, 5, num=12) for _ in range(10)] for _ in range(8)]
+        )
+        output = util.upsample(array=array, factor=2)
+        self.assertTrue(np.allclose(output, expected))
 
 
 if __name__ == "__main__":

@@ -986,7 +986,9 @@ def in_range(point, extent):
 
 def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     """
-    Calculate the linecut through a 2D or 3D array in some direction passing by a point.
+    Calculate iteratively a linecut through an array without interpolation.
+
+
 
     :param array: 2D or 3D numpy array from which the linecut will be extracted
     :param point: tuple of three integral indices, point by which the linecut pass.
@@ -2418,34 +2420,47 @@ def unpack_array(
     return np.asarray(array)
 
 
-def upsample(
-    array: Union[np.ndarray, List], factor: int = 2, interp_order: int = 1
-) -> np.ndarray:
+def upsample(array: Union[np.ndarray, List], factor: int = 2) -> np.ndarray:
+    """
+    Upsample an array.
+
+    :param array: the numpy array to be upsampled
+    :param factor: int, factor for the upsampling
+    :return: the upsampled numpy array
+    """
     # check parameters
     array = np.asarray(array)
-    if array.ndim > 1:
-        raise NotImplementedError
     if array.dtype in ["int8", "int16", "int32", "int64"]:
         array = array.astype(float)
 
     valid.valid_item(factor, allowed_types=int, min_excluded=0, name="factor")
-    valid.valid_item(
-        interp_order, allowed_types=int, min_excluded=0, name="interp_order"
+
+    # current points positions in each dimension
+    old_positions = [np.arange(val) for val in array.shape]
+
+    # calculate the new positions
+    new_shape = [val * factor for val in array.shape]
+    upsampled_positions = [
+        np.linspace(0, val - 1, num=val * factor) for val in array.shape
+    ]
+    new_grid = np.meshgrid(*upsampled_positions, indexing="ij")
+    new_grid = np.asarray(
+        np.concatenate(
+            [
+                new_grid.reshape((1, new_grid.size))
+                for _, new_grid in enumerate(new_grid)
+            ]
+        ).transpose()
     )
-    # FIXME: currently for ndim > 1 it works only if for identical size in each dim
-    result = map_coordinates(
-        input=array,
-        coordinates=np.vstack(
-            (
-                [
-                    np.linspace(0, shape - 1, endpoint=True, num=shape * factor)
-                    for shape in array.shape
-                ]
-            )
-        ),
-        order=interp_order,
+    # interpolate array #
+    rgi = RegularGridInterpolator(
+        old_positions,
+        array,
+        method="linear",
+        bounds_error=False,
+        fill_value=0,
     )
-    return np.asarray(result)
+    return np.asarray(rgi(new_grid).reshape(new_shape).astype(array.dtype))
 
 
 def wrap(obj, start_angle, range_angle):
