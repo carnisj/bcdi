@@ -1027,10 +1027,12 @@ def run(prm):
     ################################
     # plot linecuts of the results #
     ################################
-    _ = gu.fit_linecut(
+    gu.fit_linecut(
         array=amp,
         fit_derivative=True,
         filename=setup.detector.savedir + "linecut_amp.png",
+        voxel_sizes=voxel_size,
+        label="modulus",
     )
 
     ##############################
