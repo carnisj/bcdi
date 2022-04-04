@@ -219,15 +219,15 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == "skewed_gaussian":
-    fit_params.add("amp_1", value=0.0005, min=0.000001, max=10000)
-    fit_params.add("loc_1", value=0, min=-0.1, max=0.1)
-    fit_params.add("sig_1", value=0.0005, min=0.0000001, max=0.1)
-    fit_params.add("alpha_1", value=0, min=-10, max=10)
+    fit_params.add("amp_0", value=0.0005, min=0.000001, max=10000)
+    fit_params.add("loc_0", value=0, min=-0.1, max=0.1)
+    fit_params.add("sig_0", value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add("alpha_0", value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add("amp_1", value=0.0005, min=0.000001, max=10000)
-    fit_params.add("cen_1", value=0, min=-0.1, max=0.1)
-    fit_params.add("sig_1", value=0.0005, min=0.0000001, max=0.1)
-    fit_params.add("ratio_1", value=0.5, min=0, max=1)
+    fit_params.add("amp_0", value=0.0005, min=0.000001, max=10000)
+    fit_params.add("cen_0", value=0, min=-0.1, max=0.1)
+    fit_params.add("sig_0", value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add("ratio_0", value=0.5, min=0, max=1)
 
 # run the global fit to all the data sets
 result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
@@ -321,7 +321,7 @@ if fit_pdf == "skewed_gaussian":
         0.13,
         0.66,
         "SK std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_1"].value, result.params["sig_1"].stderr
+            result.params["sig_0"].value, result.params["sig_0"].stderr
         ),
     )
 else:
@@ -329,21 +329,21 @@ else:
         0.15,
         0.70,
         "PDF center={:.2e}\n   +/-{:.2e}".format(
-            result.params["cen_1"].value, result.params["cen_1"].stderr
+            result.params["cen_0"].value, result.params["cen_0"].stderr
         ),
     )
     fig.text(
         0.15,
         0.60,
         "PDF std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_1"].value, result.params["sig_1"].stderr
+            result.params["sig_0"].value, result.params["sig_0"].stderr
         ),
     )
     fig.text(
         0.15,
         0.50,
         "PDF ratio={:.2e}\n   +/-{:.2e}".format(
-            result.params["ratio_1"].value, result.params["ratio_1"].stderr
+            result.params["ratio_0"].value, result.params["ratio_0"].stderr
         ),
     )
 plt.pause(0.1)
@@ -375,15 +375,15 @@ x_axis = bin_edges[:-1] + (bin_edges[1] - bin_edges[0]) / 2
 
 fit_params = Parameters()
 if fit_pdf == "skewed_gaussian":
-    fit_params.add("amp_1", value=0.001, min=0.00000001, max=100000)
-    fit_params.add("loc_1", value=0, min=-0.1, max=0.1)
-    fit_params.add("sig_1", value=0.0005, min=0.0000001, max=0.1)
-    fit_params.add("alpha_1", value=0, min=-10, max=10)
+    fit_params.add("amp_0", value=0.001, min=0.00000001, max=100000)
+    fit_params.add("loc_0", value=0, min=-0.1, max=0.1)
+    fit_params.add("sig_0", value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add("alpha_0", value=0, min=-10, max=10)
 else:  # 'pseudovoigt'
-    fit_params.add("amp_1", value=0.001, min=0.00000001, max=100000)
-    fit_params.add("cen_1", value=0, min=-0.1, max=0.1)
-    fit_params.add("sig_1", value=0.0005, min=0.0000001, max=0.1)
-    fit_params.add("ratio_1", value=0.5, min=0, max=1)
+    fit_params.add("amp_0", value=0.001, min=0.00000001, max=100000)
+    fit_params.add("cen_0", value=0, min=-0.1, max=0.1)
+    fit_params.add("sig_0", value=0.0005, min=0.0000001, max=0.1)
+    fit_params.add("ratio_0", value=0.5, min=0, max=1)
 
 # run the global fit to all the data sets
 result = minimize(util.objective_lmfit, fit_params, args=(x_axis, hist, fit_pdf))
@@ -473,7 +473,7 @@ if fit_pdf == "skewed_gaussian":
         0.13,
         0.66,
         "SK std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_1"].value, result.params["sig_1"].stderr
+            result.params["sig_0"].value, result.params["sig_0"].stderr
         ),
     )
 else:
@@ -481,21 +481,21 @@ else:
         0.15,
         0.70,
         "PDF center={:.2e}\n   +/-{:.2e}".format(
-            result.params["cen_1"].value, result.params["cen_1"].stderr
+            result.params["cen_0"].value, result.params["cen_0"].stderr
         ),
     )
     fig.text(
         0.15,
         0.60,
         "PDF std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_1"].value, result.params["sig_1"].stderr
+            result.params["sig_0"].value, result.params["sig_0"].stderr
         ),
     )
     fig.text(
         0.15,
         0.50,
         "PDF ratio={:.2e}\n   +/-{:.2e}".format(
-            result.params["ratio_1"].value, result.params["ratio_1"].stderr
+            result.params["ratio_0"].value, result.params["ratio_0"].stderr
         ),
     )
 plt.pause(0.1)

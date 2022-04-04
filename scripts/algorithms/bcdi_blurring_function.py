@@ -306,14 +306,14 @@ for key in linecuts_dict.keys():  # order is maintained in OrderedDict
 # create nb_fit sets of parameters, one per data set
 fit_params = Parameters()
 for idx in range(3):  # 3 linecuts in orthogonal directions to be fitted by a gaussian
-    fit_params.add("amp_%i" % (idx + 1), value=1, min=0.1, max=100)
+    fit_params.add("amp_%i" % idx, value=1, min=0.1, max=100)
     fit_params.add(
-        "cen_%i" % (idx + 1),
+        "cen_%i" % idx,
         value=linecuts[idx, :].mean(),
         min=linecuts[idx, :].min(),
         max=linecuts[idx, :].max(),
     )
-    fit_params.add("sig_%i" % (idx + 1), value=5, min=0.1, max=100)
+    fit_params.add("sig_%i" % idx, value=5, min=0.1, max=100)
 
 # run the global fit to all the data sets
 minimization = minimize(

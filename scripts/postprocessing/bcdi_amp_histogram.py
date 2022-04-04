@@ -101,10 +101,10 @@ if fit:
     fit_params = Parameters()
     if lineshape == "pseudovoigt":
         cen = newbin_axis[np.unravel_index(newhist.argmax(), newhist.shape)]
-        fit_params.add("amp_1", value=50000, min=100, max=1000000)
-        fit_params.add("cen_1", value=cen, min=cen - 0.2, max=cen + 0.2)
-        fit_params.add("sig_1", value=0.1, min=0.01, max=0.5)
-        fit_params.add("ratio_1", value=0.5, min=0, max=1)
+        fit_params.add("amp_0", value=50000, min=100, max=1000000)
+        fit_params.add("cen_0", value=cen, min=cen - 0.2, max=cen + 0.2)
+        fit_params.add("sig_0", value=0.1, min=0.01, max=0.5)
+        fit_params.add("ratio_0", value=0.5, min=0, max=1)
 
     # run the fit
     result = minimize(
@@ -134,14 +134,14 @@ if fit:
         fig.text(
             0.15,
             0.95,
-            "cen_1 = "
-            + str("{:.5f}".format(result.params["cen_1"].value))
+            "cen_0 = "
+            + str("{:.5f}".format(result.params["cen_0"].value))
             + "+/-"
-            + str("{:.5f}".format(result.params["cen_1"].stderr))
-            + "   sig_1 = "
-            + str("{:.5f}".format(result.params["sig_1"].value))
+            + str("{:.5f}".format(result.params["cen_0"].stderr))
+            + "   sig_0 = "
+            + str("{:.5f}".format(result.params["sig_0"].value))
             + "+/-"
-            + str("{:.5f}".format(result.params["sig_1"].stderr)),
+            + str("{:.5f}".format(result.params["sig_0"].stderr)),
             size=12,
         )
     except TypeError:  # one output is None
