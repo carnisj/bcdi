@@ -1040,7 +1040,7 @@ def fit_linecut(
 
         for idx, shp in enumerate(shape):
             default = [(val // 2, val // 2) for val in shape]
-            default[idx] = (0, shp)
+            default[idx] = (0, shp - 1)
             indices.append(default)
 
     valid.valid_container(
@@ -1068,7 +1068,7 @@ def fit_linecut(
         # generate the linecut
         cut = linecut(array=array, indices=indices[idx])
         result[f"dimension_{idx}"][f"linecut"] = np.vstack(
-            (np.arange(indices[idx][idx][0], indices[idx][idx][1]), cut)
+            (np.arange(indices[idx][idx][0], indices[idx][idx][1] + 1), cut)
         )
 
         # optionally fit the derivative at the edge of the support
