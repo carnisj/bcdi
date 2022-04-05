@@ -20,6 +20,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 import matplotlib.colors as colors
 from operator import itemgetter
+import os
 import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
@@ -1011,7 +1012,24 @@ def fit_linecut(
     support_threshold: float = 0.25,
     voxel_sizes: Optional[List[float]] = None,
     filename: Optional[str] = None,
+    label: str = "linecut",
 ) -> Dict:
+    """
+    Perform a linecut on an array and optionally fit its gradient.
+
+    :param array: a 2D or 3D array, typically the modulus of a real space object after
+     phase retrieval
+    :param indices: a list of tuples (start, stop), one tuple for each dimension of the
+     array
+    :param fit_derivative: True to fit the gradient of the linecut with a gaussian line
+     shape
+    :param support_threshold: float, threshold used to define the support, for the
+     determination of the location of crystal boundaries
+    :param voxel_sizes: list of voxels sizes, in each dimension of the array
+    :param filename: name for saving plots
+    :param label: labels for the vertical axis of plots
+    :return: a dictionary containing linecuts, fits and fitted parameters
+    """
     # check parameters
     valid.valid_ndarray(array, fix_shape=True, name="array")
     shape = array.shape
@@ -1078,11 +1096,9 @@ def fit_linecut(
                 combined_data.append(cropped_dcut)
 
                 cen = peak
-                fit_params.add("amp_%i" % (peak_id + 1), value=1, min=0.0, max=10)
-                fit_params.add(
-                    "cen_%i" % (peak_id + 1), value=cen, min=cen - 1, max=cen + 1
-                )
-                fit_params.add("sig_%i" % (peak_id + 1), value=2, min=0.1, max=10)
+                fit_params.add("amp_%i" % peak_id, value=1, min=0.0, max=10)
+                fit_params.add("cen_%i" % peak_id, value=cen, min=cen - 1, max=cen + 1)
+                fit_params.add("sig_%i" % peak_id, value=2, min=0.1, max=10)
 
             # fit the data
             combined_xaxis = np.asarray(combined_xaxis)
@@ -1117,7 +1133,9 @@ def fit_linecut(
                 }
 
     # plot the cut and optionally the fits
-    plot_linecut(linecuts=result, filename=filename, voxel_sizes=voxel_sizes)
+    plot_linecut(
+        linecuts=result, filename=filename, voxel_sizes=voxel_sizes, label=label
+    )
     return result
 
 
@@ -1359,7 +1377,7 @@ def imshow_plot(
 def linecut(
     array: np.ndarray,
     indices: List[Tuple[int, int]],
-    interp_order: int = 3,
+    interp_order: int = 1,
 ) -> np.ndarray:
     """
     Linecut through a 2D or 3D array.
@@ -1375,6 +1393,10 @@ def linecut(
     """
     # check parameters
     valid.valid_ndarray(array)
+    array = np.asarray(array)
+    if array.dtype in ["int8", "int16", "int32", "int64"]:
+        array = array.astype(float)
+
     if not isinstance(indices, list):
         raise TypeError(f"'indices' should be a list, got {type(indices)}")
     for _, item in enumerate(indices):
@@ -1386,17 +1408,20 @@ def linecut(
             length=2,
             name="indices",
         )
-
-    num_points = int(
-        np.sqrt(sum((val[1] - val[0]) ** 2 for _, val in enumerate(indices)))
+    valid.valid_item(
+        interp_order, allowed_types=int, min_included=1, name="interp_order"
     )
 
+    num_points = int(
+        np.sqrt(sum((val[1] - val[0] + 1) ** 2 for _, val in enumerate(indices)))
+    )
+    print("num_points", num_points)
     cut = map_coordinates(
         input=array,
         coordinates=np.vstack(
             (
                 [
-                    np.linspace(val[0], val[1], endpoint=False, num=num_points)
+                    np.linspace(val[0], val[1], endpoint=True, num=num_points)
                     for _, val in enumerate(indices)
                 ]
             )
@@ -1921,7 +1946,12 @@ def multislices_plot(
     return fig, (ax0, ax1, ax2, ax3), (plt0, plt1, plt2)
 
 
-def plot_linecut(linecuts: Dict, filename: Optional[str] = None) -> None:
+def plot_linecut(
+    linecuts: Dict,
+    filename: Optional[str] = None,
+    voxel_sizes: Optional[List[float]] = None,
+    label: str = "linecut",
+) -> None:
     """
     Plot linecuts and optionally corresponding fits.
 
@@ -1932,6 +1962,8 @@ def plot_linecut(linecuts: Dict, filename: Optional[str] = None) -> None:
             'derivative_1': np.ndarray (2, O),
             'fit_0': np.ndarray (2, P),
             'fit_1': np.ndarray (2, P),
+            'param_0': {'amp': float, 'sig': float, 'cen': float},
+            'param_1': {'amp': float, 'sig': float, 'cen': float},
         },
         'dimension_1': {...}
         ...
@@ -1939,18 +1971,41 @@ def plot_linecut(linecuts: Dict, filename: Optional[str] = None) -> None:
 
     :param linecuts: a dictionary containing cuts, with keys 'dim_0', 'dim_1', ...
     :param filename: str, the figure will be saved there
+    :param voxel_sizes: tuple of voxel sizes for each linecut (1 per dimension)
+    :param label: str, label for the vertical axis of the linecut plots
     """
     if filename is not None and not isinstance(filename, str):
         raise TypeError(f"filename should be a string, got {type(filename)}")
     if not isinstance(linecuts, dict):
         raise TypeError("expected a dictionary, got {type(linecuts)}")
-    labels = {"dimension_0": "Z", "dimension_1": "Y", "dimension_0": "X"}
+    if voxel_sizes is not None:
+        unit = "nm"
+        valid.valid_container(
+            voxel_sizes,
+            container_types=(tuple, list),
+            item_types=(float, int),
+            length=len(linecuts),
+            name="voxel_sizes",
+        )
+    else:
+        unit = "pixels"
+
+    labels = {
+        "dimension_0": f"Z ({unit})",
+        "dimension_1": f"Y ({unit})",
+        "dimension_2": f"X ({unit})",
+    }
+
     # plot the linecuts
     fig, axes = plt.subplots(nrows=len(linecuts), ncols=1, figsize=(12, 9))
     for idx, key in enumerate(linecuts.keys()):
-        axes[idx].plot(linecuts[key]["linecut"][0], linecuts[key]["linecut"][1], ".-b")
+        factor = voxel_sizes[idx] if voxel_sizes is not None else 1
+
+        axes[idx].plot(
+            linecuts[key]["linecut"][0] * factor, linecuts[key]["linecut"][1], ".-b"
+        )
         axes[idx].set_xlabel(labels.get(key, key))
-        axes[idx].set_ylabel("linecut")
+        axes[idx].set_ylabel(label)
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.1)
@@ -1958,34 +2013,49 @@ def plot_linecut(linecuts: Dict, filename: Optional[str] = None) -> None:
 
     if filename:
         fig.savefig(filename)
-
-    nb_deriv = (len(linecuts["dimension_0"]) - 1) // 2
 
     # plot the derivatives and the fits
-    fig, axes = plt.subplots(nrows=len(linecuts), ncols=nb_deriv, figsize=(12, 9))
+    fig, axes = plt.subplots(nrows=len(linecuts), ncols=2, figsize=(12, 9))
     for idx, key in enumerate(linecuts.keys()):
-        for idy in range(nb_deriv):
-            (line1,) = axes[idx][idy].plot(
-                linecuts[key][f"derivative_{idy}"][0],
-                linecuts[key][f"derivative_{idy}"][1],
-                ".b",
-                label="derivative",
-            )
-            (line2,) = axes[idx][idy].plot(
-                linecuts[key][f"fit_{idy}"][0],
-                linecuts[key][f"fit_{idy}"][1],
-                "-r",
-                label="fit",
-            )
-            axes[idx][idy].set_xlabel(labels.get(key, key))
-            axes[idx][idy].legend(handles=[line1, line2])
+        factor = voxel_sizes[idx] if voxel_sizes is not None else 1
+        for subkey in linecuts[key].keys():
+            if subkey.startswith("derivative"):
+                index = int(subkey[-1])
+                (line1,) = axes[idx][index].plot(
+                    linecuts[key][subkey][0] * factor,
+                    linecuts[key][subkey][1],
+                    ".b",
+                    label="derivative",
+                )
+                (line2,) = axes[idx][index].plot(
+                    linecuts[key][f"fit_{index}"][0] * factor,
+                    linecuts[key][f"fit_{index}"][1],
+                    "-r",
+                    label="gaussian fit",
+                )
+                axes[idx][index].set_xlabel(labels.get(key, key))
+                axes[idx][index].legend(handles=[line1, line2])
+                fwhm = (
+                    2
+                    * np.sqrt(2 * np.log(2))
+                    * factor
+                    * linecuts[key][f"param_{index}"]["sig"]
+                )
+
+                axes[idx][index].text(
+                    x=0.05,
+                    y=0.9,
+                    s=f"FWHM={fwhm:.2f} {unit}",
+                    transform=axes[idx][index].transAxes,
+                )
 
     plt.tight_layout()  # avoids the overlap of subplots with axes labels
     plt.pause(0.1)
     plt.ioff()
 
     if filename:
-        fig.savefig(filename)
+        base, ext = os.path.splitext(filename)
+        fig.savefig(base + "_fits.png")
 
 
 def plot_3dmesh(
