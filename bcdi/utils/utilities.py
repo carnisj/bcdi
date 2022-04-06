@@ -2443,13 +2443,10 @@ def upsample(array: Union[np.ndarray, List], factor: int = 2) -> np.ndarray:
     upsampled_positions = [
         np.linspace(0, val - 1, num=val * factor) for val in array.shape
     ]
-    new_grid = np.meshgrid(*upsampled_positions, indexing="ij")
+    grid = np.meshgrid(*upsampled_positions, indexing="ij")
     new_grid = np.asarray(
         np.concatenate(
-            [
-                new_grid.reshape((1, new_grid.size))
-                for _, new_grid in enumerate(new_grid)
-            ]
+            [new_grid.reshape((1, new_grid.size)) for _, new_grid in enumerate(grid)]
         ).transpose()
     )
     # interpolate array #
