@@ -21,27 +21,27 @@ class TestIsFloat(unittest.TestCase):
     """
 
     def test_string_float(self):
-        self.assertTrue(util.is_float("12.0"))
+        self.assertTrue(valid.is_float("12.0"))
 
     def test_string_int(self):
-        self.assertTrue(util.is_float("12"))
+        self.assertTrue(valid.is_float("12"))
 
     def test_string_complex(self):
-        self.assertFalse(util.is_float("12 + 1j"))
+        self.assertFalse(valid.is_float("12 + 1j"))
 
     def test_string_none(self):
-        self.assertFalse(util.is_float("None"))
+        self.assertFalse(valid.is_float("None"))
 
     def test_string_not_numeric(self):
-        self.assertFalse(util.is_float("abc"))
+        self.assertFalse(valid.is_float("abc"))
 
     def test_none(self):
         with self.assertRaises(TypeError):
-            util.is_float(None)
+            valid.is_float(None)
 
     def test_array(self):
         with self.assertRaises(TypeError):
-            util.is_float(np.ones(3))
+            valid.is_float(np.ones(3))
 
 
 class TestValidContainer(unittest.TestCase):
