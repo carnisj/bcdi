@@ -988,8 +988,6 @@ def linecut(array, point, direction, direction_basis="voxel", voxel_size=1):
     """
     Calculate iteratively a linecut through an array without interpolation.
 
-
-
     :param array: 2D or 3D numpy array from which the linecut will be extracted
     :param point: tuple of three integral indices, point by which the linecut pass.
     :param direction: list of 2 (for 2D) or 3 (for 3D) vector components,

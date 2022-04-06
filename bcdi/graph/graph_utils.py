@@ -1953,19 +1953,21 @@ def plot_linecut(
     """
     Plot linecuts and optionally corresponding fits.
 
-    linecuts = {
-        'dimension_0': {
-            'linecut': np.ndarray (2, M),
-            'derivative_0': np.ndarray (2, N),
-            'derivative_1': np.ndarray (2, O),
-            'fit_0': np.ndarray (2, P),
-            'fit_1': np.ndarray (2, P),
-            'param_0': {'amp': float, 'sig': float, 'cen': float},
-            'param_1': {'amp': float, 'sig': float, 'cen': float},
-        },
-        'dimension_1': {...}
-        ...
-    }
+    Expected structure for linecuts::
+
+        linecuts = {
+            'dimension_0': {
+                'linecut': np.ndarray (2, M),
+                'derivative_0': np.ndarray (2, N),
+                'derivative_1': np.ndarray (2, O),
+                'fit_0': np.ndarray (2, P),
+                'fit_1': np.ndarray (2, P),
+                'param_0': {'amp': float, 'sig': float, 'cen': float},
+                'param_1': {'amp': float, 'sig': float, 'cen': float},
+            },
+            'dimension_1': {...}
+            ...
+        }
 
     :param linecuts: a dictionary containing cuts, with keys 'dim_0', 'dim_1', ...
     :param filename: str, the figure will be saved there
