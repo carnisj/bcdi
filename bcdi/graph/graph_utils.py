@@ -26,7 +26,7 @@ from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 from scipy.signal import find_peaks
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import utilities as util
@@ -1007,7 +1007,7 @@ def define_labels(reciprocal_space, is_orthogonal, sum_frames, labels=None):
 
 def fit_linecut(
     array: np.ndarray,
-    indices: Optional[List[Tuple[int, ...]]] = None,
+    indices: Optional[List[List[Tuple[int, int]]]] = None,
     fit_derivative: bool = False,
     support_threshold: float = 0.25,
     voxel_sizes: Optional[List[float]] = None,
@@ -1019,8 +1019,8 @@ def fit_linecut(
 
     :param array: a 2D or 3D array, typically the modulus of a real space object after
      phase retrieval
-    :param indices: a list of tuples (start, stop), one tuple for each dimension of the
-     array
+    :param indices: a list of ndim lists of ndim tuples (start, stop), ndim being the
+     number of dimensions of the array (one list per linecut)
     :param fit_derivative: True to fit the gradient of the linecut with a gaussian line
      shape
     :param support_threshold: float, threshold used to define the support, for the
@@ -1062,7 +1062,7 @@ def fit_linecut(
         raise TypeError(f"fit_derivative should be a bool, got {type(fit_derivative)}")
 
     # generate a linecut for each dimension of the array
-    result = {}
+    result: Dict[str, Any] = {}
     for idx in range(ndim):
         result[f"dimension_{idx}"] = {}
         # generate the linecut
@@ -1101,14 +1101,12 @@ def fit_linecut(
                 fit_params.add("sig_%i" % peak_id, value=2, min=0.1, max=10)
 
             # fit the data
-            combined_xaxis = np.asarray(combined_xaxis)
-            combined_data = np.asarray(combined_data)
             fit_result = minimize(
                 util.objective_lmfit,
                 fit_params,
                 args=(
-                    combined_xaxis,
-                    combined_data,
+                    np.asarray(combined_xaxis),
+                    np.asarray(combined_data),
                     "gaussian",
                 ),
             )
