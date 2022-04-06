@@ -5,38 +5,30 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+"""
+Implementation of the colormap class.
 
+New colormaps can be added to the method generate_colormap.
+"""
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 from typing import Optional
 
 from bcdi.graph.turbo_colormap import turbo_colormap_data
 from bcdi.utils.validation import is_float
 
+data_table = (
+    (0.0, 1.0, 1.0),
+    (0.11, 0.0, 0.0),
+    (0.36, 0.0, 0.0),
+    (0.62, 1.0, 1.0),
+    (0.87, 1.0, 1.0),
+    (1.0, 0.0, 0.0),
+)
+
 custom_colormap_data = {
-    "red": (
-        (0.0, 1.0, 1.0),
-        (0.11, 0.0, 0.0),
-        (0.36, 0.0, 0.0),
-        (0.62, 1.0, 1.0),
-        (0.87, 1.0, 1.0),
-        (1.0, 0.0, 0.0),
-    ),
-    "green": (
-        (0.0, 1.0, 1.0),
-        (0.11, 0.0, 0.0),
-        (0.36, 1.0, 1.0),
-        (0.62, 1.0, 1.0),
-        (0.87, 0.0, 0.0),
-        (1.0, 0.0, 0.0),
-    ),
-    "blue": (
-        (0.0, 1.0, 1.0),
-        (0.11, 1.0, 1.0),
-        (0.36, 1.0, 1.0),
-        (0.62, 0.0, 0.0),
-        (0.87, 0.0, 0.0),
-        (1.0, 0.0, 0.0),
-    ),
+    "red": data_table,
+    "green": data_table,
+    "blue": data_table,
 }
 
 

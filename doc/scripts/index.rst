@@ -453,14 +453,6 @@ bcdi_simu_signe_phase.py
 
 Utilities
 ---------
-   
-bcdi_apodize.py
-^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/utils/bcdi_apodize.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
 
 bcdi_angular_avg_3Dto1D.py
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
