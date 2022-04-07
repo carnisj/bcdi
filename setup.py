@@ -155,7 +155,7 @@ setup(
             "sphinxcontrib-mermaid==0.7.1",
         ],
         "dev": [
-            "black==22.1.0",
+            "black==22.3.0",
             "coverage==6.3.2",
             "doit==0.34.2",
             "mypy==0.941",
