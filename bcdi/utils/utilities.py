@@ -482,16 +482,19 @@ def decode_json(dct):
     return dct
 
 
-def dos2unix(input_file, output_file):
+def dos2unix(input_file: str, savedir: str) -> None:
     """
     Convert DOS linefeeds (crlf) to UNIX (lf).
 
     :param input_file: the original filename (absolute path)
-    :param output_file: the output filename (absolute path) where to save
+    :param savedir: path of the directory where to save
     """
+    filename = os.path.splitext(os.path.basename(input_file))[0]
+    if not input_file.endswith(".txt"):
+        raise ValueError("Expecting a text file as input, e.g. 'alias_dict.txt'")
     with open(input_file, "rb") as infile:
         content = infile.read()
-    with open(output_file, "wb") as output:
+    with open(os.path.join(savedir, f"{filename}_unix.txt"), "wb") as output:
         for row in content.splitlines():
             output.write(row + str.encode("\n"))
 
