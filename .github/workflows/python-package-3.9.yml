@@ -30,7 +30,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /opt/hostedtoolcache/Python/3.9.10/x64/lib/python3.9/site-packages
-        key: ${{ runner.os }}-pip-v2-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-v1-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
