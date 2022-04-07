@@ -132,50 +132,49 @@ if save_txt:
             "S" + str(scan) + "_threshold" + str(support_threshold) + "_surface.dat",
         ),
         "w",
-    ) as file_surface:
-        with open(
-            os.path.join(
-                savedir,
-                "S" + str(scan) + "_threshold" + str(support_threshold) + "_bulk.dat",
-            ),
-            "w",
-        ) as file_bulk:
+    ) as file_surface, open(
+        os.path.join(
+            savedir,
+            "S" + str(scan) + "_threshold" + str(support_threshold) + "_bulk.dat",
+        ),
+        "w",
+    ) as file_bulk:
 
-            # write surface points position / strain to file
-            surface_indices = np.nonzero(surface)
-            nb_surface = len(surface_indices[0])
-            ind_z = surface_indices[0]
-            ind_y = surface_indices[1]
-            ind_x = surface_indices[2]
-            for point in range(nb_surface):
-                file_surface.write(
-                    "{0: <10}".format(
-                        str(
-                            "{:.7f}".format(
-                                strain[ind_z[point], ind_y[point], ind_x[point]]
-                            )
+        # write surface points position / strain to file
+        surface_indices = np.nonzero(surface)
+        nb_surface = len(surface_indices[0])
+        ind_z = surface_indices[0]
+        ind_y = surface_indices[1]
+        ind_x = surface_indices[2]
+        for point in range(nb_surface):
+            file_surface.write(
+                "{0: <10}".format(
+                    str(
+                        "{:.7f}".format(
+                            strain[ind_z[point], ind_y[point], ind_x[point]]
                         )
                     )
-                    + "\n"
                 )
+                + "\n"
+            )
 
-            # write bulk points position / strain to file
-            bulk_indices = np.nonzero(bulk)
-            nb_bulk = len(bulk_indices[0])
-            ind_z = bulk_indices[0]
-            ind_y = bulk_indices[1]
-            ind_x = bulk_indices[2]
-            for point in range(nb_bulk):
-                file_bulk.write(
-                    "{0: <10}".format(
-                        str(
-                            "{:.7f}".format(
-                                strain[ind_z[point], ind_y[point], ind_x[point]]
-                            )
+        # write bulk points position / strain to file
+        bulk_indices = np.nonzero(bulk)
+        nb_bulk = len(bulk_indices[0])
+        ind_z = bulk_indices[0]
+        ind_y = bulk_indices[1]
+        ind_x = bulk_indices[2]
+        for point in range(nb_bulk):
+            file_bulk.write(
+                "{0: <10}".format(
+                    str(
+                        "{:.7f}".format(
+                            strain[ind_z[point], ind_y[point], ind_x[point]]
                         )
                     )
-                    + "\n"
                 )
+                + "\n"
+            )
     file_surface.close()
     file_bulk.close()
 
