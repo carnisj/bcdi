@@ -126,58 +126,56 @@ if debug:
 # save the strain values #
 ##########################
 if save_txt:
-    file_surface = open(
+    with open(
         os.path.join(
             savedir,
             "S" + str(scan) + "_threshold" + str(support_threshold) + "_surface.dat",
         ),
         "w",
-    )
-    file_bulk = open(
-        os.path.join(
-            savedir,
-            "S" + str(scan) + "_threshold" + str(support_threshold) + "_bulk.dat",
-        ),
-        "w",
-    )
-    file_total = open(
-        os.path.join(
-            savedir,
-            "S"
-            + str(scan)
-            + "_threshold"
-            + str(support_threshold)
-            + "_bulk+surface.dat",
-        ),
-        "w",
-    )
-    # write surface points position / strain to file
-    surface_indices = np.nonzero(surface)
-    nb_surface = len(surface_indices[0])
-    ind_z = surface_indices[0]
-    ind_y = surface_indices[1]
-    ind_x = surface_indices[2]
-    for point in range(nb_surface):
-        file_surface.write(
-            "{0: <10}".format(
-                str("{:.7f}".format(strain[ind_z[point], ind_y[point], ind_x[point]]))
-            )
-            + "\n"
-        )
+    ) as file_surface:
+        with open(
+            os.path.join(
+                savedir,
+                "S" + str(scan) + "_threshold" + str(support_threshold) + "_bulk.dat",
+            ),
+            "w",
+        ) as file_bulk:
 
-    # write bulk points position / strain to file
-    bulk_indices = np.nonzero(bulk)
-    nb_bulk = len(bulk_indices[0])
-    ind_z = bulk_indices[0]
-    ind_y = bulk_indices[1]
-    ind_x = bulk_indices[2]
-    for point in range(nb_bulk):
-        file_bulk.write(
-            "{0: <10}".format(
-                str("{:.7f}".format(strain[ind_z[point], ind_y[point], ind_x[point]]))
-            )
-            + "\n"
-        )
+            # write surface points position / strain to file
+            surface_indices = np.nonzero(surface)
+            nb_surface = len(surface_indices[0])
+            ind_z = surface_indices[0]
+            ind_y = surface_indices[1]
+            ind_x = surface_indices[2]
+            for point in range(nb_surface):
+                file_surface.write(
+                    "{0: <10}".format(
+                        str(
+                            "{:.7f}".format(
+                                strain[ind_z[point], ind_y[point], ind_x[point]]
+                            )
+                        )
+                    )
+                    + "\n"
+                )
+
+            # write bulk points position / strain to file
+            bulk_indices = np.nonzero(bulk)
+            nb_bulk = len(bulk_indices[0])
+            ind_z = bulk_indices[0]
+            ind_y = bulk_indices[1]
+            ind_x = bulk_indices[2]
+            for point in range(nb_bulk):
+                file_bulk.write(
+                    "{0: <10}".format(
+                        str(
+                            "{:.7f}".format(
+                                strain[ind_z[point], ind_y[point], ind_x[point]]
+                            )
+                        )
+                    )
+                    + "\n"
+                )
     file_surface.close()
     file_bulk.close()
 
@@ -187,17 +185,28 @@ if save_txt:
     ind_z = total_indices[0]
     ind_y = total_indices[1]
     ind_x = total_indices[2]
-    for point in range(nb_total):
-        file_total.write(
-            "{0: <10}".format(
-                str("{:.7f}".format(strain[ind_z[point], ind_y[point], ind_x[point]]))
+    with open(
+        os.path.join(
+            savedir,
+            "S"
+            + str(scan)
+            + "_threshold"
+            + str(support_threshold)
+            + "_bulk+surface.dat",
+        ),
+        "w",
+    ) as file_total:
+        for point in range(nb_total):
+            file_total.write(
+                "{0: <10}".format(
+                    str(
+                        "{:.7f}".format(
+                            strain[ind_z[point], ind_y[point], ind_x[point]]
+                        )
+                    )
+                )
+                + "\n"
             )
-            + "\n"
-        )
-
-    file_surface.close()
-    file_bulk.close()
-    file_total.close()
 
 ####################################
 # fit the bulk strain distribution #
