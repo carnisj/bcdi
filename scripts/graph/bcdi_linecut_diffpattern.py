@@ -124,10 +124,8 @@ def on_click(event):
         print(f"starting_point = {starting_point}, endpoint = {endpoint}")
         cut = gu.linecut(
             diff_pattern,
-            start_indices=starting_point,
-            stop_indices=endpoint,
+            indices=list(zip(starting_point, endpoint)),
             interp_order=1,
-            debugging=False,
         )
         if qx.ndim == 1:
             d_q = np.sqrt(
@@ -365,7 +363,6 @@ cut = gu.linecut(
     diff_pattern,
     indices=list(zip(starting_point, endpoint)),
     interp_order=1,
-    debugging=False,
 )
 if qx.ndim == 1:
     dq = np.sqrt(
