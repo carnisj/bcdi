@@ -85,3 +85,4 @@ class ColormapFactory:
         else:
             raise NotImplementedError(f"colormap {self.colormap} not implemented")
         self.cmap.set_bad(color=self.bad_color)
+        return self.cmap
