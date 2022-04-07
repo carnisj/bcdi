@@ -180,10 +180,8 @@ def on_click(event):
         print(f"endpoint = {endpoint}")
         cut = gu.linecut(
             linecut_prtf,
-            start_indices=(z0, y0, x0),
-            stop_indices=endpoint,
+            indices=list(zip(starting_point, endpoint)),
             interp_order=1,
-            debugging=False,
         )
         plt0.remove()
         plt1.remove()
@@ -639,7 +637,6 @@ if flag_interact:
         prtf_matrix,
         indices=list(zip(starting_point, endpoint)),
         interp_order=1,
-        debugging=False,
     )
     diff_pattern[np.isnan(diff_pattern)] = 0  # discard nans
     fig_prtf, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
