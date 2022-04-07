@@ -57,7 +57,7 @@ class ColormapFactory:
     def bad_color(self, val: str):
         if not isinstance(val, str):
             raise TypeError(f"bad_color should be a str, got {type(val)})")
-        if not is_float(val) or not (0.0 <= float(val) <= 1.0):
+        if not is_float(val) or not 0.0 <= float(val) <= 1.0:
             raise ValueError("float(bad_color) should be a number between 0 and 1")
         self._bad_color = val
 
@@ -75,6 +75,7 @@ class ColormapFactory:
         self._colormap = val
 
     def generate_cmap(self):
+        """Factory for the colormap."""
         if self.colormap == "turbo":
             self.cmap = ListedColormap(turbo_colormap_data)
         elif self.colormap == "custom":

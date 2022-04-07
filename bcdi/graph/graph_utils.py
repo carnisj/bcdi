@@ -1067,7 +1067,7 @@ def fit_linecut(
         result[f"dimension_{idx}"] = {}
         # generate the linecut
         cut = linecut(array=array, indices=indices[idx])
-        result[f"dimension_{idx}"][f"linecut"] = np.vstack(
+        result[f"dimension_{idx}"]["linecut"] = np.vstack(
             (np.arange(indices[idx][idx][0], indices[idx][idx][1] + 1), cut)
         )
 
@@ -1077,7 +1077,7 @@ def fit_linecut(
             support[array > support_threshold] = 1
             support_cut = linecut(array=support, indices=indices[idx])
 
-            peaks, metadata = find_peaks(
+            peaks, _ = find_peaks(
                 abs(np.gradient(support_cut)), height=0.1, distance=10, width=1
             )
             dcut = abs(np.gradient(cut))
@@ -2054,7 +2054,7 @@ def plot_linecut(
     plt.ioff()
 
     if filename:
-        base, ext = os.path.splitext(filename)
+        base, _ = os.path.splitext(filename)
         fig.savefig(base + "_fits.png")
 
 
