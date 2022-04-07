@@ -1,4 +1,4 @@
-black==22.3.0
+black==22.2.0
 coverage==6.3.2
 doit==0.34.2
 fabio==0.13.0
