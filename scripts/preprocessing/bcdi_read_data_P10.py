@@ -268,7 +268,7 @@ def main(parameters):
             h5file = h5py.File(filenames[idx], "r")
             data = h5file["entry"]["data"]["data"][:]
             data[data <= threshold] = 0
-            nbz, nby, nbx = data.shape
+            nbz, _, _ = data.shape
             for index in range(nbz):
                 counter.append(
                     data[
