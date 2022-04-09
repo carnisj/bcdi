@@ -315,7 +315,8 @@ def run(prm):
     ###################
     # define colormap #
     ###################
-    my_cmap = ColormapFactory().generate_cmap()
+    colormap = prm.get("colormap", "turbo")
+    my_cmap = ColormapFactory(colormap=colormap).generate_cmap()
     plt.rcParams["keymap.fullscreen"] = [""]
 
     ####################

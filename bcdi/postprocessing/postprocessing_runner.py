@@ -136,7 +136,8 @@ def run(prm):
         bad_color = "0.7"
     else:
         bad_color = "1.0"  # white background
-    my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
+    colormap = prm.get("colormap", "turbo")
+    my_cmap = ColormapFactory(bad_color=bad_color, colormap=colormap).generate_cmap()
 
     #################################
     # define the experimental setup #

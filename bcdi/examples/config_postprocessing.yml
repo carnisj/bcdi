@@ -9,6 +9,7 @@ data_dir: None
 sample_name: "B15_syn_S1_2"
 # string in front of the scan number in the folder name.
 comment: ""  # comment in filenames, should start with _
+colormap: "turbo"  # "turbo", "custom" or colormap defined in the colorcet package
 ##########################################################
 # parameters used when averaging several reconstructions #
 ##########################################################

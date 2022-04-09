@@ -9,6 +9,7 @@ data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
 sample_name: "S"
 # string in front of the scan number in the folder name.
 comment: ""  # comment in filenames, should start with _
+colormap: "turbo"  # "turbo", "custom" or colormap defined in the colorcet package
 ##########################################################
 # parameters used when averaging several reconstructions #
 ##########################################################

@@ -60,6 +60,9 @@ Usage:
     :param comment: string use in filenames when saving
     :param debug: e.g. False
      True to see plots
+    :param colormap: e.g. "turbo"
+     "turbo", "custom" or colormap defined in the colorcet package, see
+     https://colorcet.holoviz.org/
     :param reconstruction_file: e.g. "modes.h5"
      path to a reconstruction file, to avoid opening a pop-up window
 

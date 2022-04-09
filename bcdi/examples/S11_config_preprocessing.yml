@@ -9,6 +9,7 @@ sample_name: "S"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 comment: ""  # string, should start with "_"
+colormap: "turbo"  # "turbo", "custom" or colormap defined in the colorcet package
 debug: False  # set to True to see plots
 ##############################
 # parameters used in masking #

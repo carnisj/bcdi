@@ -10,6 +10,7 @@ Implementation of the colormap class.
 
 New colormaps can be added to the method generate_colormap.
 """
+import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 from typing import Optional
 
@@ -70,7 +71,7 @@ class ColormapFactory:
     def colormap(self, val: str):
         if not isinstance(val, str):
             raise TypeError(f"colormap should be a str, got {type(val)})")
-        if val not in self.valid_colormaps:
+        if val not in self.valid_colormaps and val not in cc.cm:
             raise NotImplementedError(f"colormap {val} not implemented")
         self._colormap = val
 
@@ -82,6 +83,8 @@ class ColormapFactory:
             self.cmap = LinearSegmentedColormap(
                 "my_colormap", custom_colormap_data, 256
             )
+        elif self.colormap in cc.cm:
+            self.cmap = getattr(cc.cm, self.colormap)
         else:
             raise NotImplementedError(f"colormap {self.colormap} not implemented")
         self.cmap.set_bad(color=self.bad_color)
