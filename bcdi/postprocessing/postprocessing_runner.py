@@ -236,7 +236,7 @@ def run(prm):
     )
     print("Binning used during phasing:", setup.detector.binning)
     print("Padding back to original FFT size", original_size)
-    obj = util.crop_pad(array=obj, output_shape=original_size)
+    obj = util.crop_pad(array=obj, output_shape=original_size, cmap=my_cmap)
 
     ###########################################################################
     # define range for orthogonalization and plotting - speed up calculations #
@@ -279,7 +279,7 @@ def run(prm):
         prm[f"from_file_{counter}"] = file_path[value]
 
         if prm.get("flip_reconstruction", False):
-            obj = pu.flip_reconstruction(obj, debugging=True)
+            obj = pu.flip_reconstruction(obj, debugging=True, cmap=my_cmap)
 
         if extension == ".h5":
             centering_method = "do_nothing"  # do not center, data is already cropped
@@ -291,10 +291,13 @@ def run(prm):
                 sum_frames=True,
                 plot_colorbar=True,
                 title="1st mode after centering",
+                cmap=my_cmap,
             )
 
         # use the range of interest defined above
-        obj = util.crop_pad(obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False)
+        obj = util.crop_pad(
+            obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False, cmap=my_cmap
+        )
 
         # align with average reconstruction
         if counter == 0:  # the fist array loaded will serve as reference object
@@ -330,6 +333,7 @@ def run(prm):
         debugging=debug,
         reciprocal_space=False,
         is_orthogonal=is_orthogonal,
+        cmap=my_cmap,
     )
 
     print(
@@ -348,6 +352,7 @@ def run(prm):
             title="Phase after unwrap + wrap",
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
+            cmap=my_cmap,
         )
 
     #############################################
@@ -360,6 +365,7 @@ def run(prm):
         method="gradient",
         amplitude_threshold=isosurface_strain,
         threshold_gradient=threshold_gradient,
+        cmap=my_cmap,
     )
     del avg_obj
     gc.collect()
@@ -374,6 +380,7 @@ def run(prm):
             title="Phase after ramp removal",
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
+            cmap=my_cmap,
         )
 
     ########################
@@ -570,6 +577,7 @@ def run(prm):
                 debugging=True,
                 reciprocal_space=False,
                 is_orthogonal=False,
+                cmap=my_cmap,
             )
             gu.multislices_plot(
                 phase,
@@ -581,6 +589,7 @@ def run(prm):
                 reciprocal_space=False,
                 is_orthogonal=False,
                 title="unwrapped phase before orthogonalization",
+                cmap=my_cmap,
             )
             del phase
             gc.collect()
@@ -719,6 +728,7 @@ def run(prm):
         debugging=True,
         reciprocal_space=False,
         is_orthogonal=True,
+        cmap=my_cmap,
     )
     amp = abs(obj_ortho)
     del obj_ortho
@@ -791,6 +801,7 @@ def run(prm):
                 title="Refraction correction on the support",
                 is_orthogonal=True,
                 reciprocal_space=False,
+                cmap=my_cmap,
             )
         correct_absorption = False
         if correct_absorption:
@@ -811,6 +822,7 @@ def run(prm):
                 title="Absorption correction on the support",
                 is_orthogonal=True,
                 reciprocal_space=False,
+                cmap=my_cmap,
             )
 
         del bulk, optical_path
@@ -828,6 +840,7 @@ def run(prm):
         amplitude_threshold=isosurface_strain,
         threshold_gradient=threshold_gradient,
         debugging=debug,
+        cmap=my_cmap,
     )
 
     ########################
@@ -947,9 +960,9 @@ def run(prm):
     # pad array to fit the output_size parameter #
     ##############################################
     if output_size is not None:
-        amp = util.crop_pad(array=amp, output_shape=output_size)
-        phase = util.crop_pad(array=phase, output_shape=output_size)
-        strain = util.crop_pad(array=strain, output_shape=output_size)
+        amp = util.crop_pad(array=amp, output_shape=output_size, cmap=my_cmap)
+        phase = util.crop_pad(array=phase, output_shape=output_size, cmap=my_cmap)
+        strain = util.crop_pad(array=strain, output_shape=output_size, cmap=my_cmap)
     print(f"\nFinal data shape: {amp.shape}")
 
     ######################
@@ -1079,6 +1092,7 @@ def run(prm):
         vmax=1,
         is_orthogonal=True,
         reciprocal_space=False,
+        cmap=my_cmap,
     )
     fig.text(0.60, 0.45, "Scan " + str(scan), size=20)
     fig.text(
@@ -1107,6 +1121,7 @@ def run(prm):
         plot_colorbar=True,
         is_orthogonal=True,
         reciprocal_space=False,
+        cmap=my_cmap,
     )
     fig.text(0.60, 0.45, f"Scan {scan}", size=20)
     fig.text(

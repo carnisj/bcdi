@@ -245,7 +245,13 @@ def catch_error(exception):
 
 
 def crop_pad(
-    array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False
+    array,
+    output_shape,
+    pad_value=0,
+    pad_start=None,
+    crop_center=None,
+    debugging=False,
+    **kwargs,
 ):
     """
     Crop or pad the 3D object depending on output_shape.
@@ -286,7 +292,11 @@ def crop_pad(
     if debugging:
         print(f"array shape before crop/pad = {array.shape}")
         gu.multislices_plot(
-            abs(array), sum_frames=True, scale="log", title="Before crop/pad"
+            abs(array),
+            sum_frames=True,
+            scale="log",
+            title="Before crop/pad",
+            cmap=kwargs.get("cmap", "turbo"),
         )
 
     # crop/pad along axis 0
@@ -331,7 +341,11 @@ def crop_pad(
     if debugging:
         print(f"array shape after crop/pad = {newobj.shape}")
         gu.multislices_plot(
-            abs(newobj), sum_frames=True, scale="log", title="After crop/pad"
+            abs(newobj),
+            sum_frames=True,
+            scale="log",
+            title="After crop/pad",
+            cmap=kwargs.get("cmap", "turbo"),
         )
     return newobj
 

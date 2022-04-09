@@ -16,7 +16,7 @@ from bcdi.postprocessing.postprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
 
 here = Path(__file__).parent
-CONFIG_FILE = str(here.parents[1] / "bcdi/examples/config_postprocessing.yml")
+CONFIG_FILE = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
 
 helptext = """
 Interpolate the output of the phase retrieval into an orthonormal frame,

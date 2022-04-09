@@ -636,6 +636,7 @@ def run(prm):
                     title="Data before gridding\n",
                     is_orthogonal=False,
                     reciprocal_space=True,
+                    cmap=my_cmap,
                 )
                 fig.savefig(
                     setup.detector.savedir
@@ -762,6 +763,7 @@ def run(prm):
                         position=(323, 122),
                         is_orthogonal=not use_rawdata,
                         reciprocal_space=True,
+                        cmap=my_cmap,
                     )
 
                     fig.savefig(
@@ -830,6 +832,7 @@ def run(prm):
             title="Data before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -859,6 +862,7 @@ def run(prm):
             tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
             is_orthogonal=not use_rawdata,
             reciprocal_space=False,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -884,6 +888,7 @@ def run(prm):
             title="Mask before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -1004,6 +1009,7 @@ def run(prm):
                 title="Data after aliens removal\n",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1022,6 +1028,7 @@ def run(prm):
                 title="Mask after aliens removal\n",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1175,6 +1182,7 @@ def run(prm):
                 slice_position=[int(z0), int(y0), int(x0)],
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1195,6 +1203,7 @@ def run(prm):
                 title="Masked data",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1216,6 +1225,7 @@ def run(prm):
                 title="Mask",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
@@ -1297,6 +1307,7 @@ def run(prm):
                 is_orthogonal=True,
                 levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1375,6 +1386,7 @@ def run(prm):
             title="Final data",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
         if not flag_interact:
@@ -1390,6 +1402,7 @@ def run(prm):
             title="Final mask",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
         if not flag_interact:

@@ -820,7 +820,7 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     return zrange, yrange, xrange
 
 
-def flip_reconstruction(obj, debugging=False):
+def flip_reconstruction(obj, debugging=False, **kwargs):
     """
     Calculate the conjugate object giving the same diffracted intensity as 'obj'.
 
@@ -846,6 +846,7 @@ def flip_reconstruction(obj, debugging=False):
             sum_frames=False,
             plot_colorbar=True,
             title="Flipped object",
+            cmap=kwargs.get("cmap", "turbo"),
         )
     return flipped_obj
 
@@ -1606,6 +1607,7 @@ def remove_ramp(
     method="gradient",
     ups_factor=2,
     debugging=False,
+    **kwargs,
 ):
     """
     Remove the linear trend in the ramp using its gradient and a threshold n 3D dataset.
@@ -1632,11 +1634,11 @@ def remove_ramp(
      ramp along x
     """
     valid.valid_ndarray(arrays=(amp, phase), ndim=3)
-
+    cmap = (kwargs.get("cmap", "turbo"),)
     if method == "upsampling":
         nbz, nby, nbx = [mysize * ups_factor for mysize in initial_shape]
         nb_z, nb_y, nb_x = amp.shape
-        myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx))
+        myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx), cmap=cmap)
         if debugging:
             plt.figure()
             plt.imshow(np.log10(abs(myobj).sum(axis=0)))
@@ -1648,7 +1650,7 @@ def remove_ramp(
         if debugging:
             plt.figure()
             # plt.imshow(np.log10(abs(my_fft[nbz//2, :, :])))
-            plt.imshow(np.log10(abs(my_fft).sum(axis=0)))
+            plt.imshow(np.log10(abs(my_fft).sum(axis=0)), cmap=cmap)
             plt.title("np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
         zcom, ycom, xcom = center_of_mass(abs(my_fft) ** 4)
@@ -1664,7 +1666,7 @@ def remove_ramp(
         gc.collect()
         if debugging:
             plt.figure()
-            plt.imshow(abs(buf2ft).sum(axis=0))
+            plt.imshow(abs(buf2ft).sum(axis=0), cmap=cmap)
             plt.title("abs(buf2ft).sum(axis=0)")
             plt.pause(0.1)
 
@@ -1682,7 +1684,7 @@ def remove_ramp(
         gc.collect()
         if debugging:
             plt.figure()
-            plt.imshow(abs(greg).sum(axis=0))
+            plt.imshow(abs(greg).sum(axis=0), cmap=cmap)
             plt.title("abs(greg).sum(axis=0)")
             plt.pause(0.1)
 
@@ -1693,7 +1695,7 @@ def remove_ramp(
 
         if debugging:
             plt.figure()
-            plt.imshow(np.log10(abs(my_fft).sum(axis=0)))
+            plt.imshow(np.log10(abs(my_fft).sum(axis=0)), cmap=cmap)
             plt.title("centered np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
 
@@ -1703,7 +1705,7 @@ def remove_ramp(
         gc.collect()
         if debugging:
             plt.figure()
-            plt.imshow(abs(myobj).sum(axis=0))
+            plt.imshow(abs(myobj).sum(axis=0), cmap=cmap)
             plt.title("centered abs(myobj).sum(axis=0)")
             plt.pause(0.1)
 
@@ -1746,6 +1748,7 @@ def remove_ramp(
             vmin=-threshold_gradient,
             vmax=threshold_gradient,
             title="Phase gradient along Z",
+            cmap=cmap,
         )
         gu.multislices_plot(
             mysupportz,
@@ -1755,6 +1758,7 @@ def remove_ramp(
             vmin=0,
             vmax=1,
             title="Thresholded support along Z",
+            cmap=cmap,
         )
     del mysupportz, mygradz
     gc.collect()
@@ -1779,6 +1783,7 @@ def remove_ramp(
             vmin=-threshold_gradient,
             vmax=threshold_gradient,
             title="Phase gradient along Y",
+            cmap=cmap,
         )
         gu.multislices_plot(
             mysupporty,
@@ -1788,6 +1793,7 @@ def remove_ramp(
             vmin=0,
             vmax=1,
             title="Thresholded support along Y",
+            cmap=cmap,
         )
     del mysupporty, mygrady
     gc.collect()
@@ -1812,6 +1818,7 @@ def remove_ramp(
             vmin=-threshold_gradient,
             vmax=threshold_gradient,
             title="Phase gradient along X",
+            cmap=cmap,
         )
         gu.multislices_plot(
             mysupportx,
@@ -1821,6 +1828,7 @@ def remove_ramp(
             vmin=0,
             vmax=1,
             title="Thresholded support along X",
+            cmap=cmap,
         )
     del mysupportx, mygradx, mysupport
     gc.collect()
@@ -2174,7 +2182,7 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        allowed_kwargs={"cmap", "reciprocal_space", "is_orthogonal"},
         name="postprocessing_utils.average_obj",
     )
     reciprocal_space = kwargs.get("reciprocal_space", False)
@@ -2194,6 +2202,7 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
             title="Object before unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
+            cmap=kwargs.get("cmap", "turbo"),
         )
 
     phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
@@ -2205,6 +2214,7 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
             title="Object after unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
+            cmap=kwargs.get("cmap", "turbo"),
         )
 
     extent_phase = np.ceil(phase_unwrapped.max() - phase_unwrapped.min())

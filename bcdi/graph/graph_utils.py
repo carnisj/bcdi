@@ -32,7 +32,7 @@ from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
-default_cmap = ColormapFactory().generate_cmap()
+default_cmap = ColormapFactory(colormap="turbo").generate_cmap()
 
 
 def close_event(event):

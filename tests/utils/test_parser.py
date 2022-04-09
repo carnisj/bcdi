@@ -12,7 +12,7 @@ from bcdi.utils.parser import ConfigParser
 from tests.config import run_tests
 
 here = Path(__file__).parent
-CONFIG = str(here.parents[1] / "bcdi/examples/config_postprocessing.yml")
+CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
 
 
 class TestConfigParser(unittest.TestCase):
