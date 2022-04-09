@@ -200,8 +200,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "center_roi_y":
         valid.valid_item(value, allowed_types=int, allow_none=True, name=key)
     elif key == "colormap":
-        if value not in cc.cm:
-            raise ValueError(f"colormap '{value}' not defined in colorcet")
+        if value not in ["turbo", "custom"] and value not in cc.cm:
+            raise ValueError(f"unknow colormap '{value}'")
     elif key == "comment":
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startswith("_"):

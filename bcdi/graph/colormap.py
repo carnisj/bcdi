@@ -62,19 +62,6 @@ class ColormapFactory:
             raise ValueError("float(bad_color) should be a number between 0 and 1")
         self._bad_color = val
 
-    @property
-    def colormap(self):
-        """Name of the colormap."""
-        return self._colormap
-
-    @colormap.setter
-    def colormap(self, val: str):
-        if not isinstance(val, str):
-            raise TypeError(f"colormap should be a str, got {type(val)})")
-        if val not in self.valid_colormaps and val not in cc.cm:
-            raise NotImplementedError(f"colormap {val} not implemented")
-        self._colormap = val
-
     def generate_cmap(self):
         """Factory for the colormap."""
         if self.colormap == "turbo":
