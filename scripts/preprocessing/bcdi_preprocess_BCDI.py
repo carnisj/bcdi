@@ -57,7 +57,7 @@ Usage:
      folder name). If only one name is indicated, it will be repeated to match the
      number of scans.
     :param comment: string use in filenames when saving
-    :param colormap: e.g. "turbo"  
+    :param colormap: e.g. "turbo"
      "turbo", "custom" or colormap defined in the colorcet package, see
      https://colorcet.holoviz.org/
     :param debug: e.g. False

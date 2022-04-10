@@ -985,7 +985,7 @@ def grid_bcdi_xrayutil(
         scale="log",
         is_orthogonal=True,
         reciprocal_space=True,
-        cmp=cmap,
+        cmap=cmap,
     )
     fig.savefig(setup.detector.savedir + string + "sum" + plot_comment)
     plt.close(fig)
