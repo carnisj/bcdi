@@ -481,10 +481,16 @@ def run(prm):
                         setup.detector.binning,
                     )
                     data = util.bin_data(
-                        data, binning=setup.detector.binning, debugging=False
+                        data,
+                        binning=setup.detector.binning,
+                        debugging=False,
+                        cmap=my_cmap,
                     )
                     mask = util.bin_data(
-                        mask, binning=setup.detector.binning, debugging=False
+                        mask,
+                        binning=setup.detector.binning,
+                        debugging=False,
+                        cmap=my_cmap,
                     )
                     mask[np.nonzero(mask)] = 1
                     if len(q_values) != 0:
@@ -713,6 +719,7 @@ def run(prm):
                         frames_logical=frames_logical,
                         hxrd=hxrd,
                         debugging=debug,
+                        cmap=my_cmap,
                     )
                 else:  # 'linearization'
                     # for q values, the frame used is
@@ -728,6 +735,7 @@ def run(prm):
                         reference_axis=axis_to_array_xyz[ref_axis_q],
                         debugging=debug,
                         fill_value=(0, prm.get("fill_value_mask", 0)),
+                        cmap=my_cmap,
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -1132,6 +1140,7 @@ def run(prm):
                     interpolate=median_filter,
                     min_count=3,
                     debugging=debug,
+                    cmap=my_cmap,
                 )
                 nb_pix += processed_pix
                 sys.stdout.write(
@@ -1243,10 +1252,10 @@ def run(prm):
             setup.detector.binning[0] != 1 and not reload_orthogonal
         ):  # data was already binned for reload_orthogonal
             data = util.bin_data(
-                data, (setup.detector.binning[0], 1, 1), debugging=False
+                data, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
             )
             mask = util.bin_data(
-                mask, (setup.detector.binning[0], 1, 1), debugging=False
+                mask, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
             )
             mask[np.nonzero(mask)] = 1
             if not use_rawdata and len(q_values) != 0:
@@ -1268,8 +1277,12 @@ def run(prm):
         crop_center = pu.find_crop_center(
             array_shape=data.shape, crop_shape=final_shape, pivot=com
         )
-        data = util.crop_pad(data, output_shape=final_shape, crop_center=crop_center)
-        mask = util.crop_pad(mask, output_shape=final_shape, crop_center=crop_center)
+        data = util.crop_pad(
+            data, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+        )
+        mask = util.crop_pad(
+            mask, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+        )
         print("\nData size after considering FFT shape requirements:", data.shape)
         nz, ny, nx = data.shape
         comment = f"{comment}_{nz}_{ny}_{nx}" + binning_comment

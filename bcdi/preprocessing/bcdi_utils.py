@@ -710,6 +710,8 @@ def grid_bcdi_labframe(
      orthonormal frame x y z
     :param debugging: set to True to see plots
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
@@ -727,9 +729,10 @@ def grid_bcdi_labframe(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"fill_value", "reference_axis"},
+        allowed_kwargs={"cmap", "fill_value", "reference_axis"},
         name="kwargs",
     )
+    cmap = kwargs.get("cmap", "turbo")
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_container(
         fill_value,
@@ -807,6 +810,7 @@ def grid_bcdi_labframe(
         scale="log",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(detector.savedir + string + "sum" + plot_comment)
     plt.close(fig)
@@ -821,6 +825,7 @@ def grid_bcdi_labframe(
         scale="log",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(detector.savedir + string + "central" + plot_comment)
     plt.close(fig)
@@ -834,6 +839,7 @@ def grid_bcdi_labframe(
         title="Regridded data",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(detector.savedir + string + "sum_pix" + plot_comment)
     plt.close(fig)
@@ -847,6 +853,7 @@ def grid_bcdi_labframe(
         title="Regridded data",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(detector.savedir + string + "central_pix" + plot_comment)
     plt.close(fig)
@@ -860,19 +867,14 @@ def grid_bcdi_labframe(
             title="Regridded mask",
             is_orthogonal=True,
             reciprocal_space=True,
+            cmap=cmap,
         )
 
     return interp_data, interp_mask, q_values, transfer_matrix
 
 
 def grid_bcdi_xrayutil(
-    data,
-    mask,
-    scan_number,
-    setup,
-    frames_logical,
-    hxrd,
-    debugging=False,
+    data, mask, scan_number, setup, frames_logical, hxrd, debugging=False, **kwargs
 ):
     """
     Interpolate BCDI reciprocal space data using xrayutilities package.
@@ -889,11 +891,15 @@ def grid_bcdi_xrayutil(
     :param hxrd: an initialized xrayutilities HXRD object used for the orthogonalization
      of the dataset
     :param debugging: set to True to see plots
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-
+    cmap = kwargs.get("cmap", "turbo")
     numz, numy, numx = data.shape
     print(
         "Gridding the data using xrayutilities package,"
@@ -979,6 +985,7 @@ def grid_bcdi_xrayutil(
         scale="log",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmp=cmap,
     )
     fig.savefig(setup.detector.savedir + string + "sum" + plot_comment)
     plt.close(fig)
@@ -993,6 +1000,7 @@ def grid_bcdi_xrayutil(
         scale="log",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(setup.detector.savedir + string + "central" + plot_comment)
     plt.close(fig)
@@ -1006,6 +1014,7 @@ def grid_bcdi_xrayutil(
         title="Regridded data",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(setup.detector.savedir + string + "sum_pix" + plot_comment)
     plt.close(fig)
@@ -1019,6 +1028,7 @@ def grid_bcdi_xrayutil(
         title="Regridded data",
         is_orthogonal=True,
         reciprocal_space=True,
+        cmap=cmap,
     )
     fig.savefig(setup.detector.savedir + string + "central_pix" + plot_comment)
     plt.close(fig)
@@ -1032,6 +1042,7 @@ def grid_bcdi_xrayutil(
             title="Regridded mask",
             is_orthogonal=True,
             reciprocal_space=True,
+            cmap=cmap,
         )
 
     return interp_data, interp_mask, (qx, qz, qy), frames_logical
