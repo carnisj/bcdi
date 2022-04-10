@@ -63,7 +63,7 @@ class ColormapFactory:
         self._bad_color = val
 
     def generate_cmap(self):
-        """Factory for the colormap."""
+        """Build and return the colormap."""
         if self.colormap == "turbo":
             self.cmap = ListedColormap(turbo_colormap_data)
         elif self.colormap == "custom":
