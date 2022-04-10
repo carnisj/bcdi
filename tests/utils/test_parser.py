@@ -23,7 +23,11 @@ class TestConfigParser(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.command_line_args = {"scan": 999999999, "root_folder": str(here)}
+        self.command_line_args = {
+            "data_dir": str(here),
+            "scan": 999999999,
+            "root_folder": str(here),
+        }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
 
     def test_init_file_path(self):
