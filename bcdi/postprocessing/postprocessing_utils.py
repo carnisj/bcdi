@@ -37,6 +37,8 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     :param debugging: set to True to see plots
     :type debugging: bool
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - for the normal distribution: 'sigma' and 'mu' of the 3d multivariate normal
        distribution, tuples of 3 floats
      - for the Tuckey window: 'alpha' (shape parameter) of the 3d Tukey window,
@@ -50,14 +52,14 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"sigma", "mu", "alpha", "is_orthogonal"},
+        allowed_kwargs={"cmap", "sigma", "mu", "alpha", "is_orthogonal"},
         name="postprocessing_utils.apodize",
     )
     sigma = kwargs.get("sigma")
     mu = kwargs.get("mu")
     alpha = kwargs.get("alpha")
     is_orthogonal = kwargs.get("is_orthogonal", False)
-
+    cmap = kwargs.get("cmap", "turbo")
     # calculate the diffraction pattern of the reconstructed object
     nb_z, nb_y, nb_x = amp.shape
     nbz, nby, nbx = initial_shape
@@ -73,6 +75,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
             scale="linear",
+            cmap=cmap,
         )
 
     my_fft = fftshift(fftn(myobj))
@@ -89,6 +92,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
             reciprocal_space=True,
             is_orthogonal=is_orthogonal,
             scale="log",
+            cmap=cmap,
         )
 
     if window_type == "normal":
@@ -138,6 +142,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
             reciprocal_space=True,
             is_orthogonal=is_orthogonal,
             scale="log",
+            cmap=cmap,
         )
 
     myobj = ifftn(ifftshift(my_fft))
@@ -152,6 +157,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
             scale="linear",
+            cmap=cmap,
         )
     myobj = util.crop_pad(
         myobj, (nb_z, nb_y, nb_x)
@@ -571,6 +577,7 @@ def find_bulk(
     width_y=None,
     width_x=None,
     debugging=False,
+    **kwargs,
 ):
     """
     Isolate the inner part of the crystal from the non-physical surface.
@@ -587,9 +594,14 @@ def find_bulk(
      of the initial array
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: the support corresponding to the bulk
     """
     valid.valid_ndarray(arrays=amp, ndim=3)
+    cmap = kwargs.get("cmap", "turbo")
 
     nbz, nby, nbx = amp.shape
     max_amp = abs(amp).max()
@@ -622,6 +634,7 @@ def find_bulk(
                 vmin=0,
                 vmax=1,
                 title="Outer matrix",
+                cmap=cmap,
             )
 
         ############################################################################
@@ -659,6 +672,7 @@ def find_bulk(
                     vmin=0,
                     vmax=1,
                     title="Surface matrix",
+                    cmap=cmap,
                 )
 
             # second step: calculate the % of voxels from that layer whose amplitude
@@ -827,10 +841,14 @@ def flip_reconstruction(obj, debugging=False, **kwargs):
     :param obj: 3D reconstructed complex object
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: the flipped complex object
     """
     valid.valid_ndarray(arrays=obj, ndim=3)
-
+    cmap = (kwargs.get("cmap", "turbo"),)
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
         gu.multislices_plot(
@@ -839,6 +857,7 @@ def flip_reconstruction(obj, debugging=False, **kwargs):
             sum_frames=False,
             plot_colorbar=True,
             title="Initial object",
+            cmap=cmap,
         )
         gu.multislices_plot(
             abs(flipped_obj),
@@ -846,7 +865,7 @@ def flip_reconstruction(obj, debugging=False, **kwargs):
             sum_frames=False,
             plot_colorbar=True,
             title="Flipped object",
-            cmap=kwargs.get("cmap", "turbo"),
+            cmap=cmap,
         )
     return flipped_obj
 
@@ -913,6 +932,8 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     :param voxel_size: tuple, actual voxel size in z, y, and x (CXI convention)
     :param debugging: boolena, True to see plots
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - width_z: size of the area to plot in z (axis 0), centered on the middle
        of the initial array
      - width_y: size of the area to plot in y (axis 1), centered on the middle
@@ -926,8 +947,11 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # check and load kwargs #
     #########################
     valid.valid_kwargs(
-        kwargs=kwargs, allowed_kwargs={"width_z", "width_y", "width_x"}, name="kwargs"
+        kwargs=kwargs,
+        allowed_kwargs={"cmap", "width_z", "width_y", "width_x"},
+        name="kwargs",
     )
+    cmap = kwargs.get("cmap", "turbo")
     width_z = kwargs.get("width_z")
     valid.valid_item(
         value=width_z,
@@ -1060,6 +1084,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
             title="Support for optical path",
             is_orthogonal=True,
             reciprocal_space=False,
+            cmap=cmap,
         )
 
     ###########################################
@@ -1072,6 +1097,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
         half_width=1,
         title="Optical path",
         debugging=debugging,
+        cmap=cmap,
     )
 
     return path
@@ -1085,6 +1111,7 @@ def get_strain(
     extent_phase=2 * pi,
     method="default",
     debugging=False,
+    **kwargs,
 ):
     """
     Calculate the 3D strain array.
@@ -1102,9 +1129,14 @@ def get_strain(
     :param method: 'default' or 'defect'. If 'defect', will offset the phase
      in a loop and keep the smallest value for the strain (Felix Hofmann's method 2019).
     :param debugging: True to see plots
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: the strain 3D array
     """
     # check some parameters
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_ndarray(arrays=phase, ndim=3)
     if reference_axis not in {"x", "y", "z"}:
         raise ValueError("The reference axis should be 'x', 'y' or 'z'")
@@ -1167,6 +1199,7 @@ def get_strain(
                 plot_colorbar=True,
                 is_orthogonal=True,
                 reciprocal_space=False,
+                cmap=cmap,
             )
             gu.multislices_plot(
                 strain,
@@ -1177,6 +1210,7 @@ def get_strain(
                 plot_colorbar=True,
                 is_orthogonal=True,
                 reciprocal_space=False,
+                cmap=cmap,
             )
     return strain
 
@@ -1192,6 +1226,7 @@ def mean_filter(
     vmax=np.nan,
     title="Object",
     debugging=False,
+    **kwargs,
 ):
     """
     Apply a mean filter to an object defined by a support.
@@ -1213,11 +1248,16 @@ def mean_filter(
     :param vmax: real number, higher boundary for the colorbar of the plots
     :param title: str, title for the plots
     :param debugging: bool, True to see plots
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: averaged array of the same shape as the input array
     """
     #########################
     # check some parameters #
     #########################
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_ndarray(arrays=(array, support), ndim=3)
     valid.valid_item(half_width, allowed_types=int, min_included=0, name="half_width")
     valid.valid_container(title, container_types=str, name="title")
@@ -1260,6 +1300,7 @@ def mean_filter(
                 vmax=vmax,
                 title=title + " before averaging",
                 plot_colorbar=True,
+                cmap=cmap,
             )
             gu.multislices_plot(
                 support,
@@ -1269,6 +1310,7 @@ def mean_filter(
                 vmin=0,
                 vmax=1,
                 title="Support for averaging",
+                cmap=cmap,
             )
 
         nonzero_pixels = np.argwhere(support != 0)
@@ -1310,6 +1352,7 @@ def mean_filter(
                 vmax=vmax,
                 title=title + " after averaging",
                 plot_colorbar=True,
+                cmap=cmap,
             )
         if counter != 0:
             print("There were", counter, "voxels for which phase could not be averaged")
@@ -1506,6 +1549,8 @@ def remove_offset(
     :param title: string, used in plot title
     :param debugging: True to see plots
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - 'reciprocal_space': True if the object is in reciprocal space
      - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
        default plot labels.
@@ -1516,9 +1561,10 @@ def remove_offset(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"reciprocal_space", "is_orthogonal"},
+        allowed_kwargs={"cmap", "reciprocal_space", "is_orthogonal"},
         name="postprocessing_utils.average_obj",
     )
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_container(
         offset_origin,
         container_types=(tuple, list, np.ndarray),
@@ -1537,6 +1583,7 @@ def remove_offset(
             title=title + " before offset removal",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
+            cmap=cmap,
         )
 
     if phase_offset is None:
@@ -1591,6 +1638,7 @@ def remove_offset(
             title=title + " after offset removal",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
+            cmap=cmap,
         )
     return array
 
@@ -1630,6 +1678,10 @@ def remove_ramp(
      this value)
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: normalized amplitude, detrended phase, ramp along z, ramp along y,
      ramp along x
     """
@@ -2167,6 +2219,8 @@ def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
      deterministic behavior.
     :param debugging: set to True to see plots
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - 'reciprocal_space': True if the object is in reciprocal space
      - 'is_orthogonal': True if the data is in an orthonormal frame.
        Used for defining default plot labels.

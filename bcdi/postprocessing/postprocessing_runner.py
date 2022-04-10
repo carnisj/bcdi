@@ -315,6 +315,7 @@ def run(prm):
             reciprocal_space=False,
             is_orthogonal=is_orthogonal,
             debugging=debug,
+            cmap=my_cmap,
         )
         avg_counter = avg_counter + flag_avg
 
@@ -396,6 +397,7 @@ def run(prm):
         offset_origin=offset_origin,
         title="Phase",
         debugging=debug,
+        cmap=my_cmap,
     )
     del support
     gc.collect()
@@ -410,11 +412,14 @@ def run(prm):
     half_width_avg_phase = prm.get("half_width_avg_phase", 0)
     if half_width_avg_phase != 0:
         bulk = pu.find_bulk(
-            amp=amp, support_threshold=isosurface_strain, method="threshold"
+            amp=amp,
+            support_threshold=isosurface_strain,
+            method="threshold",
+            cmap=my_cmap,
         )
         # the phase should be averaged only in the support defined by the isosurface
         phase = pu.mean_filter(
-            array=phase, support=bulk, half_width=half_width_avg_phase
+            array=phase, support=bulk, half_width=half_width_avg_phase, cmap=my_cmap
         )
         del bulk
         gc.collect()
@@ -445,6 +450,7 @@ def run(prm):
             alpha=prm.get("apodization_alpha", [1.0, 1.0, 1.0]),
             is_orthogonal=is_orthogonal,
             debugging=True,
+            cmap=my_cmap,
         )
         comment = comment + "_apodize_" + prm.get("apodization_window", "blackman")
 
@@ -641,6 +647,7 @@ def run(prm):
             fill_value=0,
             debugging=True,
             title="amplitude",
+            cmap=my_cmap,
         )
         prm["transformation_matrix"] = transfer_matrix
     else:  # data already orthogonalized using xrayutilities
@@ -702,6 +709,7 @@ def run(prm):
                 axis_to_align=q_lab[::-1],
                 reference_axis=axis_to_array_xyz[ref_axis_q],
                 title=("amp", "phase"),
+                cmap=my_cmap,
             )
 
             obj_ortho = amp * np.exp(
@@ -749,6 +757,7 @@ def run(prm):
             support_threshold=threshold_unwrap_refraction,
             method=prm.get("optical_path_method", "threshold"),
             debugging=debug,
+            cmap=my_cmap,
         )
 
         kin = setup.incident_wavevector
@@ -771,12 +780,12 @@ def run(prm):
 
         # calculate the optical path of the incoming wavevector
         path_in = pu.get_opticalpath(
-            support=bulk, direction="in", k=kin, debugging=debug
+            support=bulk, direction="in", k=kin, debugging=debug, cmap=my_cmap
         )  # path_in already in nm
 
         # calculate the optical path of the outgoing wavevector
         path_out = pu.get_opticalpath(
-            support=bulk, direction="out", k=kout, debugging=debug
+            support=bulk, direction="out", k=kout, debugging=debug, cmap=my_cmap
         )  # path_our already in nm
 
         optical_path = path_in + path_out
@@ -859,6 +868,7 @@ def run(prm):
         debugging=debug,
         reciprocal_space=False,
         is_orthogonal=True,
+        cmap=my_cmap,
     )
     del support
     gc.collect()
@@ -879,6 +889,7 @@ def run(prm):
         extent_phase=extent_phase,
         method=prm.get("strain_method", "default"),
         debugging=debug,
+        cmap=my_cmap,
     )
 
     ################################################
@@ -898,6 +909,7 @@ def run(prm):
             reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
             debugging=(True, False, False),
             title=("amp", "phase", "strain"),
+            cmap=my_cmap,
         )
         # q_lab is already in the laboratory frame
         q_final = q_lab
@@ -914,6 +926,7 @@ def run(prm):
             rocking_angle=setup.rocking_angle,
             debugging=(True, False, False),
             title=("amp", "phase", "strain"),
+            cmap=my_cmap,
         )
     if save_frame == "crystal":
         # rotate also q_lab to have it along ref_axis_q,
@@ -942,6 +955,7 @@ def run(prm):
             is_orthogonal=True,
             reciprocal_space=False,
             title=("amp", "phase", "strain"),
+            cmap=my_cmap,
         )
         # rotate q accordingly, vectors needs to be in xyz order
         q_final = util.rotate_vector(
@@ -973,7 +987,7 @@ def run(prm):
         f" {voxel_size[2]:.2f} nm)"
     )
     bulk = pu.find_bulk(
-        amp=amp, support_threshold=isosurface_strain, method="threshold"
+        amp=amp, support_threshold=isosurface_strain, method="threshold", cmap=my_cmap
     )
     if save:
         prm["comment"] = comment

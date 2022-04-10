@@ -255,6 +255,7 @@ def average_arrays(
     :param debugging: boolean, set to True to see plots
     :param kwargs:
 
+     - 'cmap': str, name of the colormap
      - 'width_z': size of the area to plot in z (axis 0), centered on the middle of
        the initial array
      - 'width_y': size of the area to plot in y (axis 1), centered on the middle of

@@ -266,6 +266,10 @@ def crop_pad(
      center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: myobj cropped or padded with zeros
     """
     valid.valid_ndarray(arrays=array, ndim=3)
@@ -1972,6 +1976,8 @@ def rotate_crystal(
     :param debugging: tuple of booleans of the same length as the number of
      input arrays, True to see plots before and after rotation
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - 'title': tuple of strings, titles for the debugging plots, same length as the
        number of arrays
      - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging
@@ -2058,9 +2064,10 @@ def rotate_crystal(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"title", "scale", "width_z", "width_y", "width_x"},
+        allowed_kwargs={"cmap", "title", "scale", "width_z", "width_y", "width_x"},
         name="Setup.orthogonalize",
     )
+    cmap = kwargs.get("cmap", "turbo")
     title = kwargs.get("title", ("Object",) * nb_arrays)
     valid.valid_container(
         title,
@@ -2172,6 +2179,7 @@ def rotate_crystal(
                 is_orthogonal=is_orthogonal,
                 scale=scale[idx],
                 reciprocal_space=reciprocal_space,
+                cmap=cmap,
             )
             gu.multislices_plot(
                 rotated_array,
@@ -2182,6 +2190,7 @@ def rotate_crystal(
                 is_orthogonal=is_orthogonal,
                 scale=scale[idx],
                 reciprocal_space=reciprocal_space,
+                cmap=cmap,
             )
 
     if nb_arrays == 1:

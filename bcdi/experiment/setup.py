@@ -1499,6 +1499,7 @@ class Setup:
          input arrays, True to show plots before and after interpolation
         :param kwargs:
 
+         - 'cmap': str, name of the colormap
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - width_z: size of the area to plot in z (axis 0), centered on the middle of

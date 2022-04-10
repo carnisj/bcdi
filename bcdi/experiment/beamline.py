@@ -261,6 +261,7 @@ class Beamline(ABC):
          of input arrays, True to see plots before and after rotation
         :param kwargs:
 
+         - 'cmap': str, name of the colormap
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - 'scale': tuple of strings (either 'linear' or 'log'), scale for the
