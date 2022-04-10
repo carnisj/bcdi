@@ -848,7 +848,7 @@ def flip_reconstruction(obj, debugging=False, **kwargs):
     :return: the flipped complex object
     """
     valid.valid_ndarray(arrays=obj, ndim=3)
-    cmap = (kwargs.get("cmap", "turbo"),)
+    cmap = kwargs.get("cmap", "turbo")
     flipped_obj = ifftn(ifftshift(np.conj(fftshift(fftn(obj)))))
     if debugging:
         gu.multislices_plot(
@@ -1686,7 +1686,7 @@ def remove_ramp(
      ramp along x
     """
     valid.valid_ndarray(arrays=(amp, phase), ndim=3)
-    cmap = (kwargs.get("cmap", "turbo"),)
+    cmap = kwargs.get("cmap", "turbo")
     if method == "upsampling":
         nbz, nby, nbx = [mysize * ups_factor for mysize in initial_shape]
         nb_z, nb_y, nb_x = amp.shape
