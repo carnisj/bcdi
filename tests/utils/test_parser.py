@@ -80,7 +80,12 @@ class TestConfigParser(unittest.TestCase):
 
     def test_load_arguments_cl_params_flip(self):
         self.parser = ConfigParser(
-            CONFIG, {"flip_reconstruction": "False", "root_folder": str(here)}
+            CONFIG,
+            {
+                "data_dir": str(here),
+                "flip_reconstruction": "False",
+                "root_folder": str(here),
+            },
         )
         # "flip_reconstruction" is also key in CONFIG, which means that the overriding
         # by the optional --flip_reconstruction argument from the command line works as
@@ -90,7 +95,12 @@ class TestConfigParser(unittest.TestCase):
 
     def test_load_arguments_cl_params_flip_no_bool(self):
         self.parser = ConfigParser(
-            CONFIG, {"flip_reconstruction": "weirdstring", "root_folder": str(here)}
+            CONFIG,
+            {
+                "data_dir": str(here),
+                "flip_reconstruction": "weirdstring",
+                "root_folder": str(here),
+            },
         )
         with self.assertRaises(TypeError):
             self.parser.load_arguments()
