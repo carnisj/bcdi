@@ -72,10 +72,9 @@ Usage:
      background color for the GUI in level of grey in [0,1], 0 being dark. For visual
      comfort during interactive masking.
     :param backend: e.g. "Qt5Agg"
-     Backend used in script, change to "Agg" to make sure the figures are saved, not
-     compaticle with interactive masking. Other possibilities are
-     'module://matplotlib_inline.backend_inline'
-     default value is "Qt5Agg"
+     Backend used in script, change to "Agg" if you want to save the figures without
+     showing them (not compaticle with interactive masking). Other possibilities are
+     "Qt5Agg" (default) and "module://matplotlib_inline.backend_inline"
 
     Parameters related to data cropping/padding/centering #
 
