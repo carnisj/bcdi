@@ -315,7 +315,8 @@ def run(prm):
     ###################
     # define colormap #
     ###################
-    my_cmap = ColormapFactory().generate_cmap()
+    colormap = prm.get("colormap", "turbo")
+    my_cmap = ColormapFactory(colormap=colormap).generate_cmap()
     plt.rcParams["keymap.fullscreen"] = [""]
 
     ####################
@@ -480,10 +481,16 @@ def run(prm):
                         setup.detector.binning,
                     )
                     data = util.bin_data(
-                        data, binning=setup.detector.binning, debugging=False
+                        data,
+                        binning=setup.detector.binning,
+                        debugging=False,
+                        cmap=my_cmap,
                     )
                     mask = util.bin_data(
-                        mask, binning=setup.detector.binning, debugging=False
+                        mask,
+                        binning=setup.detector.binning,
+                        debugging=False,
+                        cmap=my_cmap,
                     )
                     mask[np.nonzero(mask)] = 1
                     if len(q_values) != 0:
@@ -635,6 +642,7 @@ def run(prm):
                     title="Data before gridding\n",
                     is_orthogonal=False,
                     reciprocal_space=True,
+                    cmap=my_cmap,
                 )
                 fig.savefig(
                     setup.detector.savedir
@@ -711,6 +719,7 @@ def run(prm):
                         frames_logical=frames_logical,
                         hxrd=hxrd,
                         debugging=debug,
+                        cmap=my_cmap,
                     )
                 else:  # 'linearization'
                     # for q values, the frame used is
@@ -726,6 +735,7 @@ def run(prm):
                         reference_axis=axis_to_array_xyz[ref_axis_q],
                         debugging=debug,
                         fill_value=(0, prm.get("fill_value_mask", 0)),
+                        cmap=my_cmap,
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -761,6 +771,7 @@ def run(prm):
                         position=(323, 122),
                         is_orthogonal=not use_rawdata,
                         reciprocal_space=True,
+                        cmap=my_cmap,
                     )
 
                     fig.savefig(
@@ -829,6 +840,7 @@ def run(prm):
             title="Data before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -858,6 +870,7 @@ def run(prm):
             tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
             is_orthogonal=not use_rawdata,
             reciprocal_space=False,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -883,6 +896,7 @@ def run(prm):
             title="Mask before aliens removal\n",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         if debug:
             fig.savefig(
@@ -1003,6 +1017,7 @@ def run(prm):
                 title="Data after aliens removal\n",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1021,6 +1036,7 @@ def run(prm):
                 title="Mask after aliens removal\n",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1124,6 +1140,7 @@ def run(prm):
                     interpolate=median_filter,
                     min_count=3,
                     debugging=debug,
+                    cmap=my_cmap,
                 )
                 nb_pix += processed_pix
                 sys.stdout.write(
@@ -1174,6 +1191,7 @@ def run(prm):
                 slice_position=[int(z0), int(y0), int(x0)],
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1194,6 +1212,7 @@ def run(prm):
                 title="Masked data",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1215,6 +1234,7 @@ def run(prm):
                 title="Mask",
                 is_orthogonal=not use_rawdata,
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
@@ -1232,10 +1252,10 @@ def run(prm):
             setup.detector.binning[0] != 1 and not reload_orthogonal
         ):  # data was already binned for reload_orthogonal
             data = util.bin_data(
-                data, (setup.detector.binning[0], 1, 1), debugging=False
+                data, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
             )
             mask = util.bin_data(
-                mask, (setup.detector.binning[0], 1, 1), debugging=False
+                mask, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
             )
             mask[np.nonzero(mask)] = 1
             if not use_rawdata and len(q_values) != 0:
@@ -1257,8 +1277,12 @@ def run(prm):
         crop_center = pu.find_crop_center(
             array_shape=data.shape, crop_shape=final_shape, pivot=com
         )
-        data = util.crop_pad(data, output_shape=final_shape, crop_center=crop_center)
-        mask = util.crop_pad(mask, output_shape=final_shape, crop_center=crop_center)
+        data = util.crop_pad(
+            data, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+        )
+        mask = util.crop_pad(
+            mask, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+        )
         print("\nData size after considering FFT shape requirements:", data.shape)
         nz, ny, nx = data.shape
         comment = f"{comment}_{nz}_{ny}_{nx}" + binning_comment
@@ -1296,6 +1320,7 @@ def run(prm):
                 is_orthogonal=True,
                 levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                 reciprocal_space=True,
+                cmap=my_cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1374,6 +1399,7 @@ def run(prm):
             title="Final data",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
         if not flag_interact:
@@ -1389,6 +1415,7 @@ def run(prm):
             title="Final mask",
             is_orthogonal=not use_rawdata,
             reciprocal_space=True,
+            cmap=my_cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
         if not flag_interact:

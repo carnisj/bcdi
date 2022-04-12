@@ -1,4 +1,5 @@
 black==22.3.0
+colorcet==3.0.0
 coverage==6.3.2
 doit==0.34.2
 fabio==0.13.0
@@ -9,7 +10,7 @@ ipywidgets==7.7.0
 lmfit==1.0.3
 matplotlib==3.5.1
 moviepy==1.0.3
-mypy==0.941
+mypy==0.942
 numpy==1.22.3
 pandas==1.4.1
 Pillow==9.0.1

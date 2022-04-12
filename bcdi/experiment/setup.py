@@ -1499,6 +1499,7 @@ class Setup:
          input arrays, True to show plots before and after interpolation
         :param kwargs:
 
+         - 'cmap': str, name of the colormap
          - 'title': tuple of strings, titles for the debugging plots, same length as
            the number of arrays
          - width_z: size of the area to plot in z (axis 0), centered on the middle of
@@ -1530,7 +1531,7 @@ class Setup:
         #########################
         valid.valid_kwargs(
             kwargs=kwargs,
-            allowed_kwargs={"title", "width_z", "width_y", "width_x"},
+            allowed_kwargs={"cmap", "title", "width_z", "width_y", "width_x"},
             name="kwargs",
         )
         title = kwargs.get("title", ("Object",) * nb_arrays)
@@ -1856,6 +1857,7 @@ class Setup:
                     is_orthogonal=False,
                     scale="linear",
                     title=title[idx] + " in detector frame",
+                    cmap=kwargs.get("cmap", "turbo"),
                 )
 
                 gu.multislices_plot(
@@ -1868,6 +1870,7 @@ class Setup:
                     is_orthogonal=True,
                     scale="linear",
                     title=title[idx] + " in crystal frame",
+                    cmap=kwargs.get("cmap", "turbo"),
                 )
 
         if nb_arrays == 1:

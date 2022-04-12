@@ -27,6 +27,7 @@ def align_arrays(
     precision=1000,
     verbose=True,
     debugging=False,
+    **kwargs,
 ):
     """
     Align two arrays using dft registration and subpixel shift.
@@ -54,6 +55,7 @@ def align_arrays(
 
     """
     # check some parameters
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_ndarray(
         arrays=(shifted_array, reference_array), ndim=(2, 3), fix_shape=False
     )
@@ -73,7 +75,9 @@ def align_arrays(
                 "crop/pad obj",
             )
         shifted_array = util.crop_pad(
-            array=shifted_array, output_shape=reference_array.shape
+            array=shifted_array,
+            output_shape=reference_array.shape,
+            cmap=cmap,
         )
 
     if shift_method != "skip":
@@ -110,14 +114,28 @@ def align_arrays(
     if debugging:
         if reference_array.ndim == 3:
             gu.multislices_plot(
-                abs(reference_array), sum_frames=True, title="Reference object"
+                abs(reference_array),
+                sum_frames=True,
+                title="Reference object",
+                cmap=cmap,
             )
             gu.multislices_plot(
-                abs(aligned_array), sum_frames=True, title="Aligned object"
+                abs(aligned_array),
+                sum_frames=True,
+                title="Aligned object",
+                cmap=cmap,
             )
         else:  # 2D case
-            gu.imshow_plot(abs(reference_array), title="Reference object")
-            gu.imshow_plot(abs(aligned_array), title="Aligned object")
+            gu.imshow_plot(
+                abs(reference_array),
+                title="Reference object",
+                cmap=cmap,
+            )
+            gu.imshow_plot(
+                abs(aligned_array),
+                title="Aligned object",
+                cmap=cmap,
+            )
 
     return aligned_array, shift
 
@@ -130,6 +148,7 @@ def align_diffpattern(
     interpolation_method="roll",
     verbose=True,
     debugging=False,
+    **kwargs,
 ):
     """
     Align two diffraction patterns.
@@ -178,6 +197,7 @@ def align_diffpattern(
         interpolation_method=interpolation_method,
         verbose=verbose,
         debugging=debugging,
+        cmap=kwargs.get("cmap", "turbo"),
     )
 
     ##############################################
@@ -235,6 +255,7 @@ def average_arrays(
     :param debugging: boolean, set to True to see plots
     :param kwargs:
 
+     - 'cmap': str, name of the colormap
      - 'width_z': size of the area to plot in z (axis 0), centered on the middle of
        the initial array
      - 'width_y': size of the area to plot in y (axis 1), centered on the middle of
@@ -255,6 +276,7 @@ def average_arrays(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={
+            "cmap",
             "width_z",
             "width_y",
             "width_x",
@@ -263,6 +285,7 @@ def average_arrays(
         },
         name="postprocessing_utils.average_obj",
     )
+    cmap = kwargs.get("cmap", "turbo")
     width_z = kwargs.get("width_z")
     width_y = kwargs.get("width_y")
     width_x = kwargs.get("width_x")
@@ -287,6 +310,7 @@ def average_arrays(
                 title="Reference object",
                 reciprocal_space=reciprocal_space,
                 is_orthogonal=is_orthogonal,
+                cmap=cmap,
             )
         return avg_obj, avg_flag
 
@@ -304,6 +328,7 @@ def average_arrays(
         precision=1000,
         verbose=True,
         debugging=debugging,
+        cmap=cmap,
     )
 
     # renormalize new_obj
@@ -335,6 +360,7 @@ def average_arrays(
                 title="Aligned object",
                 reciprocal_space=reciprocal_space,
                 is_orthogonal=is_orthogonal,
+                cmap=cmap,
             )
             myfig.text(
                 0.60,
@@ -361,6 +387,7 @@ def average_arrays(
             title="New averaged object",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
+            cmap=cmap,
         )
 
     return avg_obj, avg_flag

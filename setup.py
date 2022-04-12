@@ -128,6 +128,7 @@ setup(
     project_urls={"Documentation": "https://bcdi.readthedocs.io/en/latest/"},
     python_requires=">=3.8, <3.10",
     install_requires=[
+        "colorcet=3.0.0",
         "fabio==0.13.0",
         "hdf5plugin==3.2.0",
         "h5py==3.6.0",
@@ -158,7 +159,7 @@ setup(
             "black==22.3.0",
             "coverage==6.3.2",
             "doit==0.34.2",
-            "mypy==0.941",
+            "mypy==0.942",
             "pycodestyle==2.8.0",
             "pydocstyle==6.1.1",
             "pyfakefs==4.5.6",

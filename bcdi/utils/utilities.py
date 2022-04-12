@@ -91,7 +91,7 @@ def apply_logical_array(arrays, frames_logical):
     return output
 
 
-def bin_data(array, binning, debugging=False):
+def bin_data(array, binning, debugging=False, **kwargs):
     """
     Rebin a 1D, 2D or 3D array.
 
@@ -103,8 +103,13 @@ def bin_data(array, binning, debugging=False):
      binning (x binning (x binning)). This can also be a tuple/list of rebin values
      along each axis, e.g. binning=(4,1,2) for a 3D array
     :param debugging: boolean, True to see plots
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: the binned array
     """
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_ndarray(arrays=array, ndim=(1, 2, 3))
     ndim = array.ndim
     if isinstance(binning, int):
@@ -158,6 +163,7 @@ def bin_data(array, binning, debugging=False):
             tuple_title=("array", "binned array"),
             tuple_scale="log",
             reciprocal_space=True,
+            cmap=cmap,
         )
     return newarray
 
@@ -245,7 +251,13 @@ def catch_error(exception):
 
 
 def crop_pad(
-    array, output_shape, pad_value=0, pad_start=None, crop_center=None, debugging=False
+    array,
+    output_shape,
+    pad_value=0,
+    pad_start=None,
+    crop_center=None,
+    debugging=False,
+    **kwargs,
 ):
     """
     Crop or pad the 3D object depending on output_shape.
@@ -260,6 +272,10 @@ def crop_pad(
      center of the original array
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: myobj cropped or padded with zeros
     """
     valid.valid_ndarray(arrays=array, ndim=3)
@@ -286,7 +302,11 @@ def crop_pad(
     if debugging:
         print(f"array shape before crop/pad = {array.shape}")
         gu.multislices_plot(
-            abs(array), sum_frames=True, scale="log", title="Before crop/pad"
+            abs(array),
+            sum_frames=True,
+            scale="log",
+            title="Before crop/pad",
+            cmap=kwargs.get("cmap", "turbo"),
         )
 
     # crop/pad along axis 0
@@ -331,7 +351,11 @@ def crop_pad(
     if debugging:
         print(f"array shape after crop/pad = {newobj.shape}")
         gu.multislices_plot(
-            abs(newobj), sum_frames=True, scale="log", title="After crop/pad"
+            abs(newobj),
+            sum_frames=True,
+            scale="log",
+            title="After crop/pad",
+            cmap=kwargs.get("cmap", "turbo"),
         )
     return newobj
 
@@ -1304,6 +1328,7 @@ def mean_filter(
     min_count=3,
     interpolate="mask_isolated",
     debugging=False,
+    **kwargs,
 ):
     """
     Mask or apply a mean filter to data.
@@ -1324,8 +1349,13 @@ def mean_filter(
      isolated pixels, if 'interp_isolated' will interpolate isolated pixels
     :param debugging: set to True to see plots
     :type debugging: bool
+    :param kwargs:
+
+     - 'cmap': str, name of the colormap
+
     :return: updated data and mask, number of pixels treated
     """
+    cmap = kwargs.get("cmap", "turbo")
     valid.valid_ndarray(arrays=data, ndim=(2, 3))
     # check some mparameters
     if mask is None:
@@ -1371,6 +1401,7 @@ def mean_filter(
             tuple_scale=("log", "linear"),
             tuple_title=("Data before filtering", "Mask before filtering"),
             reciprocal_space=True,
+            cmap=cmap,
         )
 
     if data.ndim == 2:
@@ -1425,6 +1456,7 @@ def mean_filter(
             tuple_scale=("log", "linear"),
             tuple_title=("Data after filtering", "Mask after filtering"),
             reciprocal_space=True,
+            cmap=cmap,
         )
 
     return data, nb_pixels, mask
@@ -1958,6 +1990,8 @@ def rotate_crystal(
     :param debugging: tuple of booleans of the same length as the number of
      input arrays, True to see plots before and after rotation
     :param kwargs:
+
+     - 'cmap': str, name of the colormap
      - 'title': tuple of strings, titles for the debugging plots, same length as the
        number of arrays
      - 'scale': tuple of strings (either 'linear' or 'log'), scale for the debugging
@@ -2044,9 +2078,10 @@ def rotate_crystal(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"title", "scale", "width_z", "width_y", "width_x"},
+        allowed_kwargs={"cmap", "title", "scale", "width_z", "width_y", "width_x"},
         name="Setup.orthogonalize",
     )
+    cmap = kwargs.get("cmap", "turbo")
     title = kwargs.get("title", ("Object",) * nb_arrays)
     valid.valid_container(
         title,
@@ -2158,6 +2193,7 @@ def rotate_crystal(
                 is_orthogonal=is_orthogonal,
                 scale=scale[idx],
                 reciprocal_space=reciprocal_space,
+                cmap=cmap,
             )
             gu.multislices_plot(
                 rotated_array,
@@ -2168,6 +2204,7 @@ def rotate_crystal(
                 is_orthogonal=is_orthogonal,
                 scale=scale[idx],
                 reciprocal_space=reciprocal_space,
+                cmap=cmap,
             )
 
     if nb_arrays == 1:

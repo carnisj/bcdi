@@ -1,6 +1,13 @@
 Future:
 -------
 
+* Add a `colormap` parameter to the config. The user can choose a colormap between
+  "turbo", "custom" or any colormap from the `colorcet` package
+
+* Add an estimation of the resolution in `bcdi_strain.py` using a linecut of the
+  reconstructed modulus and Gaussian fits to the derivative of the linecut at crystal
+  edges.
+
 * Add a CITATION.cff file for easier citation of the package in scientific publications.
 
 * Change the default colormap for the turbo colormap.
