@@ -225,10 +225,6 @@ def run(prm):
     #########################
     # check some parameters #
     #########################
-    if not prm.get("backend"):
-        prm["backend"] = "Qt5Agg"
-    matplotlib.use(prm["backend"])
-
     if len(scans) > 1 and center_fft not in [
         "crop_asymmetric_ZYX",
         "pad_Z",
@@ -306,12 +302,17 @@ def run(prm):
     ###############
     # Set backend #
     ###############
-    if prm.get("backend") is not None:
-        try:
-            plt.switch_backend(prm["backend"])
-        except ModuleNotFoundError:
-            print(f"{prm['backend']} backend is not supported.")
-
+    if not prm.get("backend"):
+        prm["backend"] = "Qt5Agg"
+    if prm["backend"].lower() == "agg" and flag_interact:
+        raise ValueError(
+            "non-interactive backend 'agg' not compatible with the "
+            "interactive masking GUI"
+        )
+    try:
+        matplotlib.use(prm["backend"])
+    except ModuleNotFoundError:
+        print(f"{prm['backend']} backend is not supported.")
     ###################
     # define colormap #
     ###################

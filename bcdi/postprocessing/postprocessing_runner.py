@@ -90,9 +90,6 @@ def run(prm):
     #########################
     # Check some parameters #
     #########################
-    if not prm.get("backend"):
-        prm["backend"] = "Qt5Agg"
-    matplotlib.use(prm["backend"])
     if prm["simulation"]:
         invert_phase = False
         correct_refraction = 0
@@ -123,11 +120,12 @@ def run(prm):
     ###############
     # Set backend #
     ###############
-    if prm.get("backend") is not None:
-        try:
-            plt.switch_backend(prm["backend"])
-        except ModuleNotFoundError:
-            print(f"{prm['backend']} backend is not supported.")
+    if not prm.get("backend"):
+        prm["backend"] = "Qt5Agg"
+    try:
+        matplotlib.use(prm["backend"])
+    except ModuleNotFoundError:
+        print(f"{prm['backend']} backend is not supported.")
 
     ###################
     # define colormap #

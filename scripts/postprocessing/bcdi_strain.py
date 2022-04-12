@@ -63,16 +63,16 @@ Usage:
     :param colormap: e.g. "turbo"
      "turbo", "custom" or colormap defined in the colorcet package, see
      https://colorcet.holoviz.org/
-    :param reconstruction_file: e.g. "modes.h5"
-     path to a reconstruction file, to avoid opening a pop-up window
+    :param reconstruction_file: e.g. "C:/Users/Jerome/Documents/data/modes.h5"
+     full path to the output of phase retrieval, if None an interactive window will open
+     to choose a file.
 
     Parameters used in the interactive masking GUI:
 
     :param backend: e.g. "Qt5Agg"
-     Backend used in script, change to "Agg" to make sure the figures are saved, not
-     compaticle with interactive masking. Other possibilities are
-     'module://matplotlib_inline.backend_inline'
-     default value is "Qt5Agg"
+     Backend used in script, change to "Agg" if you want to save the figures without
+     showing them. Other possibilities are "Qt5Agg" (default) and
+     "module://matplotlib_inline.backend_inline"
 
     Parameters used when averaging several reconstruction:
 
