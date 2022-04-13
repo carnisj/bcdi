@@ -34,7 +34,7 @@ jobs:
       id: myCache
       uses: actions/cache@v2
       with:
-        path: /opt/hostedtoolcache/Python/3.9.10/x64/lib/python3.9/site-packages
+        path: ../../${{python_path}}/lib/python${{ matrix.python-version }}/site-packages
         key: ${{ runner.os }}-pip-v4-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
