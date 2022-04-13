@@ -29,7 +29,7 @@ jobs:
       run: | 
         python_path=$(which python  2>&1)
         echo $python_path
-        site-packages=$( cd "$(dirname "$python_path")/../../lib/python${{ matrix.python-version }}/site-packages ; pwd -P )
+        site-packages=$( cd "$(dirname "$python_path")/../../lib/python${{ matrix.python-version }}/site-packages" ; pwd -P )
         echo $site-packages
       env:
         site_pckg_path: $site-packages
