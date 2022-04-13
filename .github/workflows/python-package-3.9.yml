@@ -29,17 +29,20 @@ jobs:
       run: | 
         python_path=$(which python  2>&1)
         echo $python_path
+        site-packages=$( cd "$(dirname "$python_path")"; cd ../../lib/python${{ matrix.python-version }}/site-packages ; pwd -P )
+        echo $site-packages
+      env:
+        site_pckg_path: $site-packages
 
     - name: Display and store the site-packages path
       run: |
-        site-packages=$( cd "$(dirname "$python_path")"; cd ../../lib/python${{ matrix.python-version }}/site-packages ; pwd -P )
-        echo $site-packages
+
 
     - name: Cache dependencies
       id: myCache
       uses: actions/cache@v2
       with:
-        path: ${{site-packages}}
+        path: ${{env.site_pckg_path}}
         key: ${{ runner.os }}-pip-v4-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
