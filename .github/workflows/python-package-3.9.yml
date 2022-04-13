@@ -25,6 +25,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Display and store Python path
+      run: | 
+        python_path=$(which python  2>&1)
+        echo $python_path
+
     - name: Cache dependencies
       id: myCache
       uses: actions/cache@v2
