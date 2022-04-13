@@ -42,7 +42,7 @@ jobs:
       id: myCache
       uses: actions/cache@v2
       with:
-        path: ${{env.site_pckg_path}}
+        path: ${{env.LD_LIBRARY_PATH}}/python${{ matrix.python-version }}/site-packages
         key: ${{ runner.os }}-pip-v4-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
