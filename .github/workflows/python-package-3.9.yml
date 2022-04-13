@@ -25,18 +25,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Display and store Python path
+    - name: Display Python location
       run: | 
         python_path=$(which python  2>&1)
         echo $python_path
         site_packages=$( cd "$(dirname "$(dirname "$python_path")")"/lib/python${{ matrix.python-version }}/site-packages ; pwd -P )
         echo $site_packages
-      env:
-        site_pckg_path: $site_packages
-
-    - name: Display and store the site-packages path
-      run: |
-
 
     - name: Cache dependencies
       id: myCache
