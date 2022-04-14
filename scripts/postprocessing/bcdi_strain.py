@@ -63,9 +63,9 @@ Usage:
     :param colormap: e.g. "turbo"
      "turbo", "custom" or colormap defined in the colorcet package, see
      https://colorcet.holoviz.org/
-    :param reconstruction_file: e.g. "C:/Users/Jerome/Documents/data/modes.h5"
-     full path to the output of phase retrieval, if None an interactive window will open
-     to choose a file.
+    :param reconstruction_files: e.g. "C:/Users/Jerome/Documents/data/modes.h5"
+     full path to the output of phase retrieval, or list of such paths if 'scans' is a
+     list. If None an interactive window will open to choose a file.
 
     Parameters used in the interactive masking GUI:
 

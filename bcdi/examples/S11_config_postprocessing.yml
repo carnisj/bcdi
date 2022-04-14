@@ -8,9 +8,9 @@ data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
 # leave None to use the beamline default, or provide the full path to the data.
 sample_name: "S"
 # string in front of the scan number in the folder name.
-reconstruction_file: None
-# full path to the output of phase retrieval, if None an interactive window will open
-# to choose a file
+reconstruction_files: None
+# full path to the output of phase retrieval, or list of such paths if 'scans' is a
+# list. If None an interactive window will open to choose a file.
 comment: ""  # comment in filenames, should start with _
 colormap: "turbo"  # "turbo", "custom" or colormap defined in the colorcet package
 backend: "Qt5Agg"

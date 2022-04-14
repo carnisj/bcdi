@@ -420,12 +420,21 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             min_excluded=0,
             name=key,
         )
-    elif key == "reconstruction_file":
+    elif key == "reconstruction_files":
+        if isinstance(value, str):
+            value = (value,)
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value,
+            container_types=list,
+            item_types=str,
+            min_length=1,
+            allow_none=True,
+            name=key,
         )
-        if value is not None and not os.path.isfile(value):
-            raise ValueError(f"The file {value} does not exist")
+        if value is not None:
+            for val in value:
+                if not os.path.isfile(val):
+                    raise ValueError(f"The file {val} does not exist")
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
         if value not in allowed:

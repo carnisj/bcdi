@@ -89,6 +89,11 @@ def run(prm):
     #########################
     # Check some parameters #
     #########################
+    nb_scans = len(prm["scans"])
+    reconstruction_files = prm.get("reconstruction_files")
+    if reconstruction_files is None:
+        reconstruction_files = (None,) * nb_scans
+
     if prm["simulation"]:
         invert_phase = False
         correct_refraction = 0
@@ -209,8 +214,8 @@ def run(prm):
         ################
         # preload data #
         ################
-        if prm.get("reconstruction_file") is not None:
-            file_path = (prm["reconstruction_file"],)
+        if reconstruction_files[scan_idx] is not None:
+            file_path = reconstruction_files[scan_idx]
         else:
             root = tk.Tk()
             root.withdraw()
