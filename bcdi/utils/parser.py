@@ -126,11 +126,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "-s", "--scan", type=int, help="number of the scan to process"
-    )
-
-    argument_parser.add_argument(
-        "--scans", type=int, help="list of the scans to process"
+        "--scans", type=list, help="scan or list of the scans to process"
     )
 
     argument_parser.add_argument(

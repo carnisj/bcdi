@@ -1,4 +1,4 @@
-scan: 11  # spec scan number
+scans: 11  # spec scan number
 root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
 save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"

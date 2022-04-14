@@ -25,7 +25,7 @@ class TestConfigParser(unittest.TestCase):
     def setUp(self) -> None:
         self.command_line_args = {
             "data_dir": str(here),
-            "scan": 999999999,
+            "scans": 999999999,
             "root_folder": str(here),
         }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
@@ -59,20 +59,20 @@ class TestConfigParser(unittest.TestCase):
         self.assertIsInstance(self.parser.raw_config, bytes)
 
     def test_filter_dict(self):
-        dic = {"scan": "9999", "sdd": None}
+        dic = {"scans": "9999", "sdd": None}
         output = self.parser.filter_dict(dic)
-        self.assertTrue(output == {"scan": "9999"})
+        self.assertTrue(output == {"scans": "9999"})
 
     def test_filter_dict_filter_value(self):
-        dic = {"scan": "9999", "sdd": None, "test": True}
+        dic = {"scans": "9999", "sdd": None, "test": True}
         output = self.parser.filter_dict(dic, filter_value=True)
-        self.assertTrue(output == {"scan": "9999", "sdd": None})
+        self.assertTrue(output == {"scans": "9999", "sdd": None})
 
     def test_load_arguments(self):
         args = self.parser.load_arguments()
-        # "scan" is also key in CONFIG, which means that the overriding by the optional
-        # --scan argument from the command line works as expected
-        self.assertTrue(args.get("scan") == self.command_line_args["scan"])
+        # "scans" is also key in CONFIG, which means that the overriding by the optional
+        # --scans argument from the command line works as expected
+        self.assertTrue(args.get("scans") == (self.command_line_args["scans"],))
 
     def test_load_arguments_no_cl_params_flip(self):
         args = self.parser.load_arguments()
