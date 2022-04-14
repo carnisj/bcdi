@@ -45,8 +45,8 @@ Usage:
 
     Parameters related to path names:
 
-    :param scan: e.g. 11
-     scan number
+    :param scans: e.g. 11
+     scan number or list of scan numbers
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
      folder of the experiment, where all scans are stored
     :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"

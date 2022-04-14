@@ -504,8 +504,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"laboratory", "crystal", "lab_flat_sample"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "scan":
-        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "scans":
         if isinstance(value, Real):
             value = (value,)
