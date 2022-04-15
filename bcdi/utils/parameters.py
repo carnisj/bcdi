@@ -12,11 +12,14 @@ Validation of configuration parameters.
 The validation is performed only on the expected parameters. Other parameters are simply
 discarded.
 """
+import copy
+
 import colorcet as cc
+from dataclasses import dataclass
 from numbers import Number, Real
 import numpy as np
 import os
-from typing import Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 import bcdi.utils.validation as valid
 
 
@@ -33,6 +36,42 @@ class ParameterError(Exception):
         super().__init__(
             f"Incorrect value {value} for parameter {key}\n" f"Allowed are {allowed}"
         )
+
+
+@dataclass
+class ConfigChecker:
+    """Base class for the configuration of parameters."""
+
+    initial_params: Dict[str, Any]
+    checked_params: Optional[Dict[str, Any]] = None
+
+    def check_config(self) -> Dict[str, Any]:
+        """Check if the provided config is consistent."""
+        self.checked_params = copy.deepcopy(self.initial_params)
+        if self.initial_params.get("scans") is None:
+            raise ValueError("no scan provided")
+        nb_scan = len(self.initial_params["scans"])
+
+        self._check_length("template_imagefile", nb_scan)
+        self._check_length("specfile_name", nb_scan)
+        return self.checked_params
+
+    def _check_length(self, param_name: str, length: int) -> None:
+        """Ensure that a parameter as the correct type and length."""
+        initial_param = self.initial_params.get(param_name)
+        if initial_param is None:
+            self.checked_params[param_name] = (None,) * length
+        elif not isinstance(initial_param, (tuple, list)):
+            raise TypeError(
+                f"'{param_name}' shold be a tuple or a list, got {type(param_name)}"
+            )
+        if len(param_name) == 1:
+            self.checked_params[param_name] = param_name * length
+        elif len(param_name) != length:
+            raise ValueError(
+                f"'{param_name}' should be of length {length}, "
+                f"got {len(param_name)} elements"
+            )
 
 
 def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
