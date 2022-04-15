@@ -22,6 +22,7 @@ import os
 import pprint
 import tkinter as tk
 from tkinter import filedialog
+from typing import Any, Dict
 
 from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
@@ -31,69 +32,59 @@ import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
+from bcdi.utils.parameters import PostprocessingChecker
 import bcdi.utils.utilities as util
 
 
-def run(prm):
+def run(prm: Dict[str, Any]) -> None:
     """
     Run the postprocessing.
 
     :param prm: the parsed parameters
     """
     pretty = pprint.PrettyPrinter(indent=4)
+    prm = PostprocessingChecker(
+        initial_params=prm,
+        required_params=(
+            "beamline",
+            "data_frame",
+            "detector",
+            "isosurface_strain",
+            "output_size",
+            "rocking_angle",
+            "root_folder",
+            "sample_name",
+            "save_frame",
+            "scans",
+        ),
+    ).check_config()
 
     ################################
     # assign often used parameters #
     ################################
-    bragg_peak = prm.get("bragg_peak")
-    debug = prm.get("debug", False)
-    user_comment = prm.get("comment", "")
-    centering_method = prm.get("centering_method", "max_com")
-    original_size = prm.get("original_size")
-    phasing_binning = prm.get("phasing_binning", [1, 1, 1])
-    preprocessing_binning = prm.get("preprocessing_binning", [1, 1, 1])
-    ref_axis_q = prm.get("ref_axis_q", "y")
-    fix_voxel = prm.get("fix_voxel")
-    save = prm.get("save", True)
-    tick_spacing = prm.get("tick_spacing", 50)
-    tick_direction = prm.get("tick_direction", "inout")
-    tick_length = prm.get("tick_length", 10)
-    tick_width = prm.get("tick_width", 2)
-    invert_phase = prm.get("invert_phase", True)
-    correct_refraction = prm.get("correct_refraction", False)
-    threshold_unwrap_refraction = prm.get("threshold_unwrap_refraction", 0.05)
-    threshold_gradient = prm.get("threshold_gradient", 1.0)
-    offset_method = prm.get("offset_method", "mean")
-    phase_offset = prm.get("phase_offset", 0)
-    offset_origin = prm.get("phase_offset_origin")
-    sort_method = prm.get("sort_method", "variance/mean")
-    correlation_threshold = prm.get("correlation_threshold", 0.90)
+    bragg_peak = prm["bragg_peak"]
+    debug = prm["debug"]
+    original_size = prm["original_size"]
+    fix_voxel = prm["fix_voxel"]
+    save = prm["save"]
+    tick_spacing = prm["tick_spacing"]
+    tick_direction = prm["tick_direction"]
+    tick_length = prm["tick_length"]
+    tick_width = prm["tick_width"]
+    invert_phase = prm["invert_phase"]
+    correct_refraction = prm["correct_refraction"]
+    threshold_unwrap_refraction = prm["threshold_unwrap_refraction"]
+    threshold_gradient = prm["threshold_gradient"]
+    offset_method = prm["offset_method"]
+    phase_offset = prm["phase_offset"]
+    offset_origin = prm["phase_offset_origin"]
+    sort_method = prm["sort_method"]
+    correlation_threshold = prm["correlation_threshold"]
     roi_detector = create_roi(dic=prm)
-
-    # parameters below must be provided
-    try:
-        detector_name = prm["detector"]
-        beamline_name = prm["beamline"]
-        rocking_angle = prm["rocking_angle"]
-        isosurface_strain = prm["isosurface_strain"]
-        output_size = prm["output_size"]
-        save_frame = prm["save_frame"]
-        data_frame = prm["data_frame"]
-        scans = prm["scans"]
-        sample_name = prm["sample_name"]
-        root_folder = prm["root_folder"]
-    except KeyError as ex:
-        print("Required parameter not defined")
-        raise ex
 
     #########################
     # Check some parameters #
     #########################
-    nb_scans = len(prm["scans"])
-    reconstruction_files = prm.get("reconstruction_files")
-    if reconstruction_files is None:
-        reconstruction_files = (None,) * nb_scans
-
     if prm["simulation"]:
         invert_phase = False
         correct_refraction = 0
@@ -102,18 +93,18 @@ def run(prm):
     else:
         phase_fieldname = "phase"
 
-    if data_frame == "detector":
+    if prm["data_frame"] == "detector":
         is_orthogonal = False
     else:
         is_orthogonal = True
 
-    if data_frame == "crystal" and save_frame != "crystal":
+    if prm["data_frame"] == "crystal" and prm["save_frame"] != "crystal":
         print(
             "data already in the crystal frame before phase retrieval,"
             " it is impossible to come back to the laboratory "
             "frame, parameter 'save_frame' defaulted to 'crystal'"
         )
-        save_frame = "crystal"
+        prm["save_frame"] = "crystal"
 
     axis_to_array_xyz = {
         "x": np.array([1, 0, 0]),
@@ -144,23 +135,23 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    for scan_idx, scan_nb in enumerate(scans, start=1):
-        prm["sample"] = f"{sample_name}+{scan_nb}"
+    for scan_idx, scan_nb in enumerate(prm["scans"], start=1):
+        prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
 
-        comment = user_comment  # re-initialize comment
-        tmp_str = f"Scan {scan_idx}/{len(scans)}: S{scan_nb}"
+        comment = prm["comment"]  # re-initialize comment
+        tmp_str = f"Scan {scan_idx}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
         #################################
         # define the experimental setup #
         #################################
         setup = Setup(
-            beamline_name=beamline_name,
+            beamline_name=prm["beamline"],
             energy=prm.get("energy"),
             outofplane_angle=prm.get("outofplane_angle"),
             inplane_angle=prm.get("inplane_angle"),
             tilt_angle=prm.get("tilt_angle"),
-            rocking_angle=rocking_angle,
+            rocking_angle=prm["rocking_angle"],
             distance=prm.get("sdd"),
             sample_offsets=prm.get("sample_offsets"),
             actuators=prm.get("actuators"),
@@ -169,11 +160,11 @@ def run(prm):
             dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
             direct_beam=prm.get("direct_beam"),
             is_series=prm.get("is_series", False),
-            detector_name=detector_name,
+            detector_name=prm["detector"],
             template_imagefile=prm.get("template_imagefile"),
             roi=roi_detector,
-            binning=phasing_binning,
-            preprocessing_binning=preprocessing_binning,
+            binning=prm["phasing_binning"],
+            preprocessing_binning=prm["preprocessing_binning"],
             custom_pixelsize=prm.get("custom_pixelsize"),
         )
 
@@ -181,18 +172,18 @@ def run(prm):
         # Initialize the paths and the logfile #
         ########################################
         setup.init_paths(
-            sample_name=sample_name,
+            sample_name=prm["sample_name"],
             scan_number=scan_nb,
-            root_folder=root_folder,
+            root_folder=prm["root_folder"],
             data_dir=prm.get("data_dir"),
-            save_dir=prm.get("save_dir"),
+            save_dir=prm["save_dir"],
             specfile_name=prm.get("specfile_name"),
             template_imagefile=prm.get("template_imagefile"),
         )
 
         setup.create_logfile(
             scan_number=scan_nb,
-            root_folder=root_folder,
+            root_folder=prm["root_folder"],
             filename=setup.detector.specfile,
         )
 
@@ -214,8 +205,8 @@ def run(prm):
         ################
         # preload data #
         ################
-        if reconstruction_files[scan_idx] is not None:
-            file_path = reconstruction_files[scan_idx]
+        if prm["reconstruction_files"][scan_idx] is not None:
+            file_path = prm["reconstruction_files"][scan_idx]
         else:
             root = tk.Tk()
             root.withdraw()
@@ -246,8 +237,8 @@ def run(prm):
         print("FFT size before accounting for phasing_binning", original_size)
         original_size = tuple(
             [
-                original_size[index] // phasing_binning[index]
-                for index in range(len(phasing_binning))
+                original_size[index] // prm["phasing_binning"][index]
+                for index in range(len(prm["phasing_binning"]))
             ]
         )
         print("Binning used during phasing:", setup.detector.binning)
@@ -276,7 +267,7 @@ def run(prm):
             print("\nTrying to find the best reconstruction\nSorting by ", sort_method)
             sorted_obj = pu.sort_reconstruction(
                 file_path=file_path,
-                amplitude_threshold=isosurface_strain,
+                amplitude_threshold=prm["isosurface_strain"],
                 data_range=(zrange, yrange, xrange),
                 sort_method=sort_method,
             )
@@ -299,9 +290,9 @@ def run(prm):
                 obj = pu.flip_reconstruction(obj, debugging=True, cmap=my_cmap)
 
             if extension == ".h5":
-                centering_method = (
-                    "do_nothing"  # do not center, data is already cropped
-                )
+                prm[
+                    "centering_method"
+                ] = "do_nothing"  # do not center, data is already cropped
                 # just on support for mode decomposition
                 # correct a roll after the decomposition into modes in PyNX
                 obj = np.roll(obj, prm.get("roll_modes", [0, 0, 0]), axis=(0, 1, 2))
@@ -385,7 +376,7 @@ def run(prm):
             phase=phase,
             initial_shape=original_size,
             method="gradient",
-            amplitude_threshold=isosurface_strain,
+            amplitude_threshold=prm["isosurface_strain"],
             threshold_gradient=threshold_gradient,
             cmap=my_cmap,
         )
@@ -409,7 +400,7 @@ def run(prm):
         # phase offset removal #
         ########################
         support = np.zeros(amp.shape)
-        support[amp > isosurface_strain * amp.max()] = 1
+        support[amp > prm["isosurface_strain"] * amp.max()] = 1
         phase = pu.remove_offset(
             array=phase,
             support=support,
@@ -434,7 +425,7 @@ def run(prm):
         if half_width_avg_phase != 0:
             bulk = pu.find_bulk(
                 amp=amp,
-                support_threshold=isosurface_strain,
+                support_threshold=prm["isosurface_strain"],
                 method="threshold",
                 cmap=my_cmap,
             )
@@ -499,13 +490,13 @@ def run(prm):
         ######################
         # centering of array #
         ######################
-        if centering_method == "max":
+        if prm["centering_method"] == "max":
             avg_obj = pu.center_max(avg_obj)
             # shift based on max value,
             # required if it spans across the edge of the array before COM
-        elif centering_method == "com":
+        elif prm["centering_method"] == "com":
             avg_obj = pu.center_com(avg_obj)
-        elif centering_method == "max_com":
+        elif prm["centering_method"] == "max_com":
             avg_obj = pu.center_max(avg_obj)
             avg_obj = pu.center_com(avg_obj)
 
@@ -541,7 +532,7 @@ def run(prm):
                 array_shape=original_size,
                 tilt_angle=(
                     prm.get("tilt_angle")
-                    * setup.detector.preprocessing_binning[0]
+                    * setup.detector.prm["preprocessing_binning"][0]
                     * setup.detector.binning[0]
                 ),
                 pixel_x=setup.detector.pixelsize_x,
@@ -573,7 +564,7 @@ def run(prm):
 
         angle = simu.angle_vectors(
             ref_vector=[q_lab[2], q_lab[1], q_lab[0]],
-            test_vector=axis_to_array_xyz[ref_axis_q],
+            test_vector=axis_to_array_xyz[prm["ref_axis_q"]],
         )
         print(
             f"\nNormalized diffusion vector in the laboratory frame (z*, y*, x*): "
@@ -583,7 +574,7 @@ def run(prm):
         planar_dist = 2 * np.pi / qnorm  # qnorm should be in angstroms
         print(f"Wavevector transfer: {qnorm:.4f} 1/A")
         print(f"Atomic planar distance: {planar_dist:.4f} A")
-        print(f"\nAngle between q_lab and {ref_axis_q} = {angle:.2f} deg")
+        print(f"\nAngle between q_lab and {prm['ref_axis_q']} = {angle:.2f} deg")
         if debug:
             print(
                 "Angle with y in zy plane = "
@@ -604,7 +595,7 @@ def run(prm):
         #  orthogonalize data #
         #######################
         print("\nShape before orthogonalization", avg_obj.shape, "\n")
-        if data_frame == "detector":
+        if prm["data_frame"] == "detector":
             if debug:
                 phase, _ = pu.unwrap(
                     avg_obj,
@@ -672,7 +663,7 @@ def run(prm):
                 q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
                 initial_shape=original_size,
                 voxel_size=fix_voxel,
-                reference_axis=axis_to_array_xyz[ref_axis_q],
+                reference_axis=axis_to_array_xyz[prm["ref_axis_q"]],
                 fill_value=0,
                 debugging=True,
                 title="amplitude",
@@ -726,7 +717,7 @@ def run(prm):
                 voxel_size = dz_real, dy_real, dx_real  # in nm
 
             if (
-                data_frame == "laboratory"
+                prm["data_frame"] == "laboratory"
             ):  # the object must be rotated into the crystal frame
                 # before the strain calculation
                 print(
@@ -741,7 +732,7 @@ def run(prm):
                     voxel_size=voxel_size,
                     debugging=(True, False),
                     axis_to_align=q_lab[::-1],
-                    reference_axis=axis_to_array_xyz[ref_axis_q],
+                    reference_axis=axis_to_array_xyz[prm["ref_axis_q"]],
                     title=("amp", "phase"),
                     cmap=my_cmap,
                 )
@@ -803,12 +794,12 @@ def run(prm):
             # into the crystal frame (also, xrayutilities output is in crystal frame)
             kin = util.rotate_vector(
                 vectors=[kin[2], kin[1], kin[0]],
-                axis_to_align=axis_to_array_xyz[ref_axis_q],
+                axis_to_align=axis_to_array_xyz[prm["ref_axis_q"]],
                 reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
             )
             kout = util.rotate_vector(
                 vectors=[kout[2], kout[1], kout[0]],
-                axis_to_align=axis_to_array_xyz[ref_axis_q],
+                axis_to_align=axis_to_array_xyz[prm["ref_axis_q"]],
                 reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
             )
 
@@ -888,7 +879,7 @@ def run(prm):
             phase=phase,
             initial_shape=original_size,
             method=prm.get("phase_ramp_removal", "gradient"),
-            amplitude_threshold=isosurface_strain,
+            amplitude_threshold=prm["isosurface_strain"],
             threshold_gradient=threshold_gradient,
             debugging=debug,
             cmap=my_cmap,
@@ -899,7 +890,7 @@ def run(prm):
         ########################
         print("\nPhase offset removal")
         support = np.zeros(amp.shape)
-        support[amp > isosurface_strain * amp.max()] = 1
+        support[amp > prm["isosurface_strain"] * amp.max()] = 1
         phase = pu.remove_offset(
             array=phase,
             support=support,
@@ -922,12 +913,12 @@ def run(prm):
         ################################################################
         # calculate the strain depending on which axis q is aligned on #
         ################################################################
-        print(f"\nCalculation of the strain along {ref_axis_q}")
+        print(f"\nCalculation of the strain along {prm['ref_axis_q']}")
         strain = pu.get_strain(
             phase=phase,
             planar_distance=planar_dist,
             voxel_size=voxel_size,
-            reference_axis=ref_axis_q,
+            reference_axis=prm["ref_axis_q"],
             extent_phase=extent_phase,
             method=prm.get("strain_method", "default"),
             debugging=debug,
@@ -939,12 +930,12 @@ def run(prm):
         # laboratory frame (for debugging purpose)     #
         ################################################
         q_final = None
-        if save_frame in {"laboratory", "lab_flat_sample"}:
+        if prm["save_frame"] in {"laboratory", "lab_flat_sample"}:
             comment = comment + "_labframe"
             print("\nRotating back the crystal in laboratory frame")
             amp, phase, strain = util.rotate_crystal(
                 arrays=(amp, phase, strain),
-                axis_to_align=axis_to_array_xyz[ref_axis_q],
+                axis_to_align=axis_to_array_xyz[prm["ref_axis_q"]],
                 voxel_size=voxel_size,
                 is_orthogonal=True,
                 reciprocal_space=False,
@@ -956,7 +947,7 @@ def run(prm):
             # q_lab is already in the laboratory frame
             q_final = q_lab
 
-        if save_frame == "lab_flat_sample":
+        if prm["save_frame"] == "lab_flat_sample":
             comment = comment + "_flat"
             print("\nSending sample stage circles to 0")
             (amp, phase, strain), q_final = setup.beamline.flatten_sample(
@@ -970,13 +961,13 @@ def run(prm):
                 title=("amp", "phase", "strain"),
                 cmap=my_cmap,
             )
-        if save_frame == "crystal":
+        if prm["save_frame"] == "crystal":
             # rotate also q_lab to have it along ref_axis_q,
             # as a cross-checkm, vectors needs to be in xyz order
             comment = comment + "_crystalframe"
             q_final = util.rotate_vector(
                 vectors=q_lab[::-1],
-                axis_to_align=axis_to_array_xyz[ref_axis_q],
+                axis_to_align=axis_to_array_xyz[prm["ref_axis_q"]],
                 reference_axis=q_lab[::-1],
             )
 
@@ -1015,10 +1006,16 @@ def run(prm):
         ##############################################
         # pad array to fit the output_size parameter #
         ##############################################
-        if output_size is not None:
-            amp = util.crop_pad(array=amp, output_shape=output_size, cmap=my_cmap)
-            phase = util.crop_pad(array=phase, output_shape=output_size, cmap=my_cmap)
-            strain = util.crop_pad(array=strain, output_shape=output_size, cmap=my_cmap)
+        if prm["output_size"] is not None:
+            amp = util.crop_pad(
+                array=amp, output_shape=prm["output_size"], cmap=my_cmap
+            )
+            phase = util.crop_pad(
+                array=phase, output_shape=prm["output_size"], cmap=my_cmap
+            )
+            strain = util.crop_pad(
+                array=strain, output_shape=prm["output_size"], cmap=my_cmap
+            )
         print(f"\nFinal data shape: {amp.shape}")
 
         ######################
@@ -1030,7 +1027,7 @@ def run(prm):
         )
         bulk = pu.find_bulk(
             amp=amp,
-            support_threshold=isosurface_strain,
+            support_threshold=prm["isosurface_strain"],
             method="threshold",
             cmap=my_cmap,
         )
@@ -1093,7 +1090,7 @@ def run(prm):
         ######################################
         amp = amp / amp.max()
         temp_amp = np.copy(amp)
-        temp_amp[amp < isosurface_strain] = 0
+        temp_amp[amp < prm["isosurface_strain"]] = 0
         temp_amp[np.nonzero(temp_amp)] = 1
         volume = temp_amp.sum() * reduce(lambda x, y: x * y, voxel_size)  # in nm3
         del temp_amp
@@ -1116,7 +1113,7 @@ def run(prm):
         pixel_spacing = [tick_spacing / vox for vox in voxel_size]
         print(
             "\nPhase extent without / with thresholding the modulus "
-            f"(threshold={isosurface_strain}): {phase.max()-phase.min():.2f} rad, "
+            f"(threshold={prm['isosurface_strain']}): {phase.max()-phase.min():.2f} rad, "
             f"{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad"
         )
         piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
@@ -1163,7 +1160,7 @@ def run(prm):
         fig.text(
             0.60,
             0.40,
-            "Bulk - isosurface=" + str("{:.2f}".format(isosurface_strain)),
+            "Bulk - isosurface=" + str("{:.2f}".format(prm["isosurface_strain"])),
             size=20,
         )
         plt.pause(0.1)
@@ -1306,5 +1303,5 @@ def run(prm):
                 setup.detector.savedir + f"S{scan_nb}_strain" + comment + ".png"
             )
 
-        if len(scans) > 1:
+        if len(prm["scans"]) > 1:
             plt.close("all")

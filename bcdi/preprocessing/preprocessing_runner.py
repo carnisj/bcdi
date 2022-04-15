@@ -32,6 +32,7 @@ from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
+from bcdi.utils.parameters import PreprocessingChecker
 import bcdi.utils.utilities as util
 
 
@@ -120,7 +121,7 @@ def run(prm):
                         vmin=0,
                         vmax=max_colorbar,
                         cmap=my_cmap,
-                        invert_yaxis=not use_rawdata,
+                        invert_yaxis=not prm["use_rawdata"],
                     )
                 elif flag_mask:
                     if previous_axis == ax0:
@@ -168,7 +169,7 @@ def run(prm):
                         vmin=0,
                         vmax=max_colorbar,
                         cmap=my_cmap,
-                        invert_yaxis=not use_rawdata,
+                        invert_yaxis=not prm["use_rawdata"],
                     )
                     if click_dim is None:
                         previous_axis = None
@@ -182,50 +183,48 @@ def run(prm):
             pass
 
     pretty = pprint.PrettyPrinter(indent=4)
+    prm = PreprocessingChecker(
+        initial_params=prm,
+        required_params=(
+            "beamline",
+            "detector",
+            "phasing_binning",
+            "rocking_angle",
+            "root_folder",
+            "sample_name",
+            "scans",
+            "use_rawdata",
+        ),
+    ).check_config()
 
     ################################
     # assign often used parameters #
     ################################
-    background_plot = prm.get("background_plot", 0.5)
-    bragg_peak = prm.get("bragg_peak")
-    fix_size = prm.get("fix_size")
-    debug = prm.get("debug", False)
-    user_comment = prm.get("comment", "")
-    align_q = prm.get("align_q", True)
-    ref_axis_q = prm.get("ref_axis_q", "y")
-    preprocessing_binning = prm.get("preprocessing_binning", (1, 1, 1))
-    interpolation_method = prm.get("interpolation_method", "linearization")
-    save_dir = prm.get("save_dir", None)
-    flag_interact = prm.get("flag_interact", True)
-    center_fft = prm.get("center_fft", "skip")
-    median_filter = prm.get("median_filter", "skip")
-    photon_threshold = prm.get("photon_threshold", 0)
-    reload_orthogonal = prm.get("reload_orthogonal", False)
+    background_plot = prm["background_plot"]
+    bragg_peak = prm["bragg_peak"]
+    fix_size = prm["fix_size"]
+    debug = prm["debug"]
+    user_comment = prm["comment"]
+    align_q = prm["align_q"]
+    ref_axis_q = prm["ref_axis_q"]
+    preprocessing_binning = prm["preprocessing_binning"]
+    interpolation_method = prm["interpolation_method"]
+    save_dir = prm["save_dir"]
+    flag_interact = prm["flag_interact"]
+    center_fft = prm["center_fft"]
+    median_filter = prm["median_filter"]
+    photon_threshold = prm["photon_threshold"]
+    reload_orthogonal = prm["reload_orthogonal"]
+    normalize_flux = prm["normalize_flux"]
+    sample_inplane = prm["sample_inplane"]
+    sample_outofplane = prm["sample_outofplane"]
+    save_to_mat = prm["save_to_mat"]
+    save_to_npz = prm["save_to_npz"]
     roi_detector = create_roi(dic=prm)
-    normalize_flux = prm.get("normalize_flux", False)
-    sample_inplane = prm.get("sample_inplane", [1, 0, 0])
-    sample_outofplane = prm.get("sample_outofplane", [0, 0, 1])
-    save_to_mat = prm.get("save_to_mat", False)
-    save_to_npz = prm.get("save_to_npz", True)
-
-    # parameters below must be provided
-    try:
-        beamline_name = prm["beamline"]
-        detector_name = prm["detector"]
-        phasing_binning = prm["phasing_binning"]
-        rocking_angle = prm["rocking_angle"]
-        root_folder = prm["root_folder"]
-        sample_name = prm["sample_name"]
-        scans = prm["scans"]
-        use_rawdata = prm["use_rawdata"]
-
-    except KeyError as ex:
-        print("Required parameter not defined")
-        raise ex
     #########################
     # check some parameters #
     #########################
-    if len(scans) > 1 and center_fft not in [
+    if len(prm["scans"]) > 1 and center_fft not in [
         "crop_asymmetric_ZYX",
         "pad_Z",
         "pad_asymmetric_ZYX",
@@ -253,8 +252,8 @@ def run(prm):
         preprocessing_binning = (1, 1, 1)
         reload_orthogonal = False
 
-    if rocking_angle == "energy":
-        use_rawdata = False
+    if prm["rocking_angle"] == "energy":
+        prm["use_rawdata"] = False
         # you need to interpolate the data in QxQyQz for energy scans
         print(
             "Energy scan: defaulting use_rawdata to False,"
@@ -262,9 +261,9 @@ def run(prm):
         )
 
     if reload_orthogonal:
-        use_rawdata = False
+        prm["use_rawdata"] = False
 
-    if use_rawdata:
+    if prm["use_rawdata"]:
         save_dirname = "pynxraw"
         print("Output will be non orthogonal, in the detector frame")
     else:
@@ -273,7 +272,7 @@ def run(prm):
                 "Incorrect value for interp_method,"
                 ' allowed values are "xrayutilities" and "linearization"'
             )
-        if rocking_angle == "energy":
+        if prm["rocking_angle"] == "energy":
             interpolation_method = "xrayutilities"
             print(f"Defaulting interp_method to {interpolation_method}")
         if not reload_orthogonal and preprocessing_binning[0] != 1:
@@ -283,9 +282,6 @@ def run(prm):
             )
         save_dirname = "pynx"
         print(f"Output will be orthogonalized using {interpolation_method}")
-
-    if isinstance(sample_name, str):
-        sample_name = (sample_name,) * len(scans)
 
     if align_q:
         user_comment += f"_align-q-{ref_axis_q}"
@@ -324,9 +320,9 @@ def run(prm):
     # Initialize setup #
     ####################
     setup = Setup(
-        beamline_name=beamline_name,
+        beamline_name=prm["beamline"],
         energy=prm.get("energy"),
-        rocking_angle=rocking_angle,
+        rocking_angle=prm["rocking_angle"],
         distance=prm.get("sdd"),
         beam_direction=prm.get("beam_direction", [1, 0, 0]),
         sample_inplane=sample_inplane,
@@ -343,10 +339,10 @@ def run(prm):
         inplane_angle=prm.get("inplane_angle"),
         dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
         direct_beam=prm.get("direct_beam"),
-        detector_name=detector_name,
+        detector_name=prm["detector"],
         template_imagefile=prm.get("template_imagefile"),
         roi=roi_detector,
-        binning=phasing_binning,
+        binning=prm["phasing_binning"],
         preprocessing_binning=preprocessing_binning,
         linearity_func=prm.get("linearity_func"),
     )
@@ -372,19 +368,19 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    for scan_idx, scan_nb in enumerate(scans, start=1):
+    for scan_idx, scan_nb in enumerate(prm["scans"], start=1):
         plt.ion()
 
         comment = user_comment  # re-initialize comment
-        tmp_str = f"Scan {scan_idx}/{len(scans)}: S{scan_nb}"
+        tmp_str = f"Scan {scan_idx}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
         # initialize the paths
         setup.init_paths(
-            sample_name=sample_name[scan_idx - 1],
+            sample_name=prm["sample_name"][scan_idx - 1],
             scan_number=scan_nb,
             data_dir=prm.get("data_dir"),
-            root_folder=root_folder,
+            root_folder=prm["root_folder"],
             save_dir=save_dir,
             save_dirname=save_dirname,
             specfile_name=prm.get("specfile_name"),
@@ -393,7 +389,7 @@ def run(prm):
 
         logfile = setup.create_logfile(
             scan_number=scan_nb,
-            root_folder=root_folder,
+            root_folder=prm["root_folder"],
             filename=setup.detector.specfile,
         )
 
@@ -401,7 +397,7 @@ def run(prm):
         # detector angles
         setup.read_logfile(scan_number=scan_nb)
 
-        if not use_rawdata:
+        if not prm["use_rawdata"]:
             comment += "_ortho"
             if interpolation_method == "linearization":
                 comment += "_lin"
@@ -447,7 +443,7 @@ def run(prm):
 
             if reload_orthogonal:
                 # the data is gridded in the orthonormal laboratory frame
-                use_rawdata = False
+                prm["use_rawdata"] = False
                 try:
                     file_path = filedialog.askopenfilename(
                         initialdir=setup.detector.savedir,
@@ -625,7 +621,7 @@ def run(prm):
                         {"data": np.moveaxis(data, [0, 1, 2], [-1, -2, -3])},
                     )
 
-            if use_rawdata:
+            if prm["use_rawdata"]:
                 q_values = []
                 # binning along axis 0 is done after masking
                 data[np.nonzero(mask)] = 0
@@ -770,7 +766,7 @@ def run(prm):
                         xlabel=("Frame number", "Q$_y$"),
                         ylabel=("Counts (a.u.)", "Q$_x$"),
                         position=(323, 122),
-                        is_orthogonal=not use_rawdata,
+                        is_orthogonal=not prm["use_rawdata"],
                         reciprocal_space=True,
                         cmap=my_cmap,
                     )
@@ -801,7 +797,7 @@ def run(prm):
             mask=mask,
             detector=setup.detector,
             frames_logical=frames_logical,
-            centering=prm.get("centering_method", "max"),
+            centering=prm["centering_method"],
             fft_option=center_fft,
             pad_size=prm.get("pad_size"),
             fix_bragg=prm.get("bragg_peak"),
@@ -839,7 +835,7 @@ def run(prm):
             plot_colorbar=True,
             vmin=0,
             title="Data before aliens removal\n",
-            is_orthogonal=not use_rawdata,
+            is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
             cmap=my_cmap,
         )
@@ -869,7 +865,7 @@ def run(prm):
             tuple_vmax=np.nan,
             tuple_scale="log",
             tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
-            is_orthogonal=not use_rawdata,
+            is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=False,
             cmap=my_cmap,
         )
@@ -895,7 +891,7 @@ def run(prm):
             vmin=0,
             vmax=(nz, ny, nx),
             title="Mask before aliens removal\n",
-            is_orthogonal=not use_rawdata,
+            is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
             cmap=my_cmap,
         )
@@ -917,7 +913,7 @@ def run(prm):
         ###############################################
         # save the orthogonalized diffraction pattern #
         ###############################################
-        if not use_rawdata and len(q_values) != 0:
+        if not prm["use_rawdata"] and len(q_values) != 0:
             qx = q_values[0]
             qz = q_values[1]
             qy = q_values[2]
@@ -982,7 +978,7 @@ def run(prm):
             ax0.axis("scaled")
             ax1.axis("scaled")
             ax2.axis("scaled")
-            if not use_rawdata:
+            if not prm["use_rawdata"]:
                 ax0.invert_yaxis()  # detector Y is vertical down
             ax0.set_title(f"XY - Frame {frame_index[0] + 1} / {nz}")
             ax1.set_title(f"XZ - Frame {frame_index[1] + 1} / {ny}")
@@ -1016,7 +1012,7 @@ def run(prm):
                 plot_colorbar=True,
                 vmin=0,
                 title="Data after aliens removal\n",
-                is_orthogonal=not use_rawdata,
+                is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
                 cmap=my_cmap,
             )
@@ -1035,7 +1031,7 @@ def run(prm):
                 vmin=0,
                 vmax=(nz, ny, nx),
                 title="Mask after aliens removal\n",
-                is_orthogonal=not use_rawdata,
+                is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
                 cmap=my_cmap,
             )
@@ -1077,7 +1073,7 @@ def run(prm):
             ax0.axis("scaled")
             ax1.axis("scaled")
             ax2.axis("scaled")
-            if not use_rawdata:
+            if not prm["use_rawdata"]:
                 ax0.invert_yaxis()  # detector Y is vertical down
             ax0.set_title("XY")
             ax1.set_title("XZ")
@@ -1190,7 +1186,7 @@ def run(prm):
                 vmin=0,
                 title="Masked data",
                 slice_position=[int(z0), int(y0), int(x0)],
-                is_orthogonal=not use_rawdata,
+                is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
                 cmap=my_cmap,
             )
@@ -1211,7 +1207,7 @@ def run(prm):
                 plot_colorbar=True,
                 vmin=0,
                 title="Masked data",
-                is_orthogonal=not use_rawdata,
+                is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
                 cmap=my_cmap,
             )
@@ -1233,7 +1229,7 @@ def run(prm):
                 vmin=0,
                 vmax=(nz, ny, nx),
                 title="Mask",
-                is_orthogonal=not use_rawdata,
+                is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
                 cmap=my_cmap,
             )
@@ -1259,7 +1255,7 @@ def run(prm):
                 mask, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
             )
             mask[np.nonzero(mask)] = 1
-            if not use_rawdata and len(q_values) != 0:
+            if not prm["use_rawdata"] and len(q_values) != 0:
                 numz = len(qx)
                 qx = qx[
                     : numz
@@ -1298,7 +1294,7 @@ def run(prm):
         mask[np.nonzero(mask)] = 1
         mask = mask.astype(int)
         print("Mask type before saving:", mask.dtype)
-        if not use_rawdata and len(q_values) != 0:
+        if not prm["use_rawdata"] and len(q_values) != 0:
             if save_to_npz:
                 np.savez_compressed(
                     setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
@@ -1398,7 +1394,7 @@ def run(prm):
             plot_colorbar=True,
             vmin=0,
             title="Final data",
-            is_orthogonal=not use_rawdata,
+            is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
             cmap=my_cmap,
         )
@@ -1414,7 +1410,7 @@ def run(prm):
             vmin=0,
             vmax=(nz, ny, nx),
             title="Final mask",
-            is_orthogonal=not use_rawdata,
+            is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
             cmap=my_cmap,
         )
@@ -1425,5 +1421,5 @@ def run(prm):
         del data, mask
         gc.collect()
 
-        if len(scans) > 1:
+        if len(prm["scans"]) > 1:
             plt.close("all")
