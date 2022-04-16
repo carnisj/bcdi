@@ -135,11 +135,11 @@ def run(prm: Dict[str, Any]) -> None:
     ############################
     # start looping over scans #
     ############################
-    for scan_idx, scan_nb in enumerate(prm["scans"], start=1):
+    for scan_idx, scan_nb in enumerate(prm["scans"]):
         prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
 
         comment = prm["comment"]  # re-initialize comment
-        tmp_str = f"Scan {scan_idx}/{len(prm['scans'])}: S{scan_nb}"
+        tmp_str = f"Scan {scan_idx+1}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
         #################################
@@ -161,7 +161,7 @@ def run(prm: Dict[str, Any]) -> None:
             direct_beam=prm.get("direct_beam"),
             is_series=prm.get("is_series", False),
             detector_name=prm["detector"],
-            template_imagefile=prm.get("template_imagefile"),
+            template_imagefile=prm["template_imagefile"][scan_idx],
             roi=roi_detector,
             binning=prm["phasing_binning"],
             preprocessing_binning=prm["preprocessing_binning"],
@@ -172,13 +172,13 @@ def run(prm: Dict[str, Any]) -> None:
         # Initialize the paths and the logfile #
         ########################################
         setup.init_paths(
-            sample_name=prm["sample_name"],
+            sample_name=prm["sample_name"][scan_idx],
             scan_number=scan_nb,
             root_folder=prm["root_folder"],
             data_dir=prm.get("data_dir"),
             save_dir=prm["save_dir"],
-            specfile_name=prm.get("specfile_name"),
-            template_imagefile=prm.get("template_imagefile"),
+            specfile_name=prm["specfile_name"][scan_idx],
+            template_imagefile=prm["template_imagefile"][scan_idx],
         )
 
         setup.create_logfile(

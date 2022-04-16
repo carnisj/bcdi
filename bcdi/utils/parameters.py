@@ -63,14 +63,14 @@ class ConfigChecker:
         """Ensure that a parameter as the correct type and length."""
         initial_param = self.initial_params.get(param_name)
         if initial_param is None:
-            self.checked_params[param_name] = (None,) * length
+            initial_param = (None,) * length
         elif not isinstance(initial_param, (tuple, list)):
             raise TypeError(
                 f"'{param_name}' shold be a tuple or a list, got {type(param_name)}"
             )
-        if len(param_name) == 1:
-            self.checked_params[param_name] = param_name * length
-        elif len(param_name) != length:
+        if len(initial_param) == 1:
+            self.checked_params[param_name] = initial_param * length
+        elif len(initial_param) != length:
             raise ValueError(
                 f"'{param_name}' should be of length {length}, "
                 f"got {len(param_name)} elements"
@@ -96,6 +96,9 @@ class ConfigChecker:
             "preprocessing_binning", [1, 1, 1]
         )
         self.checked_params["ref_axis_q"] = self.initial_params.get("ref_axis_q", "y")
+        self.checked_params["beam_direction"] = self.initial_params.get(
+            "beam_direction", [1, 0, 0]
+        )
         self.checked_params["sample_inplane"] = self.initial_params.get(
             "sample_inplane", [1, 0, 0]
         )
@@ -103,6 +106,12 @@ class ConfigChecker:
             "sample_outofplane", [0, 0, 1]
         )
         self.checked_params["sample_outofplane"] = self.initial_params.get("save_dir")
+        self.checked_params["offset_inplane"] = self.initial_params.get(
+            "offset_inplane", 0
+        )
+        self.checked_params["custom_scan"] = self.initial_params.get(
+            "custom_scan", False
+        )
 
 
 @dataclass
@@ -133,6 +142,7 @@ class PreprocessingChecker(ConfigChecker):
         self.checked_params["center_fft"] = self.initial_params.get(
             "center_fft", "skip"
         )
+        self.checked_params["is_series"] = self.initial_params.get("is_series", False)
         self.checked_params["median_filter"] = self.initial_params.get(
             "median_filter", "skip"
         )

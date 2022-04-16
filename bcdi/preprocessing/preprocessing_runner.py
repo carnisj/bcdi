@@ -316,45 +316,6 @@ def run(prm):
     my_cmap = ColormapFactory(colormap=colormap).generate_cmap()
     plt.rcParams["keymap.fullscreen"] = [""]
 
-    ####################
-    # Initialize setup #
-    ####################
-    setup = Setup(
-        beamline_name=prm["beamline"],
-        energy=prm.get("energy"),
-        rocking_angle=prm["rocking_angle"],
-        distance=prm.get("sdd"),
-        beam_direction=prm.get("beam_direction", [1, 0, 0]),
-        sample_inplane=sample_inplane,
-        sample_outofplane=sample_outofplane,
-        offset_inplane=prm.get("offset_inplane", 0),
-        custom_scan=prm.get("custom_scan", False),
-        custom_images=prm.get("custom_images"),
-        sample_offsets=prm.get("sample_offsets"),
-        custom_monitor=prm.get("custom_monitor"),
-        custom_motors=prm.get("custom_motors"),
-        actuators=prm.get("actuators"),
-        is_series=prm.get("is_series", False),
-        outofplane_angle=prm.get("outofplane_angle"),
-        inplane_angle=prm.get("inplane_angle"),
-        dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
-        direct_beam=prm.get("direct_beam"),
-        detector_name=prm["detector"],
-        template_imagefile=prm.get("template_imagefile"),
-        roi=roi_detector,
-        binning=prm["phasing_binning"],
-        preprocessing_binning=preprocessing_binning,
-        linearity_func=prm.get("linearity_func"),
-    )
-
-    ########################################
-    # print the current setup and detector #
-    ########################################
-    print("\n##############\nSetup instance\n##############")
-    pretty.pprint(setup.params)
-    print("\n#################\nDetector instance\n#################")
-    pretty.pprint(setup.detector.params)
-
     ############################################
     # Initialize values for callback functions #
     ############################################
@@ -368,23 +329,54 @@ def run(prm):
     ############################
     # start looping over scans #
     ############################
-    for scan_idx, scan_nb in enumerate(prm["scans"], start=1):
+    for scan_idx, scan_nb in enumerate(prm["scans"]):
         plt.ion()
 
         comment = user_comment  # re-initialize comment
-        tmp_str = f"Scan {scan_idx}/{len(prm['scans'])}: S{scan_nb}"
+        tmp_str = f"Scan {scan_idx+1}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
+
+        #################################
+        # define the experimental setup #
+        #################################
+        setup = Setup(
+            beamline_name=prm["beamline"],
+            energy=prm.get("energy"),
+            rocking_angle=prm["rocking_angle"],
+            distance=prm.get("sdd"),
+            beam_direction=prm["beam_direction"],
+            sample_inplane=sample_inplane,
+            sample_outofplane=sample_outofplane,
+            offset_inplane=prm["offset_inplane"],
+            custom_scan=prm["custom_scan"],
+            custom_images=prm.get("custom_images"),
+            sample_offsets=prm.get("sample_offsets"),
+            custom_monitor=prm.get("custom_monitor"),
+            custom_motors=prm.get("custom_motors"),
+            actuators=prm.get("actuators"),
+            is_series=prm["is_series"],
+            outofplane_angle=prm.get("outofplane_angle"),
+            inplane_angle=prm.get("inplane_angle"),
+            dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
+            direct_beam=prm.get("direct_beam"),
+            detector_name=prm["detector"],
+            template_imagefile=prm["template_imagefile"][scan_idx],
+            roi=roi_detector,
+            binning=prm["phasing_binning"],
+            preprocessing_binning=preprocessing_binning,
+            linearity_func=prm.get("linearity_func"),
+        )
 
         # initialize the paths
         setup.init_paths(
-            sample_name=prm["sample_name"][scan_idx - 1],
+            sample_name=prm["sample_name"][scan_idx],
             scan_number=scan_nb,
             data_dir=prm.get("data_dir"),
             root_folder=prm["root_folder"],
             save_dir=save_dir,
             save_dirname=save_dirname,
-            specfile_name=prm.get("specfile_name"),
-            template_imagefile=prm.get("template_imagefile"),
+            specfile_name=prm["specfile_name"][scan_idx],
+            template_imagefile=prm["template_imagefile"][scan_idx],
         )
 
         logfile = setup.create_logfile(
@@ -396,6 +388,17 @@ def run(prm):
         # load the goniometer positions needed for the calculation of the corrected
         # detector angles
         setup.read_logfile(scan_number=scan_nb)
+
+        ###################
+        # print instances #
+        ###################
+        print(
+            f'{"#"*(5+len(str(scan_nb)))}\nScan {scan_nb}\n{"#"*(5+len(str(scan_nb)))}'
+        )
+        print("\n##############\nSetup instance\n##############")
+        pretty.pprint(setup.params)
+        print("\n#################\nDetector instance\n#################")
+        pretty.pprint(setup.detector.params)
 
         if not prm["use_rawdata"]:
             comment += "_ortho"
