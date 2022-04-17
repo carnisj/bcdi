@@ -32,7 +32,7 @@ import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
-from bcdi.utils.parameters import PostprocessingChecker
+from bcdi.utils.parameters import ConfigChecker
 import bcdi.utils.utilities as util
 
 
@@ -43,8 +43,44 @@ def run(prm: Dict[str, Any]) -> None:
     :param prm: the parsed parameters
     """
     pretty = pprint.PrettyPrinter(indent=4)
-    prm = PostprocessingChecker(
+    prm = ConfigChecker(
         initial_params=prm,
+        default_values={
+            "beam_direction": [1, 0, 0],
+            "bragg_peak": None,
+            "centering_method": "max_com",
+            "comment": "",
+            "correct_refraction": False,
+            "correlation_threshold": 0.90,
+            "custom_scan": False,
+            "debug": False,
+            "fix_voxel": None,
+            "invert_phase": True,
+            "offset_inplane": 0,
+            "offset_method": "mean",
+            "original_size": None,
+            "phase_offset": 0,
+            "phase_offset_origin": None,
+            "phasing_binning": [1, 1, 1],
+            "preprocessing_binning": [1, 1, 1],
+            "ref_axis_q": "y",
+            "sample_inplane": [1, 0, 0],
+            "sample_outofplane": [0, 0, 1],
+            "save": True,
+            "sort_method": "variance/mean",
+            "threshold_gradient": 1.0,
+            "threshold_unwrap_refraction": 0.05,
+            "tick_direction": "inout",
+            "tick_length": 10,
+            "tick_spacing": 50,
+            "tick_width": 2,
+        },
+        match_length_params=(
+            "reconstruction_files",
+            "sample_name",
+            "specfile_name",
+            "template_imagefile",
+        ),
         required_params=(
             "beamline",
             "data_frame",

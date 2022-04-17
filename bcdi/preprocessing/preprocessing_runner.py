@@ -32,7 +32,7 @@ from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.utils.parameters import PreprocessingChecker
+from bcdi.utils.parameters import ConfigChecker
 import bcdi.utils.utilities as util
 
 
@@ -183,8 +183,39 @@ def run(prm):
             pass
 
     pretty = pprint.PrettyPrinter(indent=4)
-    prm = PreprocessingChecker(
+    prm = ConfigChecker(
         initial_params=prm,
+        default_values={
+            "align_q": True,
+            "background_plot": 0.5,
+            "beam_direction": [1, 0, 0],
+            "bragg_peak": None,
+            "center_fft": "skip",
+            "centering_method": "max_com",
+            "comment": "",
+            "custom_scan": False,
+            "debug": False,
+            "fix_size": None,
+            "flag_interact": True,
+            "interpolation_method": "linearization",
+            "is_series": False,
+            "median_filter": "skip",
+            "normalize_flux": False,
+            "offset_inplane": 0,
+            "photon_threshold": 0,
+            "preprocessing_binning": [1, 1, 1],
+            "ref_axis_q": "y",
+            "reload_orthogonal": False,
+            "sample_inplane": [1, 0, 0],
+            "sample_outofplane": [0, 0, 1],
+            "save_to_mat": False,
+            "save_to_npz": True,
+        },
+        match_length_params=(
+            "sample_name",
+            "specfile_name",
+            "template_imagefile",
+        ),
         required_params=(
             "beamline",
             "detector",

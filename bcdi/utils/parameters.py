@@ -40,24 +40,37 @@ class ParameterError(Exception):
 
 @dataclass
 class ConfigChecker:
-    """Base class for the configuration of parameters."""
+    """Validate and configure parameters."""
 
     initial_params: Dict[str, Any]
-    checked_params: Dict[str, Any] = field(default_factory=dict)
-    nb_scans: Optional[int] = None
-    required_params: Optional[Tuple] = None
+    _checked_params: Dict[str, Any] = field(default_factory=dict)
+    default_values: Dict[str, Any] = field(default_factory=dict)
+    match_length_params: Tuple = ()
+    _nb_scans: Optional[int] = None
+    required_params: Tuple = ()
 
     def check_config(self) -> Dict[str, Any]:
         """Check if the provided config is consistent."""
-        self.checked_params = copy.deepcopy(self.initial_params)
+        self._checked_params = copy.deepcopy(self.initial_params)
         if self.initial_params.get("scans") is None:
             raise ValueError("no scan provided")
-        self.nb_scans = len(self.initial_params["scans"])
+        self._nb_scans = len(self.initial_params["scans"])
 
-        self._check_length("template_imagefile", self.nb_scans)
-        self._check_length("sample_name", self.nb_scans)
-        self._check_length("specfile_name", self.nb_scans)
-        return self.checked_params
+        for key in self.match_length_params:
+            self._check_length(key, self._nb_scans)
+
+        self._assign_default_value()
+        self._check_mandatory_params()
+        return self._checked_params
+
+    def _assign_default_value(self) -> None:
+        """Assign default values to parameters."""
+        for key, value in self.default_values.items():
+            try:
+                self._checked_params[key] = self.initial_params.get(key, value)
+            except KeyError:
+                print(f"key {key} undefined in the configuration")
+                raise
 
     def _check_length(self, param_name: str, length: int) -> None:
         """Ensure that a parameter as the correct type and length."""
@@ -69,154 +82,20 @@ class ConfigChecker:
                 f"'{param_name}' shold be a tuple or a list, got {type(param_name)}"
             )
         if len(initial_param) == 1:
-            self.checked_params[param_name] = initial_param * length
+            self._checked_params[param_name] = initial_param * length
         elif len(initial_param) != length:
             raise ValueError(
                 f"'{param_name}' should be of length {length}, "
                 f"got {len(param_name)} elements"
             )
 
-    def check_mandatory_params(self):
-        """Check if mandatory parameters are provided"""
+    def _check_mandatory_params(self) -> None:
+        """Check if mandatory parameters are provided."""
         for key in self.required_params:
             try:
                 _ = self.initial_params[key]
             except KeyError:
                 print(f"Required parameter {key} not defined")
-
-    def assign_default_value(self):
-        """Assign default values other than None for common parameters."""
-        self.checked_params["bragg_peak"] = self.initial_params.get("bragg_peak")
-        self.checked_params["centering_method"] = self.initial_params.get(
-            "centering_method", "max_com"
-        )
-        self.checked_params["comment"] = self.initial_params.get("comment", "")
-        self.checked_params["debug"] = self.initial_params.get("debug", False)
-        self.checked_params["preprocessing_binning"] = self.initial_params.get(
-            "preprocessing_binning", [1, 1, 1]
-        )
-        self.checked_params["ref_axis_q"] = self.initial_params.get("ref_axis_q", "y")
-        self.checked_params["beam_direction"] = self.initial_params.get(
-            "beam_direction", [1, 0, 0]
-        )
-        self.checked_params["sample_inplane"] = self.initial_params.get(
-            "sample_inplane", [1, 0, 0]
-        )
-        self.checked_params["sample_outofplane"] = self.initial_params.get(
-            "sample_outofplane", [0, 0, 1]
-        )
-        self.checked_params["sample_outofplane"] = self.initial_params.get("save_dir")
-        self.checked_params["offset_inplane"] = self.initial_params.get(
-            "offset_inplane", 0
-        )
-        self.checked_params["custom_scan"] = self.initial_params.get(
-            "custom_scan", False
-        )
-
-
-@dataclass
-class PreprocessingChecker(ConfigChecker):
-    """Configurate parameters for preprocessing."""
-
-    def check_config(self) -> Dict[str, Any]:
-        """Check if the provided config is consistent with preprocessing."""
-        super().check_config()
-        self.assign_default_value()
-        self.check_mandatory_params()
-        return self.checked_params
-
-    def assign_default_value(self):
-        """Assign default values other than None for preprocessing parameters."""
-        super().assign_default_value()
-        self.checked_params["background_plot"] = self.initial_params.get(
-            "background_plot", 0.5
-        )
-        self.checked_params["fix_size"] = self.initial_params.get("fix_size")
-        self.checked_params["align_q"] = self.initial_params.get("align_q", True)
-        self.checked_params["interpolation_method"] = self.initial_params.get(
-            "interpolation_method", "linearization"
-        )
-        self.checked_params["flag_interact"] = self.initial_params.get(
-            "flag_interact", True
-        )
-        self.checked_params["center_fft"] = self.initial_params.get(
-            "center_fft", "skip"
-        )
-        self.checked_params["is_series"] = self.initial_params.get("is_series", False)
-        self.checked_params["median_filter"] = self.initial_params.get(
-            "median_filter", "skip"
-        )
-        self.checked_params["photon_threshold"] = self.initial_params.get(
-            "photon_threshold", 0
-        )
-        self.checked_params["reload_orthogonal"] = self.initial_params.get(
-            "reload_orthogonal", False
-        )
-        self.checked_params["normalize_flux"] = self.initial_params.get(
-            "normalize_flux", False
-        )
-        self.checked_params["save_to_mat"] = self.initial_params.get(
-            "save_to_mat", False
-        )
-        self.checked_params["save_to_npz"] = self.initial_params.get(
-            "save_to_npz", True
-        )
-
-
-@dataclass
-class PostprocessingChecker(ConfigChecker):
-    """Configurate parameters for postprocessing."""
-
-    def check_config(self) -> Dict[str, Any]:
-        """Check if the provided config is consistent with postprocessing."""
-        super().check_config()
-        self._check_length("reconstruction_files", self.nb_scans)
-        self.assign_default_value()
-        self.check_mandatory_params()
-        return self.checked_params
-
-    def assign_default_value(self):
-        """Assign default values other than None for postprocessing parameters."""
-        super().assign_default_value()
-        self.checked_params["phasing_binning"] = self.initial_params.get(
-            "phasing_binning", [1, 1, 1]
-        )
-        self.checked_params["save"] = self.initial_params.get("save", True)
-        self.checked_params["tick_spacing"] = self.initial_params.get(
-            "tick_spacing", 50
-        )
-        self.checked_params["tick_direction"] = self.initial_params.get(
-            "tick_direction", "inout"
-        )
-        self.checked_params["tick_length"] = self.initial_params.get("tick_length", 10)
-        self.checked_params["tick_width"] = self.initial_params.get("tick_width", 2)
-        self.checked_params["invert_phase"] = self.initial_params.get(
-            "invert_phase", True
-        )
-        self.checked_params["correct_refraction"] = self.initial_params.get(
-            "correct_refraction", False
-        )
-        self.checked_params["threshold_unwrap_refraction"] = self.initial_params.get(
-            "threshold_unwrap_refraction", 0.05
-        )
-        self.checked_params["threshold_gradient"] = self.initial_params.get(
-            "threshold_gradient", 1.0
-        )
-        self.checked_params["offset_method"] = self.initial_params.get(
-            "offset_method", "mean"
-        )
-        self.checked_params["phase_offset"] = self.initial_params.get("phase_offset", 0)
-        self.checked_params["phase_offset_origin"] = self.initial_params.get(
-            "phase_offset_origin"
-        )
-        self.checked_params["sort_method"] = self.initial_params.get(
-            "sort_method", "variance/mean"
-        )
-        self.checked_params["correlation_threshold"] = self.initial_params.get(
-            "correlation_threshold", 0.90
-        )
-        self.checked_params["original_size"] = self.initial_params.get("original_size")
-        self.checked_params["fix_voxel"] = self.initial_params.get("fix_voxel")
 
 
 def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
