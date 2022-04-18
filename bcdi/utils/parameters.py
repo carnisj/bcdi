@@ -17,13 +17,15 @@ import copy
 
 import colorcet as cc
 from dataclasses import dataclass, field
+from logging import Logger
 import matplotlib
 from numbers import Number, Real
 import numpy as np
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
+from bcdi.utils.constants import LOGGING_LEVELS
 import bcdi.utils.validation as valid
 
 
@@ -49,6 +51,7 @@ class ConfigChecker(ABC):
     initial_params: Dict[str, Any]
     _checked_params: Dict[str, Any] = field(default_factory=dict)
     default_values: Dict[str, Any] = field(default_factory=dict)
+    logger: Optional[Logger] = None
     match_length_params: Tuple = ()
     _nb_scans: Optional[int] = None
     required_params: Tuple = ()
@@ -66,7 +69,49 @@ class ConfigChecker(ABC):
         self._assign_default_value()
         self._check_mandatory_params()
         self._configure_params()
+        self._check_backend()
+        self._create_colormap()
         return self._checked_params
+
+    def _create_roi(self) -> Optional[List[int]]:
+        """
+        Load "roi_detector" from the dictionary of parameters and update it.
+
+        If the keys "center_roi_x" or "center_roi_y" are defined, it will consider that
+        the current values in roi_detector define a window around the Bragg peak
+        position and the final output will be:
+        [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+        center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+
+        If a key is not defined, it will consider that the values of roi_detector are
+        absolute pixels positions, e.g. if only "center_roi_y" is defined, the output
+        will be:
+        [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+        roi_detector[2], roi_detector[3]].
+
+        Accordingly, if none of the keys are defined, the output will be:
+        [roi_detector[0], roi_detector[1], roi_detector[2], roi_detector[3]].
+
+        :return: the calculated region of interest [Vstart, Vstop, Hstart, Hstop] or
+         None."""
+        roi = copy.deepcopy(self.initial_params.get("roi_detector"))
+
+        # update the ROI
+        if roi is not None:
+            center_roi_y = self.initial_params.get("center_roi_y")
+            if center_roi_y is not None:
+                valid.valid_item(center_roi_y, allowed_types=int, name="center_roi_y")
+                roi[0] = center_roi_y - self.initial_params["roi_detector"][0]
+                roi[1] = center_roi_y + self.initial_params["roi_detector"][1]
+
+            center_roi_x = self.initial_params.get("center_roi_x")
+            if center_roi_x is not None:
+                valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
+                roi[2] = center_roi_x - self.initial_params["roi_detector"][2]
+                roi[3] = center_roi_x + self.initial_params["roi_detector"][3]
+        else:
+            roi = None
+        return roi
 
     def _assign_default_value(self) -> None:
         """Assign default values to parameters."""
@@ -76,6 +121,13 @@ class ConfigChecker(ABC):
             except KeyError:
                 print(f"key {key} undefined in the configuration")
                 raise
+
+    def _check_backend(self) -> None:
+        """Check if the backend is supported."""
+        try:
+            matplotlib.use(self.initial_params["backend"])
+        except ModuleNotFoundError:
+            print(f"{self.initial_params['backend']} backend is not supported.")
 
     def _check_length(self, param_name: str, length: int) -> None:
         """Ensure that a parameter as the correct type and length."""
@@ -111,6 +163,25 @@ class ConfigChecker(ABC):
         """
         raise NotImplementedError
 
+    def _create_colormap(self) -> None:
+        """Create a colormap instance."""
+        if self.initial_params.get("grey_background"):
+            bad_color = "0.7"
+        else:
+            bad_color = "1.0"  # white background
+        self._checked_params["colormap"] = ColormapFactory(
+            bad_color=bad_color, colormap=self.initial_params["colormap"]
+        ).generate_cmap()
+
+    def _log(self, message: str, level: str = "info") -> None:
+        """Log or print a message to the console."""
+        if self.logger is not None:
+            if level not in LOGGING_LEVELS:
+                raise ValueError(f"Unknown logging level {level}")
+            getattr(self.logger, level)(message)
+        else:
+            print(message)
+
 
 @dataclass
 class PreprocessingChecker(ConfigChecker):
@@ -118,6 +189,104 @@ class PreprocessingChecker(ConfigChecker):
 
     def _configure_params(self) -> None:
         """Hard-code processing-dependent parameter configuration."""
+
+        if (
+            self._nb_scans is not None
+            and self._nb_scans > 1
+            and self.initial_params["center_fft"]
+            not in [
+                "crop_asymmetric_ZYX",
+                "pad_Z",
+                "pad_asymmetric_ZYX",
+            ]
+        ):
+            self._checked_params["center_fft"] = "skip"
+            # avoid croping the detector plane XY while centering the Bragg peak
+            # otherwise outputs may have a different size,
+            # which will be problematic for combining or comparing them
+        if self.initial_params["fix_size"]:
+            self._log('"fix_size" parameter provided, roi_detector will be set to []')
+            self._log(
+                "'fix_size' parameter provided, defaulting 'center_fft' to 'skip'"
+            )
+            self._checked_params["roi_detector"] = []
+            self._checked_params["center_fft"] = "skip"
+
+        if self.initial_params["photon_filter"] == "loading":
+            self._checked_params["loading_threshold"] = self.initial_params[
+                "photon_threshold"
+            ]
+        else:
+            self._checked_params["loading_threshold"] = 0
+
+        if self.initial_params["reload_previous"]:
+            self._checked_params["user_comment"] += "_reloaded"
+        else:
+            self._checked_params["preprocessing_binning"] = (1, 1, 1)
+            self._checked_params["reload_orthogonal"] = False
+
+        if self.initial_params["rocking_angle"] == "energy":
+            self._checked_params["use_rawdata"] = False
+            # you need to interpolate the data in QxQyQz for energy scans
+            if self.logger:
+                self.logger.info(
+                    "Energy scan: defaulting use_rawdata to False,"
+                    " the data will be interpolated using xrayutilities"
+                )
+
+        if self._checked_params["reload_orthogonal"]:
+            self._checked_params["use_rawdata"] = False
+
+        if self._checked_params["use_rawdata"]:
+            self._checked_params["save_dirname"] = "pynxraw"
+            self._log("Output will be non orthogonal, in the detector frame")
+        else:
+            if self.initial_params["interpolation_method"] not in {
+                "xrayutilities",
+                "linearization",
+            }:
+                raise ValueError(
+                    "Incorrect value for interp_method,"
+                    ' allowed values are "xrayutilities" and "linearization"'
+                )
+            if self.initial_params["rocking_angle"] == "energy":
+                self._checked_params["interpolation_method"] = "xrayutilities"
+                self._log(
+                    "Defaulting interp_method to "
+                    f"{self._checked_params['interpolation_method'] }"
+                )
+            if (
+                self._checked_params["reload_orthogonal"]
+                and self._checked_params["preprocessing_binning"][0] != 1
+            ):
+                raise ValueError(
+                    "preprocessing_binning along axis 0 should be 1"
+                    " when gridding reloaded data (angles won't match)"
+                )
+            self._checked_params["save_dirname"] = "pynx"
+            self._log(
+                "Output will be orthogonalized using "
+                f"{self._checked_params['interpolation_method']}"
+            )
+
+        if self.initial_params["align_q"]:
+            if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
+                raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
+            self._checked_params[
+                "user_comment"
+            ] += f"_align-q-{self.initial_params['ref_axis_q']}"
+
+        if (
+            self.initial_params["backend"].lower() == "agg"
+            and self.initial_params["flag_interact"]
+        ):
+            raise ValueError(
+                "non-interactive backend 'agg' not compatible with the "
+                "interactive masking GUI"
+            )
+        self._checked_params["roi_detector"] = (
+            [] if self.initial_params["fix_size"] else self._create_roi()
+        )
 
 
 @dataclass
@@ -143,31 +312,14 @@ class PostprocessingChecker(ConfigChecker):
             self.initial_params["data_frame"] == "crystal"
             and self.initial_params["save_frame"] != "crystal"
         ):
-            print(
-                "data already in the crystal frame before phase retrieval,"
-                " it is impossible to come back to the laboratory "
-                "frame, parameter 'save_frame' defaulted to 'crystal'"
-            )
+            if self.logger:
+                self.logger.info(
+                    "data already in the crystal frame before phase retrieval,"
+                    " it is impossible to come back to the laboratory "
+                    "frame, parameter 'save_frame' defaulted to 'crystal'"
+                )
             self._checked_params["save_frame"] = "crystal"
-
-        ###############
-        # Check backend #
-        ###############
-        try:
-            matplotlib.use(self.initial_params["backend"])
-        except ModuleNotFoundError:
-            print(f"{self.initial_params['backend']} backend is not supported.")
-
-        ###################
-        # define colormap #
-        ###################
-        if self.initial_params.get("grey_background"):
-            bad_color = "0.7"
-        else:
-            bad_color = "1.0"  # white background
-        self._checked_params["colormap"] = ColormapFactory(
-            bad_color=bad_color, colormap=self.initial_params["colormap"]
-        ).generate_cmap()
+        self._checked_params["roi_detector"] = self._create_roi()
 
 
 def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
@@ -381,6 +533,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "detector_distance":
+        valid.valid_item(
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+        )
     elif key == "dirbeam_detector_angles":
         valid.valid_container(
             value,
@@ -656,11 +812,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value = (value,)
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), min_length=1, name=key
-        )
-
-    elif key == "sdd":
-        valid.valid_item(
-            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
         )
     elif key == "sort_method":
         allowed = {"mean_amplitude", "variance", "variance/mean", "volume"}

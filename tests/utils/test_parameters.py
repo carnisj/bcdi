@@ -8,11 +8,61 @@
 
 from pathlib import Path
 import unittest
-from bcdi.utils.parameters import valid_param
+from unittest.mock import patch
+from bcdi.utils.parameters import (
+    ConfigChecker,
+    PreprocessingChecker,
+    PostprocessingChecker,
+    valid_param,
+)
+from bcdi.utils.parser import ConfigParser
 from tests.config import run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
+CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
+
+
+class TestConfigChecker(unittest.TestCase):
+    """Tests related to the abstract class ConfigChecker."""
+
+    @patch("bcdi.utils.parameters.ConfigChecker.__abstractmethods__", set())
+    def setUp(self) -> None:
+        self.parser = ConfigParser(CONFIG, {})
+        self.args = self.parser.load_arguments()
+        self.checker = ConfigChecker(initial_params=self.args)
+
+    def test_create_roi_none(self):
+        self.checker.initial_params["roi_detector"] = None
+        self.assertEqual(self.checker._create_roi(), None)
+
+    def test_create_roi_center_roi_x_center_roi_y_none(self):
+        self.checker.initial_params["roi_detector"] = [10, 200, 20, 50]
+        correct = [10, 200, 20, 50]
+        output = self.checker._create_roi()
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_create_roi_center_roi_x_not_none(self):
+        self.checker.initial_params["roi_detector"] = [10, 200, 20, 50]
+        self.checker.initial_params["center_roi_x"] = 150
+        correct = [10, 200, 130, 200]
+        output = self.checker._create_roi()
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_create_roi_center_roi_y_not_none(self):
+        self.checker.initial_params["roi_detector"] = [10, 200, 20, 50]
+        self.checker.initial_params["center_roi_y"] = 150
+        correct = [140, 350, 20, 50]
+        output = self.checker._create_roi()
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_create_roi_center_roi_x_y_not_none(self):
+        self.checker.initial_params["roi_detector"] = [10, 200, 20, 50]
+        self.checker.initial_params["center_roi_x"] = 10
+        self.checker.initial_params["center_roi_y"] = 150
+        correct = [140, 350, -10, 60]
+        output = self.checker._create_roi()
+        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
 
 class TestParameters(unittest.TestCase):
