@@ -8,13 +8,13 @@
 """Main runner for BCDI data preprocessing, before phase retrieval."""
 
 import gc
+import logging
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
 import h5py
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -26,13 +26,12 @@ from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 import xrayutilities as xu
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.utils.parameters import ConfigChecker
+from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.utils.parameters import PreprocessingChecker
 import bcdi.utils.utilities as util
 
 
@@ -182,34 +181,66 @@ def run(prm):
         except AttributeError:  # mouse pointer out of axes
             pass
 
+    #################
+    # Runner script #
+    #################
     pretty = pprint.PrettyPrinter(indent=4)
-    prm = ConfigChecker(
+    prm = PreprocessingChecker(
         initial_params=prm,
         default_values={
+            "actuators": None,
             "align_q": True,
+            "backend": "Qt5Agg",
+            "background_file": None,
             "background_plot": 0.5,
             "beam_direction": [1, 0, 0],
+            "bin_during_loading": False,
             "bragg_peak": None,
             "center_fft": "skip",
             "centering_method": "max_com",
+            "colormap": "turbo",
             "comment": "",
+            "custom_monitor": None,
+            "custom_motors": None,
+            "custom_images": None,
             "custom_scan": False,
+            "data_dir": None,
             "debug": False,
+            "detector_distance": None,
+            "direct_beam": None,
+            "dirbeam_detector_angles": None,
+            "energy": None,
+            "fill_value_mask": 0,
             "fix_size": None,
             "flag_interact": True,
+            "flatfield_file": None,
+            "frames_pattern": None,
+            "hotpixels_file": None,
+            "inplane_angle": None,
             "interpolation_method": "linearization",
             "is_series": False,
+            "linearity_func": None,
+            "mask_zero_event": False,
             "median_filter": "skip",
+            "median_filter_order": 7,
             "normalize_flux": False,
             "offset_inplane": 0,
+            "outofplane_angle": None,
+            "pad_size": None,
+            "photon_filter": "loading",
             "photon_threshold": 0,
             "preprocessing_binning": [1, 1, 1],
             "ref_axis_q": "y",
             "reload_orthogonal": False,
+            "reload_previous": False,
             "sample_inplane": [1, 0, 0],
+            "sample_offsets": None,
             "sample_outofplane": [0, 0, 1],
+            "save_as_int": False,
+            "save_rawdata": False,
             "save_to_mat": False,
             "save_to_npz": True,
+            "save_to_vti": False,
         },
         match_length_params=(
             "sample_name",
@@ -228,134 +259,20 @@ def run(prm):
         ),
     ).check_config()
 
-    ################################
-    # assign often used parameters #
-    ################################
-    background_plot = prm["background_plot"]
-    bragg_peak = prm["bragg_peak"]
-    fix_size = prm["fix_size"]
-    debug = prm["debug"]
-    user_comment = prm["comment"]
-    align_q = prm["align_q"]
-    ref_axis_q = prm["ref_axis_q"]
-    preprocessing_binning = prm["preprocessing_binning"]
-    interpolation_method = prm["interpolation_method"]
-    save_dir = prm["save_dir"]
-    flag_interact = prm["flag_interact"]
-    center_fft = prm["center_fft"]
-    median_filter = prm["median_filter"]
-    photon_threshold = prm["photon_threshold"]
-    reload_orthogonal = prm["reload_orthogonal"]
-    normalize_flux = prm["normalize_flux"]
-    sample_inplane = prm["sample_inplane"]
-    sample_outofplane = prm["sample_outofplane"]
-    save_to_mat = prm["save_to_mat"]
-    save_to_npz = prm["save_to_npz"]
-    roi_detector = create_roi(dic=prm)
-    #########################
-    # check some parameters #
-    #########################
-    if len(prm["scans"]) > 1 and center_fft not in [
-        "crop_asymmetric_ZYX",
-        "pad_Z",
-        "pad_asymmetric_ZYX",
-    ]:
-        center_fft = "skip"
-        # avoid croping the detector plane XY while centering the Bragg peak
-        # otherwise outputs may have a different size,
-        # which will be problematic for combining or comparing them
-    if fix_size:
-        print('"fix_size" parameter provided, roi_detector will be set to []')
-        roi_detector = []
-        print("'fix_size' parameter provided, defaulting 'center_fft' to 'skip'")
-        center_fft = "skip"
-
-    if prm.get("photon_filter", "loading") == "loading":
-        loading_threshold = photon_threshold
-    else:
-        loading_threshold = 0
-
-    if prm.get("reload_previous"):
-        user_comment += "_reloaded"
-        root = tk.Tk()
-        root.withdraw()
-    else:
-        preprocessing_binning = (1, 1, 1)
-        reload_orthogonal = False
-
-    if prm["rocking_angle"] == "energy":
-        prm["use_rawdata"] = False
-        # you need to interpolate the data in QxQyQz for energy scans
-        print(
-            "Energy scan: defaulting use_rawdata to False,"
-            " the data will be interpolated using xrayutilities"
-        )
-
-    if reload_orthogonal:
-        prm["use_rawdata"] = False
-
-    if prm["use_rawdata"]:
-        save_dirname = "pynxraw"
-        print("Output will be non orthogonal, in the detector frame")
-    else:
-        if interpolation_method not in {"xrayutilities", "linearization"}:
-            raise ValueError(
-                "Incorrect value for interp_method,"
-                ' allowed values are "xrayutilities" and "linearization"'
-            )
-        if prm["rocking_angle"] == "energy":
-            interpolation_method = "xrayutilities"
-            print(f"Defaulting interp_method to {interpolation_method}")
-        if not reload_orthogonal and preprocessing_binning[0] != 1:
-            raise ValueError(
-                "preprocessing_binning along axis 0 should be 1"
-                " when gridding reloaded data (angles won't match)"
-            )
-        save_dirname = "pynx"
-        print(f"Output will be orthogonalized using {interpolation_method}")
-
-    if align_q:
-        user_comment += f"_align-q-{ref_axis_q}"
-        if ref_axis_q not in {"x", "y", "z"}:
-            raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
-    else:
-        ref_axis_q = "y"  # ref_axis_q will not be used
-    axis_to_array_xyz = {
-        "x": np.array([1, 0, 0]),
-        "y": np.array([0, 1, 0]),
-        "z": np.array([0, 0, 1]),
-    }  # in xyz order
-
-    ###############
-    # Set backend #
-    ###############
-    if not prm.get("backend"):
-        prm["backend"] = "Qt5Agg"
-    if prm["backend"].lower() == "agg" and flag_interact:
-        raise ValueError(
-            "non-interactive backend 'agg' not compatible with the "
-            "interactive masking GUI"
-        )
-    try:
-        matplotlib.use(prm["backend"])
-    except ModuleNotFoundError:
-        print(f"{prm['backend']} backend is not supported.")
-    ###################
-    # define colormap #
-    ###################
-    colormap = prm.get("colormap", "turbo")
-    my_cmap = ColormapFactory(colormap=colormap).generate_cmap()
-    plt.rcParams["keymap.fullscreen"] = [""]
-
-    ############################################
-    # Initialize values for callback functions #
-    ############################################
+    ####################################################
+    # Initialize parameters for the callback functions #
+    ####################################################
     flag_mask = False
     flag_aliens = False
+    my_cmap = prm["colormap"]
+    plt.rcParams["keymap.fullscreen"] = [""]
     plt.rcParams["keymap.quit"] = [
         "ctrl+w",
         "cmd+w",
     ]  # this one to avoid that q closes window (matplotlib default)
+    if prm["reload_previous"]:
+        root = tk.Tk()
+        root.withdraw()
 
     ############################
     # start looping over scans #
@@ -363,7 +280,7 @@ def run(prm):
     for scan_idx, scan_nb in enumerate(prm["scans"]):
         plt.ion()
 
-        comment = user_comment  # re-initialize comment
+        comment = prm["user_comment"]  # re-initialize comment
         tmp_str = f"Scan {scan_idx+1}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
@@ -372,40 +289,40 @@ def run(prm):
         #################################
         setup = Setup(
             beamline_name=prm["beamline"],
-            energy=prm.get("energy"),
+            energy=prm["energy"],
             rocking_angle=prm["rocking_angle"],
-            distance=prm.get("sdd"),
+            distance=prm["detector_distance"],
             beam_direction=prm["beam_direction"],
-            sample_inplane=sample_inplane,
-            sample_outofplane=sample_outofplane,
+            sample_inplane=prm["sample_inplane"],
+            sample_outofplane=prm["sample_outofplane"],
             offset_inplane=prm["offset_inplane"],
             custom_scan=prm["custom_scan"],
-            custom_images=prm.get("custom_images"),
-            sample_offsets=prm.get("sample_offsets"),
-            custom_monitor=prm.get("custom_monitor"),
-            custom_motors=prm.get("custom_motors"),
-            actuators=prm.get("actuators"),
+            custom_images=prm["custom_images"],
+            sample_offsets=prm["sample_offsets"],
+            custom_monitor=prm["custom_monitor"],
+            custom_motors=prm["custom_motors"],
+            actuators=prm["actuators"],
             is_series=prm["is_series"],
-            outofplane_angle=prm.get("outofplane_angle"),
-            inplane_angle=prm.get("inplane_angle"),
-            dirbeam_detector_angles=prm.get("dirbeam_detector_angles"),
-            direct_beam=prm.get("direct_beam"),
+            outofplane_angle=prm["outofplane_angle"],
+            inplane_angle=prm["inplane_angle"],
+            dirbeam_detector_angles=prm["dirbeam_detector_angles"],
+            direct_beam=prm["direct_beam"],
             detector_name=prm["detector"],
             template_imagefile=prm["template_imagefile"][scan_idx],
-            roi=roi_detector,
+            roi=prm["roi_detector"],
             binning=prm["phasing_binning"],
-            preprocessing_binning=preprocessing_binning,
-            linearity_func=prm.get("linearity_func"),
+            preprocessing_binning=prm["preprocessing_binning"],
+            linearity_func=prm["linearity_func"],
         )
 
         # initialize the paths
         setup.init_paths(
             sample_name=prm["sample_name"][scan_idx],
             scan_number=scan_nb,
-            data_dir=prm.get("data_dir"),
+            data_dir=prm["data_dir"],
             root_folder=prm["root_folder"],
-            save_dir=save_dir,
-            save_dirname=save_dirname,
+            save_dir=prm["save_dir"],
+            save_dirname=prm["save_dirname"],
             specfile_name=prm["specfile_name"][scan_idx],
             template_imagefile=prm["template_imagefile"][scan_idx],
         )
@@ -433,20 +350,20 @@ def run(prm):
 
         if not prm["use_rawdata"]:
             comment += "_ortho"
-            if interpolation_method == "linearization":
+            if prm["interpolation_method"] == "linearization":
                 comment += "_lin"
                 # load the goniometer positions needed in the calculation
                 # of the transformation matrix
                 setup.read_logfile(scan_number=scan_nb)
             else:  # 'xrayutilities'
                 comment += "_xrutil"
-        if normalize_flux:
+        if prm["normalize_flux"]:
             comment = comment + "_norm"
 
         #############
         # Load data #
         #############
-        if prm.get("reload_previous", False):  # resume previous masking
+        if prm["reload_previous"]:  # resume previous masking
             print("Resuming previous masking")
             file_path = filedialog.askopenfilename(
                 initialdir=setup.detector.scandir,
@@ -459,10 +376,10 @@ def run(prm):
             nz, ny, nx = np.shape(data)
 
             # check that the ROI is correctly defined
-            setup.detector.roi = roi_detector or [0, ny, 0, nx]
+            setup.detector.roi = prm["roi_detector"] or [0, ny, 0, nx]
             print("Detector ROI:", setup.detector.roi)
             # update savedir to save the data in the same directory as the reloaded data
-            if not save_dir:
+            if not prm["save_dir"]:
                 setup.detector.savedir = os.path.dirname(file_path) + "/"
                 print(f"Updated saving directory: {setup.detector.savedir}")
 
@@ -475,7 +392,7 @@ def run(prm):
             npz_key = mask.files
             mask = mask[npz_key[0]]
 
-            if reload_orthogonal:
+            if prm["reload_orthogonal"]:
                 # the data is gridded in the orthonormal laboratory frame
                 prm["use_rawdata"] = False
                 try:
@@ -493,13 +410,14 @@ def run(prm):
                 except FileNotFoundError:
                     q_values = []
 
-                normalize_flux = (
-                    "skip"  # we assume that normalization was already performed
-                )
+                prm["normalize_flux"] = "skip"
+                # we assume that normalization was already performed
                 monitor = []  # we assume that normalization was already performed
-                center_fft = "skip"
+                prm["center_fft"] = "skip"
                 # we assume that crop/pad/centering was already performed
-                fix_size = []  # we assume that crop/pad/centering was already performed
+                prm[
+                    "fix_size"
+                ] = []  # we assume that crop/pad/centering was already performed
 
                 # bin data and mask if needed
                 if (
@@ -515,13 +433,13 @@ def run(prm):
                         data,
                         binning=setup.detector.binning,
                         debugging=False,
-                        cmap=my_cmap,
+                        cmap=prm["colormap"],
                     )
                     mask = util.bin_data(
                         mask,
                         binning=setup.detector.binning,
                         debugging=False,
-                        cmap=my_cmap,
+                        cmap=prm["colormap"],
                     )
                     mask[np.nonzero(mask)] = 1
                     if len(q_values) != 0:
@@ -555,28 +473,28 @@ def run(prm):
                     data=data,
                     mask=mask,
                     setup=setup,
-                    debugging=debug,
-                    normalize=normalize_flux,
-                    photon_threshold=loading_threshold,
+                    debugging=prm["debug"],
+                    normalize=prm["normalize_flux"],
+                    photon_threshold=prm["loading_threshold"],
                 )
 
         else:  # new masking process
-            reload_orthogonal = False  # the data is in the detector plane
-            flatfield = util.load_flatfield(prm.get("flatfield_file"))
-            hotpix_array = util.load_hotpixels(prm.get("hotpixels_file"))
-            background = util.load_background(prm.get("background_file"))
+            prm["reload_orthogonal"] = False  # the data is in the detector plane
+            flatfield = util.load_flatfield(prm["flatfield_file"])
+            hotpix_array = util.load_hotpixels(prm["hotpixels_file"])
+            background = util.load_background(prm["background_file"])
 
             data, mask, frames_logical, monitor = bu.load_bcdi_data(
                 scan_number=scan_nb,
                 setup=setup,
-                frames_pattern=prm.get("frames_pattern"),
-                bin_during_loading=prm.get("bin_during_loading", False),
+                frames_pattern=prm["frames_pattern"],
+                bin_during_loading=prm["bin_during_loading"],
                 flatfield=flatfield,
                 hotpixels=hotpix_array,
                 background=background,
-                normalize=normalize_flux,
-                debugging=debug,
-                photon_threshold=loading_threshold,
+                normalize=prm["normalize_flux"],
+                debugging=prm["debug"],
+                photon_threshold=prm["loading_threshold"],
             )
 
         nz, ny, nx = np.shape(data)
@@ -592,20 +510,22 @@ def run(prm):
         # correct detector angles and save values for postprocessing #
         ##############################################################
         metadata = None
-        if not prm.get("outofplane_angle") and not prm.get("inplane_angle"):
+        if not prm["outofplane_angle"] and not prm["inplane_angle"]:
             # corrected detector angles not provided
-            if bragg_peak is None:
+            if prm["bragg_peak"] is None:
                 # Bragg peak position not provided, find it from the data
-                bragg_peak = bu.find_bragg(
+                prm["bragg_peak"] = bu.find_bragg(
                     data=data,
                     peak_method="maxcom",
                     roi=setup.detector.roi,
                     binning=setup.detector.binning,
                 )
             roi_center = (
-                bragg_peak[0],
-                (bragg_peak[1] - setup.detector.roi[0]) // setup.detector.binning[1],
-                (bragg_peak[2] - setup.detector.roi[2]) // setup.detector.binning[2],
+                prm["bragg_peak"][0],
+                (prm["bragg_peak"][1] - setup.detector.roi[0])
+                // setup.detector.binning[1],
+                (prm["bragg_peak"][2] - setup.detector.roi[2])
+                // setup.detector.binning[2],
             )
 
             metadata = bu.show_rocking_curve(
@@ -614,7 +534,7 @@ def run(prm):
                 tilt_values=setup.incident_angles,
                 savedir=setup.detector.savedir,
             )
-            setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+            setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
 
@@ -636,15 +556,15 @@ def run(prm):
         ##############################################################
         # optional interpolation of the data onto an orthogonal grid #
         ##############################################################
-        if not reload_orthogonal:
-            if prm.get("save_rawdata", False):
+        if not prm["reload_orthogonal"]:
+            if prm["save_rawdata"]:
                 np.savez_compressed(
                     setup.detector.savedir
                     + f"S{scan_nb}"
                     + "_data_before_masking_stack",
                     data=data,
                 )
-                if prm.get("save_to_mat", False):
+                if prm["save_to_mat"]:
                     # save to .mat, the new order is x y z
                     # (outboard, vertical up, downstream)
                     savemat(
@@ -673,7 +593,7 @@ def run(prm):
                     title="Data before gridding\n",
                     is_orthogonal=False,
                     reciprocal_space=True,
-                    cmap=my_cmap,
+                    cmap=prm["colormap"],
                 )
                 fig.savefig(
                     setup.detector.savedir
@@ -685,12 +605,12 @@ def run(prm):
                 del tmp_data
                 gc.collect()
 
-                if interpolation_method == "xrayutilities":
+                if prm["interpolation_method"] == "xrayutilities":
                     qconv, offsets = setup.init_qconversion()
                     setup.detector.offsets = offsets
                     hxrd = xu.experiment.HXRD(
-                        sample_inplane,
-                        sample_outofplane,
+                        prm["sample_inplane"],
+                        prm["sample_outofplane"],
                         en=setup.energy,
                         qconv=qconv,
                     )
@@ -749,8 +669,8 @@ def run(prm):
                         setup=setup,
                         frames_logical=frames_logical,
                         hxrd=hxrd,
-                        debugging=debug,
-                        cmap=my_cmap,
+                        debugging=prm["debug"],
+                        cmap=prm["colormap"],
                     )
                 else:  # 'linearization'
                     # for q values, the frame used is
@@ -762,11 +682,11 @@ def run(prm):
                         mask=mask,
                         detector=setup.detector,
                         setup=setup,
-                        align_q=align_q,
-                        reference_axis=axis_to_array_xyz[ref_axis_q],
-                        debugging=debug,
-                        fill_value=(0, prm.get("fill_value_mask", 0)),
-                        cmap=my_cmap,
+                        align_q=prm["align_q"],
+                        reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
+                        debugging=prm["debug"],
+                        fill_value=(0, prm["fill_value_mask"]),
+                        cmap=prm["colormap"],
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -776,7 +696,7 @@ def run(prm):
                 )
 
                 # plot normalization by incident monitor for the gridded data
-                if normalize_flux:
+                if prm["normalize_flux"]:
                     plt.ion()
                     tmp_data = np.copy(
                         data
@@ -802,7 +722,7 @@ def run(prm):
                         position=(323, 122),
                         is_orthogonal=not prm["use_rawdata"],
                         reciprocal_space=True,
-                        cmap=my_cmap,
+                        cmap=prm["colormap"],
                     )
 
                     fig.savefig(
@@ -811,7 +731,7 @@ def run(prm):
                         + binning_comment
                         + ".png"
                     )
-                    if flag_interact:
+                    if prm["flag_interact"]:
                         fig.canvas.mpl_disconnect(
                             fig.canvas.manager.key_press_handler_id
                         )
@@ -832,10 +752,10 @@ def run(prm):
             detector=setup.detector,
             frames_logical=frames_logical,
             centering=prm["centering_method"],
-            fft_option=center_fft,
-            pad_size=prm.get("pad_size"),
-            fix_bragg=prm.get("bragg_peak"),
-            fix_size=fix_size,
+            fft_option=prm["center_fft"],
+            pad_size=prm["pad_size"],
+            fix_bragg=prm["bragg_peak"],
+            fix_size=prm["fix_size"],
             q_values=q_values,
         )
 
@@ -851,7 +771,7 @@ def run(prm):
         ##########################################
         # optional masking of zero photon events #
         ##########################################
-        if prm.get("mask_zero_event", False):
+        if prm["mask_zero_event"]:
             # mask points when there is no intensity along the whole rocking curve
             # probably dead pixels
             temp_mask = np.zeros((ny, nx))
@@ -871,16 +791,16 @@ def run(prm):
             title="Data before aliens removal\n",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=my_cmap,
+            cmap=prm["colormap"],
         )
-        if debug:
+        if prm["debug"]:
             fig.savefig(
                 setup.detector.savedir
                 + f"data_before_masking_sum_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}_"
                 f"{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
-        if flag_interact:
+        if prm["flag_interact"]:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
@@ -901,16 +821,16 @@ def run(prm):
             tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=False,
-            cmap=my_cmap,
+            cmap=prm["colormap"],
         )
-        if debug:
+        if prm["debug"]:
             fig.savefig(
                 setup.detector.savedir
                 + f"data_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}"
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
-        if flag_interact:
+        if prm["flag_interact"]:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
@@ -927,9 +847,9 @@ def run(prm):
             title="Mask before aliens removal\n",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=my_cmap,
+            cmap=prm["colormap"],
         )
-        if debug:
+        if prm["debug"]:
             fig.savefig(
                 setup.detector.savedir
                 + f"mask_before_masking_S{scan_nb}_{nz}_{ny}_{nx}_"
@@ -937,7 +857,7 @@ def run(prm):
                 f"_{setup.detector.binning[1]}_{setup.detector.binning[2]}.png"
             )
 
-        if flag_interact:
+        if prm["flag_interact"]:
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
             cid = plt.connect("close_event", gu.close_event)
             fig.waitforbuttonpress()
@@ -952,7 +872,7 @@ def run(prm):
             qz = q_values[1]
             qy = q_values[2]
 
-            if prm.get("save_to_vti", False):
+            if prm["save_to_vti"]:
                 # save diffraction pattern to vti
                 (
                     nqx,
@@ -981,7 +901,7 @@ def run(prm):
                     origin=(qx0, qz0, qy0),
                 )
 
-        if flag_interact:
+        if prm["flag_interact"]:
             plt.ioff()
             #############################################
             # remove aliens
@@ -1000,13 +920,22 @@ def run(prm):
             original_mask = np.copy(mask)
             frame_index = starting_frame
             ax0.imshow(
-                data[frame_index[0], :, :], vmin=0, vmax=max_colorbar, cmap=my_cmap
+                data[frame_index[0], :, :],
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax1.imshow(
-                data[:, frame_index[1], :], vmin=0, vmax=max_colorbar, cmap=my_cmap
+                data[:, frame_index[1], :],
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax2.imshow(
-                data[:, :, frame_index[2]], vmin=0, vmax=max_colorbar, cmap=my_cmap
+                data[:, :, frame_index[2]],
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax3.set_visible(False)
             ax0.axis("scaled")
@@ -1032,7 +961,7 @@ def run(prm):
             fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
-            fig_mask.set_facecolor(background_plot)
+            fig_mask.set_facecolor(prm["background_plot"])
             plt.show()
             del fig_mask, original_data, original_mask
             gc.collect()
@@ -1048,7 +977,7 @@ def run(prm):
                 title="Data after aliens removal\n",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1067,7 +996,7 @@ def run(prm):
                 title="Mask after aliens removal\n",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1095,13 +1024,22 @@ def run(prm):
             updated_mask = np.zeros((nz, ny, nx))
             data[mask == 1] = 0  # will appear as grey in the log plot (nan)
             ax0.imshow(
-                np.log10(abs(data).sum(axis=0)), vmin=0, vmax=max_colorbar, cmap=my_cmap
+                np.log10(abs(data).sum(axis=0)),
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax1.imshow(
-                np.log10(abs(data).sum(axis=1)), vmin=0, vmax=max_colorbar, cmap=my_cmap
+                np.log10(abs(data).sum(axis=1)),
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax2.imshow(
-                np.log10(abs(data).sum(axis=2)), vmin=0, vmax=max_colorbar, cmap=my_cmap
+                np.log10(abs(data).sum(axis=2)),
+                vmin=0,
+                vmax=max_colorbar,
+                cmap=prm["colormap"],
             )
             ax3.set_visible(False)
             ax0.axis("scaled")
@@ -1133,7 +1071,7 @@ def run(prm):
             plt.tight_layout()
             plt.connect("key_press_event", press_key)
             plt.connect("button_press_event", on_click)
-            fig_mask.set_facecolor(background_plot)
+            fig_mask.set_facecolor(prm["background_plot"])
             plt.show()
 
             mask[np.nonzero(updated_mask)] = 1
@@ -1158,7 +1096,7 @@ def run(prm):
         ###############################################
         # mask or median filter isolated empty pixels #
         ###############################################
-        if median_filter in {"mask_isolated", "interp_isolated"}:
+        if prm["median_filter"] in {"mask_isolated", "interp_isolated"}:
             print("\nFiltering isolated pixels")
             nb_pix = 0
             for idx in range(
@@ -1166,12 +1104,12 @@ def run(prm):
             ):  # filter only frames whith data (not padded)
                 data[idx, :, :], processed_pix, mask[idx, :, :] = util.mean_filter(
                     data=data[idx, :, :],
-                    nb_neighbours=prm.get("median_filter_order", 7),
+                    nb_neighbours=prm["median_filter_order"],
                     mask=mask[idx, :, :],
-                    interpolate=median_filter,
+                    interpolate=prm["median_filter"],
                     min_count=3,
-                    debugging=debug,
-                    cmap=my_cmap,
+                    debugging=prm["debug"],
+                    cmap=prm["colormap"],
                 )
                 nb_pix += processed_pix
                 sys.stdout.write(
@@ -1179,7 +1117,7 @@ def run(prm):
                 )
                 sys.stdout.flush()
             print("\nTotal number of filtered pixels: ", nb_pix)
-        elif median_filter == "median":  # apply median filter
+        elif prm["median_filter"] == "median":  # apply median filter
             print("\nApplying median filtering")
             for idx in range(
                 pad_width[0], nz - pad_width[1]
@@ -1191,10 +1129,10 @@ def run(prm):
         ##########################
         # apply photon threshold #
         ##########################
-        if photon_threshold != 0:
-            mask[data < photon_threshold] = 1
-            data[data < photon_threshold] = 0
-            print("\nApplying photon threshold < ", photon_threshold)
+        if prm["photon_threshold"] != 0:
+            mask[data < prm["photon_threshold"]] = 1
+            data[data < prm["photon_threshold"]] = 0
+            print("\nApplying photon threshold < ", prm["photon_threshold"])
 
         ################################################
         # check for nans and infs in the data and mask #
@@ -1210,7 +1148,7 @@ def run(prm):
         # debugging plots  #
         ####################
         plt.ion()
-        if debug:
+        if prm["debug"]:
             z0, y0, x0 = center_of_mass(data)
             fig, _, _ = gu.multislices_plot(
                 data,
@@ -1222,7 +1160,7 @@ def run(prm):
                 slice_position=[int(z0), int(y0), int(x0)],
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1231,7 +1169,7 @@ def run(prm):
                 + comment
                 + ".png"
             )
-            if not flag_interact:
+            if not prm["flag_interact"]:
                 plt.close(fig)
 
             fig, _, _ = gu.multislices_plot(
@@ -1243,7 +1181,7 @@ def run(prm):
                 title="Masked data",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1252,7 +1190,7 @@ def run(prm):
                 + comment
                 + ".png"
             )
-            if not flag_interact:
+            if not prm["flag_interact"]:
                 plt.close(fig)
 
             fig, _, _ = gu.multislices_plot(
@@ -1265,14 +1203,14 @@ def run(prm):
                 title="Mask",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
             fig.savefig(
                 setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
                 f"{setup.detector.binning[0]}_{setup.detector.binning[1]}_"
                 f"{setup.detector.binning[2]}" + comment + ".png"
             )
-            if not flag_interact:
+            if not prm["flag_interact"]:
                 plt.close(fig)
 
         ##################################################
@@ -1280,13 +1218,19 @@ def run(prm):
         # plane was already binned when loading the data #
         ##################################################
         if (
-            setup.detector.binning[0] != 1 and not reload_orthogonal
+            setup.detector.binning[0] != 1 and not prm["reload_orthogonal"]
         ):  # data was already binned for reload_orthogonal
             data = util.bin_data(
-                data, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
+                data,
+                (setup.detector.binning[0], 1, 1),
+                debugging=False,
+                cmap=prm["colormap"],
             )
             mask = util.bin_data(
-                mask, (setup.detector.binning[0], 1, 1), debugging=False, cmap=my_cmap
+                mask,
+                (setup.detector.binning[0], 1, 1),
+                debugging=False,
+                cmap=prm["colormap"],
             )
             mask[np.nonzero(mask)] = 1
             if not prm["use_rawdata"] and len(q_values) != 0:
@@ -1309,10 +1253,16 @@ def run(prm):
             array_shape=data.shape, crop_shape=final_shape, pivot=com
         )
         data = util.crop_pad(
-            data, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+            data,
+            output_shape=final_shape,
+            crop_center=crop_center,
+            cmap=prm["colormap"],
         )
         mask = util.crop_pad(
-            mask, output_shape=final_shape, crop_center=crop_center, cmap=my_cmap
+            mask,
+            output_shape=final_shape,
+            crop_center=crop_center,
+            cmap=prm["colormap"],
         )
         print("\nData size after considering FFT shape requirements:", data.shape)
         nz, ny, nx = data.shape
@@ -1322,21 +1272,21 @@ def run(prm):
         # save final data and mask #
         ############################
         print("\nSaving directory:", setup.detector.savedir)
-        if prm.get("save_as_int", False):
+        if prm["save_as_int"]:
             data = data.astype(int)
         print("Data type before saving:", data.dtype)
         mask[np.nonzero(mask)] = 1
         mask = mask.astype(int)
         print("Mask type before saving:", mask.dtype)
         if not prm["use_rawdata"] and len(q_values) != 0:
-            if save_to_npz:
+            if prm["save_to_npz"]:
                 np.savez_compressed(
                     setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
                     qx=qx,
                     qz=qz,
                     qy=qy,
                 )
-            if save_to_mat:
+            if prm["save_to_mat"]:
                 savemat(setup.detector.savedir + f"S{scan_nb}_qx.mat", {"qx": qx})
                 savemat(setup.detector.savedir + f"S{scan_nb}_qz.mat", {"qz": qz})
                 savemat(setup.detector.savedir + f"S{scan_nb}_qy.mat", {"qy": qy})
@@ -1351,7 +1301,7 @@ def run(prm):
                 is_orthogonal=True,
                 levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                 reciprocal_space=True,
-                cmap=my_cmap,
+                cmap=prm["colormap"],
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1361,7 +1311,7 @@ def run(prm):
             )
             plt.close(fig)
 
-        if save_to_npz:
+        if prm["save_to_npz"]:
             np.savez_compressed(
                 setup.detector.savedir + f"S{scan_nb}_pynx" + comment, data=data
             )
@@ -1369,7 +1319,7 @@ def run(prm):
                 setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment, mask=mask
             )
 
-        if save_to_mat:
+        if prm["save_to_mat"]:
             # save to .mat, the new order is x y z (outboard, vertical up, downstream)
             savemat(
                 setup.detector.savedir + f"S{scan_nb}_data.mat",
@@ -1404,7 +1354,7 @@ def run(prm):
                 )
                 out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
             try:
-                out.create_dataset("bragg_peak", data=bragg_peak)
+                out.create_dataset("bragg_peak", data=prm["bragg_peak"])
             except TypeError:
                 print("Bragg peak not computed.")
             out.create_dataset("q", data=q)
@@ -1430,10 +1380,10 @@ def run(prm):
             title="Final data",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=my_cmap,
+            cmap=prm["colormap"],
         )
         fig.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
-        if not flag_interact:
+        if not prm["flag_interact"]:
             plt.close(fig)
 
         fig, _, _ = gu.multislices_plot(
@@ -1446,10 +1396,10 @@ def run(prm):
             title="Final mask",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=my_cmap,
+            cmap=prm["colormap"],
         )
         fig.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
-        if not flag_interact:
+        if not prm["flag_interact"]:
             plt.close(fig)
 
         del data, mask
