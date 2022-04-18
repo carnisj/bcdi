@@ -12,14 +12,18 @@ Validation of configuration parameters.
 The validation is performed only on the expected parameters. Other parameters are simply
 discarded.
 """
+from abc import ABC, abstractmethod
 import copy
 
 import colorcet as cc
 from dataclasses import dataclass, field
+import matplotlib
 from numbers import Number, Real
 import numpy as np
 import os
 from typing import Any, Dict, Optional, Tuple
+
+from bcdi.graph.colormap import ColormapFactory
 import bcdi.utils.validation as valid
 
 
@@ -39,7 +43,7 @@ class ParameterError(Exception):
 
 
 @dataclass
-class ConfigChecker:
+class ConfigChecker(ABC):
     """Validate and configure parameters."""
 
     initial_params: Dict[str, Any]
@@ -61,6 +65,7 @@ class ConfigChecker:
 
         self._assign_default_value()
         self._check_mandatory_params()
+        self._configure_params()
         return self._checked_params
 
     def _assign_default_value(self) -> None:
@@ -96,6 +101,73 @@ class ConfigChecker:
                 _ = self.initial_params[key]
             except KeyError:
                 print(f"Required parameter {key} not defined")
+
+    @abstractmethod
+    def _configure_params(self) -> None:
+        """
+        Configure preprocessing-dependent parameters.
+
+        Override this method in the child class
+        """
+        raise NotImplementedError
+
+
+@dataclass
+class PreprocessingChecker(ConfigChecker):
+    """Configure preprocessing-dependent parameters."""
+
+    def _configure_params(self) -> None:
+        """Hard-code processing-dependent parameter configuration."""
+
+
+@dataclass
+class PostprocessingChecker(ConfigChecker):
+    """Configure postprocessing-dependent parameters."""
+
+    def _configure_params(self) -> None:
+        """Hard-code processing-dependent parameter configuration."""
+        if self.initial_params["simulation"]:
+            self._checked_params["invert_phase"] = False
+            self._checked_params["correct_refraction"] = False
+        if self._checked_params["invert_phase"]:
+            self._checked_params["phase_fieldname"] = "disp"
+        else:
+            self._checked_params["phase_fieldname"] = "phase"
+
+        if self.initial_params["data_frame"] == "detector":
+            self._checked_params["is_orthogonal"] = False
+        else:
+            self._checked_params["is_orthogonal"] = True
+
+        if (
+            self.initial_params["data_frame"] == "crystal"
+            and self.initial_params["save_frame"] != "crystal"
+        ):
+            print(
+                "data already in the crystal frame before phase retrieval,"
+                " it is impossible to come back to the laboratory "
+                "frame, parameter 'save_frame' defaulted to 'crystal'"
+            )
+            self._checked_params["save_frame"] = "crystal"
+
+        ###############
+        # Check backend #
+        ###############
+        try:
+            matplotlib.use(self.initial_params["backend"])
+        except ModuleNotFoundError:
+            print(f"{self.initial_params['backend']} backend is not supported.")
+
+        ###################
+        # define colormap #
+        ###################
+        if self.initial_params.get("grey_background"):
+            bad_color = "0.7"
+        else:
+            bad_color = "1.0"  # white background
+        self._checked_params["colormap"] = ColormapFactory(
+            bad_color=bad_color, colormap=self.initial_params["colormap"]
+        ).generate_cmap()
 
 
 def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
