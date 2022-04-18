@@ -93,7 +93,8 @@ class ConfigChecker(ABC):
         [roi_detector[0], roi_detector[1], roi_detector[2], roi_detector[3]].
 
         :return: the calculated region of interest [Vstart, Vstop, Hstart, Hstop] or
-         None."""
+         None.
+        """
         roi = copy.deepcopy(self.initial_params.get("roi_detector"))
 
         # update the ROI
@@ -109,9 +110,10 @@ class ConfigChecker(ABC):
                 valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
                 roi[2] = center_roi_x - self.initial_params["roi_detector"][2]
                 roi[3] = center_roi_x + self.initial_params["roi_detector"][3]
+
+            return [int(val) for val in roi]
         else:
-            roi = None
-        return roi
+            return None
 
     def _assign_default_value(self) -> None:
         """Assign default values to parameters."""
