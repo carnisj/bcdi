@@ -90,7 +90,7 @@ rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outbo
 # "inplane" for a sample rotation
 # around y vertical up, does not matter for energy scan
 #  "inplane" e.g. phi @ ID01, mu @ SIXS "outofplane" e.g. eta @ ID01
-sdd: 0.50678  # 1.26  # sample to detector distance in m
+detector_distance: 0.50678  # 1.26  # sample to detector distance in m
 energy: 9000  # x-ray energy in eV, 6eV offset at ID01
 beam_direction: [1, 0, 0]
 # incident beam along z, in the frame (z downstream, y vertical up, x outboard)

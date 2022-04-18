@@ -15,7 +15,6 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
-import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -24,22 +23,15 @@ import tkinter as tk
 from tkinter import filedialog
 from typing import Any, Dict
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_roi
 from bcdi.experiment.setup import Setup
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
+from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
 from bcdi.utils.parameters import PostprocessingChecker
 import bcdi.utils.utilities as util
-
-AXIS_TO_ARRAY = {
-    "x": np.array([1, 0, 0]),
-    "y": np.array([0, 1, 0]),
-    "z": np.array([0, 0, 1]),
-}  # in xyz order
 
 
 def run(prm: Dict[str, Any]) -> None:
@@ -61,7 +53,7 @@ def run(prm: Dict[str, Any]) -> None:
             "apodization_window": "blackman",
             "averaging_space": "reciprocal_space",
             "backend": "Qt5Agg",
-            "background": None,
+            "background_file": None,
             "beam_direction": [1, 0, 0],
             "bragg_peak": None,
             "centering_method": "max_com",
@@ -74,15 +66,16 @@ def run(prm: Dict[str, Any]) -> None:
             "custom_scan": False,
             "data_dir": None,
             "debug": False,
+            "detector_distance": None,
             "direct_beam": None,
             "dirbeam_detector_angles": None,
             "energy": None,
             "fix_voxel": None,
-            "flatfield": None,
+            "flatfield_file": None,
             "frames_pattern": None,
             "get_temperature": False,
             "half_width_avg_phase": 0,
-            "hotpix_array": None,
+            "hotpixels_file": None,
             "inplane_angle": None,
             "invert_phase": True,
             "is_series": False,
@@ -109,7 +102,6 @@ def run(prm: Dict[str, Any]) -> None:
             "save": True,
             "save_rawdata": False,
             "save_support": False,
-            "sdd": None,
             "sort_method": "variance/mean",
             "strain_method": "default",
             "strain_range": 0.002,
@@ -141,8 +133,6 @@ def run(prm: Dict[str, Any]) -> None:
         ),
     ).check_config()
 
-    roi_detector = create_roi(dic=prm)
-
     ############################
     # start looping over scans #
     ############################
@@ -163,7 +153,7 @@ def run(prm: Dict[str, Any]) -> None:
             inplane_angle=prm["inplane_angle"],
             tilt_angle=prm["tilt_angle"],
             rocking_angle=prm["rocking_angle"],
-            distance=prm["sdd"],
+            distance=prm["detector_distance"],
             sample_offsets=prm["sample_offsets"],
             actuators=prm["actuators"],
             custom_scan=prm["custom_scan"],
@@ -173,7 +163,7 @@ def run(prm: Dict[str, Any]) -> None:
             is_series=prm["is_series"],
             detector_name=prm["detector"],
             template_imagefile=prm["template_imagefile"][scan_idx],
-            roi=roi_detector,
+            roi=prm["roi_detector"],
             binning=prm["phasing_binning"],
             preprocessing_binning=prm["preprocessing_binning"],
             custom_pixelsize=prm["custom_pixelsize"],
@@ -437,8 +427,7 @@ def run(prm: Dict[str, Any]) -> None:
         ##############################################################################
         # average the phase over a window or apodize to reduce noise in strain plots #
         ##############################################################################
-        half_width_avg_phase = prm["half_width_avg_phase"]
-        if half_width_avg_phase != 0:
+        if prm["half_width_avg_phase"] != 0:
             bulk = pu.find_bulk(
                 amp=amp,
                 support_threshold=prm["isosurface_strain"],
@@ -449,14 +438,14 @@ def run(prm: Dict[str, Any]) -> None:
             phase = pu.mean_filter(
                 array=phase,
                 support=bulk,
-                half_width=half_width_avg_phase,
+                half_width=prm["half_width_avg_phase"],
                 cmap=prm["colormap"],
             )
             del bulk
             gc.collect()
 
-        if half_width_avg_phase != 0:
-            comment = comment + "_avg" + str(2 * half_width_avg_phase + 1)
+        if prm["half_width_avg_phase"] != 0:
+            comment = comment + "_avg" + str(2 * prm["half_width_avg_phase"] + 1)
 
         gridz, gridy, gridx = np.meshgrid(
             np.arange(0, numz, 1),
@@ -652,9 +641,9 @@ def run(prm: Dict[str, Any]) -> None:
                         setup=setup,
                         frames_pattern=prm["frames_pattern"],
                         bin_during_loading=False,
-                        flatfield=prm["flatfield"],
-                        hotpixels=prm["hotpix_array"],
-                        background=prm["background"],
+                        flatfield=prm["flatfield_file"],
+                        hotpixels=prm["hotpixels_file"],
+                        background=prm["background_file"],
                         normalize=prm["normalize_flux"],
                     )
                     prm["bragg_peak"] = bu.find_bragg(
@@ -1143,7 +1132,8 @@ def run(prm: Dict[str, Any]) -> None:
         pixel_spacing = [prm["tick_spacing"] / vox for vox in voxel_size]
         print(
             "\nPhase extent without / with thresholding the modulus "
-            f"(threshold={prm['isosurface_strain']}): {phase.max()-phase.min():.2f} rad, "
+            f"(threshold={prm['isosurface_strain']}): "
+            f"{phase.max()-phase.min():.2f} rad, "
             f"{phase[np.nonzero(bulk)].max()-phase[np.nonzero(bulk)].min():.2f} rad"
         )
         piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
@@ -1287,9 +1277,12 @@ def run(prm: Dict[str, Any]) -> None:
         )
         fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
         fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
-        if half_width_avg_phase > 0:
+        if prm["half_width_avg_phase"] > 0:
             fig.text(
-                0.60, 0.10, f"Averaging over {2*half_width_avg_phase+1} pixels", size=20
+                0.60,
+                0.10,
+                f"Averaging over {2*prm['half_width_avg_phase']+1} pixels",
+                size=20,
             )
         else:
             fig.text(0.60, 0.10, "No phase averaging", size=20)
@@ -1324,9 +1317,12 @@ def run(prm: Dict[str, Any]) -> None:
         )
         fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
         fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
-        if half_width_avg_phase > 0:
+        if prm["half_width_avg_phase"] > 0:
             fig.text(
-                0.60, 0.10, f"Averaging over {2*half_width_avg_phase+1} pixels", size=20
+                0.60,
+                0.10,
+                f"Averaging over {2*prm['half_width_avg_phase']+1} pixels",
+                size=20,
             )
         else:
             fig.text(0.60, 0.10, "No phase averaging", size=20)

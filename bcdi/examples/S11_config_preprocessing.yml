@@ -158,7 +158,7 @@ sample_offsets: [90, 0, 0]
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-sdd: 0.50678  # in m, sample to detector distance in m
+detector_distance: 0.50678  # in m, sample to detector distance in m
 energy: 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors: None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
