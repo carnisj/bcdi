@@ -141,26 +141,6 @@ def run(prm: Dict[str, Any]) -> None:
         ),
     ).check_config()
 
-    ################################
-    # assign often used parameters #
-    ################################
-    bragg_peak = prm["bragg_peak"]
-    debug = prm["debug"]
-    original_size = prm["original_size"]
-    fix_voxel = prm["fix_voxel"]
-    save = prm["save"]
-    tick_spacing = prm["tick_spacing"]
-    tick_direction = prm["tick_direction"]
-    tick_length = prm["tick_length"]
-    tick_width = prm["tick_width"]
-    correct_refraction = prm["correct_refraction"]
-    threshold_unwrap_refraction = prm["threshold_unwrap_refraction"]
-    threshold_gradient = prm["threshold_gradient"]
-    offset_method = prm["offset_method"]
-    phase_offset = prm["phase_offset"]
-    offset_origin = prm["phase_offset_origin"]
-    sort_method = prm["sort_method"]
-    correlation_threshold = prm["correlation_threshold"]
     roi_detector = create_roi(dic=prm)
 
     ############################
@@ -263,8 +243,7 @@ def run(prm: Dict[str, Any]) -> None:
         print("\n###############\nProcessing data\n###############")
         nz, ny, nx = obj.shape
         print("Initial data size: (", nz, ",", ny, ",", nx, ")")
-        if not original_size:
-            original_size = obj.shape
+        original_size = prm["original_size"] if prm["original_size"] else obj.shape
         print("FFT size before accounting for phasing_binning", original_size)
         original_size = tuple(
             [
@@ -295,12 +274,15 @@ def run(prm: Dict[str, Any]) -> None:
         # find the best reconstruction, based on mean amplitude and variance #
         ######################################################################
         if nbfiles > 1:
-            print("\nTrying to find the best reconstruction\nSorting by ", sort_method)
+            print(
+                "\nTrying to find the best reconstruction\nSorting by ",
+                prm["sort_method"],
+            )
             sorted_obj = pu.sort_reconstruction(
                 file_path=file_path,
                 amplitude_threshold=prm["isosurface_strain"],
                 data_range=(zrange, yrange, xrange),
-                sort_method=sort_method,
+                sort_method=prm["sort_method"],
             )
         else:
             sorted_obj = [0]
@@ -337,7 +319,10 @@ def run(prm: Dict[str, Any]) -> None:
 
             # use the range of interest defined above
             obj = util.crop_pad(
-                obj, [2 * zrange, 2 * yrange, 2 * xrange], debugging=False, cmap=prm["colormap"]
+                obj,
+                [2 * zrange, 2 * yrange, 2 * xrange],
+                debugging=False,
+                cmap=prm["colormap"],
             )
 
             # align with average reconstruction
@@ -350,12 +335,12 @@ def run(prm: Dict[str, Any]) -> None:
                 ref_obj=ref_obj,
                 obj=obj,
                 support_threshold=0.25,
-                correlation_threshold=correlation_threshold,
+                correlation_threshold=prm["correlation_threshold"],
                 aligning_option="dft",
                 space=prm["averaging_space"],
                 reciprocal_space=False,
                 is_orthogonal=prm["is_orthogonal"],
-                debugging=debug,
+                debugging=prm["debug"],
                 cmap=prm["colormap"],
             )
             avg_counter = avg_counter + flag_avg
@@ -371,8 +356,8 @@ def run(prm: Dict[str, Any]) -> None:
         ################
         phase, extent_phase = pu.unwrap(
             avg_obj,
-            support_threshold=threshold_unwrap_refraction,
-            debugging=debug,
+            support_threshold=prm["threshold_unwrap_refraction"],
+            debugging=prm["debug"],
             reciprocal_space=False,
             is_orthogonal=prm["is_orthogonal"],
             cmap=prm["colormap"],
@@ -386,7 +371,7 @@ def run(prm: Dict[str, Any]) -> None:
         phase = util.wrap(
             phase, start_angle=-extent_phase / 2, range_angle=extent_phase
         )
-        if debug:
+        if prm["debug"]:
             gu.multislices_plot(
                 phase,
                 width_z=2 * zrange,
@@ -408,13 +393,13 @@ def run(prm: Dict[str, Any]) -> None:
             initial_shape=original_size,
             method="gradient",
             amplitude_threshold=prm["isosurface_strain"],
-            threshold_gradient=threshold_gradient,
+            threshold_gradient=prm["threshold_gradient"],
             cmap=prm["colormap"],
         )
         del avg_obj
         gc.collect()
 
-        if debug:
+        if prm["debug"]:
             gu.multislices_plot(
                 phase,
                 width_z=2 * zrange,
@@ -435,11 +420,11 @@ def run(prm: Dict[str, Any]) -> None:
         phase = pu.remove_offset(
             array=phase,
             support=support,
-            offset_method=offset_method,
-            phase_offset=phase_offset,
-            offset_origin=offset_origin,
+            offset_method=prm["offset_method"],
+            phase_offset=prm["phase_offset"],
+            offset_origin=prm["phase_offset_origin"],
             title="Phase",
-            debugging=debug,
+            debugging=prm["debug"],
             cmap=prm["colormap"],
         )
         del support
@@ -462,7 +447,10 @@ def run(prm: Dict[str, Any]) -> None:
             )
             # the phase should be averaged only in the support defined by the isosurface
             phase = pu.mean_filter(
-                array=phase, support=bulk, half_width=half_width_avg_phase, cmap=prm["colormap"]
+                array=phase,
+                support=bulk,
+                half_width=half_width_avg_phase,
+                cmap=prm["colormap"],
             )
             del bulk
             gc.collect()
@@ -606,7 +594,7 @@ def run(prm: Dict[str, Any]) -> None:
         print(f"Wavevector transfer: {qnorm:.4f} 1/A")
         print(f"Atomic planar distance: {planar_dist:.4f} A")
         print(f"\nAngle between q_lab and {prm['ref_axis_q']} = {angle:.2f} deg")
-        if debug:
+        if prm["debug"]:
             print(
                 "Angle with y in zy plane = "
                 f"{np.arctan(q_lab[0]/q_lab[1])*180/np.pi:.2f} deg"
@@ -627,10 +615,10 @@ def run(prm: Dict[str, Any]) -> None:
         #######################
         print("\nShape before orthogonalization", avg_obj.shape, "\n")
         if prm["data_frame"] == "detector":
-            if debug:
+            if prm["debug"]:
                 phase, _ = pu.unwrap(
                     avg_obj,
-                    support_threshold=threshold_unwrap_refraction,
+                    support_threshold=prm["threshold_unwrap_refraction"],
                     debugging=True,
                     reciprocal_space=False,
                     is_orthogonal=False,
@@ -654,7 +642,10 @@ def run(prm: Dict[str, Any]) -> None:
             if not prm["outofplane_angle"] and not prm["inplane_angle"]:
                 print("Trying to correct detector angles using the direct beam")
                 # corrected detector angles not provided
-                if bragg_peak is None and setup.detector.template_imagefile is not None:
+                if (
+                    prm["bragg_peak"] is None
+                    and setup.detector.template_imagefile is not None
+                ):
                     # Bragg peak position not provided, find it from the data
                     data, _, _, _ = setup.loader.load_check_dataset(
                         scan_number=scan_nb,
@@ -666,17 +657,17 @@ def run(prm: Dict[str, Any]) -> None:
                         background=prm["background"],
                         normalize=prm["normalize_flux"],
                     )
-                    bragg_peak = bu.find_bragg(
+                    prm["bragg_peak"] = bu.find_bragg(
                         data=data,
                         peak_method="maxcom",
                         roi=setup.detector.roi,
                         binning=None,
                     )
                     roi_center = (
-                        bragg_peak[0],
-                        bragg_peak[1]
+                        prm["bragg_peak"][0],
+                        prm["bragg_peak"][1]
                         - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                        bragg_peak[2]
+                        prm["bragg_peak"][2]
                         - setup.detector.roi[2],  # no binning as in bu.find_bragg
                     )
                     bu.show_rocking_curve(
@@ -685,7 +676,7 @@ def run(prm: Dict[str, Any]) -> None:
                         tilt_values=setup.incident_angles,
                         savedir=setup.detector.savedir,
                     )
-                setup.correct_detector_angles(bragg_peak_position=bragg_peak)
+                setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
                 prm["outofplane_angle"] = setup.outofplane_angle
                 prm["inplane_angle"] = setup.inplane_angle
 
@@ -693,7 +684,7 @@ def run(prm: Dict[str, Any]) -> None:
                 arrays=avg_obj,
                 q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
                 initial_shape=original_size,
-                voxel_size=fix_voxel,
+                voxel_size=prm["fix_voxel"],
                 reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
                 fill_value=0,
                 debugging=True,
@@ -732,8 +723,8 @@ def run(prm: Dict[str, Any]) -> None:
                 f"direct space voxel size from q values: ({dz_real:.2f} nm,"
                 f" {dy_real:.2f} nm, {dx_real:.2f} nm)"
             )
-            if fix_voxel:
-                voxel_size = fix_voxel
+            if prm["fix_voxel"]:
+                voxel_size = prm["fix_voxel"]
                 print(
                     f"Direct space pixel size for the interpolation: {voxel_size} (nm)"
                 )
@@ -788,7 +779,7 @@ def run(prm: Dict[str, Any]) -> None:
         print("\nPhase unwrapping")
         phase, extent_phase = pu.unwrap(
             obj_ortho,
-            support_threshold=threshold_unwrap_refraction,
+            support_threshold=prm["threshold_unwrap_refraction"],
             debugging=True,
             reciprocal_space=False,
             is_orthogonal=True,
@@ -807,12 +798,12 @@ def run(prm: Dict[str, Any]) -> None:
         ########################################
         # refraction and absorption correction #
         ########################################
-        if correct_refraction:  # or correct_absorption:
+        if prm["correct_refraction"]:  # or correct_absorption:
             bulk = pu.find_bulk(
                 amp=amp,
-                support_threshold=threshold_unwrap_refraction,
+                support_threshold=prm["threshold_unwrap_refraction"],
                 method=prm["optical_path_method"],
-                debugging=debug,
+                debugging=prm["debug"],
                 cmap=prm["colormap"],
             )
 
@@ -836,19 +827,27 @@ def run(prm: Dict[str, Any]) -> None:
 
             # calculate the optical path of the incoming wavevector
             path_in = pu.get_opticalpath(
-                support=bulk, direction="in", k=kin, debugging=debug, cmap=prm["colormap"]
+                support=bulk,
+                direction="in",
+                k=kin,
+                debugging=prm["debug"],
+                cmap=prm["colormap"],
             )  # path_in already in nm
 
             # calculate the optical path of the outgoing wavevector
             path_out = pu.get_opticalpath(
-                support=bulk, direction="out", k=kout, debugging=debug, cmap=prm["colormap"]
+                support=bulk,
+                direction="out",
+                k=kout,
+                debugging=prm["debug"],
+                cmap=prm["colormap"],
             )  # path_our already in nm
 
             optical_path = path_in + path_out
             del path_in, path_out
             gc.collect()
 
-            if correct_refraction:
+            if prm["correct_refraction"]:
                 phase_correction = (
                     2
                     * np.pi
@@ -911,8 +910,8 @@ def run(prm: Dict[str, Any]) -> None:
             initial_shape=original_size,
             method=prm["phase_ramp_removal"],
             amplitude_threshold=prm["isosurface_strain"],
-            threshold_gradient=threshold_gradient,
-            debugging=debug,
+            threshold_gradient=prm["threshold_gradient"],
+            debugging=prm["debug"],
             cmap=prm["colormap"],
         )
 
@@ -925,11 +924,11 @@ def run(prm: Dict[str, Any]) -> None:
         phase = pu.remove_offset(
             array=phase,
             support=support,
-            offset_method=offset_method,
-            phase_offset=phase_offset,
-            offset_origin=offset_origin,
+            offset_method=prm["offset_method"],
+            phase_offset=prm["phase_offset"],
+            offset_origin=prm["phase_offset_origin"],
             title="Orthogonal phase",
-            debugging=debug,
+            debugging=prm["debug"],
             reciprocal_space=False,
             is_orthogonal=True,
             cmap=prm["colormap"],
@@ -952,7 +951,7 @@ def run(prm: Dict[str, Any]) -> None:
             reference_axis=prm["ref_axis_q"],
             extent_phase=extent_phase,
             method=prm["strain_method"],
-            debugging=debug,
+            debugging=prm["debug"],
             cmap=prm["colormap"],
         )
 
@@ -1062,7 +1061,7 @@ def run(prm: Dict[str, Any]) -> None:
             method="threshold",
             cmap=prm["colormap"],
         )
-        if save:
+        if prm["save"]:
             prm["comment"] = comment
             np.savez_compressed(
                 f"{setup.detector.savedir}S{scan_nb}_"
@@ -1105,14 +1104,14 @@ def run(prm: Dict[str, Any]) -> None:
                     "S"
                     + str(scan_nb)
                     + "_amp-"
-                    + prm['phase_fieldname']
+                    + prm["phase_fieldname"]
                     + "-strain"
                     + comment
                     + ".vti",
                 ),
                 voxel_size=voxel_size,
                 tuple_array=(amp, bulk, phase, strain),
-                tuple_fieldnames=("amp", "bulk", prm['phase_fieldname'], "strain"),
+                tuple_fieldnames=("amp", "bulk", prm["phase_fieldname"], "strain"),
                 amplitude_threshold=0.01,
             )
 
@@ -1141,7 +1140,7 @@ def run(prm: Dict[str, Any]) -> None:
         ##############################
         # plot slices of the results #
         ##############################
-        pixel_spacing = [tick_spacing / vox for vox in voxel_size]
+        pixel_spacing = [prm["tick_spacing"] / vox for vox in voxel_size]
         print(
             "\nPhase extent without / with thresholding the modulus "
             f"(threshold={prm['isosurface_strain']}): {phase.max()-phase.min():.2f} rad, "
@@ -1195,7 +1194,7 @@ def run(prm: Dict[str, Any]) -> None:
             size=20,
         )
         plt.pause(0.1)
-        if save:
+        if prm["save"]:
             fig.savefig(
                 setup.detector.savedir + "S" + str(scan_nb) + "_bulk" + comment + ".png"
             )
@@ -1207,9 +1206,9 @@ def run(prm: Dict[str, Any]) -> None:
             title="Normalized orthogonal amp",
             vmin=0,
             vmax=1,
-            tick_direction=tick_direction,
-            tick_width=tick_width,
-            tick_length=tick_length,
+            tick_direction=prm["tick_direction"],
+            tick_width=prm["tick_width"],
+            tick_length=prm["tick_length"],
             pixel_spacing=pixel_spacing,
             plot_colorbar=True,
             is_orthogonal=True,
@@ -1224,10 +1223,12 @@ def run(prm: Dict[str, Any]) -> None:
             f"{voxel_size[2]:.1f}) (nm)",
             size=20,
         )
-        fig.text(0.60, 0.35, f"Ticks spacing={tick_spacing} nm", size=20)
+        fig.text(0.60, 0.35, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
         fig.text(0.60, 0.30, f"Volume={int(volume)} nm3", size=20)
-        fig.text(0.60, 0.25, "Sorted by " + sort_method, size=20)
-        fig.text(0.60, 0.20, f"correlation threshold={correlation_threshold}", size=20)
+        fig.text(0.60, 0.25, "Sorted by " + prm["sort_method"], size=20)
+        fig.text(
+            0.60, 0.20, f"correlation threshold={prm['correlation_threshold']}", size=20
+        )
         fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
         fig.text(0.60, 0.10, f"Planar distance={planar_dist:.5f} nm", size=20)
         if prm["get_temperature"]:
@@ -1240,7 +1241,7 @@ def run(prm: Dict[str, Any]) -> None:
                 material="Pt",
             )
             fig.text(0.60, 0.05, f"Estimated T={temperature} C", size=20)
-        if save:
+        if prm["save"]:
             fig.savefig(setup.detector.savedir + f"S{scan_nb}_amp" + comment + ".png")
 
         # amplitude histogram
@@ -1251,8 +1252,8 @@ def run(prm: Dict[str, Any]) -> None:
             labelbottom=True,
             labelleft=True,
             direction="out",
-            length=tick_length,
-            width=tick_width,
+            length=prm["tick_length"],
+            width=prm["tick_width"],
         )
         ax.spines["right"].set_linewidth(1.5)
         ax.spines["left"].set_linewidth(1.5)
@@ -1267,10 +1268,10 @@ def run(prm: Dict[str, Any]) -> None:
             title="Orthogonal displacement",
             vmin=-prm["phase_range"],
             vmax=prm["phase_range"],
-            tick_direction=tick_direction,
+            tick_direction=prm["tick_direction"],
             cmap=prm["colormap"],
-            tick_width=tick_width,
-            tick_length=tick_length,
+            tick_width=prm["tick_width"],
+            tick_length=prm["tick_length"],
             pixel_spacing=pixel_spacing,
             plot_colorbar=True,
             is_orthogonal=True,
@@ -1284,7 +1285,7 @@ def run(prm: Dict[str, Any]) -> None:
             f"{voxel_size[2]:.1f}) (nm)",
             size=20,
         )
-        fig.text(0.60, 0.20, f"Ticks spacing={tick_spacing} nm", size=20)
+        fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
         fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
         if half_width_avg_phase > 0:
             fig.text(
@@ -1292,7 +1293,7 @@ def run(prm: Dict[str, Any]) -> None:
             )
         else:
             fig.text(0.60, 0.10, "No phase averaging", size=20)
-        if save:
+        if prm["save"]:
             fig.savefig(
                 setup.detector.savedir + f"S{scan_nb}_displacement" + comment + ".png"
             )
@@ -1304,9 +1305,9 @@ def run(prm: Dict[str, Any]) -> None:
             title="Orthogonal strain",
             vmin=-prm["strain_range"],
             vmax=prm["strain_range"],
-            tick_direction=tick_direction,
-            tick_width=tick_width,
-            tick_length=tick_length,
+            tick_direction=prm["tick_direction"],
+            tick_width=prm["tick_width"],
+            tick_length=prm["tick_length"],
             plot_colorbar=True,
             cmap=prm["colormap"],
             pixel_spacing=pixel_spacing,
@@ -1321,7 +1322,7 @@ def run(prm: Dict[str, Any]) -> None:
             f"{voxel_size[1]:.1f}, {voxel_size[2]:.1f}) (nm)",
             size=20,
         )
-        fig.text(0.60, 0.20, f"Ticks spacing={tick_spacing} nm", size=20)
+        fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
         fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
         if half_width_avg_phase > 0:
             fig.text(
@@ -1329,7 +1330,7 @@ def run(prm: Dict[str, Any]) -> None:
             )
         else:
             fig.text(0.60, 0.10, "No phase averaging", size=20)
-        if save:
+        if prm["save"]:
             fig.savefig(
                 setup.detector.savedir + f"S{scan_nb}_strain" + comment + ".png"
             )
