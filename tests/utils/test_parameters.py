@@ -6,11 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import matplotlib
+import numpy as np
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 from bcdi.utils.parameters import (
     ConfigChecker,
+    MissingKeyError,
     PreprocessingChecker,
     PostprocessingChecker,
     valid_param,
@@ -63,6 +66,80 @@ class TestConfigChecker(unittest.TestCase):
         correct = [140, 350, -10, 60]
         output = self.checker._create_roi()
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
+
+    def test_assign_default_value_none(self):
+        self.checker._assign_default_value()
+        for key, val in self.checker.initial_params.items():
+            if isinstance(val, (list, tuple, np.ndarray)):
+                self.assertTrue(
+                    all(
+                        item1 == item2
+                        for item1, item2 in zip(
+                            self.checker.initial_params[key],
+                            self.checker._checked_params[key],
+                        )
+                    )
+                )
+            else:
+                self.assertTrue(
+                    self.checker._checked_params[key]
+                    == self.checker.initial_params[key]
+                )
+
+    def test_assign_default_value_list(self):
+        reflection = [5, 2, 1]
+        self.checker.default_values = {"reflection": reflection}
+        self.checker._assign_default_value()
+        self.assertTrue(
+            all(
+                item1 == item2
+                for item1, item2 in zip(
+                    reflection,
+                    self.checker._checked_params["reflection"],
+                )
+            )
+        )
+
+    def test_assign_default_value_undefined_key(self):
+        self.checker.default_values = {"bad_key": True}
+        with self.assertRaises(KeyError):
+            self.checker._assign_default_value()
+
+    def test_check_backend_not_supported(self):
+        self.checker.initial_params["backend"] = "bad_backend"
+        with self.assertRaises(ValueError):
+            self.checker._check_backend()
+
+    def test_check_length_wrong_length(self):
+        self.checker.initial_params["specfile_name"] = ["test.spec", "test2.spec"]
+        with self.assertRaises(ValueError):
+            self.checker._check_length("specfile_name", length=3)
+
+    def test_check_length_unique_value(self):
+        self.checker._check_length("specfile_name", length=3)
+        self.assertTrue(len(self.checker._checked_params["specfile_name"]) == 3)
+
+    def test_check_length_wrong_type(self):
+        self.checker.initial_params["specfile_name"] = "test.spec"
+        with self.assertRaises(TypeError):
+            self.checker._check_length("specfile_name", length=3)
+
+    def test_check_length_none(self):
+        self.checker.initial_params["specfile_name"] = None
+        self.checker._check_length("specfile_name", length=3)
+        self.assertTrue(len(self.checker._checked_params["specfile_name"]) == 3)
+        self.assertTrue(
+            all(val is None for val in self.checker._checked_params["specfile_name"])
+        )
+
+    def test__check_mandatory_params_valid_key(self):
+        self.checker.required_params = ("specfile_name",)
+        self.assertTrue(self.checker._check_mandatory_params() is None)
+
+    def test__check_mandatory_params_key_absent(self):
+        self.checker.required_params = ("required_key",)
+        with self.assertRaises(MissingKeyError):
+            self.checker._check_mandatory_params()
 
 
 class TestParameters(unittest.TestCase):

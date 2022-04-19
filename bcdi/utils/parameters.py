@@ -16,7 +16,6 @@ from abc import ABC, abstractmethod
 import copy
 
 import colorcet as cc
-from dataclasses import dataclass, field
 from logging import Logger
 import matplotlib
 from numbers import Number, Real
@@ -27,6 +26,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.constants import LOGGING_LEVELS
 import bcdi.utils.validation as valid
+
+
+class MissingKeyError(Exception):
+    """Custom Exception for a missing required key in the config dictionary."""
 
 
 class ParameterError(Exception):
@@ -44,21 +47,27 @@ class ParameterError(Exception):
         )
 
 
-@dataclass
 class ConfigChecker(ABC):
     """Validate and configure parameters."""
 
-    initial_params: Dict[str, Any]
-    _checked_params: Dict[str, Any] = field(default_factory=dict)
-    default_values: Dict[str, Any] = field(default_factory=dict)
-    logger: Optional[Logger] = None
-    match_length_params: Tuple = ()
-    _nb_scans: Optional[int] = None
-    required_params: Tuple = ()
+    def __init__(
+        self,
+        initial_params: Dict[str, Any],
+        default_values: Optional[Dict[str, Any]] = None,
+        logger: Optional[Logger] = None,
+        match_length_params: Tuple = (),
+        required_params: Tuple = (),
+    ) -> None:
+        self.initial_params = initial_params
+        self.default_values = default_values
+        self.logger = logger
+        self.match_length_params = match_length_params
+        self.required_params = required_params
+        self._checked_params = copy.deepcopy(self.initial_params)
+        self._nb_scans: Optional[int] = None
 
     def check_config(self) -> Dict[str, Any]:
         """Check if the provided config is consistent."""
-        self._checked_params = copy.deepcopy(self.initial_params)
         if self.initial_params.get("scans") is None:
             raise ValueError("no scan provided")
         self._nb_scans = len(self.initial_params["scans"])
@@ -117,19 +126,20 @@ class ConfigChecker(ABC):
 
     def _assign_default_value(self) -> None:
         """Assign default values to parameters."""
-        for key, value in self.default_values.items():
-            try:
-                self._checked_params[key] = self.initial_params.get(key, value)
-            except KeyError:
-                print(f"key {key} undefined in the configuration")
-                raise
+        if self.default_values is not None:
+            for key, value in self.default_values.items():
+                if key not in self.initial_params:
+                    raise KeyError(f"key {key} undefined in the configuration")
+                self._checked_params[key] = self.default_values.get(key, value)
 
     def _check_backend(self) -> None:
         """Check if the backend is supported."""
         try:
             matplotlib.use(self.initial_params["backend"])
         except ModuleNotFoundError:
-            print(f"{self.initial_params['backend']} backend is not supported.")
+            raise ValueError(
+                f"{self.initial_params['backend']} backend is not supported."
+            )
 
     def _check_length(self, param_name: str, length: int) -> None:
         """Ensure that a parameter as the correct type and length."""
@@ -147,6 +157,8 @@ class ConfigChecker(ABC):
                 f"'{param_name}' should be of length {length}, "
                 f"got {len(param_name)} elements"
             )
+        else:
+            self._checked_params[param_name] = initial_param
 
     def _check_mandatory_params(self) -> None:
         """Check if mandatory parameters are provided."""
@@ -154,7 +166,7 @@ class ConfigChecker(ABC):
             try:
                 _ = self.initial_params[key]
             except KeyError:
-                print(f"Required parameter {key} not defined")
+                raise MissingKeyError(f"Required parameter {key} not defined")
 
     @abstractmethod
     def _configure_params(self) -> None:
@@ -185,7 +197,6 @@ class ConfigChecker(ABC):
             print(message)
 
 
-@dataclass
 class PreprocessingChecker(ConfigChecker):
     """Configure preprocessing-dependent parameters."""
 
@@ -291,7 +302,6 @@ class PreprocessingChecker(ConfigChecker):
         )
 
 
-@dataclass
 class PostprocessingChecker(ConfigChecker):
     """Configure postprocessing-dependent parameters."""
 
