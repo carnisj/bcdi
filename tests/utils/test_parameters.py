@@ -18,6 +18,7 @@ from bcdi.utils.parameters import (
     PostprocessingChecker,
     valid_param,
 )
+from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.parser import ConfigParser
 from tests.config import run_tests
 
@@ -140,6 +141,66 @@ class TestConfigChecker(unittest.TestCase):
         self.checker.required_params = ("required_key",)
         with self.assertRaises(MissingKeyError):
             self.checker._check_mandatory_params()
+
+    def test_create_colormap(self):
+        self.checker._create_colormap()
+        self.assertIsInstance(self.checker._checked_params["colormap"], ColormapFactory)
+        self.assertTrue(self.checker._checked_params["colormap"].colormap == "turbo")
+
+    def test_create_colormap_grey_background(self):
+        self.checker.initial_params["grey_background"] = True
+        self.checker._create_colormap()
+        self.assertTrue(self.checker._checked_params["colormap"].bad_color == "0.7")
+
+    def test_check_config_scans_none(self):
+        self.checker.initial_params["scans"] = None
+        with self.assertRaises(ValueError):
+            self.checker.check_config()
+
+    def test_check_config_scans_instantiation_error(self):
+        with self.assertRaises(NotImplementedError):
+            self.checker.check_config()
+
+
+class TestPostprocessingChecker(unittest.TestCase):
+    """Tests related to the abstract class PostprocessingChecker."""
+
+    def setUp(self) -> None:
+        self.parser = ConfigParser(CONFIG, {})
+        self.args = self.parser.load_arguments()
+        self.checker = PostprocessingChecker(initial_params=self.args)
+
+    def test_check_config(self):
+        out = self.checker.check_config()
+        self.assertEqual(out["scans"], (11,))
+
+    def test_check_config_not_simulation(self):
+        out = self.checker.check_config()
+        self.assertTrue(out["invert_phase"])
+        self.assertEqual(out["phase_fieldname"], "disp")
+
+    def test_check_config_simulation(self):
+        self.checker.initial_params["simulation"] = True
+        out = self.checker.check_config()
+        self.assertFalse(out["invert_phase"])
+        self.assertFalse(out["correct_refraction"])
+        self.assertEqual(out["phase_fieldname"], "phase")
+
+    def test_check_config_detector_frame(self):
+        out = self.checker.check_config()
+        self.assertFalse(out["is_orthogonal"])
+
+    def test_check_config_crystal_frame(self):
+        self.checker.initial_params["data_frame"] = "crystal"
+        out = self.checker.check_config()
+        self.assertTrue(out["is_orthogonal"])
+        self.assertEqual(out["save_frame"], "crystal")
+
+    def test_check_config_crystal_frame_save_frame_bad_config(self):
+        self.checker.initial_params["data_frame"] = "crystal"
+        self.checker.initial_params["save_frame"] = "laboratory"
+        out = self.checker.check_config()
+        self.assertEqual(out["save_frame"], "crystal")
 
 
 class TestParameters(unittest.TestCase):
