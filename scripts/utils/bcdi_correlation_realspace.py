@@ -27,7 +27,7 @@ threshold_correlation = 0.05
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 #############
 # load data #

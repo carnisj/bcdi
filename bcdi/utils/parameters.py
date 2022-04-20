@@ -185,7 +185,7 @@ class ConfigChecker(ABC):
             bad_color = "1.0"  # white background
         self._checked_params["colormap"] = ColormapFactory(
             bad_color=bad_color, colormap=self.initial_params["colormap"]
-        ).generate_cmap()
+        )
 
     def _log(self, message: str, level: str = "info") -> None:
         """Log or print a message to the console."""

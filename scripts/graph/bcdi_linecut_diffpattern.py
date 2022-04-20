@@ -248,7 +248,7 @@ valid.valid_container(
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 #################
 # load the data #

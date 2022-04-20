@@ -243,7 +243,9 @@ def run(prm: Dict[str, Any]) -> None:
         )
         print("Binning used during phasing:", setup.detector.binning)
         print("Padding back to original FFT size", original_size)
-        obj = util.crop_pad(array=obj, output_shape=original_size, cmap=prm["colormap"])
+        obj = util.crop_pad(
+            array=obj, output_shape=original_size, cmap=prm["colormap"].cmap
+        )
 
         ###########################################################################
         # define range for orthogonalization and plotting - speed up calculations #
@@ -290,7 +292,9 @@ def run(prm: Dict[str, Any]) -> None:
             prm[f"from_file_{counter}"] = file_path[value]
 
             if prm["flip_reconstruction"]:
-                obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"])
+                obj = pu.flip_reconstruction(
+                    obj, debugging=True, cmap=prm["colormap"].cmap
+                )
 
             if extension == ".h5":
                 prm[
@@ -304,7 +308,7 @@ def run(prm: Dict[str, Any]) -> None:
                     sum_frames=True,
                     plot_colorbar=True,
                     title="1st mode after centering",
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
 
             # use the range of interest defined above
@@ -312,7 +316,7 @@ def run(prm: Dict[str, Any]) -> None:
                 obj,
                 [2 * zrange, 2 * yrange, 2 * xrange],
                 debugging=False,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
             # align with average reconstruction
@@ -331,7 +335,7 @@ def run(prm: Dict[str, Any]) -> None:
                 reciprocal_space=False,
                 is_orthogonal=prm["is_orthogonal"],
                 debugging=prm["debug"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             avg_counter = avg_counter + flag_avg
 
@@ -350,7 +354,7 @@ def run(prm: Dict[str, Any]) -> None:
             debugging=prm["debug"],
             reciprocal_space=False,
             is_orthogonal=prm["is_orthogonal"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
 
         print(
@@ -371,7 +375,7 @@ def run(prm: Dict[str, Any]) -> None:
                 title="Phase after unwrap + wrap",
                 reciprocal_space=False,
                 is_orthogonal=prm["is_orthogonal"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
         #############################################
@@ -384,7 +388,7 @@ def run(prm: Dict[str, Any]) -> None:
             method="gradient",
             amplitude_threshold=prm["isosurface_strain"],
             threshold_gradient=prm["threshold_gradient"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         del avg_obj
         gc.collect()
@@ -399,7 +403,7 @@ def run(prm: Dict[str, Any]) -> None:
                 title="Phase after ramp removal",
                 reciprocal_space=False,
                 is_orthogonal=prm["is_orthogonal"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
         ########################
@@ -415,7 +419,7 @@ def run(prm: Dict[str, Any]) -> None:
             offset_origin=prm["phase_offset_origin"],
             title="Phase",
             debugging=prm["debug"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         del support
         gc.collect()
@@ -432,14 +436,14 @@ def run(prm: Dict[str, Any]) -> None:
                 amp=amp,
                 support_threshold=prm["isosurface_strain"],
                 method="threshold",
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             # the phase should be averaged only in the support defined by the isosurface
             phase = pu.mean_filter(
                 array=phase,
                 support=bulk,
                 half_width=prm["half_width_avg_phase"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             del bulk
             gc.collect()
@@ -470,7 +474,7 @@ def run(prm: Dict[str, Any]) -> None:
                 alpha=prm["apodization_alpha"],
                 is_orthogonal=prm["is_orthogonal"],
                 debugging=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             comment = comment + "_apodize_" + prm["apodization_window"]
 
@@ -611,7 +615,7 @@ def run(prm: Dict[str, Any]) -> None:
                     debugging=True,
                     reciprocal_space=False,
                     is_orthogonal=False,
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
                 gu.multislices_plot(
                     phase,
@@ -623,7 +627,7 @@ def run(prm: Dict[str, Any]) -> None:
                     reciprocal_space=False,
                     is_orthogonal=False,
                     title="unwrapped phase before orthogonalization",
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
                 del phase
                 gc.collect()
@@ -678,7 +682,7 @@ def run(prm: Dict[str, Any]) -> None:
                 fill_value=0,
                 debugging=True,
                 title="amplitude",
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             prm["transformation_matrix"] = transfer_matrix
         else:  # data already orthogonalized using xrayutilities
@@ -745,7 +749,7 @@ def run(prm: Dict[str, Any]) -> None:
                     axis_to_align=q_lab[::-1],
                     reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
                     title=("amp", "phase"),
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
 
                 obj_ortho = amp * np.exp(
@@ -772,7 +776,7 @@ def run(prm: Dict[str, Any]) -> None:
             debugging=True,
             reciprocal_space=False,
             is_orthogonal=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         amp = abs(obj_ortho)
         del obj_ortho
@@ -793,7 +797,7 @@ def run(prm: Dict[str, Any]) -> None:
                 support_threshold=prm["threshold_unwrap_refraction"],
                 method=prm["optical_path_method"],
                 debugging=prm["debug"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
             kin = setup.incident_wavevector
@@ -820,7 +824,7 @@ def run(prm: Dict[str, Any]) -> None:
                 direction="in",
                 k=kin,
                 debugging=prm["debug"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )  # path_in already in nm
 
             # calculate the optical path of the outgoing wavevector
@@ -829,7 +833,7 @@ def run(prm: Dict[str, Any]) -> None:
                 direction="out",
                 k=kout,
                 debugging=prm["debug"],
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )  # path_our already in nm
 
             optical_path = path_in + path_out
@@ -858,7 +862,7 @@ def run(prm: Dict[str, Any]) -> None:
                     title="Refraction correction on the support",
                     is_orthogonal=True,
                     reciprocal_space=False,
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
             correct_absorption = False
             if correct_absorption:
@@ -883,7 +887,7 @@ def run(prm: Dict[str, Any]) -> None:
                     title="Absorption correction on the support",
                     is_orthogonal=True,
                     reciprocal_space=False,
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
 
             del bulk, optical_path
@@ -901,7 +905,7 @@ def run(prm: Dict[str, Any]) -> None:
             amplitude_threshold=prm["isosurface_strain"],
             threshold_gradient=prm["threshold_gradient"],
             debugging=prm["debug"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
 
         ########################
@@ -920,7 +924,7 @@ def run(prm: Dict[str, Any]) -> None:
             debugging=prm["debug"],
             reciprocal_space=False,
             is_orthogonal=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         del support
         gc.collect()
@@ -941,7 +945,7 @@ def run(prm: Dict[str, Any]) -> None:
             extent_phase=extent_phase,
             method=prm["strain_method"],
             debugging=prm["debug"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
 
         ################################################
@@ -961,7 +965,7 @@ def run(prm: Dict[str, Any]) -> None:
                 reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
                 debugging=(True, False, False),
                 title=("amp", "phase", "strain"),
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             # q_lab is already in the laboratory frame
             q_final = q_lab
@@ -978,7 +982,7 @@ def run(prm: Dict[str, Any]) -> None:
                 rocking_angle=setup.rocking_angle,
                 debugging=(True, False, False),
                 title=("amp", "phase", "strain"),
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
         if prm["save_frame"] == "crystal":
             # rotate also q_lab to have it along ref_axis_q,
@@ -1007,7 +1011,7 @@ def run(prm: Dict[str, Any]) -> None:
                 is_orthogonal=True,
                 reciprocal_space=False,
                 title=("amp", "phase", "strain"),
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             # rotate q accordingly, vectors needs to be in xyz order
             q_final = util.rotate_vector(
@@ -1027,13 +1031,13 @@ def run(prm: Dict[str, Any]) -> None:
         ##############################################
         if prm["output_size"] is not None:
             amp = util.crop_pad(
-                array=amp, output_shape=prm["output_size"], cmap=prm["colormap"]
+                array=amp, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
             )
             phase = util.crop_pad(
-                array=phase, output_shape=prm["output_size"], cmap=prm["colormap"]
+                array=phase, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
             )
             strain = util.crop_pad(
-                array=strain, output_shape=prm["output_size"], cmap=prm["colormap"]
+                array=strain, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
             )
         print(f"\nFinal data shape: {amp.shape}")
 
@@ -1048,7 +1052,7 @@ def run(prm: Dict[str, Any]) -> None:
             amp=amp,
             support_threshold=prm["isosurface_strain"],
             method="threshold",
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         if prm["save"]:
             prm["comment"] = comment
@@ -1160,7 +1164,7 @@ def run(prm: Dict[str, Any]) -> None:
                 "phase at max in yz",
             ),
             tuple_scale="linear",
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
             is_orthogonal=True,
             reciprocal_space=False,
         )
@@ -1174,7 +1178,7 @@ def run(prm: Dict[str, Any]) -> None:
             vmax=1,
             is_orthogonal=True,
             reciprocal_space=False,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         fig.text(0.60, 0.45, "Scan " + str(scan_nb), size=20)
         fig.text(
@@ -1203,7 +1207,7 @@ def run(prm: Dict[str, Any]) -> None:
             plot_colorbar=True,
             is_orthogonal=True,
             reciprocal_space=False,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         fig.text(0.60, 0.45, f"Scan {scan_nb}", size=20)
         fig.text(
@@ -1259,7 +1263,7 @@ def run(prm: Dict[str, Any]) -> None:
             vmin=-prm["phase_range"],
             vmax=prm["phase_range"],
             tick_direction=prm["tick_direction"],
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
             tick_width=prm["tick_width"],
             tick_length=prm["tick_length"],
             pixel_spacing=pixel_spacing,
@@ -1302,7 +1306,7 @@ def run(prm: Dict[str, Any]) -> None:
             tick_width=prm["tick_width"],
             tick_length=prm["tick_length"],
             plot_colorbar=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
             pixel_spacing=pixel_spacing,
             is_orthogonal=True,
             reciprocal_space=False,

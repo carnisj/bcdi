@@ -264,7 +264,7 @@ def run(prm):
     ####################################################
     flag_mask = False
     flag_aliens = False
-    my_cmap = prm["colormap"]
+    my_cmap = prm["colormap"].cmap
     plt.rcParams["keymap.fullscreen"] = [""]
     plt.rcParams["keymap.quit"] = [
         "ctrl+w",
@@ -433,13 +433,13 @@ def run(prm):
                         data,
                         binning=setup.detector.binning,
                         debugging=False,
-                        cmap=prm["colormap"],
+                        cmap=prm["colormap"].cmap,
                     )
                     mask = util.bin_data(
                         mask,
                         binning=setup.detector.binning,
                         debugging=False,
-                        cmap=prm["colormap"],
+                        cmap=prm["colormap"].cmap,
                     )
                     mask[np.nonzero(mask)] = 1
                     if len(q_values) != 0:
@@ -593,7 +593,7 @@ def run(prm):
                     title="Data before gridding\n",
                     is_orthogonal=False,
                     reciprocal_space=True,
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
                 fig.savefig(
                     setup.detector.savedir
@@ -670,7 +670,7 @@ def run(prm):
                         frames_logical=frames_logical,
                         hxrd=hxrd,
                         debugging=prm["debug"],
-                        cmap=prm["colormap"],
+                        cmap=prm["colormap"].cmap,
                     )
                 else:  # 'linearization'
                     # for q values, the frame used is
@@ -686,7 +686,7 @@ def run(prm):
                         reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
                         debugging=prm["debug"],
                         fill_value=(0, prm["fill_value_mask"]),
-                        cmap=prm["colormap"],
+                        cmap=prm["colormap"].cmap,
                     )
                     prm["transformation_matrix"] = transfer_matrix
                 nz, ny, nx = data.shape
@@ -722,7 +722,7 @@ def run(prm):
                         position=(323, 122),
                         is_orthogonal=not prm["use_rawdata"],
                         reciprocal_space=True,
-                        cmap=prm["colormap"],
+                        cmap=prm["colormap"].cmap,
                     )
 
                     fig.savefig(
@@ -791,7 +791,7 @@ def run(prm):
             title="Data before aliens removal\n",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         if prm["debug"]:
             fig.savefig(
@@ -821,7 +821,7 @@ def run(prm):
             tuple_title=("data at max in xy", "data at max in xz", "data at max in yz"),
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=False,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         if prm["debug"]:
             fig.savefig(
@@ -847,7 +847,7 @@ def run(prm):
             title="Mask before aliens removal\n",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         if prm["debug"]:
             fig.savefig(
@@ -923,19 +923,19 @@ def run(prm):
                 data[frame_index[0], :, :],
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax1.imshow(
                 data[:, frame_index[1], :],
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax2.imshow(
                 data[:, :, frame_index[2]],
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax3.set_visible(False)
             ax0.axis("scaled")
@@ -977,7 +977,7 @@ def run(prm):
                 title="Data after aliens removal\n",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -996,7 +996,7 @@ def run(prm):
                 title="Mask after aliens removal\n",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
 
             fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
@@ -1027,19 +1027,19 @@ def run(prm):
                 np.log10(abs(data).sum(axis=0)),
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax1.imshow(
                 np.log10(abs(data).sum(axis=1)),
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax2.imshow(
                 np.log10(abs(data).sum(axis=2)),
                 vmin=0,
                 vmax=max_colorbar,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             ax3.set_visible(False)
             ax0.axis("scaled")
@@ -1109,7 +1109,7 @@ def run(prm):
                     interpolate=prm["median_filter"],
                     min_count=3,
                     debugging=prm["debug"],
-                    cmap=prm["colormap"],
+                    cmap=prm["colormap"].cmap,
                 )
                 nb_pix += processed_pix
                 sys.stdout.write(
@@ -1160,7 +1160,7 @@ def run(prm):
                 slice_position=[int(z0), int(y0), int(x0)],
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1181,7 +1181,7 @@ def run(prm):
                 title="Masked data",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1203,7 +1203,7 @@ def run(prm):
                 title="Mask",
                 is_orthogonal=not prm["use_rawdata"],
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             fig.savefig(
                 setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
@@ -1224,13 +1224,13 @@ def run(prm):
                 data,
                 (setup.detector.binning[0], 1, 1),
                 debugging=False,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             mask = util.bin_data(
                 mask,
                 (setup.detector.binning[0], 1, 1),
                 debugging=False,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             mask[np.nonzero(mask)] = 1
             if not prm["use_rawdata"] and len(q_values) != 0:
@@ -1256,13 +1256,13 @@ def run(prm):
             data,
             output_shape=final_shape,
             crop_center=crop_center,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         mask = util.crop_pad(
             mask,
             output_shape=final_shape,
             crop_center=crop_center,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         print("\nData size after considering FFT shape requirements:", data.shape)
         nz, ny, nx = data.shape
@@ -1301,7 +1301,7 @@ def run(prm):
                 is_orthogonal=True,
                 levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
                 reciprocal_space=True,
-                cmap=prm["colormap"],
+                cmap=prm["colormap"].cmap,
             )
             fig.savefig(
                 setup.detector.savedir
@@ -1380,7 +1380,7 @@ def run(prm):
             title="Final data",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png")
         if not prm["flag_interact"]:
@@ -1396,7 +1396,7 @@ def run(prm):
             title="Final mask",
             is_orthogonal=not prm["use_rawdata"],
             reciprocal_space=True,
-            cmap=prm["colormap"],
+            cmap=prm["colormap"].cmap,
         )
         fig.savefig(setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png")
         if not prm["flag_interact"]:

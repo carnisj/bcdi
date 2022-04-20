@@ -296,7 +296,7 @@ hxrd = xu.experiment.HXRD(sample_inplane, sample_outofplane, qconv=qconv)
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 ###################################
 # load experimental data and mask #

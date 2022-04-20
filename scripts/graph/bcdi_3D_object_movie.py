@@ -58,7 +58,7 @@ output_format = "gif"  # 'gif', 'mp4'
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 ###############
 # load FFMpeg #

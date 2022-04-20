@@ -44,10 +44,11 @@ class ColormapFactory:
 
     valid_colormaps = ["turbo", "custom"]
 
-    def __init__(self, bad_color="0.7", colormap="turbo"):
+    def __init__(self, bad_color: str = "0.7", colormap: str = "turbo") -> None:
         self.bad_color = bad_color
         self.colormap = colormap
         self.cmap: Optional[Colormap] = None
+        self.generate_cmap()
 
     @property
     def bad_color(self):
@@ -62,7 +63,7 @@ class ColormapFactory:
             raise ValueError("float(bad_color) should be a number between 0 and 1")
         self._bad_color = val
 
-    def generate_cmap(self):
+    def generate_cmap(self) -> None:
         """Build and return the colormap."""
         if self.colormap == "turbo":
             self.cmap = ListedColormap(turbo_colormap_data)
@@ -75,4 +76,3 @@ class ColormapFactory:
         else:
             raise NotImplementedError(f"colormap {self.colormap} not implemented")
         self.cmap.set_bad(color=self.bad_color)
-        return self.cmap
