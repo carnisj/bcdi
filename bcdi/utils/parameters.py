@@ -121,8 +121,7 @@ class ConfigChecker(ABC):
                 roi[3] = center_roi_x + self.initial_params["roi_detector"][3]
 
             return [int(val) for val in roi]
-        else:
-            return None
+        return None
 
     def _assign_default_value(self) -> None:
         """Assign default values to parameters."""
@@ -202,7 +201,6 @@ class PreprocessingChecker(ConfigChecker):
 
     def _configure_params(self) -> None:
         """Hard-code processing-dependent parameter configuration."""
-
         if (
             self._nb_scans is not None
             and self._nb_scans > 1
@@ -835,7 +833,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "strain_range":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
-    elif key == "template_imagefile" or key == "specfile_name":
+    elif key in ["template_imagefile", "specfile_name"]:
         if isinstance(value, str):
             value = (value,)
         valid.valid_container(
