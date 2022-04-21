@@ -280,7 +280,7 @@ def run(prm):
     for scan_idx, scan_nb in enumerate(prm["scans"]):
         plt.ion()
 
-        comment = prm["user_comment"]  # re-initialize comment
+        comment = prm["comment"]  # re-initialize comment
         tmp_str = f"Scan {scan_idx+1}/{len(prm['scans'])}: S{scan_nb}"
         print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 

@@ -5,6 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+import copy
 
 import matplotlib
 import numpy as np
@@ -24,7 +25,8 @@ from tests.config import run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
-CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
+CONFIG_PRE = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
+CONFIG_POST = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
 
 
 class TestConfigChecker(unittest.TestCase):
@@ -32,7 +34,7 @@ class TestConfigChecker(unittest.TestCase):
 
     @patch("bcdi.utils.parameters.ConfigChecker.__abstractmethods__", set())
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG, {})
+        self.parser = ConfigParser(CONFIG_POST, {})
         self.args = self.parser.load_arguments()
         self.checker = ConfigChecker(initial_params=self.args)
 
@@ -162,11 +164,128 @@ class TestConfigChecker(unittest.TestCase):
             self.checker.check_config()
 
 
+class TestPreprocessingChecker(unittest.TestCase):
+    """Tests related to the abstract class PostprocessingChecker."""
+
+    def setUp(self) -> None:
+        self.parser = ConfigParser(CONFIG_PRE, {})
+        self.args = self.parser.load_arguments()
+        self.checker = PreprocessingChecker(initial_params=self.args)
+
+    def test_check_config(self):
+        out = self.checker.check_config()
+        self.assertEqual(out["scans"], (11,))
+
+    def test_check_config_several_scans(self):
+        self.checker.initial_params["scans"] = (
+            11,
+            12,
+        )
+        self.checker.initial_params["center_fft"] = "crop_sym_ZYX"
+        out = self.checker.check_config()
+        self.assertEqual(out["center_fft"], "skip")
+
+    def test_check_config_fix_size(self):
+        self.checker.initial_params["fix_size"] = [2, 127, 25, 326, 56, 95]
+        self.checker.initial_params["center_fft"] = "crop_sym_ZYX"
+        self.checker.initial_params["roi_detector"] = [2, 326, 5, 956]
+        out = self.checker.check_config()
+        self.assertEqual(out["center_fft"], "skip")
+        self.assertTrue(len(out["roi_detector"]) == 0)
+
+    def test_check_config_photon_filter_loading(self):
+        self.checker.initial_params["photon_filter"] = "loading"
+        out = self.checker.check_config()
+        self.assertEqual(
+            out["loading_threshold"], self.checker.initial_params["photon_threshold"]
+        )
+
+    def test_check_config_photon_filter_postprocessing(self):
+        self.checker.initial_params["photon_filter"] = "postprocessing"
+        out = self.checker.check_config()
+        self.assertEqual(out["loading_threshold"], 0)
+
+    def test_check_config_reload_previous(self):
+        self.checker.initial_params["comment"] = "IronMaiden"
+        self.checker.initial_params["reload_previous"] = True
+        self.checker.initial_params["align_q"] = False
+        self.checker._checked_params = copy.deepcopy(self.checker.initial_params)
+        out = self.checker.check_config()
+        self.assertEqual(out["comment"], "IronMaiden_reloaded")
+
+    def test_check_config_not_reload_previous(self):
+        out = self.checker.check_config()
+        self.assertEqual(out["preprocessing_binning"], (1, 1, 1))
+        self.assertFalse(out["reload_orthogonal"])
+
+    def test_check_config_rocking_angle_energy(self):
+        self.checker.initial_params["rocking_angle"] = "energy"
+        self.checker.initial_params["use_rawdata"] = True
+        out = self.checker.check_config()
+        self.assertFalse(out["use_rawdata"])
+
+    def test_check_config_reload_orthogonal(self):
+        self.checker.initial_params["reload_previous"] = True
+        self.checker.initial_params["reload_orthogonal"] = True
+        self.checker.initial_params["use_rawdata"] = True
+        self.checker._checked_params = copy.deepcopy(self.checker.initial_params)
+        out = self.checker.check_config()
+        self.assertFalse(out["use_rawdata"])
+
+    def test_check_config_use_rawdata(self):
+        self.checker.initial_params["use_rawdata"] = True
+        out = self.checker.check_config()
+        self.assertEqual(out["save_dirname"], "pynxraw")
+
+    def test_check_config_interpolate_energy(self):
+        self.checker.initial_params["use_rawdata"] = False
+        self.checker.initial_params["rocking_angle"] = "energy"
+        out = self.checker.check_config()
+        self.assertEqual(out["save_dirname"], "pynx")
+        self.assertEqual(out["interpolation_method"], "xrayutilities")
+
+    def test_check_config_interpolate_undefined_method(self):
+        self.checker.initial_params["use_rawdata"] = False
+        self.checker.initial_params["interpolation_method"] = "bad_method"
+        self.checker._checked_params = copy.deepcopy(self.checker.initial_params)
+        with self.assertRaises(ValueError):
+            self.checker.check_config()
+
+    def test_check_config_interpolate_reload_orthogonal(self):
+        self.checker.initial_params["use_rawdata"] = False
+        self.checker.initial_params["reload_previous"] = True
+        self.checker.initial_params["reload_orthogonal"] = True
+        self.checker.initial_params["preprocessing_binning"] = (2, 2, 2)
+        self.checker._checked_params = copy.deepcopy(self.checker.initial_params)
+        with self.assertRaises(ValueError):
+            self.checker.check_config()
+
+    def test_check_config_align_q(self):
+        self.checker.initial_params["align_q"] = True
+        out = self.checker.check_config()
+        self.assertEqual(
+            out["comment"],
+            f"_align-q-{self.checker.initial_params['ref_axis_q']}",
+        )
+
+    def test_check_config_align_q_undefined_reference_axis(self):
+        self.checker.initial_params["align_q"] = True
+        self.checker.initial_params["ref_axis_q"] = "a"
+        with self.assertRaises(ValueError):
+            self.checker.check_config()
+
+    def test_check_config_incompatible_backend(self):
+        self.checker.initial_params["backend"] = "Agg"
+        self.checker.initial_params["flag_interact"] = True
+        with self.assertRaises(ValueError):
+            self.checker.check_config()
+
+
 class TestPostprocessingChecker(unittest.TestCase):
     """Tests related to the abstract class PostprocessingChecker."""
 
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG, {})
+        self.parser = ConfigParser(CONFIG_POST, {})
         self.args = self.parser.load_arguments()
         self.checker = PostprocessingChecker(initial_params=self.args)
 

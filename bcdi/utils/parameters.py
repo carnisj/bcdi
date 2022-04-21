@@ -211,12 +211,15 @@ class PreprocessingChecker(ConfigChecker):
                 "crop_asymmetric_ZYX",
                 "pad_Z",
                 "pad_asymmetric_ZYX",
+                "skip",
             ]
         ):
             self._checked_params["center_fft"] = "skip"
             # avoid croping the detector plane XY while centering the Bragg peak
             # otherwise outputs may have a different size,
             # which will be problematic for combining or comparing them
+
+        self._checked_params["roi_detector"] = self._create_roi()
         if self.initial_params["fix_size"]:
             self._log('"fix_size" parameter provided, roi_detector will be set to []')
             self._log(
@@ -233,7 +236,7 @@ class PreprocessingChecker(ConfigChecker):
             self._checked_params["loading_threshold"] = 0
 
         if self.initial_params["reload_previous"]:
-            self._checked_params["user_comment"] += "_reloaded"
+            self._checked_params["comment"] += "_reloaded"
         else:
             self._checked_params["preprocessing_binning"] = (1, 1, 1)
             self._checked_params["reload_orthogonal"] = False
@@ -286,7 +289,7 @@ class PreprocessingChecker(ConfigChecker):
             if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
                 raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
             self._checked_params[
-                "user_comment"
+                "comment"
             ] += f"_align-q-{self.initial_params['ref_axis_q']}"
 
         if (
@@ -297,9 +300,6 @@ class PreprocessingChecker(ConfigChecker):
                 "non-interactive backend 'agg' not compatible with the "
                 "interactive masking GUI"
             )
-        self._checked_params["roi_detector"] = (
-            [] if self.initial_params["fix_size"] else self._create_roi()
-        )
 
 
 class PostprocessingChecker(ConfigChecker):
