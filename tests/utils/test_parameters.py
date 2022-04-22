@@ -37,6 +37,8 @@ class TestConfigChecker(unittest.TestCase):
             "root_folder": str(here),
             "data_dir": str(here),
             "save_dir": str(here),
+            "backend": "Agg",
+            "flag_interact": False,
         }
         self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
@@ -180,6 +182,8 @@ class TestPreprocessingChecker(unittest.TestCase):
             "root_folder": str(here),
             "data_dir": str(here),
             "save_dir": str(here),
+            "backend": "Agg",
+            "flag_interact": False,
         }
         self.parser = ConfigParser(CONFIG_PRE, self.command_line_args)
         self.args = self.parser.load_arguments()
@@ -292,7 +296,6 @@ class TestPreprocessingChecker(unittest.TestCase):
             self.checker.check_config()
 
     def test_check_config_incompatible_backend(self):
-        self.checker.initial_params["backend"] = "Agg"
         self.checker.initial_params["flag_interact"] = True
         with self.assertRaises(ValueError):
             self.checker.check_config()
@@ -306,6 +309,8 @@ class TestPostprocessingChecker(unittest.TestCase):
             "root_folder": str(here),
             "data_dir": str(here),
             "save_dir": str(here),
+            "backend": "Agg",
+            "flag_interact": False,
         }
         self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
