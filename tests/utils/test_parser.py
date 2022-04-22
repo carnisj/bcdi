@@ -6,13 +6,44 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 from pathlib import Path
 import unittest
-from bcdi.utils.parser import ConfigParser
+from bcdi.utils.parser import ConfigParser, str_to_list
 from tests.config import run_tests
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
+
+
+class Test_str_to_list(unittest.TestCase):
+    """
+    Tests on the function str_to_list.
+
+    def str_to_list(string: str, item_type: Type) -> List:
+    """
+
+    def test_str_of_int(self):
+        out = str_to_list("11,12,13", item_type=int)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, int) for val in out))
+        self.assertEqual(out[1], 12)
+
+    def test_str_of_float(self):
+        out = str_to_list("11.3,12.1,13.4", item_type=float)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, float) for val in out))
+        self.assertTrue(np.isclose(out[1], 12.1))
+
+    def test_str_of_float_not_a_number(self):
+        with self.assertRaises(ValueError):
+            str_to_list("a,b,c", item_type=float)
+
+    def test_str_of_str(self):
+        out = str_to_list("11,12,13", item_type=str)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, str) for val in out))
+        self.assertEqual(out[1], "12")
 
 
 class TestConfigParser(unittest.TestCase):
@@ -115,3 +146,4 @@ class TestConfigParser(unittest.TestCase):
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)
+    run_tests(Test_str_to_list)
