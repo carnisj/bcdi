@@ -15,7 +15,6 @@ import ipywidgets as widgets
 from ipywidgets import Layout, interactive
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import pathlib
 import pandas as pd
 from pandas import DataFrame
@@ -1327,8 +1326,8 @@ class Facets:
                     }
                 )
 
-                self.field_data = self.field_data.append(
-                    edges_cornes_df, ignore_index=True
+                self.field_data = pd.concat(
+                    [self.field_data, edges_cornes_df], ignore_index=True
                 )
                 self.field_data = self.field_data.sort_values(by="facet_id")
                 self.field_data = self.field_data.reset_index(drop=True)
