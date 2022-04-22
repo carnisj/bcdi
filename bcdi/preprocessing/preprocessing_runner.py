@@ -243,7 +243,9 @@ def run(prm):
             "save_to_vti": False,
         },
         match_length_params=(
+            "data_dir",
             "sample_name",
+            "save_dir",
             "specfile_name",
             "template_imagefile",
         ),
@@ -319,9 +321,9 @@ def run(prm):
         setup.init_paths(
             sample_name=prm["sample_name"][scan_idx],
             scan_number=scan_nb,
-            data_dir=prm["data_dir"],
+            data_dir=prm["data_dir"][scan_idx],
             root_folder=prm["root_folder"],
-            save_dir=prm["save_dir"],
+            save_dir=prm["save_dir"][scan_idx],
             save_dirname=prm["save_dirname"],
             specfile_name=prm["specfile_name"][scan_idx],
             template_imagefile=prm["template_imagefile"][scan_idx],

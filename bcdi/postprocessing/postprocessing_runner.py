@@ -115,8 +115,10 @@ def run(prm: Dict[str, Any]) -> None:
             "tick_width": 2,
         },
         match_length_params=(
+            "data_dir",
             "reconstruction_files",
             "sample_name",
+            "save_dir",
             "specfile_name",
             "template_imagefile",
         ),
@@ -177,8 +179,8 @@ def run(prm: Dict[str, Any]) -> None:
             sample_name=prm["sample_name"][scan_idx],
             scan_number=scan_nb,
             root_folder=prm["root_folder"],
-            data_dir=prm["data_dir"],
-            save_dir=prm["save_dir"],
+            data_dir=prm["data_dir"][scan_idx],
+            save_dir=prm["save_dir"][scan_idx],
             specfile_name=prm["specfile_name"][scan_idx],
             template_imagefile=prm["template_imagefile"][scan_idx],
         )

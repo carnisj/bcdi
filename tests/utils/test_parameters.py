@@ -80,7 +80,7 @@ class TestConfigChecker(unittest.TestCase):
         output = self.checker._create_roi()
         self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
-    def test_assign_default_value_none(self):
+    def test_assign_default_value_copy(self):
         self.checker._assign_default_value()
         for key, val in self.checker.initial_params.items():
             if isinstance(val, (list, tuple, np.ndarray)):
@@ -99,24 +99,35 @@ class TestConfigChecker(unittest.TestCase):
                     == self.checker.initial_params[key]
                 )
 
-    def test_assign_default_value_list(self):
-        reflection = [5, 2, 1]
-        self.checker.default_values = {"reflection": reflection}
+    def test_assign_default_value_defined_in_config(self):
+        original = self.checker.initial_params["reflection"]
+        default = [5, 2, 1]
+        self.checker.default_values = {"reflection": default}
         self.checker._assign_default_value()
         self.assertTrue(
             all(
                 item1 == item2
                 for item1, item2 in zip(
-                    reflection,
+                    original,
                     self.checker._checked_params["reflection"],
                 )
             )
         )
 
-    def test_assign_default_value_undefined_key(self):
-        self.checker.default_values = {"bad_key": True}
-        with self.assertRaises(KeyError):
-            self.checker._assign_default_value()
+    def test_assign_default_value_undefined_in_config(self):
+        del self.checker._checked_params["reflection"]
+        default = [5, 2, 1]
+        self.checker.default_values = {"reflection": default}
+        self.checker._assign_default_value()
+        self.assertTrue(
+            all(
+                item1 == item2
+                for item1, item2 in zip(
+                    default,
+                    self.checker._checked_params["reflection"],
+                )
+            )
+        )
 
     def test_check_backend_not_supported(self):
         self.checker.initial_params["backend"] = "bad_backend"
@@ -403,7 +414,7 @@ class TestParameters(unittest.TestCase):
 
     def test_data_dir_existing(self):
         val, flag = valid_param(key="data_dir", value=THIS_DIR)
-        self.assertTrue(val == THIS_DIR and flag is True)
+        self.assertTrue(val == (THIS_DIR,) and flag is True)
 
 
 if __name__ == "__main__":

@@ -127,9 +127,7 @@ class ConfigChecker(ABC):
         """Assign default values to parameters."""
         if self.default_values is not None:
             for key, value in self.default_values.items():
-                if key not in self.initial_params:
-                    raise KeyError(f"key {key} undefined in the configuration")
-                self._checked_params[key] = self.default_values.get(key, value)
+                self._checked_params[key] = self._checked_params.get(key, value)
 
     def _check_backend(self) -> None:
         """Check if the backend is supported."""
@@ -539,9 +537,19 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "data_dir":
         if value is not None:
-            valid.valid_container(value, container_types=str, min_length=1, name=key)
-            if not os.path.isdir(value):
-                raise ValueError(f"The directory {value} does not exist")
+            if isinstance(value, str):
+                value = (value,)
+            valid.valid_container(
+                value,
+                container_types=(tuple, list),
+                item_types=str,
+                min_length=1,
+                allow_none=True,
+                name=key,
+            )
+            for val in value:
+                if not os.path.isdir(val):
+                    raise ValueError(f"The directory {val} does not exist")
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
@@ -811,11 +819,22 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "save_dir":
+        if isinstance(value, str):
+            value = [
+                value,
+            ]
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value,
+            container_types=(tuple, list),
+            item_types=str,
+            min_length=1,
+            allow_none=True,
+            name=key,
         )
-        if isinstance(value, str) and not value.endswith("/"):
-            value += "/"
+        value = list(value)
+        for idx, val in enumerate(value):
+            if isinstance(val, str) and not val.endswith("/"):
+                value[idx] += "/"
     elif key == "save_frame":
         allowed = {"laboratory", "crystal", "lab_flat_sample"}
         if value not in allowed:
