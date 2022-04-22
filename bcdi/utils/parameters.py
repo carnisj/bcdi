@@ -139,6 +139,8 @@ class ConfigChecker(ABC):
             raise ValueError(
                 f"{self.initial_params['backend']} backend is not supported."
             )
+        except ImportError:
+            raise ValueError(f"cannot load backend {self.initial_params['backend']}")
 
     def _check_length(self, param_name: str, length: int) -> None:
         """Ensure that a parameter as the correct type and length."""

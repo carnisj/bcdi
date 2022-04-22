@@ -6,7 +6,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import matplotlib
 import unittest
+
+
+def has_backend(backend: str) -> bool:
+    """Check if the desired backend is available on the runner."""
+    try:
+        matplotlib.use(backend)
+    except ImportError:
+        return False
+    return True
 
 
 def run_tests(test_class):

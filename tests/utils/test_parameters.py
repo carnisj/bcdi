@@ -7,7 +7,6 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 import copy
 
-import matplotlib
 import numpy as np
 from pathlib import Path
 import unittest
@@ -21,7 +20,7 @@ from bcdi.utils.parameters import (
 )
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.parser import ConfigParser
-from tests.config import run_tests
+from tests.config import has_backend, run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
@@ -42,6 +41,10 @@ class TestConfigChecker(unittest.TestCase):
         self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = ConfigChecker(initial_params=self.args)
+        if not has_backend(self.checker.initial_params["backend"]):
+            self.skipTest(
+                reason=f"cannot load backend {self.checker.initial_params['backend']}"
+            )
 
     def test_create_roi_none(self):
         self.checker.initial_params["roi_detector"] = None
@@ -181,6 +184,10 @@ class TestPreprocessingChecker(unittest.TestCase):
         self.parser = ConfigParser(CONFIG_PRE, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = PreprocessingChecker(initial_params=self.args)
+        if not has_backend(self.checker.initial_params["backend"]):
+            self.skipTest(
+                reason=f"cannot load backend {self.checker.initial_params['backend']}"
+            )
 
     def test_check_config(self):
         out = self.checker.check_config()
@@ -303,6 +310,10 @@ class TestPostprocessingChecker(unittest.TestCase):
         self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = PostprocessingChecker(initial_params=self.args)
+        if not has_backend(self.checker.initial_params["backend"]):
+            self.skipTest(
+                reason=f"cannot load backend {self.checker.initial_params['backend']}"
+            )
 
     def test_check_config(self):
         out = self.checker.check_config()
