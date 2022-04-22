@@ -21,7 +21,7 @@ import matplotlib
 from numbers import Number, Real
 import numpy as np
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.constants import LOGGING_LEVELS
@@ -344,6 +344,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
      is valid, False otherwise.
     """
     is_valid = True
+    allowed: Optional[Set] = None
 
     # convert 'None' to None
     if value == "None":
@@ -586,7 +587,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
                 name=key,
             )
     elif key == "fill_value_mask":
-        allowed = (0, 1)
+        allowed = {0, 1}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "fix_size":

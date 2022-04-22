@@ -21,7 +21,8 @@ import os
 import pprint
 import tkinter as tk
 from tkinter import filedialog
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+import yaml
 
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
@@ -650,17 +651,17 @@ def run(prm: Dict[str, Any]) -> None:
                         background=prm["background_file"],
                         normalize=prm["normalize_flux"],
                     )
-                    prm["bragg_peak"] = bu.find_bragg(
+                    bragg_peak = bu.find_bragg(
                         data=data,
                         peak_method="maxcom",
                         roi=setup.detector.roi,
                         binning=None,
                     )
                     roi_center = (
-                        prm["bragg_peak"][0],
-                        prm["bragg_peak"][1]
+                        bragg_peak[0],
+                        bragg_peak[1]
                         - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                        prm["bragg_peak"][2]
+                        bragg_peak[2]
                         - setup.detector.roi[2],  # no binning as in bu.find_bragg
                     )
                     bu.show_rocking_curve(
@@ -669,6 +670,7 @@ def run(prm: Dict[str, Any]) -> None:
                         tilt_values=setup.incident_angles,
                         savedir=setup.detector.savedir,
                     )
+                    prm["bragg_peak"] = bragg_peak
                 setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
                 prm["outofplane_angle"] = setup.outofplane_angle
                 prm["inplane_angle"] = setup.inplane_angle
@@ -952,8 +954,7 @@ def run(prm: Dict[str, Any]) -> None:
         # optionally rotates back the crystal into the #
         # laboratory frame (for debugging purpose)     #
         ################################################
-        q_final = None
-        if prm["save_frame"] in {"laboratory", "lab_flat_sample"}:
+        if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
             comment = comment + "_labframe"
             print("\nRotating back the crystal in laboratory frame")
             amp, phase, strain = util.rotate_crystal(
@@ -970,21 +971,21 @@ def run(prm: Dict[str, Any]) -> None:
             # q_lab is already in the laboratory frame
             q_final = q_lab
 
-        if prm["save_frame"] == "lab_flat_sample":
-            comment = comment + "_flat"
-            print("\nSending sample stage circles to 0")
-            (amp, phase, strain), q_final = setup.beamline.flatten_sample(
-                arrays=(amp, phase, strain),
-                voxel_size=voxel_size,
-                q_com=q_lab[::-1],  # q_com needs to be in xyz order
-                is_orthogonal=True,
-                reciprocal_space=False,
-                rocking_angle=setup.rocking_angle,
-                debugging=(True, False, False),
-                title=("amp", "phase", "strain"),
-                cmap=prm["colormap"].cmap,
-            )
-        if prm["save_frame"] == "crystal":
+            if prm["save_frame"] == "lab_flat_sample":
+                comment = comment + "_flat"
+                print("\nSending sample stage circles to 0")
+                (amp, phase, strain), q_final = setup.beamline.flatten_sample(
+                    arrays=(amp, phase, strain),
+                    voxel_size=voxel_size,
+                    q_com=q_lab[::-1],  # q_com needs to be in xyz order
+                    is_orthogonal=True,
+                    reciprocal_space=False,
+                    rocking_angle=setup.rocking_angle,
+                    debugging=(True, False, False),
+                    title=("amp", "phase", "strain"),
+                    cmap=prm["colormap"].cmap,
+                )
+        else:  # "save_frame" = "crystal"
             # rotate also q_lab to have it along ref_axis_q,
             # as a cross-checkm, vectors needs to be in xyz order
             comment = comment + "_crystalframe"
@@ -1014,11 +1015,12 @@ def run(prm: Dict[str, Any]) -> None:
                 cmap=prm["colormap"].cmap,
             )
             # rotate q accordingly, vectors needs to be in xyz order
-            q_final = util.rotate_vector(
-                vectors=q_final[::-1],
-                axis_to_align=AXIS_TO_ARRAY[prm["ref_axis"]],
-                reference_axis=prm["axis_to_align"],
-            )
+            if q_final is not None:
+                q_final = util.rotate_vector(
+                    vectors=q_final[::-1],
+                    axis_to_align=AXIS_TO_ARRAY[prm["ref_axis"]],
+                    reference_axis=prm["axis_to_align"],
+                )
 
         q_final = q_final * qnorm
         print(
@@ -1066,8 +1068,8 @@ def run(prm: Dict[str, Any]) -> None:
                 q_com=q_final,
                 voxel_sizes=voxel_size,
                 detector=setup.detector.params,
-                setup=setup.params,
-                params=prm,
+                setup=str(yaml.dump(setup.params)),
+                params=str(yaml.dump(prm)),
             )
 
             # save results in hdf5 file

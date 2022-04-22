@@ -34,7 +34,12 @@ class TestConfigChecker(unittest.TestCase):
 
     @patch("bcdi.utils.parameters.ConfigChecker.__abstractmethods__", set())
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG_POST, {})
+        self.command_line_args = {
+            "root_folder": str(here),
+            "data_dir": str(here),
+            "save_dir": str(here),
+        }
+        self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = ConfigChecker(initial_params=self.args)
 
@@ -168,7 +173,12 @@ class TestPreprocessingChecker(unittest.TestCase):
     """Tests related to the abstract class PostprocessingChecker."""
 
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG_PRE, {})
+        self.command_line_args = {
+            "root_folder": str(here),
+            "data_dir": str(here),
+            "save_dir": str(here),
+        }
+        self.parser = ConfigParser(CONFIG_PRE, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = PreprocessingChecker(initial_params=self.args)
 
@@ -285,7 +295,12 @@ class TestPostprocessingChecker(unittest.TestCase):
     """Tests related to the abstract class PostprocessingChecker."""
 
     def setUp(self) -> None:
-        self.parser = ConfigParser(CONFIG_POST, {})
+        self.command_line_args = {
+            "root_folder": str(here),
+            "data_dir": str(here),
+            "save_dir": str(here),
+        }
+        self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
         self.checker = PostprocessingChecker(initial_params=self.args)
 
@@ -377,3 +392,6 @@ class TestParameters(unittest.TestCase):
 
 if __name__ == "__main__":
     run_tests(TestParameters)
+    run_tests(TestConfigChecker)
+    run_tests(TestPostprocessingChecker)
+    run_tests(TestPreprocessingChecker)
