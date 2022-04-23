@@ -10,6 +10,7 @@ Future:
   scans. Allow to provide a list for `specfile_name`, `template_imagefile`, `data_dir`,
   `save_dir`, `reconstruction_files` with the same number of elements as the number of
   scans.
+
 * Add a `colormap` parameter to the config. The user can choose a colormap between
   "turbo", "custom" or any colormap from the `colorcet` package
 
