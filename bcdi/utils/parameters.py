@@ -48,7 +48,17 @@ class ParameterError(Exception):
 
 
 class ConfigChecker(ABC):
-    """Validate and configure parameters."""
+    """
+    Validate and configure parameters.
+
+    :param initial_params: the dictionary of parameters to validate and configure
+    :param default_values: an optional dictionary of default values for keys in
+     initial_params
+    :param logger: an optional Logger
+    :param match_length_params: a tuple of keys from initial_params which should match
+     a certain length (e.g. the number of scans)
+    :param required_params: a tuple of keys that have to be present in initial_params
+    """
 
     def __init__(
         self,
