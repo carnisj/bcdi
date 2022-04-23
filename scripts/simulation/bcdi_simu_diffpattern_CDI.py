@@ -84,7 +84,7 @@ print("Data shape:", nbz, nby, nbx)
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
+my_cmap = ColormapFactory(bad_color=bad_color).cmap
 plt.ion()
 
 ######################

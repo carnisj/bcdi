@@ -6,13 +6,44 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import numpy as np
 from pathlib import Path
 import unittest
-from bcdi.utils.parser import ConfigParser
+from bcdi.utils.parser import ConfigParser, str_to_list
 from tests.config import run_tests
 
 here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
+
+
+class Test_str_to_list(unittest.TestCase):
+    """
+    Tests on the function str_to_list.
+
+    def str_to_list(string: str, item_type: Type) -> List:
+    """
+
+    def test_str_of_int(self):
+        out = str_to_list("11,12,13", item_type=int)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, int) for val in out))
+        self.assertEqual(out[1], 12)
+
+    def test_str_of_float(self):
+        out = str_to_list("11.3,12.1,13.4", item_type=float)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, float) for val in out))
+        self.assertTrue(np.isclose(out[1], 12.1))
+
+    def test_str_of_float_not_a_number(self):
+        with self.assertRaises(ValueError):
+            str_to_list("a,b,c", item_type=float)
+
+    def test_str_of_str(self):
+        out = str_to_list("11,12,13", item_type=str)
+        self.assertIsInstance(out, list)
+        self.assertTrue(all(isinstance(val, str) for val in out))
+        self.assertEqual(out[1], "12")
 
 
 class TestConfigParser(unittest.TestCase):
@@ -25,7 +56,7 @@ class TestConfigParser(unittest.TestCase):
     def setUp(self) -> None:
         self.command_line_args = {
             "data_dir": str(here),
-            "scan": 999999999,
+            "scans": 999999999,
             "root_folder": str(here),
         }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
@@ -59,20 +90,20 @@ class TestConfigParser(unittest.TestCase):
         self.assertIsInstance(self.parser.raw_config, bytes)
 
     def test_filter_dict(self):
-        dic = {"scan": "9999", "sdd": None}
+        dic = {"scans": "9999", "sdd": None}
         output = self.parser.filter_dict(dic)
-        self.assertTrue(output == {"scan": "9999"})
+        self.assertTrue(output == {"scans": "9999"})
 
     def test_filter_dict_filter_value(self):
-        dic = {"scan": "9999", "sdd": None, "test": True}
+        dic = {"scans": "9999", "sdd": None, "test": True}
         output = self.parser.filter_dict(dic, filter_value=True)
-        self.assertTrue(output == {"scan": "9999", "sdd": None})
+        self.assertTrue(output == {"scans": "9999", "sdd": None})
 
     def test_load_arguments(self):
         args = self.parser.load_arguments()
-        # "scan" is also key in CONFIG, which means that the overriding by the optional
-        # --scan argument from the command line works as expected
-        self.assertTrue(args.get("scan") == self.command_line_args["scan"])
+        # "scans" is also key in CONFIG, which means that the overriding by the optional
+        # --scans argument from the command line works as expected
+        self.assertTrue(args.get("scans") == (self.command_line_args["scans"],))
 
     def test_load_arguments_no_cl_params_flip(self):
         args = self.parser.load_arguments()
@@ -115,3 +146,4 @@ class TestConfigParser(unittest.TestCase):
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)
+    run_tests(Test_str_to_list)

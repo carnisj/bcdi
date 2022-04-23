@@ -45,14 +45,16 @@ Usage:
 
     Parameters related to path names:
 
-    :param scan: e.g. 11
-     scan number
+    :param scans: e.g. 11
+     scan number or list of scan numbers
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
      folder of the experiment, where all scans are stored
     :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"
-     images will be saved here, leave it to None otherwise
+     images will be saved here, leave it to None otherwise. Provide a single path or a
+     list of paths for multiple scans.
     :param data_dir: e.g. None
-     use this to override the beamline default search path for the data
+     use this to override the beamline default search path for the data. Provide
+     a list of paths for multiple scans.
     :param sample_name: e.g. "S"
      str or list of str of sample names (string in front of the scan number in the
      folder name). If only one name is indicated, it will be repeated to match the
@@ -63,9 +65,10 @@ Usage:
     :param colormap: e.g. "turbo"
      "turbo", "custom" or colormap defined in the colorcet package, see
      https://colorcet.holoviz.org/
-    :param reconstruction_file: e.g. "C:/Users/Jerome/Documents/data/modes.h5"
-     full path to the output of phase retrieval, if None an interactive window will open
-     to choose a file.
+    :param reconstruction_files: e.g. "C:/Users/Jerome/Documents/data/modes.h5"
+     full path to the output of phase retrieval, or list of such paths if 'scans' is a
+     list. Providing several reconstructions for each scan is not supported.
+     If None an interactive window will open to choose a file.
 
     Parameters used in the interactive masking GUI:
 
@@ -190,7 +193,8 @@ Usage:
      detector angle in deg(rotation around y vertical up, typically gamma), corrected
      for the direct beam position. Leave None to use the uncorrected position.
     :param specfile_name: e.g. "l5.spec"
-     beamline-dependent parameter, use the following template:
+     string or list of strings for multiple scans. beamline-dependent parameter,
+     use the following template:
 
      - template for ID01 and 34ID: name of the spec file if it is at the default
       location (in root_folder) or full path to the spec file
@@ -232,7 +236,8 @@ Usage:
      Leave None to use the full detector. Use with center_fft='skip' if you want this
      exact size for the output.
     :param template_imagefile: e.g. "data_mpx4_%05d.edf.gz"
-     use one of the following template:
+     string or list of strings for multiple scans. beamline-dependent parameter,
+     use the following template:
 
      - template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
      - template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'

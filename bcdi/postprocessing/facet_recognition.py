@@ -25,7 +25,7 @@ from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
-default_cmap = ColormapFactory().generate_cmap()
+default_cmap = ColormapFactory().cmap
 
 
 def calc_stereoproj_facet(projection_axis, vectors, radius_mean, stereo_center):

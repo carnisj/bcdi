@@ -64,7 +64,6 @@ import numpy as np
 from numbers import Real, Integral
 import os
 import pathlib
-from typing import Any, Dict
 
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -90,55 +89,6 @@ def create_detector(name, **kwargs):
     if name == "Dummy":
         return Dummy(name=name, **kwargs)
     raise NotImplementedError(f"No implementation for the {name} detector")
-
-
-def create_roi(dic: Dict[str, Any]) -> Any:
-    """
-    Load "roi_detector" from the dictionary of parameters and update it.
-
-    If the keys "center_roi_x" or "center_roi_y" are defined, it will consider that the
-    current values in roi_detector define a window around the Bragg peak position and
-    the final output will be:
-    [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
-    center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
-
-    If a key is not defined, it will consider that the values of roi_detector are
-    absolute pixels positions, e.g. if only "center_roi_y" is defined, the output will
-    be:
-    [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
-    roi_detector[2], roi_detector[3]].
-
-    Accordingly, if none of the keys are defined, the output will be:
-    [roi_detector[0], roi_detector[1], roi_detector[2], roi_detector[3]].
-
-    :param dic: a dictionary of parameters
-    :return: the calculated region of interest [Vstart, Vstop, Hstart, Hstop] or None
-    """
-    valid.valid_container(dic, container_types=dict, name="dic")
-    roi = dic.get("roi_detector")
-    valid.valid_container(
-        roi,
-        container_types=(tuple, list, np.ndarray),
-        length=4,
-        item_types=int,
-        allow_none=True,
-        name="roi_detector",
-    )
-
-    # update the ROI
-    if roi is not None:
-        center_roi_y = dic.get("center_roi_y")
-        if center_roi_y is not None:
-            valid.valid_item(center_roi_y, allowed_types=int, name="center_roi_y")
-            roi[0] = center_roi_y - roi[0]
-            roi[1] = center_roi_y + roi[1]
-
-        center_roi_x = dic.get("center_roi_x")
-        if center_roi_x is not None:
-            valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
-            roi[2] = center_roi_x - roi[2]
-            roi[3] = center_roi_x + roi[3]
-    return roi
 
 
 class Detector(ABC):

@@ -1,6 +1,18 @@
 Future:
 -------
 
+* Fix deprecation warning with the method `pandas.DataFrame.append`
+
+* Implement the `ConfigChecker` class and child classes to gather in a single location
+  the configuration check before processing.
+
+* rename `scan` to `scans` in `bcdi_strain.py`, and allow the user to process several
+  scans. Allow to provide a list for `specfile_name`, `template_imagefile`, `data_dir`,
+  `save_dir`, `reconstruction_files` with the same number of elements as the number of
+  scans.
+
+* rename the parameter `sdd` to `detector_distance` to match PyNX terminology.
+
 * Add a `colormap` parameter to the config. The user can choose a colormap between
   "turbo", "custom" or any colormap from the `colorcet` package
 

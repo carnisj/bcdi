@@ -12,12 +12,24 @@ Validation of configuration parameters.
 The validation is performed only on the expected parameters. Other parameters are simply
 discarded.
 """
+from abc import ABC, abstractmethod
+import copy
+
 import colorcet as cc
+from logging import Logger
+import matplotlib
 from numbers import Number, Real
 import numpy as np
 import os
-from typing import Any, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from bcdi.graph.colormap import ColormapFactory
+from bcdi.utils.constants import LOGGING_LEVELS
 import bcdi.utils.validation as valid
+
+
+class MissingKeyError(Exception):
+    """Custom Exception for a missing required key in the config dictionary."""
 
 
 class ParameterError(Exception):
@@ -35,6 +47,291 @@ class ParameterError(Exception):
         )
 
 
+class ConfigChecker(ABC):
+    """Validate and configure parameters."""
+
+    def __init__(
+        self,
+        initial_params: Dict[str, Any],
+        default_values: Optional[Dict[str, Any]] = None,
+        logger: Optional[Logger] = None,
+        match_length_params: Tuple = (),
+        required_params: Tuple = (),
+    ) -> None:
+        self.initial_params = initial_params
+        self.default_values = default_values
+        self.logger = logger
+        self.match_length_params = match_length_params
+        self.required_params = required_params
+        self._checked_params = copy.deepcopy(self.initial_params)
+        self._nb_scans: Optional[int] = None
+
+    def check_config(self) -> Dict[str, Any]:
+        """Check if the provided config is consistent."""
+        if self.initial_params.get("scans") is None:
+            raise ValueError("no scan provided")
+        self._nb_scans = len(self.initial_params["scans"])
+
+        for key in self.match_length_params:
+            self._check_length(key, self._nb_scans)
+
+        self._assign_default_value()
+        self._check_mandatory_params()
+        self._configure_params()
+        self._check_backend()
+        self._create_colormap()
+        return self._checked_params
+
+    def _create_roi(self) -> Optional[List[int]]:
+        """
+        Load "roi_detector" from the dictionary of parameters and update it.
+
+        If the keys "center_roi_x" or "center_roi_y" are defined, it will consider that
+        the current values in roi_detector define a window around the Bragg peak
+        position and the final output will be:
+        [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+        center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
+
+        If a key is not defined, it will consider that the values of roi_detector are
+        absolute pixels positions, e.g. if only "center_roi_y" is defined, the output
+        will be:
+        [center_roi_y - roi_detector[0], center_roi_y + roi_detector[1],
+        roi_detector[2], roi_detector[3]].
+
+        Accordingly, if none of the keys are defined, the output will be:
+        [roi_detector[0], roi_detector[1], roi_detector[2], roi_detector[3]].
+
+        :return: the calculated region of interest [Vstart, Vstop, Hstart, Hstop] or
+         None.
+        """
+        roi = copy.deepcopy(self.initial_params.get("roi_detector"))
+
+        # update the ROI
+        if roi is not None:
+            center_roi_y = self.initial_params.get("center_roi_y")
+            if center_roi_y is not None:
+                valid.valid_item(center_roi_y, allowed_types=int, name="center_roi_y")
+                roi[0] = center_roi_y - self.initial_params["roi_detector"][0]
+                roi[1] = center_roi_y + self.initial_params["roi_detector"][1]
+
+            center_roi_x = self.initial_params.get("center_roi_x")
+            if center_roi_x is not None:
+                valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
+                roi[2] = center_roi_x - self.initial_params["roi_detector"][2]
+                roi[3] = center_roi_x + self.initial_params["roi_detector"][3]
+
+            return [int(val) for val in roi]
+        return None
+
+    def _assign_default_value(self) -> None:
+        """Assign default values to parameters."""
+        if self.default_values is not None:
+            for key, value in self.default_values.items():
+                self._checked_params[key] = self._checked_params.get(key, value)
+
+    def _check_backend(self) -> None:
+        """Check if the backend is supported."""
+        try:
+            matplotlib.use(self.initial_params["backend"])
+        except ModuleNotFoundError:
+            raise ValueError(
+                f"{self.initial_params['backend']} backend is not supported."
+            )
+        except ImportError:
+            raise ValueError(f"cannot load backend {self.initial_params['backend']}")
+
+    def _check_length(self, param_name: str, length: int) -> None:
+        """Ensure that a parameter as the correct type and length."""
+        initial_param = self.initial_params.get(param_name)
+        if initial_param is None:
+            initial_param = (None,) * length
+        elif not isinstance(initial_param, (tuple, list)):
+            raise TypeError(
+                f"'{param_name}' shold be a tuple or a list, got {type(param_name)}"
+            )
+        if len(initial_param) == 1:
+            self._checked_params[param_name] = initial_param * length
+        elif len(initial_param) != length:
+            raise ValueError(
+                f"'{param_name}' should be of length {length}, "
+                f"got {len(param_name)} elements"
+            )
+        else:
+            self._checked_params[param_name] = initial_param
+
+    def _check_mandatory_params(self) -> None:
+        """Check if mandatory parameters are provided."""
+        for key in self.required_params:
+            try:
+                _ = self.initial_params[key]
+            except KeyError:
+                raise MissingKeyError(f"Required parameter {key} not defined")
+
+    @abstractmethod
+    def _configure_params(self) -> None:
+        """
+        Configure preprocessing-dependent parameters.
+
+        Override this method in the child class
+        """
+        raise NotImplementedError
+
+    def _create_colormap(self) -> None:
+        """Create a colormap instance."""
+        if self.initial_params.get("grey_background"):
+            bad_color = "0.7"
+        else:
+            bad_color = "1.0"  # white background
+        self._checked_params["colormap"] = ColormapFactory(
+            bad_color=bad_color, colormap=self.initial_params["colormap"]
+        )
+
+    def _log(self, message: str, level: str = "info") -> None:
+        """Log or print a message to the console."""
+        if self.logger is not None:
+            if level not in LOGGING_LEVELS:
+                raise ValueError(f"Unknown logging level {level}")
+            getattr(self.logger, level)(message)
+        else:
+            print(message)
+
+
+class PreprocessingChecker(ConfigChecker):
+    """Configure preprocessing-dependent parameters."""
+
+    def _configure_params(self) -> None:
+        """Hard-code processing-dependent parameter configuration."""
+        if (
+            self._nb_scans is not None
+            and self._nb_scans > 1
+            and self.initial_params["center_fft"]
+            not in [
+                "crop_asymmetric_ZYX",
+                "pad_Z",
+                "pad_asymmetric_ZYX",
+                "skip",
+            ]
+        ):
+            self._checked_params["center_fft"] = "skip"
+            # avoid croping the detector plane XY while centering the Bragg peak
+            # otherwise outputs may have a different size,
+            # which will be problematic for combining or comparing them
+
+        self._checked_params["roi_detector"] = self._create_roi()
+        if self.initial_params["fix_size"]:
+            self._log('"fix_size" parameter provided, roi_detector will be set to []')
+            self._log(
+                "'fix_size' parameter provided, defaulting 'center_fft' to 'skip'"
+            )
+            self._checked_params["roi_detector"] = []
+            self._checked_params["center_fft"] = "skip"
+
+        if self.initial_params["photon_filter"] == "loading":
+            self._checked_params["loading_threshold"] = self.initial_params[
+                "photon_threshold"
+            ]
+        else:
+            self._checked_params["loading_threshold"] = 0
+
+        if self.initial_params["reload_previous"]:
+            self._checked_params["comment"] += "_reloaded"
+        else:
+            self._checked_params["preprocessing_binning"] = (1, 1, 1)
+            self._checked_params["reload_orthogonal"] = False
+
+        if self.initial_params["rocking_angle"] == "energy":
+            self._checked_params["use_rawdata"] = False
+            # you need to interpolate the data in QxQyQz for energy scans
+            if self.logger:
+                self.logger.info(
+                    "Energy scan: defaulting use_rawdata to False,"
+                    " the data will be interpolated using xrayutilities"
+                )
+
+        if self._checked_params["reload_orthogonal"]:
+            self._checked_params["use_rawdata"] = False
+
+        if self._checked_params["use_rawdata"]:
+            self._checked_params["save_dirname"] = "pynxraw"
+            self._log("Output will be non orthogonal, in the detector frame")
+        else:
+            if self.initial_params["interpolation_method"] not in {
+                "xrayutilities",
+                "linearization",
+            }:
+                raise ValueError(
+                    "Incorrect value for interp_method,"
+                    ' allowed values are "xrayutilities" and "linearization"'
+                )
+            if self.initial_params["rocking_angle"] == "energy":
+                self._checked_params["interpolation_method"] = "xrayutilities"
+                self._log(
+                    "Defaulting interp_method to "
+                    f"{self._checked_params['interpolation_method'] }"
+                )
+            if (
+                self._checked_params["reload_orthogonal"]
+                and self._checked_params["preprocessing_binning"][0] != 1
+            ):
+                raise ValueError(
+                    "preprocessing_binning along axis 0 should be 1"
+                    " when gridding reloaded data (angles won't match)"
+                )
+            self._checked_params["save_dirname"] = "pynx"
+            self._log(
+                "Output will be orthogonalized using "
+                f"{self._checked_params['interpolation_method']}"
+            )
+
+        if self.initial_params["align_q"]:
+            if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
+                raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
+            self._checked_params[
+                "comment"
+            ] += f"_align-q-{self.initial_params['ref_axis_q']}"
+
+        if (
+            self.initial_params["backend"].lower() == "agg"
+            and self.initial_params["flag_interact"]
+        ):
+            raise ValueError(
+                "non-interactive backend 'agg' not compatible with the "
+                "interactive masking GUI"
+            )
+
+
+class PostprocessingChecker(ConfigChecker):
+    """Configure postprocessing-dependent parameters."""
+
+    def _configure_params(self) -> None:
+        """Hard-code processing-dependent parameter configuration."""
+        if self.initial_params["simulation"]:
+            self._checked_params["invert_phase"] = False
+            self._checked_params["correct_refraction"] = False
+        if self._checked_params["invert_phase"]:
+            self._checked_params["phase_fieldname"] = "disp"
+        else:
+            self._checked_params["phase_fieldname"] = "phase"
+
+        if self.initial_params["data_frame"] == "detector":
+            self._checked_params["is_orthogonal"] = False
+        else:
+            self._checked_params["is_orthogonal"] = True
+
+        if (
+            self.initial_params["data_frame"] == "crystal"
+            and self.initial_params["save_frame"] != "crystal"
+        ):
+            if self.logger:
+                self.logger.info(
+                    "data already in the crystal frame before phase retrieval,"
+                    " it is impossible to come back to the laboratory "
+                    "frame, parameter 'save_frame' defaulted to 'crystal'"
+                )
+            self._checked_params["save_frame"] = "crystal"
+        self._checked_params["roi_detector"] = self._create_roi()
+
+
 def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     """
     Validate a key value pair corresponding to an input parameter.
@@ -47,7 +344,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
      is valid, False otherwise.
     """
     is_valid = True
-    allowed: Any = None
+    allowed: Optional[Set] = None
 
     # convert 'None' to None
     if value == "None":
@@ -240,13 +537,27 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "data_dir":
         if value is not None:
-            valid.valid_container(value, container_types=str, min_length=1, name=key)
-            if not os.path.isdir(value):
-                raise ValueError(f"The directory {value} does not exist")
+            if isinstance(value, str):
+                value = (value,)
+            valid.valid_container(
+                value,
+                container_types=(tuple, list),
+                item_types=str,
+                min_length=1,
+                allow_none=True,
+                name=key,
+            )
+            for val in value:
+                if not os.path.isdir(val):
+                    raise ValueError(f"The directory {val} does not exist")
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
+    elif key == "detector_distance":
+        valid.valid_item(
+            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
+        )
     elif key == "dirbeam_detector_angles":
         valid.valid_container(
             value,
@@ -286,7 +597,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
                 name=key,
             )
     elif key == "fill_value_mask":
-        allowed = (0, 1)
+        allowed = {0, 1}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "fix_size":
@@ -420,12 +731,21 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             min_excluded=0,
             name=key,
         )
-    elif key == "reconstruction_file":
+    elif key == "reconstruction_files":
+        if isinstance(value, str):
+            value = (value,)
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value,
+            container_types=list,
+            item_types=str,
+            min_length=1,
+            allow_none=True,
+            name=key,
         )
-        if value is not None and not os.path.isfile(value):
-            raise ValueError(f"The file {value} does not exist")
+        if value is not None:
+            for val in value:
+                if not os.path.isfile(val):
+                    raise ValueError(f"The file {val} does not exist")
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
         if value not in allowed:
@@ -481,7 +801,11 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "sample_name":
-        valid.valid_container(value, container_types=str, min_length=1, name=key)
+        if isinstance(value, str):
+            value = (value,)
+        valid.valid_container(
+            value, container_types=(tuple, list), item_types=str, min_length=1, name=key
+        )
     elif key == "sample_offsets":
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), allow_none=True, name=key
@@ -495,43 +819,52 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "save_dir":
+        if isinstance(value, str):
+            value = [
+                value,
+            ]
         valid.valid_container(
-            value, container_types=str, min_length=1, allow_none=True, name=key
+            value,
+            container_types=(tuple, list),
+            item_types=str,
+            min_length=1,
+            allow_none=True,
+            name=key,
         )
-        if isinstance(value, str) and not value.endswith("/"):
-            value += "/"
+        value = list(value)
+        for idx, val in enumerate(value):
+            if isinstance(val, str) and not val.endswith("/"):
+                value[idx] += "/"
     elif key == "save_frame":
         allowed = {"laboratory", "crystal", "lab_flat_sample"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "scan":
-        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "scans":
         if isinstance(value, Real):
             value = (value,)
         valid.valid_container(
             value, container_types=(tuple, list, np.ndarray), min_length=1, name=key
         )
-
-    elif key == "sdd":
-        valid.valid_item(
-            value, allowed_types=Real, min_excluded=0, allow_none=True, name=key
-        )
     elif key == "sort_method":
         allowed = {"mean_amplitude", "variance", "variance/mean", "volume"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "specfile_name":
-        valid.valid_container(value, container_types=str, allow_none=True, name=key)
     elif key == "strain_method":
         allowed = {"default", "defect"}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "strain_range":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
-    elif key == "template_imagefile":
+    elif key in ["template_imagefile", "specfile_name"]:
+        if isinstance(value, str):
+            value = (value,)
         valid.valid_container(
-            value, container_types=str, min_length=0, allow_none=True, name=key
+            value,
+            container_types=(tuple, list),
+            item_types=str,
+            min_length=1,
+            allow_none=True,
+            name=key,
         )
     elif key == "threshold_gradient":
         valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)

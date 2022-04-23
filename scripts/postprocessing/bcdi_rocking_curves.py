@@ -139,8 +139,7 @@ energy = 10300  # in eV, offset of 6eV at ID01
 ###################
 bad_color = "1.0"  # white
 bckg_color = "0.7"  # grey
-my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
-
+my_cmap = ColormapFactory(bad_color=bad_color).cmap
 ########################################
 # check and initialize some parameters #
 ########################################

@@ -47,7 +47,7 @@ linewidth = 2  # linewidth for the plot frame
 # define colormap #
 ###################
 bad_color = "1.0"  # white background
-my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
+my_cmap = ColormapFactory(bad_color=bad_color).cmap
 mpl.rcParams["axes.linewidth"] = tick_width  # set the linewidth globally
 
 #########################

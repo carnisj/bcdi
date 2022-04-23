@@ -10,9 +10,10 @@
 """Parsing of command-line arguments and config files."""
 
 from argparse import ArgumentParser
+from functools import partial
 import os
 import pathlib
-from typing import Any, ByteString, Dict, Optional
+from typing import Any, ByteString, Dict, List, Optional, Type
 import yaml
 
 from bcdi.utils.parameters import valid_param
@@ -126,27 +127,27 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     argument_parser.add_argument(
-        "-s", "--scan", type=int, help="number of the scan to process"
+        "--scans",
+        type=partial(str_to_list, item_type=int),
+        help="comma-separated list of scans, e.g. '11,12,13'",
     )
 
     argument_parser.add_argument(
-        "--scans", type=int, help="list of the scans to process"
-    )
-
-    argument_parser.add_argument(
-        "--sdd",
+        "--detector_distance",
         type=float,
         help="sample to detector distance",
     )
 
     argument_parser.add_argument(
-        "--specfile_name", type=str, help="path to '.spec' file"
+        "--specfile_name",
+        type=partial(str_to_list, item_type=str),
+        help="comma-separated list of paths to the log (e.g. .spec or .fio) file",
     )
 
     argument_parser.add_argument(
         "--template_imagefile",
-        type=str,
-        help="template of the data image files",
+        type=partial(str_to_list, item_type=str),
+        help="comma-separated list of templates for the data image files",
     )
 
     argument_parser.add_argument(
@@ -154,6 +155,23 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     )
 
     return argument_parser
+
+
+def str_to_list(string: str, item_type: Type) -> List:
+    """
+    Convert a comma-separated string to a list.
+
+    :param string: the string to convert, e.g. "11,12,13" or "file1.spec,file2.spec"
+    :param item_type: type to which the elements should be cast
+    :return: a list of converted values
+    """
+    elements = string.split(",")
+    for idx, val in enumerate(elements):
+        try:
+            elements[idx] = item_type(val)
+        except ValueError:
+            raise ValueError(f"can't cast {val} from {str} to {item_type}")
+    return elements
 
 
 class ConfigParser:

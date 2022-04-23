@@ -93,7 +93,7 @@ if grey_background:
     bad_color = "0.7"
 else:
     bad_color = "1.0"  # white background
-my_cmap = ColormapFactory(bad_color=bad_color).generate_cmap()
+my_cmap = ColormapFactory(bad_color=bad_color).cmap
 
 #############
 # load data #

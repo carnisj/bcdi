@@ -13,7 +13,6 @@ import unittest
 from unittest.mock import patch
 from bcdi.experiment.detector import (
     create_detector,
-    create_roi,
     Detector,
     Dummy,
     Merlin,
@@ -61,71 +60,6 @@ class TestCreateDetector(unittest.TestCase):
     def test_name_missing(self):
         with self.assertRaises(TypeError):
             create_detector()
-
-
-class TestCreateRoi(unittest.TestCase):
-    """
-    Tests related to create_roi.
-
-    def create_roi(dic : Dict[str, Any]) -> Union[List[int], None]:
-    """
-
-    def test_not_a_dict(self):
-        with self.assertRaises(TypeError):
-            create_roi({0, 1})
-
-    def test_roi_none(self):
-        self.assertEqual(create_roi({"a": 0}), None)
-
-    def test_roi_wrong_length(self):
-        with self.assertRaises(ValueError):
-            create_roi({"roi_detector": [1, 2]})
-
-    def test_roi_wrong_type(self):
-        with self.assertRaises(TypeError):
-            create_roi({"roi_detector": "[1, 2, 3, 4]"})
-
-    def test_center_roi_x_center_roi_y_none(self):
-        roi = [10, 200, 20, 50]
-        output = create_roi({"roi_detector": roi})
-        self.assertTrue(all(out == roi[idx] for idx, out in enumerate(output)))
-
-    def test_center_roi_x_not_none(self):
-        roi = [10, 200, 20, 50]
-        correct = [10, 200, 130, 200]
-        output = create_roi({"roi_detector": roi, "center_roi_x": 150})
-        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
-
-    def test_center_roi_x_wrong_type_str(self):
-        with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_x": "150"})
-
-    def test_center_roi_x_wrong_type_float(self):
-        with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_x": 1.5})
-
-    def test_center_roi_y_wrong_type_str(self):
-        with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_y": "150"})
-
-    def test_center_roi_y_wrong_type_float(self):
-        with self.assertRaises(TypeError):
-            create_roi({"roi_detector": [10, 200, 20, 50], "center_roi_y": 1.5})
-
-    def test_center_roi_y_not_none(self):
-        roi = [10, 200, 20, 50]
-        correct = [140, 350, 20, 50]
-        output = create_roi({"roi_detector": roi, "center_roi_y": 150})
-        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
-
-    def test_center_roi_x_y_not_none(self):
-        roi = [10, 200, 20, 50]
-        correct = [140, 350, -10, 60]
-        output = create_roi(
-            {"roi_detector": roi, "center_roi_y": 150, "center_roi_x": 10}
-        )
-        print(output)
-        self.assertTrue(all(out == correct[idx] for idx, out in enumerate(output)))
 
 
 class TestDetector(fake_filesystem_unittest.TestCase):

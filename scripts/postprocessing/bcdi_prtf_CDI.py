@@ -68,7 +68,7 @@ q_max = None  # in 1/nm, PRTF normalization using only points smaller than q_max
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 #########################
 # check some parameters #

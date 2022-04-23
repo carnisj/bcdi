@@ -61,7 +61,7 @@ subtract_median = False  # if True, will subtract the median to the mean at each
 ###################
 # define colormap #
 ###################
-my_cmap = ColormapFactory().generate_cmap()
+my_cmap = ColormapFactory().cmap
 
 ##############################
 # load reciprocal space data #
