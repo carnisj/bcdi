@@ -49,10 +49,12 @@ Usage:
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
      folder of the experiment, where all scans are stored
     :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"
-     images will be saved here, leave it to None otherwise
+     images will be saved here, leave it to None otherwise. Provide a single path or a
+     list of paths for multiple scans.
     :param data_dir: e.g. None
-     use this to override the beamline default search path for the data
-    :param sample_name: e.g. "S"
+     use this to override the beamline default search path for the data. Provide
+     a list of paths for multiple scans.
+     :param sample_name: e.g. "S"
      str or list of str of sample names (string in front of the scan number in the
      folder name). If only one name is indicated, it will be repeated to match the
      number of scans.
@@ -145,7 +147,8 @@ Usage:
      "outofplane" for a sample rotation around x outboard, "inplane" for a sample
      rotation around y vertical up, "energy"
     :param specfile_name: e.g. "l5.spec"
-     beamline-dependent parameter, use the following template:
+     string or list of strings for multiple scans. beamline-dependent parameter,
+     use the following template:
 
      - template for ID01 and 34ID: name of the spec file if it is at the default
       location (in root_folder) or full path to the spec file
@@ -208,7 +211,8 @@ Usage:
     :param hotpixels_file: non-empty file path or None
     :param flatfield_file: non-empty file path or None
     :param template_imagefile: e.g. "data_mpx4_%05d.edf.gz"
-     use one of the following template:
+     string or list of strings for multiple scans. beamline-dependent parameter,
+     use the following template:
 
      - template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
      - template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'

@@ -211,6 +211,8 @@ def run(prm: Dict[str, Any]) -> None:
         ################
         if prm["reconstruction_files"][scan_idx] is not None:
             file_path = prm["reconstruction_files"][scan_idx]
+            if isinstance(file_path, str):
+                file_path = (file_path,)
         else:
             root = tk.Tk()
             root.withdraw()

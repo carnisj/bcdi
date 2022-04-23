@@ -1,16 +1,18 @@
-scans: 11  # spec scan number
+scans: 11  # scan number or list of scan numbers
 root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
 save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
-# images will be saved here,
-# leave it to None otherwise (default to data directory's parent)
+# images will be saved here, leave it to None otherwise (default to data directory's
+# parent). Provide a single path or a list of paths for multiple scans.
 data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
-# leave None to use the beamline default, or provide the full path to the data.
+# leave None to use the beamline default, or provide the full path to the data. Provide
+# a list of paths for multiple scans.
 sample_name: "S"
 # string in front of the scan number in the folder name.
 reconstruction_files: None
 # full path to the output of phase retrieval, or list of such paths if 'scans' is a
-# list. If None an interactive window will open to choose a file.
+# list. Providing several reconstructions for each scan is not supported.
+# If None an interactive window will open to choose a file.
 comment: ""  # comment in filenames, should start with _
 colormap: "turbo"  # "turbo", "custom" or colormap defined in the colorcet package
 backend: "Qt5Agg"
@@ -115,6 +117,7 @@ sample_offsets: [90, 0, 0]
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # the sample offsets will be subtracted to the motor values. Leave None if no offset.
 specfile_name: "l5.spec"
+# string or list of strings for multiple scans.
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
 # template for SIXS: full path of the alias dictionnary or None to use the one in the
@@ -153,6 +156,7 @@ roi_detector: None
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
 template_imagefile: "data_mpx4_%05d.edf.gz"
+# string or list of strings for multiple scans.
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for ID01BLISS: 'ihhc3715_sample5.h5'
 # template for SIXS_2018: 'align.spec_ascan_mu_%05d.nxs'
