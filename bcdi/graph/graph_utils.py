@@ -1413,7 +1413,7 @@ def linecut(
     num_points = int(
         np.sqrt(sum((val[1] - val[0] + 1) ** 2 for _, val in enumerate(indices)))
     )
-    print("num_points", num_points)
+
     cut = map_coordinates(
         input=array,
         coordinates=np.vstack(

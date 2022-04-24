@@ -516,7 +516,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "config_file":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
         if not os.path.isfile(value):
-            raise ValueError(f"The file {value} does not exist")
+            raise ValueError(f"The file '{value}' does not exist")
     elif key == "correlation_threshold":
         valid.valid_item(
             value, allowed_types=Real, min_included=0, max_included=1, name=key
@@ -746,7 +746,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value = (value,)
         valid.valid_container(
             value,
-            container_types=list,
+            container_types=(tuple, list),
             item_types=str,
             min_length=1,
             allow_none=True,
@@ -755,7 +755,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         if value is not None:
             for val in value:
                 if not os.path.isfile(val):
-                    raise ValueError(f"The file {val} does not exist")
+                    raise ValueError(f"The file '{val}' does not exist")
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
         if value not in allowed:
