@@ -11,30 +11,26 @@ import h5py
 import numpy as np
 from pathlib import Path
 import tempfile
-from typing import Dict, Optional
 import unittest
 import yaml
 
-from bcdi.postprocessing.postprocessing_runner import run
+from bcdi.preprocessing.preprocessing_runner import run
 from bcdi.utils.parser import ConfigParser
 from tests.config import run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
-CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
+CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
 
 
 class TestRun(unittest.TestCase):
-    """Large test for the postprocessing script bcdi_strain.py."""
+    """Large test for the preprocessing script bcdi_preprocessing_BCDI.py."""
 
     def setUp(self) -> None:
         self.args: Optional[Dict] = None
         self.command_line_args = {
             "backend": "Agg",
-            "reconstruction_files": str(
-                here.parents[1]
-                / "bcdi/examples/S11_modes_252_420_392_prebinning_1_1_1.h5"
-            ),
+            "flag_interact": False,
         }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
         if not Path(
@@ -45,27 +41,30 @@ class TestRun(unittest.TestCase):
             )
 
     def test_run(self):
-        expected_q_com = [0, 2.77555, 0]
-        expected_volume = 23217408
+        expected_bragg_inplane = 0.4926488901267543
+        expected_bragg_outofplane = 35.36269069963432
+        expected_bragg_peak = [127, 214, 316]
+        expected_q = [-0.84164063, 2.63974482, -0.03198209]
         with tempfile.TemporaryDirectory() as tmpdir:
             self.args = self.parser.load_arguments()
             self.args["save_dir"] = (tmpdir,)
             run(self.args)
 
             with h5py.File(
-                f"{tmpdir}/S11_ampdispstrain_mode_crystalframe.h5",
+                f"{tmpdir}/S11_preprocessing_norm_256_256_256_1_2_2.h5",
                 "r",
             ) as h5file:
-                amp = h5file["output/amp"][()]
-                voxel_sizes = h5file["output/voxel_sizes"][()]
-                q_com = h5file["output/q_com"][()]
-        amp = amp / amp.max()
-        amp[amp < self.args["isosurface_strain"]] = 0
-        amp[np.nonzero(amp)] = 1
-        volume = amp.sum() * reduce(lambda x, y: x * y, voxel_sizes)
+                bragg_inplane = h5file["output/bragg_inplane"][()]
+                bragg_outofplane = h5file["output/bragg_outofplane"][()]
+                bragg_peak = h5file["output/bragg_peak"][()]
+                q = h5file["output/q"][()]
 
-        self.assertEqual(volume, expected_volume)
-        self.assertTrue(np.allclose(q_com, expected_q_com))
+        self.assertAlmostEqual(bragg_inplane, expected_bragg_inplane)
+        self.assertAlmostEqual(bragg_outofplane, expected_bragg_outofplane)
+        self.assertTrue(
+            val1 == val2 for val1, val2 in zip(bragg_peak, expected_bragg_peak)
+        )
+        self.assertTrue(np.allclose(q, expected_q))
 
 
 if __name__ == "__main__":
