@@ -12,6 +12,7 @@ import numpy as np
 from pathlib import Path
 import tempfile
 import unittest
+import yaml
 
 from bcdi.postprocessing.postprocessing_runner import run
 from bcdi.utils.parser import ConfigParser
@@ -34,14 +35,18 @@ class TestRun(unittest.TestCase):
             ),
         }
         self.parser = ConfigParser(CONFIG, self.command_line_args)
-        self.args = self.parser.load_arguments()
-        if not Path(self.args["root_folder"]).is_dir():
+        if not Path(
+            yaml.load(self.parser.raw_config, Loader=yaml.SafeLoader)["root_folder"]
+        ).is_dir():
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
 
     def test_run(self):
+        expected_q_com = [0, 2.77555, 0]
+        expected_volume = 23217408
         with tempfile.TemporaryDirectory() as tmpdir:
+            self.args = self.parser.load_arguments()
             self.args["save_dir"] = (tmpdir,)
             run(self.args)
 
@@ -51,12 +56,14 @@ class TestRun(unittest.TestCase):
             ) as h5file:
                 amp = h5file["output/amp"][:]
                 voxel_sizes = h5file["output/voxel_sizes"][:]
+                q_com = h5file["output/q_com"][:]
         amp = amp / amp.max()
         amp[amp < self.args["isosurface_strain"]] = 0
         amp[np.nonzero(amp)] = 1
         volume = amp.sum() * reduce(lambda x, y: x * y, voxel_sizes)
 
-        self.assertEqual(volume, 23217408)
+        self.assertEqual(volume, expected_volume)
+        self.assertTrue(np.allclose(q_com, expected_q_com))
 
 
 if __name__ == "__main__":
