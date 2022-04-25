@@ -296,9 +296,13 @@ class PreprocessingChecker(ConfigChecker):
         if self.initial_params["align_q"]:
             if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
                 raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
-            self._checked_params[
-                "comment"
-            ] += f"_align-q-{self.initial_params['ref_axis_q']}"
+            if (
+                not self._checked_params["use_rawdata"]
+                and self._checked_params["interpolation_method"] == "linearization"
+            ):
+                self._checked_params[
+                    "comment"
+                ] += f"_align-q-{self.initial_params['ref_axis_q']}"
 
         if (
             self.initial_params["backend"].lower() == "agg"
