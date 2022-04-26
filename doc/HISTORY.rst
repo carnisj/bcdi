@@ -1,5 +1,5 @@
-Future:
--------
+Version 0.2.6:
+--------------
 
 * Fix deprecation warning with the method `pandas.DataFrame.append`
 

@@ -48,7 +48,17 @@ class ParameterError(Exception):
 
 
 class ConfigChecker(ABC):
-    """Validate and configure parameters."""
+    """
+    Validate and configure parameters.
+
+    :param initial_params: the dictionary of parameters to validate and configure
+    :param default_values: an optional dictionary of default values for keys in
+     initial_params
+    :param logger: an optional Logger
+    :param match_length_params: a tuple of keys from initial_params which should match
+     a certain length (e.g. the number of scans)
+    :param required_params: a tuple of keys that have to be present in initial_params
+    """
 
     def __init__(
         self,
@@ -286,9 +296,13 @@ class PreprocessingChecker(ConfigChecker):
         if self.initial_params["align_q"]:
             if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
                 raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
-            self._checked_params[
-                "comment"
-            ] += f"_align-q-{self.initial_params['ref_axis_q']}"
+            if (
+                not self._checked_params["use_rawdata"]
+                and self._checked_params["interpolation_method"] == "linearization"
+            ):
+                self._checked_params[
+                    "comment"
+                ] += f"_align-q-{self.initial_params['ref_axis_q']}"
 
         if (
             self.initial_params["backend"].lower() == "agg"
@@ -506,7 +520,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "config_file":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
         if not os.path.isfile(value):
-            raise ValueError(f"The file {value} does not exist")
+            raise ValueError(f"The file '{value}' does not exist")
     elif key == "correlation_threshold":
         valid.valid_item(
             value, allowed_types=Real, min_included=0, max_included=1, name=key
@@ -736,7 +750,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             value = (value,)
         valid.valid_container(
             value,
-            container_types=list,
+            container_types=(tuple, list),
             item_types=str,
             min_length=1,
             allow_none=True,
@@ -745,7 +759,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         if value is not None:
             for val in value:
                 if not os.path.isfile(val):
-                    raise ValueError(f"The file {val} does not exist")
+                    raise ValueError(f"The file '{val}' does not exist")
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
         if value not in allowed:

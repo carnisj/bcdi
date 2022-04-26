@@ -44,7 +44,7 @@ API Reference
 parameters
 ^^^^^^^^^^
 
-Function related to the validation of configuration parameters.
+Classes and functions related to the validation of configuration parameters.
 
 API Reference
 -------------

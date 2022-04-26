@@ -16,7 +16,7 @@ here = Path(__file__).parent
 CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
 
 
-class Test_str_to_list(unittest.TestCase):
+class TestStrToList(unittest.TestCase):
     """
     Tests on the function str_to_list.
 
@@ -146,4 +146,4 @@ class TestConfigParser(unittest.TestCase):
 
 if __name__ == "__main__":
     run_tests(TestConfigParser)
-    run_tests(Test_str_to_list)
+    run_tests(TestStrToList)

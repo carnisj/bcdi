@@ -294,6 +294,8 @@ class TestPreprocessingChecker(unittest.TestCase):
 
     def test_check_config_align_q(self):
         self.checker.initial_params["align_q"] = True
+        self.checker._checked_params["use_rawdata"] = False
+        self.checker._checked_params["interpolation_method"] = "linearization"
         out = self.checker.check_config()
         self.assertEqual(
             out["comment"],
