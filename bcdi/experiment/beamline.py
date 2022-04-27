@@ -48,6 +48,7 @@ API Reference
 
 """
 from abc import ABC, abstractmethod
+import logging
 from math import hypot, isclose
 import numpy as np
 from numbers import Real
@@ -58,6 +59,8 @@ from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def create_beamline(name, **kwargs):
@@ -90,7 +93,11 @@ class Beamline(ABC):
     Base class for defining a beamline.
 
     :param name: name of the beamline
-    :param kwargs: optional beamline-dependent parameters
+    :param kwargs:
+
+     - optional beamline-dependent parameters
+     - 'logger': an optional logger
+
     """
 
     orientation_lookup = {"x-": 1, "x+": -1, "y-": 1, "y+": -1}  # lookup table for the
@@ -103,13 +110,14 @@ class Beamline(ABC):
     def __init__(self, name, **kwargs):
         self.name = name
         self.diffractometer = Diffractometer(
-            name=name, sample_offsets=kwargs.get("sample_offsets")
+            name=name, sample_offsets=kwargs.get("sample_offsets"), **kwargs
         )
         self.loader = create_loader(
-            name=name, sample_offsets=self.diffractometer.sample_offsets
+            name=name, sample_offsets=self.diffractometer.sample_offsets, **kwargs
         )
         self.sample_angles = None
         self.detector_angles = None
+        self.logger = kwargs.get("logger", module_logger)
 
     @property
     def detector_angles(self):
@@ -305,7 +313,7 @@ class Beamline(ABC):
         # The reference point when orthogonalizing if the center of the array,
         # but we do not know to which angle it corresponds if the data was cropped.
         if central_angle is None:
-            print(
+            self.logger.info(
                 "central_angle=None, using the angle at half of the rocking curve"
                 " for the calculation of the rotation matrix"
             )
@@ -315,7 +323,7 @@ class Beamline(ABC):
         # use this angle in the calculation of the rotation matrix
         angles = list(angles)
         angles[rocking_circle] = central_angle
-        print(
+        self.logger.info(
             f"sample stage circles: {self.diffractometer.sample_circles}\n"
             f"sample stage angles:  {angles}"
         )
@@ -403,7 +411,9 @@ class Beamline(ABC):
 
         # create the tuple of offsets, all 0 except for the detector inplane circle
         if index is None:
-            print("no detector inplane circle detected, discarding 'offset_inplane'")
+            self.logger.info(
+                "no detector inplane circle detected, discarding 'offset_inplane'"
+            )
             offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
         else:
             offsets = [0 for _ in range(len(sample_circles) + index)]
@@ -570,7 +580,7 @@ class Beamline(ABC):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -694,7 +704,7 @@ class BeamlineCRISTAL(Beamline):
                 mgomega, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
-            print("mgomega", mgomega)
+            self.logger.info("mgomega", mgomega)
             nb_steps = len(mgphi)
             tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
             mgphi = self.process_tilt(
@@ -738,7 +748,7 @@ class BeamlineCRISTAL(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane" or "inplane"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -752,7 +762,7 @@ class BeamlineCRISTAL(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using CRISTAL geometry")
+            self.logger.info("using CRISTAL geometry")
 
         if rocking_angle == "outofplane":
             if grazing_angle is not None:
@@ -760,7 +770,7 @@ class BeamlineCRISTAL(Beamline):
                     "Circle below mgomega not implemented for CRISTAL"
                 )
             if verbose:
-                print("rocking angle is mgomega")
+                self.logger.info("rocking angle is mgomega")
             # rocking mgomega angle clockwise around x
             mymatrix[:, 0] = (
                 2
@@ -821,7 +831,7 @@ class BeamlineCRISTAL(Beamline):
                 name="grazing_angle",
             )
             if verbose:
-                print(
+                self.logger.info(
                     "rocking angle is phi,"
                     f" mgomega={grazing_angle[0] * 180 / np.pi:.3f} deg"
                 )
@@ -1007,14 +1017,14 @@ class BeamlineID01(Beamline):
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
-            print("phi", phi)
+            self.logger.info("phi", phi)
             nb_steps = len(eta)
             tilt_angle = (eta[1:] - eta[0:-1]).mean()
             eta = self.process_tilt(
                 eta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            print("eta", eta)
+            self.logger.info("eta", eta)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
@@ -1060,7 +1070,7 @@ class BeamlineID01(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1074,7 +1084,7 @@ class BeamlineID01(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using ESRF ID01 PSIC geometry")
+            self.logger.info("using ESRF ID01 PSIC geometry")
 
         if isinstance(grazing_angle, Real):
             grazing_angle = (grazing_angle,)
@@ -1092,7 +1102,7 @@ class BeamlineID01(Beamline):
 
         if rocking_angle == "outofplane":
             if verbose:
-                print(
+                self.logger.info(
                     f"rocking angle is eta, mu={grazing_angle[0] * 180 / np.pi:.3f} deg"
                 )
             # rocking eta angle clockwise around x (phi does not matter, above eta)
@@ -1144,7 +1154,7 @@ class BeamlineID01(Beamline):
             if len(grazing_angle) != 2:
                 raise ValueError("grazing_angle should be of length 2")
             if verbose:
-                print(
+                self.logger.info(
                     f"rocking angle is phi,"
                     f" mu={grazing_angle[0] * 180 / np.pi:.3f} deg,"
                     f" eta={grazing_angle[1] * 180 / np.pi:.3f}deg"
@@ -1366,7 +1376,7 @@ class BeamlineNANOMAX(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1380,7 +1390,7 @@ class BeamlineNANOMAX(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using NANOMAX geometry")
+            self.logger.info("using NANOMAX geometry")
 
         if rocking_angle == "outofplane":
             if grazing_angle is not None:
@@ -1388,7 +1398,7 @@ class BeamlineNANOMAX(Beamline):
                     "Circle below theta not implemented for NANOMAX"
                 )
             if verbose:
-                print("rocking angle is theta")
+                self.logger.info("rocking angle is theta")
             # rocking theta angle clockwise around x
             # (phi does not matter, above eta)
             mymatrix[:, 0] = (
@@ -1450,7 +1460,7 @@ class BeamlineNANOMAX(Beamline):
                 name="grazing_angle",
             )
             if verbose:
-                print(
+                self.logger.info(
                     "rocking angle is phi,"
                     f" theta={grazing_angle[0] * 180 / np.pi:.3f} deg"
                 )
@@ -1622,17 +1632,17 @@ class BeamlineP10(Beamline):
 
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
-        print("chi", chi)
-        print("mu", mu)
+        self.logger.info("chi", chi)
+        self.logger.info("mu", mu)
         if setup.rocking_angle == "outofplane":  # om rocking curve
-            print("phi", phi)
+            self.logger.info("phi", phi)
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
                 om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            print("om", om)
+            self.logger.info("om", om)
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
@@ -1676,7 +1686,7 @@ class BeamlineP10(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1693,7 +1703,7 @@ class BeamlineP10(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using PETRAIII P10 geometry")
+            self.logger.info("using PETRAIII P10 geometry")
 
         if isinstance(grazing_angle, Real):
             grazing_angle = (grazing_angle,)
@@ -1707,7 +1717,7 @@ class BeamlineP10(Beamline):
 
         if rocking_angle == "outofplane":
             if verbose:
-                print(
+                self.logger.info(
                     f"rocking angle is om, mu={grazing_angle[0] * 180 / np.pi:.3f} deg"
                 )
             # rocking omega angle clockwise around x at mu=0,
@@ -1773,7 +1783,7 @@ class BeamlineP10(Beamline):
                     "Non-zero mu not implemented for inplane rocking curve at P10"
                 )
             if verbose:
-                print(
+                self.logger.info(
                     f"rocking angle is phi,"
                     f" mu={grazing_angle[0] * 180 / np.pi:.3f} deg,"
                     f" om={grazing_angle[1] * 180 / np.pi:.3f} deg,"
@@ -2210,7 +2220,7 @@ class BeamlineSIXS(Beamline):
 
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
-        print("beta", beta)
+        self.logger.info("beta", beta)
         if setup.rocking_angle == "inplane":  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = (mu[1:] - mu[0:-1]).mean()
@@ -2255,7 +2265,7 @@ class BeamlineSIXS(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -2269,7 +2279,7 @@ class BeamlineSIXS(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using SIXS geometry")
+            self.logger.info("using SIXS geometry")
 
         if isinstance(grazing_angle, Real):
             grazing_angle = (grazing_angle,)
@@ -2283,7 +2293,7 @@ class BeamlineSIXS(Beamline):
 
         if rocking_angle == "inplane":
             if verbose:
-                print(
+                self.logger.info(
                     "rocking angle is mu,"
                     f" beta={grazing_angle[0] * 180 / np.pi:.3f} deg"
                 )
@@ -2545,7 +2555,7 @@ class Beamline34ID(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have printed comments
+        :param verbose: True to have self.logger.infoed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -2559,7 +2569,7 @@ class Beamline34ID(Beamline):
         q_offset = np.zeros(3)
 
         if verbose:
-            print("using APS 34ID geometry")
+            self.logger.info("using APS 34ID geometry")
 
         if rocking_angle == "inplane":
             if grazing_angle is not None:
@@ -2567,7 +2577,9 @@ class Beamline34ID(Beamline):
                     "Circle below theta not implemented for 34ID-C"
                 )
             if verbose:
-                print("rocking angle is theta, no grazing angle (chi, phi above theta)")
+                self.logger.info(
+                    "rocking angle is theta, no grazing angle (chi, phi above theta)"
+                )
             # rocking theta angle anti-clockwise around y
             mymatrix[:, 0] = (
                 2
@@ -2626,7 +2638,7 @@ class Beamline34ID(Beamline):
                 name="grazing_angle",
             )
             if verbose:
-                print(
+                self.logger.info(
                     "rocking angle is phi,"
                     f" theta={grazing_angle[0] * 180 / np.pi:.3f} deg,"
                     f" chi={grazing_angle[1] * 180 / np.pi:.3f} deg"

@@ -7,7 +7,7 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Functions related to forward CDI data preprocessing, before phase retrieval."""
 
-
+import logging
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
@@ -16,6 +16,8 @@ from bcdi.experiment import loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def beamstop_correction(data, setup, debugging=False):
@@ -719,12 +721,14 @@ def reload_cdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+     - 'logger': an optional logger
 
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
 
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
@@ -773,6 +777,7 @@ def reload_cdi_data(
             norm_to_min=True,
             savedir=setup.detector.savedir,
             debugging=True,
+            logger=logger,
         )
 
     # pad the data to the shape defined by the ROI

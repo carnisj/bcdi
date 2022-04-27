@@ -7,11 +7,15 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """RotationMatrix class."""
+
+import logging
 import numpy as np
 from numbers import Real
 
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 class RotationMatrix:
@@ -25,12 +29,17 @@ class RotationMatrix:
      clockwise rotation.
     :param angle: angular value in degrees to be used in the calculation of the
      rotation matrix
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     """
 
     valid_circles = {"x+", "x-", "y+", "y-", "z+", "z-"}
     # + counter-clockwise, - clockwise
 
-    def __init__(self, circle: str, angle: Real) -> None:
+    def __init__(self, circle: str, angle: Real, **kwargs) -> None:
+        self.logger = kwargs.get("logger", module_logger)
         self.angle = angle
         self.circle = circle
 

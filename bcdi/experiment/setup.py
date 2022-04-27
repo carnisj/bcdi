@@ -16,7 +16,6 @@ beamline-dependent information from the child classes.
 from collections.abc import Sequence
 import datetime
 import logging
-from logging import Logger
 import multiprocessing as mp
 from numbers import Integral, Real
 import numpy as np
@@ -51,7 +50,6 @@ class Setup:
      {'outofplane', 'inplane', 'energy'}
     :param grazing_angle: tuple of motor positions for the goniometer circles below the
      rocking angle. Leave None if there is no such circle.
-    :param logger: an optional logger
     :param kwargs:
 
      - 'direct_beam': [vertical, horizontal] list of two real numbers indicating the
@@ -83,6 +81,7 @@ class Setup:
      - 'actuators': optional dictionary that can be used to define the entries
        corresponding to actuators in data files (useful at CRISTAL where the location
        of data keeps changing)
+     - 'logger': an optional logger
 
     """
 
@@ -109,7 +108,6 @@ class Setup:
         tilt_angle=None,
         rocking_angle=None,
         grazing_angle=None,
-        logger: Optional[Logger] = None,
         **kwargs,
     ):
 
@@ -135,10 +133,13 @@ class Setup:
                 "preprocessing_binning",
                 "custom_pixelsize",
                 "linearity_func",
+                "logger",
             },
             name="Setup.__init__",
         )
-        self.logger = logger if logger is not None else module_logger
+        # kwarg for logging
+        self.logger = kwargs.get("logger", module_logger)
+
         # kwargs for loading and preprocessing data
         self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
         self.direct_beam = kwargs.get("direct_beam")
@@ -163,9 +164,7 @@ class Setup:
 
         # create the beamline instance
         self.beamline_name = beamline_name
-        self.beamline = create_beamline(
-            name=beamline_name, sample_offsets=kwargs.get("sample_offsets")
-        )
+        self.beamline = create_beamline(name=beamline_name, **kwargs)
 
         # load positional arguments corresponding to instance properties
         self.beam_direction = beam_direction
