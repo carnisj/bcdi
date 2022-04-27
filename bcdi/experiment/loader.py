@@ -75,7 +75,7 @@ if TYPE_CHECKING:
 module_logger = logging.getLogger(__name__)
 
 
-def create_loader(name, sample_offsets):
+def create_loader(name, sample_offsets, **kwargs):
     """
     Create the instance of the loader.
 
@@ -84,24 +84,28 @@ def create_loader(name, sample_offsets):
      the offsets of each of the sample circles (the offset for the most outer circle
      should be at index 0). The number of circles is beamline dependent. Convention:
      the sample offsets will be subtracted to measurement the motor values.
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: the corresponding beamline instance
     """
     if name == "ID01":
-        return LoaderID01(name=name, sample_offsets=sample_offsets)
+        return LoaderID01(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "ID01BLISS":
-        return LoaderID01BLISS(name=name, sample_offsets=sample_offsets)
+        return LoaderID01BLISS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
-        return LoaderSIXS(name=name, sample_offsets=sample_offsets)
+        return LoaderSIXS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "34ID":
-        return Loader34ID(name=name, sample_offsets=sample_offsets)
+        return Loader34ID(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "P10":
-        return LoaderP10(name=name, sample_offsets=sample_offsets)
+        return LoaderP10(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "P10_SAXS":
-        return LoaderP10SAXS(name=name, sample_offsets=sample_offsets)
+        return LoaderP10SAXS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "CRISTAL":
-        return LoaderCRISTAL(name=name, sample_offsets=sample_offsets)
+        return LoaderCRISTAL(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "NANOMAX":
-        return LoaderNANOMAX(name=name, sample_offsets=sample_offsets)
+        return LoaderNANOMAX(name=name, sample_offsets=sample_offsets, **kwargs)
     raise ValueError(f"Loader {name} not supported")
 
 

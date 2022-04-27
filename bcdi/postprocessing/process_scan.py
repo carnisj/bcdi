@@ -16,6 +16,7 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
+import logging
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -33,12 +34,19 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
 
+module_logger = logging.getLogger(__name__)
+
 
 def process_scan(scan_idx, prm):
+
     scan_nb = prm["scans"][scan_idx]
-    tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"
-    pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-    logger = multiprocessing_logger(path=str(tmpdir))
+
+    if prm["multiprocessing"]:
+        tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"
+        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
+        logger = multiprocessing_logger(path=str(tmpdir / f"{scan_nb}.log"))
+    else:
+        logger = module_logger
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     comment = prm["comment"]  # re-initialize comment
@@ -48,6 +56,7 @@ def process_scan(scan_idx, prm):
     #################################
     # define the experimental setup #
     #################################
+    setup_kwargs = {"logger": logger} if prm["multiprocessing"] else {}
     setup = Setup(
         beamline_name=prm["beamline"],
         energy=prm["energy"],
@@ -69,7 +78,7 @@ def process_scan(scan_idx, prm):
         binning=prm["phasing_binning"],
         preprocessing_binning=prm["preprocessing_binning"],
         custom_pixelsize=prm["custom_pixelsize"],
-        logger=logger,
+        **setup_kwargs,
     )
 
     ########################################

@@ -108,16 +108,17 @@ class Beamline(ABC):
     # "y-" detector vertical axis down, as it should be in the CXI convention
 
     def __init__(self, name, **kwargs):
+        self.logger = kwargs.get("logger", module_logger)
         self.name = name
-        self.diffractometer = Diffractometer(
-            name=name, sample_offsets=kwargs.get("sample_offsets"), **kwargs
-        )
+        self.diffractometer = Diffractometer(name=name, **kwargs)
+        loader_kwargs = {"logger": self.logger} if kwargs.get("logger") else {}
         self.loader = create_loader(
-            name=name, sample_offsets=self.diffractometer.sample_offsets, **kwargs
+            name=name,
+            sample_offsets=self.diffractometer.sample_offsets,
+            **loader_kwargs,
         )
         self.sample_angles = None
         self.detector_angles = None
-        self.logger = kwargs.get("logger", module_logger)
 
     @property
     def detector_angles(self):

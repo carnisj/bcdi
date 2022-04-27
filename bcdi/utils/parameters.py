@@ -316,7 +316,8 @@ class PostprocessingChecker(ConfigChecker):
                     "provide a list of files in 'reconstruction_files' "
                     "with multiprocessing ON"
                 )
-
+        else:
+            self._checked_params["multiprocessing"] = False
         if self.initial_params["simulation"]:
             self._checked_params["invert_phase"] = False
             self._checked_params["correct_refraction"] = False

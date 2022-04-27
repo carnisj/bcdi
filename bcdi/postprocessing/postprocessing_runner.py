@@ -128,28 +128,13 @@ def run(prm: Dict[str, Any]) -> None:
     # start looping over scans #
     ############################
     nb_scans = len(prm["scans"])
-    if nb_scans == 1 or not prm["multiprocessing"]:
-        for scan_idx in range(nb_scans):
-            tmp_str = (
-                f"Scan {scan_idx + 1}/{len(prm['scans'])}: S{prm['scans'][scan_idx]}"
-            )
-            logger.info(
-                f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
-            )
-            process_scan(scan_idx=scan_idx, prm=prm)
-    else:
+    if prm["multiprocessing"]:
         mp.freeze_support()
         pool = mp.Pool(
             processes=min(mp.cpu_count(), nb_scans)
         )  # use this number of processes
 
         for scan_idx in range(nb_scans):
-            tmp_str = (
-                f"Scan {scan_idx + 1}/{len(prm['scans'])}: S{prm['scans'][scan_idx]}"
-            )
-            logger.info(
-                f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
-            )
             pool.apply_async(
                 process_scan,
                 args=(scan_idx, prm),
@@ -158,3 +143,6 @@ def run(prm: Dict[str, Any]) -> None:
         pool.close()
         pool.join()  # postpones the execution of next line of code
         # until all processes in the queue are done.
+    else:
+        for scan_idx in range(nb_scans):
+            process_scan(scan_idx=scan_idx, prm=prm)
