@@ -68,6 +68,7 @@ def run(prm: Dict[str, Any]) -> None:
             "invert_phase": True,
             "is_series": False,
             "keep_size": False,
+            "multiprocessing": True,
             "normalize_flux": "skip",
             "offset_inplane": 0,
             "offset_method": "mean",

@@ -376,6 +376,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "is_series",
         "keep_size",
         "mask_zero_event",
+        "multiprocessing",
         "reload_orthogonal",
         "reload_previous",
         "save",
