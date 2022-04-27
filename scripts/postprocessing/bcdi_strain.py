@@ -357,7 +357,7 @@ Usage:
 
 if __name__ == "__main__":
     # construct the argument parser and parse the command-line arguments
-    configure_logging(verbose=True)
+    configure_logging()
     ap = argparse.ArgumentParser()
     ap = add_cli_parameters(ap)
     cli_args = vars(ap.parse_args())
