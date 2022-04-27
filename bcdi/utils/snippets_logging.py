@@ -8,36 +8,78 @@
 
 """Configure logging."""
 
-import logging
+from logging import (
+    basicConfig,
+    CRITICAL,
+    DEBUG,
+    ERROR,
+    INFO,
+    FileHandler,
+    Formatter,
+    Logger,
+    StreamHandler,
+    WARNING,
+)
+import multiprocessing
 from typing import Optional
 
+FORMATTER = Formatter(
+    "%(asctime)s - %(levelname)s - %(name)s - %(message)s", datefmt="%m/%d/%Y %H:%M:%S"
+)
+VALID_LEVELS = [CRITICAL, DEBUG, ERROR, INFO, WARNING]
 
-def configure_logging(path: Optional[str], verbose: bool = False):
-    """Create handlers and configure logging."""
-    if not isinstance(path, str):
-        raise TypeError(f"'path' should be a string, got {type(path)}")
 
-    # create formatter
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-    )
+def multiprocessing_logger(
+    path: str,
+    level: int = DEBUG,
+) -> Logger:
+    """
+    Create a logger for logging to a file or the console.
+
+    :param path: path of the file where to write logs
+    :param level: valid level for logging
+    :return: an instance of Logger
+    """
+    if level not in VALID_LEVELS:
+        raise ValueError(f"invalid logging level {level}")
+
+    # create logger
+    logger = multiprocessing.get_logger()
+    handler = FileHandler(path, mode="w", encoding="utf-8")
+    handler.setLevel(level)
+    handler.setFormatter(FORMATTER)
+
+    # this bit will make sure you won't have duplicated messages in the output
+    if not len(logger.handlers):
+        logger.addHandler(handler)
+    return logger
+
+
+def configure_logging(
+    path: Optional[str] = None, console_level: int = INFO, file_level: int = DEBUG
+) -> None:
+    """
+    Create handlers and configure logging.
+
+    :param path: path of the file where to write logs
+    :param console_level: valid level for logging to the console
+    :param file_level: valid level for logging to a file
+    """
+    if console_level not in VALID_LEVELS:
+        raise ValueError(f"invalid logging level for the console: {console_level}")
+    if file_level not in VALID_LEVELS:
+        raise ValueError(f"invalid logging level for the file: {file_level}")
 
     # create console and file handlers
-    console_hdl = logging.StreamHandler()
-
-    # set levels
-    if verbose:
-        console_hdl.setLevel(logging.DEBUG)
-    else:
-        console_hdl.setLevel(logging.ERROR)
-    # add formatter to handlers
-    console_hdl.setFormatter(formatter)
+    console_hdl = StreamHandler()
+    console_hdl.setLevel(console_level)
+    console_hdl.setFormatter(FORMATTER)
 
     if path is not None:
-        file_hdl = logging.FileHandler(path, mode="w", encoding="utf-8")
-        file_hdl.setLevel(logging.DEBUG)
-        file_hdl.setFormatter(formatter)
+        file_hdl = FileHandler(path, mode="w", encoding="utf-8")
+        file_hdl.setLevel(file_level)
+        file_hdl.setFormatter(FORMATTER)
         # configure the root logger
-        logging.basicConfig(level=logging.DEBUG, handlers=[console_hdl, file_hdl])
+        basicConfig(level=DEBUG, handlers=[console_hdl, file_hdl])
     else:
-        logging.basicConfig(level=logging.DEBUG, handlers=[console_hdl])
+        basicConfig(level=DEBUG, handlers=[console_hdl])
