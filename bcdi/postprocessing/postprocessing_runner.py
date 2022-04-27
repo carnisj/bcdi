@@ -15,13 +15,14 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
+import logging
 from matplotlib import pyplot as plt
 import numpy as np
 import os
 import pprint
 import tkinter as tk
 from tkinter import filedialog
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 import yaml
 
 import bcdi.graph.graph_utils as gu
@@ -33,6 +34,8 @@ from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
 from bcdi.utils.parameters import PostprocessingChecker
 import bcdi.utils.utilities as util
+
+logger = logging.getLogger(__name__)
 
 
 def run(prm: Dict[str, Any]) -> None:
