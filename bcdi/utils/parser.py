@@ -11,14 +11,17 @@
 
 from argparse import ArgumentParser
 from functools import partial
+import logging
 import os
 import pathlib
-from typing import Any, ByteString, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 import yaml
 
 from bcdi.utils.parameters import valid_param
 from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
+
+logger = logging.getLogger(__name__)
 
 
 def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
@@ -232,7 +235,7 @@ class ConfigParser:
                 dic[key] = value
                 checked_keys.append(key)
             else:
-                print(
+                logger.info(
                     f"'{key}' is an unexpected key, " "its value won't be considered."
                 )
         return {key: dic[key] for key in checked_keys}
@@ -264,7 +267,7 @@ class ConfigParser:
         self.arguments = self._check_args(args)
         return self.arguments
 
-    def _open_file(self) -> ByteString:
+    def _open_file(self) -> bytes:
         """Open the file and return it."""
         with open(self.file_path, "rb") as f:
             raw_config = f.read()

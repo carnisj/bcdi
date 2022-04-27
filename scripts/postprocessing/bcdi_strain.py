@@ -9,11 +9,13 @@
 
 import argparse
 from datetime import datetime
+import logging
 from matplotlib import pyplot as plt
 from pathlib import Path
 
 from bcdi.postprocessing.postprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
+from bcdi.utils.snippets_logging import configure_logging
 
 here = Path(__file__).parent
 CONFIG_FILE = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
@@ -355,6 +357,7 @@ Usage:
 
 if __name__ == "__main__":
     # construct the argument parser and parse the command-line arguments
+    configure_logging(verbose=True)
     ap = argparse.ArgumentParser()
     ap = add_cli_parameters(ap)
     cli_args = vars(ap.parse_args())
@@ -366,6 +369,6 @@ if __name__ == "__main__":
     args["time"] = f"{datetime.now()}"
     run(prm=args)
 
-    print("\nEnd of script")
+    logging.info("\nEnd of script")
     plt.ioff()
     plt.show()

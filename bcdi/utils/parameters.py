@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 import copy
 
 import colorcet as cc
-from logging import Logger
+import logging
 import matplotlib
 from numbers import Number, Real
 import numpy as np
@@ -24,8 +24,9 @@ import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
-from bcdi.utils.constants import LOGGING_LEVELS
 import bcdi.utils.validation as valid
+
+logger = logging.getLogger(__name__)
 
 
 class MissingKeyError(Exception):
@@ -54,7 +55,6 @@ class ConfigChecker(ABC):
     :param initial_params: the dictionary of parameters to validate and configure
     :param default_values: an optional dictionary of default values for keys in
      initial_params
-    :param logger: an optional Logger
     :param match_length_params: a tuple of keys from initial_params which should match
      a certain length (e.g. the number of scans)
     :param required_params: a tuple of keys that have to be present in initial_params
@@ -64,13 +64,11 @@ class ConfigChecker(ABC):
         self,
         initial_params: Dict[str, Any],
         default_values: Optional[Dict[str, Any]] = None,
-        logger: Optional[Logger] = None,
         match_length_params: Tuple = (),
         required_params: Tuple = (),
     ) -> None:
         self.initial_params = initial_params
         self.default_values = default_values
-        self.logger = logger
         self.match_length_params = match_length_params
         self.required_params = required_params
         self._checked_params = copy.deepcopy(self.initial_params)
@@ -196,15 +194,6 @@ class ConfigChecker(ABC):
             bad_color=bad_color, colormap=self.initial_params["colormap"]
         )
 
-    def _log(self, message: str, level: str = "info") -> None:
-        """Log or print a message to the console."""
-        if self.logger is not None:
-            if level not in LOGGING_LEVELS:
-                raise ValueError(f"Unknown logging level {level}")
-            getattr(self.logger, level)(message)
-        else:
-            print(message)
-
 
 class PreprocessingChecker(ConfigChecker):
     """Configure preprocessing-dependent parameters."""
@@ -229,8 +218,8 @@ class PreprocessingChecker(ConfigChecker):
 
         self._checked_params["roi_detector"] = self._create_roi()
         if self.initial_params["fix_size"]:
-            self._log('"fix_size" parameter provided, roi_detector will be set to []')
-            self._log(
+            logger.info('"fix_size" parameter provided, roi_detector will be set to []')
+            logger.info(
                 "'fix_size' parameter provided, defaulting 'center_fft' to 'skip'"
             )
             self._checked_params["roi_detector"] = []
@@ -252,18 +241,17 @@ class PreprocessingChecker(ConfigChecker):
         if self.initial_params["rocking_angle"] == "energy":
             self._checked_params["use_rawdata"] = False
             # you need to interpolate the data in QxQyQz for energy scans
-            if self.logger:
-                self.logger.info(
-                    "Energy scan: defaulting use_rawdata to False,"
-                    " the data will be interpolated using xrayutilities"
-                )
+            logger.info(
+                "Energy scan: defaulting use_rawdata to False,"
+                " the data will be interpolated using xrayutilities"
+            )
 
         if self._checked_params["reload_orthogonal"]:
             self._checked_params["use_rawdata"] = False
 
         if self._checked_params["use_rawdata"]:
             self._checked_params["save_dirname"] = "pynxraw"
-            self._log("Output will be non orthogonal, in the detector frame")
+            logger.info("Output will be non orthogonal, in the detector frame")
         else:
             if self.initial_params["interpolation_method"] not in {
                 "xrayutilities",
@@ -275,7 +263,7 @@ class PreprocessingChecker(ConfigChecker):
                 )
             if self.initial_params["rocking_angle"] == "energy":
                 self._checked_params["interpolation_method"] = "xrayutilities"
-                self._log(
+                logger.info(
                     "Defaulting interp_method to "
                     f"{self._checked_params['interpolation_method'] }"
                 )
@@ -288,7 +276,7 @@ class PreprocessingChecker(ConfigChecker):
                     " when gridding reloaded data (angles won't match)"
                 )
             self._checked_params["save_dirname"] = "pynx"
-            self._log(
+            logger.info(
                 "Output will be orthogonalized using "
                 f"{self._checked_params['interpolation_method']}"
             )
@@ -336,12 +324,11 @@ class PostprocessingChecker(ConfigChecker):
             self.initial_params["data_frame"] == "crystal"
             and self.initial_params["save_frame"] != "crystal"
         ):
-            if self.logger:
-                self.logger.info(
-                    "data already in the crystal frame before phase retrieval,"
-                    " it is impossible to come back to the laboratory "
-                    "frame, parameter 'save_frame' defaulted to 'crystal'"
-                )
+            logger.info(
+                "data already in the crystal frame before phase retrieval,"
+                " it is impossible to come back to the laboratory "
+                "frame, parameter 'save_frame' defaulted to 'crystal'"
+            )
             self._checked_params["save_frame"] = "crystal"
         self._checked_params["roi_detector"] = self._create_roi()
 
