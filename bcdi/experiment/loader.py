@@ -528,9 +528,9 @@ class Loader(ABC):
         self.name = name
         self.sample_offsets = sample_offsets
 
-    @staticmethod
     @abstractmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -968,8 +968,8 @@ class LoaderID01(Loader):
         },
     }
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -1006,7 +1006,9 @@ class LoaderID01(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=1, name="scan_number"
         )
-        path = util.find_file(filename=filename, default_folder=root_folder)
+        path = util.find_file(
+            filename=filename, default_folder=root_folder, logger=self.logger
+        )
         return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
@@ -1160,8 +1162,6 @@ class LoaderID01(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     @safeload
@@ -1315,7 +1315,9 @@ class LoaderID01(Loader):
         :return: the detector distance in meters or None
         """
         path = util.find_file(
-            filename=setup.detector.specfile, default_folder=setup.detector.rootdir
+            filename=setup.detector.specfile,
+            default_folder=setup.detector.rootdir,
+            logger=self.logger,
         )
 
         distance = None
@@ -1341,8 +1343,8 @@ class LoaderID01(Loader):
 class LoaderID01BLISS(Loader):
     """Loader for ESRF ID01 beamline after the deployement of BLISS."""
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -1371,7 +1373,9 @@ class LoaderID01BLISS(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=0, name="scan_number"
         )
-        filename = util.find_file(filename=template_imagefile, default_folder=datadir)
+        filename = util.find_file(
+            filename=template_imagefile, default_folder=datadir, logger=self.logger
+        )
         return ContextFile(
             filename=filename, open_func=h5py.File, scan_number=scan_number
         )
@@ -1480,8 +1484,6 @@ class LoaderID01BLISS(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     @safeload
@@ -1590,8 +1592,8 @@ class LoaderID01BLISS(Loader):
 class LoaderSIXS(Loader):
     """Loader for SOLEIL SIXS beamline."""
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -1777,8 +1779,6 @@ class LoaderSIXS(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     @safeload
@@ -1872,8 +1872,8 @@ class Loader34ID(Loader):
         "detector_distance": "camdist",
     }
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -1909,7 +1909,9 @@ class Loader34ID(Loader):
         valid.valid_item(
             scan_number, allowed_types=int, min_included=1, name="scan_number"
         )
-        path = util.find_file(filename=filename, default_folder=root_folder)
+        path = util.find_file(
+            filename=filename, default_folder=root_folder, logger=self.logger
+        )
         return ContextFile(filename=path, open_func=SpecFile, scan_number=scan_number)
 
     @staticmethod
@@ -2053,8 +2055,6 @@ class Loader34ID(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     @safeload
@@ -2402,11 +2402,6 @@ class LoaderP10(Loader):
                         series_data.append(ccdraw)
                         series_monitor.append(temp_mon)
 
-                        if not is_series:
-                            sys.stdout.write(
-                                "\rLoading frame {:d}".format(start_index + idx + 1)
-                            )
-                            sys.stdout.flush()
                         idx = idx + 1
                     except IndexError:  # reached the end of the series
                         break
@@ -2421,8 +2416,6 @@ class LoaderP10(Loader):
                 data[point_idx, :, :] = np.asarray(series_data).sum(axis=0)
                 if normalize == "sum_roi":
                     monitor[point_idx] = np.asarray(series_monitor).sum()
-                sys.stdout.write("\rSeries: loading frame {:d}".format(point_idx + 1))
-                sys.stdout.flush()
             else:
                 tempdata_length = len(series_data)
                 data[start_index : start_index + tempdata_length, :, :] = np.asarray(
@@ -2663,8 +2656,8 @@ class LoaderP10SAXS(LoaderP10):
 class LoaderCRISTAL(Loader):
     """Loader for SOLEIL CRISTAL beamline."""
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -2930,8 +2923,6 @@ class LoaderCRISTAL(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     def motor_positions(
@@ -3066,8 +3057,8 @@ class LoaderCRISTAL(Loader):
 class LoaderNANOMAX(Loader):
     """Loader for MAX IV NANOMAX beamline."""
 
-    @staticmethod
     def create_logfile(
+        self,
         datadir: str,
         name: str,
         root_folder: str,
@@ -3196,8 +3187,6 @@ class LoaderNANOMAX(Loader):
                 bin_during_loading=bin_during_loading,
                 debugging=debugging,
             )
-            sys.stdout.write("\rLoading frame {:d}".format(idx + 1))
-            sys.stdout.flush()
         return data, mask2d, monitor, loading_roi
 
     @safeload
