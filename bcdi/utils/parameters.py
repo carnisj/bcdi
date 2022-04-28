@@ -13,6 +13,7 @@ The validation is performed only on the expected parameters. Other parameters ar
 discarded.
 """
 from abc import ABC, abstractmethod
+from collections import Sequence
 import copy
 
 import colorcet as cc
@@ -361,6 +362,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     # convert 'None' to None
     if value == "None":
         value = None
+    elif isinstance(value, Sequence):
+        for idx, val in enumerate(value):
+            if val == "None":
+                value[idx] = None
 
     # convert 'True' to True
     if isinstance(value, str) and value.lower() == "true":
@@ -561,7 +566,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
                 name=key,
             )
             for val in value:
-                if not os.path.isdir(val):
+                if val is not None and not os.path.isdir(val):
                     raise ValueError(f"The directory {val} does not exist")
     elif key == "data_frame":
         allowed = {"detector", "crystal", "laboratory"}
