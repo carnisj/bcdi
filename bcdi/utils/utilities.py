@@ -20,7 +20,6 @@ import numpy as np
 import os
 from PIL import Image
 from scipy.interpolate import interp1d, RegularGridInterpolator
-from scipy.ndimage import map_coordinates
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
