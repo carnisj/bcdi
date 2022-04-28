@@ -49,7 +49,7 @@ class LoggingColor:
 class ColorLogFormatter(Formatter):
     """A class for formatting colored logs."""
 
-    FORMAT = "%(prefix)s%(levelname)s-%(name)s: %(message)s%(suffix)s"
+    FORMAT = "\n%(prefix)s%(levelname)s-%(name)s: %(message)s%(suffix)s"
 
     LOG_LEVEL_COLOR = {
         "DEBUG": {"prefix": LoggingColor.WHITE, "suffix": LoggingColor.END},

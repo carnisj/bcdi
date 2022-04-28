@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
     now = datetime.now()
     configure_logging()
-    logging.info(f"\nStart script at {now}")
+    logging.info(f"Start script at {now}")
 
     # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
@@ -374,6 +374,6 @@ if __name__ == "__main__":
     run(prm=args)
 
     now = datetime.now()
-    logging.info(f"\nEnd of script at {now}")
+    logging.info(f"End of script at {now}")
     plt.ioff()
     plt.show()
