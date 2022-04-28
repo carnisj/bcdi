@@ -833,7 +833,7 @@ class Setup:
 
         if verbose:
             self.logger.info(
-                f"\nDirect beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
+                f"Direct beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
                 f"out-of-plane {self.dirbeam_detector_angles[0]} deg)"
                 f"(X, Y): {self.direct_beam[1]}, {self.direct_beam[0]}"
             )
@@ -1133,7 +1133,7 @@ class Setup:
         start = time.time()
         if multiprocessing:
             self.logger.info(
-                "\nGridding",
+                "Gridding",
                 comment,
                 ", number of processors used: ",
                 min(mp.cpu_count(), number_y),
@@ -1167,7 +1167,7 @@ class Setup:
             # in the queue are done.
 
         else:  # no multiprocessing
-            self.logger.info("\nGridding", comment, ", no multiprocessing")
+            self.logger.info("Gridding", comment, ", no multiprocessing")
             for idx in range(
                 number_y
             ):  # loop over 2D frames perpendicular to the rotation axis
@@ -1193,7 +1193,7 @@ class Setup:
 
         end = time.time()
         self.logger.info(
-            "\nTime ellapsed for gridding data:",
+            "Time ellapsed for gridding data:",
             str(datetime.timedelta(seconds=int(end - start))),
         )
         return interp_array
@@ -1453,7 +1453,7 @@ class Setup:
         )
         # horizontal
         self.logger.info(
-            "\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
+            "Direct beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
         )
 
         #######################################
@@ -1779,7 +1779,7 @@ class Setup:
 
         if verbose:
             self.logger.info(
-                "\nCalculating the shape of the output array "
+                "Calculating the shape of the output array "
                 "fitting the data extent after transformation:"
                 f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
                 f"({d_along_z:.2f} nm,"
@@ -2078,8 +2078,8 @@ class Setup:
         )
         if verbose:
             self.logger.info(
-                "\nInterpolating:"
-                f"\nSampling in q in the laboratory frame (z*, y*, x*):    "
+                "Interpolating:"
+                f"\n\tSampling in q in the laboratory frame (z*, y*, x*):    "
                 f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)"
             )
         # these q values are not equally spaced, we just extract the q extent from them
@@ -2103,7 +2103,7 @@ class Setup:
                 np.array([q_along_x_com, q_along_y_com, q_along_z_com])
             )  # in 1/A
             if verbose:
-                self.logger.info(f"\nAligning Q along {reference_axis} (x,y,z)")
+                self.logger.info(f"Aligning Q along {reference_axis} (x,y,z)")
 
             # calculate the rotation matrix from the crystal frame
             # to the laboratory frame
@@ -2160,7 +2160,7 @@ class Setup:
 
             if verbose:
                 self.logger.info(
-                    f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):  "
+                    f"Sampling in q in the crystal frame (axis 0, axis 1, axis 2):  "
                     f"({dq_along_z:.5f} 1/nm,"
                     f" {dq_along_y:.5f} 1/nm,"
                     f" {dq_along_x:.5f} 1/nm)"
@@ -2174,7 +2174,7 @@ class Setup:
         )
         if verbose:
             self.logger.info(
-                f"\nInitial shape = ({nbz},{nby},{nbx})\n"
+                f"Initial shape = ({nbz},{nby},{nbx})\n"
                 f"Output shape  = ({nz_output},{ny_output},{nx_output})"
                 f" (satisfying FFT shape requirements)"
             )
@@ -2394,7 +2394,7 @@ class Setup:
         """
         if verbose:
             self.logger.info(
-                f"\nout-of plane detector angle={self.outofplane_angle:.3f} deg,"
+                f"out-of plane detector angle={self.outofplane_angle:.3f} deg,"
                 f" inplane_angle={self.inplane_angle:.3f} deg"
             )
 
@@ -2510,7 +2510,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        self.logger.info("\nData shape after regridding:", numx, numy, numx)
+        self.logger.info("Data shape after regridding:", numx, numy, numx)
 
         # update the direct beam position due to an eventual padding along X
         if nbx - directbeam_x < directbeam_x:
@@ -2592,7 +2592,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        self.logger.info("\nData shape after regridding:", numx, numy, numx)
+        self.logger.info("Data shape after regridding:", numx, numy, numx)
 
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = self.beamline.ewald_curvature_saxs(

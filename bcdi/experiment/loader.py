@@ -190,7 +190,7 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
 
     logger.info(
-        "\ncheck_pixels(): number of masked pixels due to detector gaps ="
+        "number of masked pixels due to detector gaps ="
         f" {int(mask.sum())} on a total of {nbx*nby}"
     )
     meandata = data.mean(axis=0)  # 2D
@@ -230,9 +230,7 @@ def check_pixels(data, mask, debugging=False, **kwargs):
         / nbz
     )
     logger.info(
-        "check_pixels(): var_mean={:.2f}, 1/var_threshold={:.2f}".format(
-            var_mean, 1 / var_singlephoton
-        )
+        "var_mean={:.2f}, 1/var_threshold={:.2f}".format(var_mean, 1 / var_singlephoton)
     )
 
     # mask hotpixels with zero variance
@@ -241,18 +239,14 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     # this includes only hotpixels since zero intensity pixels were set to var_mean
     mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
     vardata[vardata == np.inf] = 0  # update the array
-    logger.info(
-        "check_pixels(): number of zero variance hotpixels = {:d}".format(
-            int(temp_mask.sum())
-        )
-    )
+    logger.info("number of zero variance hotpixels = {:d}".format(int(temp_mask.sum())))
 
     # filter out pixels which have a variance smaller that the threshold
     # (note that  vardata = 1/data.var())
     indices_badpixels = np.nonzero(vardata > 1 / var_singlephoton)
     mask[indices_badpixels] = 1  # mask is 2D
     logger.info(
-        "check_pixels(): number of pixels with too low variance = {:d}\n".format(
+        "number of pixels with too low variance = {:d}".format(
             indices_badpixels[0].shape[0]
         )
     )

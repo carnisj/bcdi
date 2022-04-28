@@ -107,9 +107,9 @@ def process_scan(scan_idx, prm):
     ###################
     # logger.info instances #
     ###################
-    logger.info(f"\n##############\nSetup instance\n##############\n{setup.params}")
+    logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
-        "\n#################\nDetector instance\n#################\n"
+        "#################\nDetector instance\n#################\n"
         f"{setup.detector.params}"
     )
 
@@ -142,7 +142,7 @@ def process_scan(scan_idx, prm):
     if extension == ".h5":
         comment = comment + "_mode"
 
-    logger.info("\n###############\nProcessing data\n###############")
+    logger.info("###############\nProcessing data\n###############")
     nz, ny, nx = obj.shape
     logger.info(f"Initial data size: ({nz}, {ny}, {nx})")
     original_size = prm["original_size"] if prm["original_size"] else obj.shape

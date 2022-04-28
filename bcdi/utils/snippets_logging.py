@@ -24,7 +24,8 @@ import multiprocessing
 from typing import Optional
 
 FILE_FORMATTER = Formatter(
-    "%(levelname)s-%(name)s: %(message)s", datefmt="%m/%d/%Y %H:%M:%S"
+    "\n%(asctime)s-%(levelname)s-%(name)s.%(funcName)s:\n%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
 )
 VALID_LEVELS = [CRITICAL, DEBUG, ERROR, INFO, WARNING]
 
@@ -49,7 +50,7 @@ class LoggingColor:
 class ColorLogFormatter(Formatter):
     """A class for formatting colored logs."""
 
-    FORMAT = "\n%(prefix)s%(levelname)s-%(name)s: %(message)s%(suffix)s"
+    FORMAT = "\n%(prefix)s%(levelname)s-%(name)s.%(funcName)s:\n%(message)s%(suffix)s"
 
     LOG_LEVEL_COLOR = {
         "DEBUG": {"prefix": LoggingColor.WHITE, "suffix": LoggingColor.END},
