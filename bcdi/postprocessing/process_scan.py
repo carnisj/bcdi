@@ -48,11 +48,9 @@ def move_log(result: Tuple[Path, Path]):
     :param result: the output of process_scan, containing the 2d data, 2d mask,
      counter for each frame, and the file index
     """
-    tmpdir = result[0].parent
     filename = result[0].name
     shutil.move(result[0], result[1] / filename)
-    shutil.rmtree(tmpdir)
-    module_logger.info(f"{filename.removesuffix('.log')} processed")
+    module_logger.info(f"{filename.replace('.log', '')} processed")
 
 
 def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
