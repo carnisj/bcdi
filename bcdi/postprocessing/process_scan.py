@@ -21,6 +21,7 @@ import numpy as np
 import os
 import tkinter as tk
 from tkinter import filedialog
+from typing import Any, Dict
 import yaml
 
 import bcdi.graph.graph_utils as gu
@@ -34,8 +35,17 @@ from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
 
 
-def process_scan(scan_idx, prm):
+def process_scan(scan_idx: int, prm: Dict[str, Any]) -> None:
+    """
+    Run the postprocessing defined by the configuration parameters for a single scan.
 
+    This function is meant to be run as a process in multiprocessing, although it can
+    also be used as a normal function for a single scan. It assumes that the dictionary
+    of parameters was validated via a ConfigChecker instance.
+
+    :param scan_idx: index of the scan to be processed in prm["scans"]
+    :param prm: the parsed parameters
+    """
     scan_nb = prm["scans"][scan_idx]
 
     tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"

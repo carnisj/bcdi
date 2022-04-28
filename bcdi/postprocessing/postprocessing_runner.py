@@ -25,7 +25,10 @@ logger = logging.getLogger(__name__)
 
 def run(prm: Dict[str, Any]) -> None:
     """
-    Run the postprocessing.
+    Run the postprocessing defined by the configuration parameters.
+
+    It assumes that the dictionary of parameters was validated via a ConfigChecker
+    instance.
 
     :param prm: the parsed parameters
     """

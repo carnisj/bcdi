@@ -436,8 +436,7 @@ class Detector(ABC):
         if self.datadir:
             dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + "/"
             return dir_path.replace("\\", "/")
-        else:
-            return None
+        return None
 
     @property
     def sum_roi(self):

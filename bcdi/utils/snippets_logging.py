@@ -68,14 +68,14 @@ class ColorLogFormatter(Formatter):
          to the log level name.
         """
         if not hasattr(record, "prefix"):
-            record.prefix = self.LOG_LEVEL_COLOR.get(record.levelname.upper()).get(
-                "prefix"
-            )
+            record.prefix = self.LOG_LEVEL_COLOR.get(
+                record.levelname.upper(), "INFO"
+            ).get("prefix")
 
         if not hasattr(record, "suffix"):
-            record.suffix = self.LOG_LEVEL_COLOR.get(record.levelname.upper()).get(
-                "suffix"
-            )
+            record.suffix = self.LOG_LEVEL_COLOR.get(
+                record.levelname.upper(), "INFO"
+            ).get("suffix")
 
         formatter = Formatter(self.FORMAT, datefmt="%m/%d/%Y %H:%M:%S")
         return formatter.format(record)
@@ -102,7 +102,7 @@ def multiprocessing_logger(
     handler.setFormatter(FILE_FORMATTER)
 
     # this bit will make sure you won't have duplicated messages in the output
-    if not len(logger.handlers):
+    if not logger.handlers:
         logger.addHandler(handler)
     return logger
 
