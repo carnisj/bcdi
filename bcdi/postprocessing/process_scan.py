@@ -107,14 +107,11 @@ def process_scan(scan_idx, prm):
     ###################
     # logger.info instances #
     ###################
+    logger.info(f"\n##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
-        f'{"#" * (5 + len(str(scan_nb)))}\nScan '
-        f'{scan_nb}\n{"#" * (5 + len(str(scan_nb)))}'
+        "\n#################\nDetector instance\n#################\n"
+        f"{setup.detector.params}"
     )
-    logger.info("\n##############\nSetup instance\n##############")
-    logger.info(setup.params)
-    logger.info("\n#################\nDetector instance\n#################")
-    logger.info(setup.detector.params)
 
     ################
     # preload data #
