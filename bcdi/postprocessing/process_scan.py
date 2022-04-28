@@ -144,17 +144,17 @@ def process_scan(scan_idx, prm):
 
     logger.info("\n###############\nProcessing data\n###############")
     nz, ny, nx = obj.shape
-    logger.info("Initial data size: (", nz, ",", ny, ",", nx, ")")
+    logger.info(f"Initial data size: ({nz}, {ny}, {nx})")
     original_size = prm["original_size"] if prm["original_size"] else obj.shape
-    logger.info("FFT size before accounting for phasing_binning", original_size)
+    logger.info(f"FFT size before accounting for phasing_binning: {original_size}")
     original_size = tuple(
         [
             original_size[index] // prm["phasing_binning"][index]
             for index in range(len(prm["phasing_binning"]))
         ]
     )
-    logger.info("Binning used during phasing:", setup.detector.binning)
-    logger.info("Padding back to original FFT size", original_size)
+    logger.info(f"Binning used during phasing: {setup.detector.binning}")
+    logger.info(f"Padding back to original FFT size: {original_size}")
     obj = util.crop_pad(
         array=obj, output_shape=original_size, cmap=prm["colormap"].cmap
     )
@@ -179,8 +179,8 @@ def process_scan(scan_idx, prm):
     ######################################################################
     if nbfiles > 1:
         logger.info(
-            "\nTrying to find the best reconstruction\nSorting by ",
-            prm["sort_method"],
+            "Trying to find the best reconstruction\nSorting by "
+            f"{prm['sort_method']}"
         )
         sorted_obj = pu.sort_reconstruction(
             file_path=file_path,
@@ -197,10 +197,10 @@ def process_scan(scan_idx, prm):
     avg_obj = np.zeros((numz, numy, numx))
     ref_obj = np.zeros((numz, numy, numx))
     avg_counter = 1
-    logger.info("\nAveraging using", nbfiles, "candidate reconstructions")
+    logger.info(f"Averaging using {nbfiles} candidate reconstructions")
     for counter, value in enumerate(sorted_obj):
         obj, extension = util.load_file(file_path[value])
-        logger.info("\nOpening ", file_path[value])
+        logger.info(f"Opening {file_path[value]}")
         prm[f"from_file_{counter}"] = file_path[value]
 
         if prm["flip_reconstruction"]:
@@ -251,7 +251,7 @@ def process_scan(scan_idx, prm):
 
     avg_obj = avg_obj / avg_counter
     if avg_counter > 1:
-        logger.info("\nAverage performed over ", avg_counter, "reconstructions\n")
+        logger.info(f"Average performed over {avg_counter} reconstructions\n")
     del obj, ref_obj
     gc.collect()
 
@@ -268,9 +268,8 @@ def process_scan(scan_idx, prm):
     )
 
     logger.info(
-        "Extent of the phase over an extended support (ceil(phase range)) ~ ",
-        int(extent_phase),
-        "(rad)",
+        "Extent of the phase over an extended support (ceil(phase range)) ~ "
+        f"{int(extent_phase)} (rad)",
     )
     phase = util.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
     if prm["debug"]:
@@ -481,14 +480,14 @@ def process_scan(scan_idx, prm):
         test_vector=AXIS_TO_ARRAY[prm["ref_axis_q"]],
     )
     logger.info(
-        f"\nNormalized diffusion vector in the laboratory frame (z*, y*, x*): "
+        f"Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
         f"({q_lab[0]:.4f} 1/A, {q_lab[1]:.4f} 1/A, {q_lab[2]:.4f} 1/A)"
     )
 
     planar_dist = 2 * np.pi / qnorm  # qnorm should be in angstroms
     logger.info(f"Wavevector transfer: {qnorm:.4f} 1/A")
     logger.info(f"Atomic planar distance: {planar_dist:.4f} A")
-    logger.info(f"\nAngle between q_lab and {prm['ref_axis_q']} = {angle:.2f} deg")
+    logger.info(f"Angle between q_lab and {prm['ref_axis_q']} = {angle:.2f} deg")
     if prm["debug"]:
         logger.info(
             "Angle with y in zy plane = "
@@ -508,7 +507,7 @@ def process_scan(scan_idx, prm):
     #######################
     #  orthogonalize data #
     #######################
-    logger.info("\nShape before orthogonalization", avg_obj.shape, "\n")
+    logger.info(f"Shape before orthogonalization {avg_obj.shape}\n")
     if prm["data_frame"] == "detector":
         if prm["debug"]:
             phase, _ = pu.unwrap(
@@ -665,13 +664,13 @@ def process_scan(scan_idx, prm):
     ######################################################
     # center the object (centering based on the modulus) #
     ######################################################
-    logger.info("\nCentering the crystal")
+    logger.info("Centering the crystal")
     obj_ortho = pu.center_com(obj_ortho)
 
     ####################
     # Phase unwrapping #
     ####################
-    logger.info("\nPhase unwrapping")
+    logger.info("Phase unwrapping")
     phase, extent_phase = pu.unwrap(
         obj_ortho,
         support_threshold=prm["threshold_unwrap_refraction"],
@@ -790,7 +789,7 @@ def process_scan(scan_idx, prm):
     ##############################################
     # phase ramp and offset removal (mean value) #
     ##############################################
-    logger.info("\nPhase ramp removal")
+    logger.info("Phase ramp removal")
     amp, phase, _, _, _ = pu.remove_ramp(
         amp=amp,
         phase=phase,
@@ -805,7 +804,7 @@ def process_scan(scan_idx, prm):
     ########################
     # phase offset removal #
     ########################
-    logger.info("\nPhase offset removal")
+    logger.info("Phase offset removal")
     support = np.zeros(amp.shape)
     support[amp > prm["isosurface_strain"] * amp.max()] = 1
     phase = pu.remove_offset(
@@ -830,7 +829,7 @@ def process_scan(scan_idx, prm):
     ################################################################
     # calculate the strain depending on which axis q is aligned on #
     ################################################################
-    logger.info(f"\nCalculation of the strain along {prm['ref_axis_q']}")
+    logger.info(f"Calculation of the strain along {prm['ref_axis_q']}")
     strain = pu.get_strain(
         phase=phase,
         planar_distance=planar_dist,
@@ -848,7 +847,7 @@ def process_scan(scan_idx, prm):
     ################################################
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
         comment = comment + "_labframe"
-        logger.info("\nRotating back the crystal in laboratory frame")
+        logger.info("Rotating back the crystal in laboratory frame")
         amp, phase, strain = util.rotate_crystal(
             arrays=(amp, phase, strain),
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
@@ -865,7 +864,7 @@ def process_scan(scan_idx, prm):
 
         if prm["save_frame"] == "lab_flat_sample":
             comment = comment + "_flat"
-            logger.info("\nSending sample stage circles to 0")
+            logger.info("Sending sample stage circles to 0")
             (amp, phase, strain), q_final = setup.beamline.flatten_sample(
                 arrays=(amp, phase, strain),
                 voxel_size=voxel_size,
@@ -894,7 +893,7 @@ def process_scan(scan_idx, prm):
     # typically this is an inplane rotation, q should stay aligned with the axis
     # along which the strain was calculated
     if prm["align_axis"]:
-        logger.info("\nRotating arrays for visualization")
+        logger.info("Rotating arrays for visualization")
         amp, phase, strain = util.rotate_crystal(
             arrays=(amp, phase, strain),
             reference_axis=AXIS_TO_ARRAY[prm["ref_axis"]],
@@ -916,7 +915,7 @@ def process_scan(scan_idx, prm):
 
     q_final = q_final * qnorm
     logger.info(
-        f"\nq_final = ({q_final[0]:.4f} 1/A,"
+        f"q_final = ({q_final[0]:.4f} 1/A,"
         f" {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)"
     )
 
@@ -933,13 +932,13 @@ def process_scan(scan_idx, prm):
         strain = util.crop_pad(
             array=strain, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
         )
-    logger.info(f"\nFinal data shape: {amp.shape}")
+    logger.info(f"Final data shape: {amp.shape}")
 
     ######################
     # save result to vtk #
     ######################
     logger.info(
-        f"\nVoxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm,"
+        f"Voxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm,"
         f" {voxel_size[2]:.2f} nm)"
     )
     bulk = pu.find_bulk(
@@ -1029,7 +1028,7 @@ def process_scan(scan_idx, prm):
     ##############################
     pixel_spacing = [prm["tick_spacing"] / vox for vox in voxel_size]
     logger.info(
-        "\nPhase extent without / with thresholding the modulus "
+        "Phase extent without / with thresholding the modulus "
         f"(threshold={prm['isosurface_strain']}): "
         f"{phase.max() - phase.min():.2f} rad, "
         f"{phase[np.nonzero(bulk)].max() - phase[np.nonzero(bulk)].min():.2f} rad"

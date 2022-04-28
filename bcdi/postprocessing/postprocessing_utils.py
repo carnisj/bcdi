@@ -8,6 +8,7 @@
 """Functions related to data postprocessing after phase retrieval."""
 
 import gc
+import logging
 from math import pi
 from numbers import Number, Real
 import numpy as np
@@ -24,6 +25,8 @@ from skimage.restoration import unwrap_phase
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
@@ -1681,10 +1684,12 @@ def remove_ramp(
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: normalized amplitude, detrended phase, ramp along z, ramp along y,
      ramp along x
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(amp, phase), ndim=3)
     cmap = kwargs.get("cmap", "turbo")
     if method == "upsampling":
@@ -1706,8 +1711,8 @@ def remove_ramp(
             plt.title("np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
         zcom, ycom, xcom = center_of_mass(abs(my_fft) ** 4)
-        print("FFT shape for subpixel shift:", nbz, nby, nbx)
-        print("COM before subpixel shift", zcom, ",", ycom, ",", xcom)
+        logger.info(f"FFT shape for subpixel shift: ({nbz}, {nby}, {nbx})")
+        logger.info(f"COM before subpixel shift: ({zcom}, {ycom}, {xcom})")
         shiftz = zcom - (nbz / 2)
         shifty = ycom - (nby / 2)
         shiftx = xcom - (nbx / 2)
@@ -1751,7 +1756,7 @@ def remove_ramp(
             plt.title("centered np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
 
-        print("COM after subpixel shift", center_of_mass(abs(my_fft) ** 4))
+        logger(f"COM after subpixel shift: {center_of_mass(abs(my_fft) ** 4)}")
         myobj = fftshift(ifftn(ifftshift(my_fft)))
         del my_fft
         gc.collect()
@@ -1765,11 +1770,8 @@ def remove_ramp(
             myobj, (nb_z, nb_y, nb_x)
         )  # return to the initial shape of myamp
         print(
-            "Upsampling: shift_z, shift_y, shift_x: (",
-            str("{:.3f}".format(shiftz)),
-            str("{:.3f}".format(shifty)),
-            str("{:.3f}".format(shiftx)),
-            ") pixels",
+            "Upsampling: shift_z, shift_y, shift_x: "
+            f"({shiftz:.3f}, {shifty:.3f}, {shiftx:.3f}) pixels"
         )
         return abs(myobj) / abs(myobj).max(), np.angle(myobj), shiftz, shifty, shiftx
 
@@ -1892,9 +1894,9 @@ def remove_ramp(
         indexing="ij",
     )
 
-    print(
-        "Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: ",
-        f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)",
+    logger.info(
+        "Gradient: phase_ramp_z, phase_ramp_y, phase_ramp_x: "
+        f"({myrampz:.3f} rad, {myrampy:.3f} rad, {myrampx:.3f} rad)"
     )
     phase = phase - myz * myrampz - myy * myrampy - myx * myrampx
     return amp, phase, myrampz, myrampy, myrampx

@@ -1668,10 +1668,10 @@ class Setup:
         )
         if verbose:
             self.logger.info(
-                "Sampling in the laboratory frame (z, y, x): ",
+                "Sampling in the laboratory frame (z, y, x): "
                 f"({dz_realspace:.2f} nm,"
                 f" {dy_realspace:.2f} nm,"
-                f" {dx_realspace:.2f} nm)",
+                f" {dx_realspace:.2f} nm)"
             )
 
         if input_shape != initial_shape:
@@ -1681,10 +1681,10 @@ class Setup:
             pixel_x = self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
             if verbose:
                 self.logger.info(
-                    "Tilt, pixel_y, pixel_x based on the shape of the cropped array:",
-                    f"({tilt:.4f} deg,"
-                    f" {pixel_y * 1e6:.2f} um,"
-                    f" {pixel_x * 1e6:.2f} um)",
+                    "Tilt, pixel_y, pixel_x based on the shape of the cropped array: "
+                    f"({tilt:.4f} deg, "
+                    f"{pixel_y * 1e6:.2f} um, "
+                    f"{pixel_x * 1e6:.2f} um)"
                 )
 
             # sanity check, the direct space voxel sizes
@@ -1694,10 +1694,10 @@ class Setup:
             )
             if verbose:
                 self.logger.info(
-                    "Sanity check, recalculated direct space voxel sizes (z, y, x): ",
-                    f"({dz_realspace:.2f} nm,"
-                    f" {dy_realspace:.2f} nm,"
-                    f" {dx_realspace:.2f} nm)",
+                    "Sanity check, recalculated direct space voxel sizes (z, y, x): "
+                    f"({dz_realspace:.2f} nm, "
+                    f"{dy_realspace:.2f} nm, "
+                    f"{dx_realspace:.2f} nm)"
                 )
         else:
             pixel_y = self.detector.pixelsize_y

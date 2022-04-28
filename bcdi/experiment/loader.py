@@ -756,19 +756,19 @@ class Loader(ABC):
 
         """
         self.logger.info(
-            "User-defined ROI size (VxH):",
-            setup.detector.roi[1] - setup.detector.roi[0],
-            setup.detector.roi[3] - setup.detector.roi[2],
+            "User-defined ROI size (VxH): "
+            f"({setup.detector.roi[1] - setup.detector.roi[0]}, "
+            f"({setup.detector.roi[3] - setup.detector.roi[2]}, "
         )
         self.logger.info(
-            "Detector physical size without binning (VxH):",
-            setup.detector.unbinned_pixel_number[0],
-            setup.detector.unbinned_pixel_number[1],
+            "Detector physical size without binning (VxH): "
+            f"({setup.detector.unbinned_pixel_number[0]}, "
+            f"({setup.detector.unbinned_pixel_number[1]}, "
         )
         self.logger.info(
-            "Detector size with binning (VxH):",
-            setup.detector.unbinned_pixel_number[0] // setup.detector.binning[1],
-            setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2],
+            "Detector size with binning (VxH): "
+            f"({setup.detector.unbinned_pixel_number[0] // setup.detector.binning[1]}, "
+            f"({setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2]}, "
         )
 
         if setup.filtered_data:
@@ -858,7 +858,7 @@ class Loader(ABC):
             ##########################################################################
             # check for negative pixels, it can happen when subtracting a background #
             ##########################################################################
-            self.logger.info((data < 0).sum(), " negative data points masked")
+            self.logger.info(f"{(data < 0).sum()} negative data points masked")
             mask3d[data < 0] = 1
             data[data < 0] = 0
 
