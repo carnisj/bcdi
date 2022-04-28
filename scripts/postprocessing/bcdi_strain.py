@@ -356,8 +356,12 @@ Usage:
 
 
 if __name__ == "__main__":
-    # construct the argument parser and parse the command-line arguments
+
+    now = datetime.now()
     configure_logging()
+    logging.info(f"\nStart script at {now}")
+
+    # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
     ap = add_cli_parameters(ap)
     cli_args = vars(ap.parse_args())
@@ -366,9 +370,10 @@ if __name__ == "__main__":
     file = cli_args.get("config_file") or CONFIG_FILE
     parser = ConfigParser(file, cli_args)
     args = parser.load_arguments()
-    args["time"] = f"{datetime.now()}"
+    args["time"] = f"{now}"
     run(prm=args)
 
-    logging.info("\nEnd of script")
+    now = datetime.now()
+    logging.info(f"\nEnd of script at {now}")
     plt.ioff()
     plt.show()
