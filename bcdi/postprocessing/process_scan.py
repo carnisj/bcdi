@@ -16,7 +16,6 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
-import logging
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -33,8 +32,6 @@ from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
 from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
-
-root_logger = logging.root
 
 
 def process_scan(scan_idx, prm):
