@@ -1089,7 +1089,7 @@ class Setup:
          perpendicular to the rotation axis
         :param fill_value: real number (np.nan allowed), fill_value parameter for the
          RegularGridInterpolator
-        :param comment: a comment to be self.logger.infoed
+        :param comment: a comment to be printed
         :param multiprocessing: True to use multiprocessing
         :return: the 3D array interpolated onto the 3D cartesian grid
         """
@@ -1507,7 +1507,7 @@ class Setup:
          RegularGridInterpolator, same length as the number of arrays
         :param reference_axis: 3D vector along which q will be aligned, expressed in
          an orthonormal frame x y z
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :param debugging: tuple of booleans of the same length as the number of
          input arrays, True to show plots before and after interpolation
         :param kwargs:
@@ -1917,7 +1917,7 @@ class Setup:
          reference_axis, and q values will be calculated in the pseudo crystal frame.
         :param reference_axis: 3D vector along which q will be aligned, expressed in
          an orthonormal frame x y z
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :param debugging: tuple of booleans of the same length as the number of
          input arrays, True to show plots before and after interpolation
         :param kwargs:
@@ -2302,7 +2302,7 @@ class Setup:
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: tuple of 3 numbers, the coordinates of the vector expressed in the
          laboratory frame
         """
@@ -2386,7 +2386,7 @@ class Setup:
         :param pixel_y: vertical pixel size, in meters
         :param direct_space: True in order to return the transformation matrix in
          direct space
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return:
          - the transformation matrix from the detector frame to the laboratory frame
          - the q offset (3D vector) if direct_space is False.
@@ -2659,7 +2659,7 @@ class Setup:
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the laboratory frame
          (voxel_z, voxel_y, voxel_x)
         """
@@ -2709,7 +2709,7 @@ class Setup:
         :param tilt_angle: angular step during the rocking curve, in degrees
         :param pixel_x: horizontal pixel size, in meters
         :param pixel_y: vertical pixel size, in meters
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: the direct space voxel sizes in nm, in the detector frame
          (voxel_z, voxel_y, voxel_x)
         """

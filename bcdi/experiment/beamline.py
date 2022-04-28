@@ -581,7 +581,7 @@ class Beamline(ABC):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -749,7 +749,7 @@ class BeamlineCRISTAL(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane" or "inplane"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1071,7 +1071,7 @@ class BeamlineID01(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1377,7 +1377,7 @@ class BeamlineNANOMAX(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -1687,7 +1687,7 @@ class BeamlineP10(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -2266,7 +2266,7 @@ class BeamlineSIXS(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
@@ -2556,7 +2556,7 @@ class Beamline34ID(Beamline):
          below the rotated circle
         :param tilt: angular step of the rocking curve in radians
         :param rocking_angle: "outofplane", "inplane" or "energy"
-        :param verbose: True to have self.logger.infoed comments
+        :param verbose: True to have printed comments
         :return: a tuple of two numpy arrays
 
          - the transformation matrix from the detector frame to the
