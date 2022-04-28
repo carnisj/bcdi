@@ -7,7 +7,6 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Workflow for BCDI data postprocessing of a single scan, after phase retrieval."""
 
-import pathlib
 from functools import reduce
 import gc
 
@@ -16,12 +15,15 @@ try:
 except ModuleNotFoundError:
     pass
 import h5py
+import logging
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+from pathlib import Path
+import shutil
 import tkinter as tk
 from tkinter import filedialog
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 import yaml
 
 import bcdi.graph.graph_utils as gu
@@ -34,8 +36,26 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
 
+module_logger = logging.getLogger(__name__)
 
-def process_scan(scan_idx: int, prm: Dict[str, Any]) -> None:
+
+def move_log(result: Tuple[Path, Path]):
+    """
+    Process the result after asynchronous multiprocessing.
+
+    It moves log files to the desired location.
+
+    :param result: the output of process_scan, containing the 2d data, 2d mask,
+     counter for each frame, and the file index
+    """
+    tmpdir = result[0].parent
+    filename = result[0].name
+    shutil.move(result[0], result[1] / filename)
+    shutil.rmtree(tmpdir)
+    module_logger.info(f"{filename.removesuffix('.log')} processed")
+
+
+def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     """
     Run the postprocessing defined by the configuration parameters for a single scan.
 
@@ -48,9 +68,10 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> None:
     """
     scan_nb = prm["scans"][scan_idx]
 
-    tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"
-    pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-    logger = multiprocessing_logger(path=str(tmpdir / f"{scan_nb}.log"))
+    tmpdir = Path(prm["root_folder"]) / f"{scan_nb}_tmp"
+    tmpfile = tmpdir / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
+    Path(tmpdir).mkdir(parents=True, exist_ok=True)
+    logger = multiprocessing_logger(path=str(tmpfile))
     if not prm["multiprocessing"]:
         logger.propagate = True
 
@@ -1237,3 +1258,9 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> None:
 
     if len(prm["scans"]) > 1:
         plt.close("all")
+
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+        handler.close()
+
+    return tmpfile, Path(setup.detector.savedir)
