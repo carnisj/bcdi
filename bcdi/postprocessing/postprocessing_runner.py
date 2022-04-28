@@ -134,7 +134,14 @@ def run(prm: Dict[str, Any]) -> None:
             processes=min(mp.cpu_count(), nb_scans)
         )  # use this number of processes
 
-        for scan_idx in range(nb_scans):
+        for scan_idx, scan_nb in enumerate(prm["scans"]):
+            tmp_str = (
+                f"Scan {scan_idx + 1}/{len(prm['scans'])}: "
+                f"{prm['sample_name'][scan_idx]}{scan_nb}"
+            )
+            logger.info(
+                f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
+            )
             pool.apply_async(
                 process_scan,
                 args=(scan_idx, prm),

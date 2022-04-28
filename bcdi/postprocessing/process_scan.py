@@ -34,19 +34,18 @@ import bcdi.utils.image_registration as reg
 from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
 
-module_logger = logging.getLogger(__name__)
+root_logger = logging.root
 
 
 def process_scan(scan_idx, prm):
 
     scan_nb = prm["scans"][scan_idx]
 
-    if prm["multiprocessing"]:
-        tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"
-        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-        logger = multiprocessing_logger(path=str(tmpdir / f"{scan_nb}.log"))
-    else:
-        logger = module_logger
+    tmpdir = pathlib.Path(prm["root_folder"]) / f"{scan_nb}_tmp"
+    pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
+    logger = multiprocessing_logger(path=str(tmpdir / f"{scan_nb}.log"))
+    if not prm["multiprocessing"]:
+        logger.propagate = True
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     comment = prm["comment"]  # re-initialize comment
@@ -56,7 +55,6 @@ def process_scan(scan_idx, prm):
     #################################
     # define the experimental setup #
     #################################
-    setup_kwargs = {"logger": logger} if prm["multiprocessing"] else {}
     setup = Setup(
         beamline_name=prm["beamline"],
         energy=prm["energy"],
@@ -78,7 +76,7 @@ def process_scan(scan_idx, prm):
         binning=prm["phasing_binning"],
         preprocessing_binning=prm["preprocessing_binning"],
         custom_pixelsize=prm["custom_pixelsize"],
-        **setup_kwargs,
+        logger=logger,
     )
 
     ########################################
@@ -296,6 +294,7 @@ def process_scan(scan_idx, prm):
         amplitude_threshold=prm["isosurface_strain"],
         threshold_gradient=prm["threshold_gradient"],
         cmap=prm["colormap"].cmap,
+        logger=logger,
     )
     del avg_obj
     gc.collect()
@@ -556,6 +555,7 @@ def process_scan(scan_idx, prm):
                     peak_method="maxcom",
                     roi=setup.detector.roi,
                     binning=None,
+                    logger=logger,
                 )
                 roi_center = (
                     bragg_peak[0],
@@ -569,6 +569,7 @@ def process_scan(scan_idx, prm):
                     roi_center=roi_center,
                     tilt_values=setup.incident_angles,
                     savedir=setup.detector.savedir,
+                    logger=logger,
                 )
                 prm["bragg_peak"] = bragg_peak
             setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
@@ -799,6 +800,7 @@ def process_scan(scan_idx, prm):
         threshold_gradient=prm["threshold_gradient"],
         debugging=prm["debug"],
         cmap=prm["colormap"].cmap,
+        logger=logger,
     )
 
     ########################
