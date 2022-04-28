@@ -782,8 +782,6 @@ class Loader(ABC):
                 debugging=debugging,
             )
 
-            self.logger.info("")
-
             ###################
             # update the mask #
             ###################
