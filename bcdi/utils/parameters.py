@@ -309,7 +309,7 @@ class PostprocessingChecker(ConfigChecker):
     def _configure_params(self) -> None:
         """Hard-code processing-dependent parameter configuration."""
         if self._nb_scans is not None and self._nb_scans > 1:
-            self.initial_params["backend"] = "agg"
+            self._checked_params["backend"] = "Agg"
             if self._checked_params["multiprocessing"] and any(
                 val is None for val in self._checked_params["reconstruction_files"]
             ):

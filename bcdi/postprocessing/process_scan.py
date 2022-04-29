@@ -16,6 +16,7 @@ except ModuleNotFoundError:
     pass
 import h5py
 import logging
+import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -64,6 +65,7 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     :param prm: the parsed parameters
     """
     scan_nb = prm["scans"][scan_idx]
+    matplotlib.use(prm["backend"])
 
     tmpdir = Path(prm["root_folder"]) / f"{scan_nb}_tmp"
     tmpfile = tmpdir / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
@@ -77,6 +79,9 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     comment = prm["comment"]  # re-initialize comment
     tmp_str = f"Scan {scan_idx + 1}/{len(prm['scans'])}: S{scan_nb}"
+    from datetime import datetime
+
+    logger.info(f"Start {process_scan.__name__} at {datetime.now()}")
     logger.info(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
     #################################
