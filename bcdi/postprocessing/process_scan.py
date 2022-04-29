@@ -33,10 +33,9 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
-from bcdi.utils.snippets_logging import multiprocessing_logger
 import bcdi.utils.utilities as util
 
-module_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def move_log(result: Tuple[Path, Path]):
@@ -50,7 +49,7 @@ def move_log(result: Tuple[Path, Path]):
     """
     filename = result[0].name
     shutil.move(result[0], result[1] / filename)
-    module_logger.info(f"{filename.replace('.log', '')} processed")
+    logger.info(f"{filename.replace('.log', '')} processed")
 
 
 def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
@@ -69,8 +68,10 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     tmpdir = Path(prm["root_folder"]) / f"{scan_nb}_tmp"
     tmpfile = tmpdir / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
     Path(tmpdir).mkdir(parents=True, exist_ok=True)
-    logger = multiprocessing_logger(path=str(tmpfile))
-    if not prm["multiprocessing"]:
+    filehandler = logging.FileHandler(tmpfile, mode="w", encoding="utf-8")
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(filehandler)
+    if not prm["multiprocessing"] or len(prm["scans"]) == 1:
         logger.propagate = True
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
@@ -1257,8 +1258,7 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     if len(prm["scans"]) > 1:
         plt.close("all")
 
-    for handler in logger.handlers:
-        logger.removeHandler(handler)
-        handler.close()
+    logger.removeHandler(filehandler)
+    filehandler.close()
 
     return tmpfile, Path(setup.detector.savedir)

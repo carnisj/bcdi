@@ -16,11 +16,9 @@ from logging import (
     INFO,
     FileHandler,
     Formatter,
-    Logger,
     StreamHandler,
     WARNING,
 )
-import multiprocessing
 from typing import Optional
 
 FILE_FORMATTER = Formatter(
@@ -79,32 +77,6 @@ class ColorLogFormatter(Formatter):
 
         formatter = Formatter(self.FORMAT, datefmt="%m/%d/%Y %H:%M:%S")
         return formatter.format(record)
-
-
-def multiprocessing_logger(
-    path: str,
-    level: int = DEBUG,
-) -> Logger:
-    """
-    Create a logger for logging to a file or the console.
-
-    :param path: path of the file where to write logs
-    :param level: valid level for logging
-    :return: an instance of Logger
-    """
-    if level not in VALID_LEVELS:
-        raise ValueError(f"invalid logging level {level}")
-
-    # create logger
-    logger = multiprocessing.get_logger()
-    handler = FileHandler(path, mode="w", encoding="utf-8")
-    handler.setLevel(level)
-    handler.setFormatter(FILE_FORMATTER)
-
-    # this bit will make sure you won't have duplicated messages in the output
-    if not logger.handlers:
-        logger.addHandler(handler)
-    return logger
 
 
 def configure_logging(
