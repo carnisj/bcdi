@@ -59,7 +59,6 @@ import numpy as np
 import os
 import re
 from silx.io.specfile import SpecFile
-import sys
 import tkinter as tk
 from tkinter import filedialog
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
