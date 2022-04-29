@@ -13,7 +13,6 @@ The validation is performed only on the expected parameters. Other parameters ar
 discarded.
 """
 from abc import ABC, abstractmethod
-from collections import Sequence
 import copy
 
 import colorcet as cc
@@ -77,9 +76,9 @@ class ConfigChecker(ABC):
 
     def check_config(self) -> Dict[str, Any]:
         """Check if the provided config is consistent."""
-        if self.initial_params.get("scans") is None:
+        if self._checked_params.get("scans") is None:
             raise ValueError("no scan provided")
-        self._nb_scans = len(self.initial_params["scans"])
+        self._nb_scans = len(self._checked_params["scans"])
 
         for key in self.match_length_params:
             self._check_length(key, self._nb_scans)
@@ -113,21 +112,21 @@ class ConfigChecker(ABC):
         :return: the calculated region of interest [Vstart, Vstop, Hstart, Hstop] or
          None.
         """
-        roi = copy.deepcopy(self.initial_params.get("roi_detector"))
+        roi = copy.deepcopy(self._checked_params.get("roi_detector"))
 
         # update the ROI
         if roi is not None:
-            center_roi_y = self.initial_params.get("center_roi_y")
+            center_roi_y = self._checked_params.get("center_roi_y")
             if center_roi_y is not None:
                 valid.valid_item(center_roi_y, allowed_types=int, name="center_roi_y")
-                roi[0] = center_roi_y - self.initial_params["roi_detector"][0]
-                roi[1] = center_roi_y + self.initial_params["roi_detector"][1]
+                roi[0] = center_roi_y - self._checked_params["roi_detector"][0]
+                roi[1] = center_roi_y + self._checked_params["roi_detector"][1]
 
-            center_roi_x = self.initial_params.get("center_roi_x")
+            center_roi_x = self._checked_params.get("center_roi_x")
             if center_roi_x is not None:
                 valid.valid_item(center_roi_x, allowed_types=int, name="center_roi_x")
-                roi[2] = center_roi_x - self.initial_params["roi_detector"][2]
-                roi[3] = center_roi_x + self.initial_params["roi_detector"][3]
+                roi[2] = center_roi_x - self._checked_params["roi_detector"][2]
+                roi[3] = center_roi_x + self._checked_params["roi_detector"][3]
 
             return [int(val) for val in roi]
         return None
@@ -141,17 +140,17 @@ class ConfigChecker(ABC):
     def _check_backend(self) -> None:
         """Check if the backend is supported."""
         try:
-            matplotlib.use(self.initial_params["backend"])
+            matplotlib.use(self._checked_params["backend"])
         except ModuleNotFoundError:
             raise ValueError(
-                f"{self.initial_params['backend']} backend is not supported."
+                f"{self._checked_params['backend']} backend is not supported."
             )
         except ImportError:
-            raise ValueError(f"cannot load backend {self.initial_params['backend']}")
+            raise ValueError(f"cannot load backend {self._checked_params['backend']}")
 
     def _check_length(self, param_name: str, length: int) -> None:
         """Ensure that a parameter as the correct type and length."""
-        initial_param = self.initial_params.get(param_name)
+        initial_param = self._checked_params.get(param_name)
         if initial_param is None:
             initial_param = (None,) * length
         elif not isinstance(initial_param, (tuple, list)):
@@ -172,7 +171,7 @@ class ConfigChecker(ABC):
         """Check if mandatory parameters are provided."""
         for key in self.required_params:
             try:
-                _ = self.initial_params[key]
+                _ = self._checked_params[key]
             except KeyError:
                 raise MissingKeyError(f"Required parameter {key} not defined")
 
@@ -187,12 +186,12 @@ class ConfigChecker(ABC):
 
     def _create_colormap(self) -> None:
         """Create a colormap instance."""
-        if self.initial_params.get("grey_background"):
+        if self._checked_params.get("grey_background"):
             bad_color = "0.7"
         else:
             bad_color = "1.0"  # white background
         self._checked_params["colormap"] = ColormapFactory(
-            bad_color=bad_color, colormap=self.initial_params["colormap"]
+            bad_color=bad_color, colormap=self._checked_params["colormap"]
         )
 
 
@@ -204,7 +203,7 @@ class PreprocessingChecker(ConfigChecker):
         if (
             self._nb_scans is not None
             and self._nb_scans > 1
-            and self.initial_params["center_fft"]
+            and self._checked_params["center_fft"]
             not in [
                 "crop_asymmetric_ZYX",
                 "pad_Z",
@@ -218,7 +217,7 @@ class PreprocessingChecker(ConfigChecker):
             # which will be problematic for combining or comparing them
 
         self._checked_params["roi_detector"] = self._create_roi()
-        if self.initial_params["fix_size"]:
+        if self._checked_params["fix_size"]:
             logger.info('"fix_size" parameter provided, roi_detector will be set to []')
             logger.info(
                 "'fix_size' parameter provided, defaulting 'center_fft' to 'skip'"
@@ -226,20 +225,20 @@ class PreprocessingChecker(ConfigChecker):
             self._checked_params["roi_detector"] = []
             self._checked_params["center_fft"] = "skip"
 
-        if self.initial_params["photon_filter"] == "loading":
-            self._checked_params["loading_threshold"] = self.initial_params[
+        if self._checked_params["photon_filter"] == "loading":
+            self._checked_params["loading_threshold"] = self._checked_params[
                 "photon_threshold"
             ]
         else:
             self._checked_params["loading_threshold"] = 0
 
-        if self.initial_params["reload_previous"]:
+        if self._checked_params["reload_previous"]:
             self._checked_params["comment"] += "_reloaded"
         else:
             self._checked_params["preprocessing_binning"] = (1, 1, 1)
             self._checked_params["reload_orthogonal"] = False
 
-        if self.initial_params["rocking_angle"] == "energy":
+        if self._checked_params["rocking_angle"] == "energy":
             self._checked_params["use_rawdata"] = False
             # you need to interpolate the data in QxQyQz for energy scans
             logger.info(
@@ -254,7 +253,7 @@ class PreprocessingChecker(ConfigChecker):
             self._checked_params["save_dirname"] = "pynxraw"
             logger.info("Output will be non orthogonal, in the detector frame")
         else:
-            if self.initial_params["interpolation_method"] not in {
+            if self._checked_params["interpolation_method"] not in {
                 "xrayutilities",
                 "linearization",
             }:
@@ -262,7 +261,7 @@ class PreprocessingChecker(ConfigChecker):
                     "Incorrect value for interp_method,"
                     ' allowed values are "xrayutilities" and "linearization"'
                 )
-            if self.initial_params["rocking_angle"] == "energy":
+            if self._checked_params["rocking_angle"] == "energy":
                 self._checked_params["interpolation_method"] = "xrayutilities"
                 logger.info(
                     "Defaulting interp_method to "
@@ -282,8 +281,8 @@ class PreprocessingChecker(ConfigChecker):
                 f"{self._checked_params['interpolation_method']}"
             )
 
-        if self.initial_params["align_q"]:
-            if self.initial_params["ref_axis_q"] not in {"x", "y", "z"}:
+        if self._checked_params["align_q"]:
+            if self._checked_params["ref_axis_q"] not in {"x", "y", "z"}:
                 raise ValueError("ref_axis_q should be either 'x', 'y' or 'z'")
             if (
                 not self._checked_params["use_rawdata"]
@@ -291,11 +290,11 @@ class PreprocessingChecker(ConfigChecker):
             ):
                 self._checked_params[
                     "comment"
-                ] += f"_align-q-{self.initial_params['ref_axis_q']}"
+                ] += f"_align-q-{self._checked_params['ref_axis_q']}"
 
         if (
-            self.initial_params["backend"].lower() == "agg"
-            and self.initial_params["flag_interact"]
+            self._checked_params["backend"].lower() == "agg"
+            and self._checked_params["flag_interact"]
         ):
             raise ValueError(
                 "non-interactive backend 'agg' not compatible with the "
@@ -319,7 +318,7 @@ class PostprocessingChecker(ConfigChecker):
                 )
         else:
             self._checked_params["multiprocessing"] = False
-        if self.initial_params["simulation"]:
+        if self._checked_params["simulation"]:
             self._checked_params["invert_phase"] = False
             self._checked_params["correct_refraction"] = False
         if self._checked_params["invert_phase"]:
@@ -327,14 +326,14 @@ class PostprocessingChecker(ConfigChecker):
         else:
             self._checked_params["phase_fieldname"] = "phase"
 
-        if self.initial_params["data_frame"] == "detector":
+        if self._checked_params["data_frame"] == "detector":
             self._checked_params["is_orthogonal"] = False
         else:
             self._checked_params["is_orthogonal"] = True
 
         if (
-            self.initial_params["data_frame"] == "crystal"
-            and self.initial_params["save_frame"] != "crystal"
+            self._checked_params["data_frame"] == "crystal"
+            and self._checked_params["save_frame"] != "crystal"
         ):
             logger.info(
                 "data already in the crystal frame before phase retrieval,"
@@ -362,7 +361,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     # convert 'None' to None
     if value == "None":
         value = None
-    elif isinstance(value, Sequence):
+    elif isinstance(value, (list, tuple)):
         value = list(value)
         for idx, val in enumerate(value):
             if val == "None":
