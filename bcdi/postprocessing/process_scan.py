@@ -34,6 +34,7 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
+from bcdi.utils.snippets_logging import FILE_FORMATTER
 import bcdi.utils.utilities as util
 
 logger = logging.getLogger(__name__)
@@ -67,10 +68,12 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     scan_nb = prm["scans"][scan_idx]
     matplotlib.use(prm["backend"])
 
-    tmpdir = Path(prm["root_folder"]) / f"{scan_nb}_tmp"
-    tmpfile = tmpdir / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
-    Path(tmpdir).mkdir(parents=True, exist_ok=True)
+    tmpfile = (
+        Path(prm["root_folder"])
+        / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
+    )
     filehandler = logging.FileHandler(tmpfile, mode="w", encoding="utf-8")
+    filehandler.setFormatter(FILE_FORMATTER)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
     if not prm["multiprocessing"] or len(prm["scans"]) == 1:
