@@ -363,6 +363,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     if value == "None":
         value = None
     elif isinstance(value, Sequence):
+        value = list(value)
         for idx, val in enumerate(value):
             if val == "None":
                 value[idx] = None
