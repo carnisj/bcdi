@@ -63,6 +63,15 @@ API Reference
 .. automodule:: bcdi.utils.parser
    :members:
 
+snippets_logging
+^^^^^^^^^^^^^^^^
+
+API Reference
+-------------
+
+.. automodule:: bcdi.utils.snippets_logging
+   :members:
+
 validation
 ^^^^^^^^^^
 

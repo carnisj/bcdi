@@ -6,8 +6,9 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-"""Configure logging."""
+"""Classes and functions for the configuration of logging."""
 
+from dataclasses import dataclass
 from logging import (
     basicConfig,
     CRITICAL,
@@ -28,8 +29,9 @@ FILE_FORMATTER = Formatter(
 VALID_LEVELS = [CRITICAL, DEBUG, ERROR, INFO, WARNING]
 
 
+@dataclass
 class LoggingColor:
-    """A class for terminal color codes."""
+    """Define terminal color codes."""
 
     BOLD = "\033[1m"
     BLUE = "\033[94m"
@@ -46,7 +48,7 @@ class LoggingColor:
 
 
 class ColorLogFormatter(Formatter):
-    """A class for formatting colored logs."""
+    """Format colored logs."""
 
     FORMAT = "\n%(prefix)s%(levelname)s-%(module)s.%(funcName)s:\n%(message)s%(suffix)s"
 
@@ -62,8 +64,8 @@ class ColorLogFormatter(Formatter):
         """
         Format log records.
 
-         It uses a default prefix and suffix to terminal color codes that corresponds
-         to the log level name.
+        It uses a default prefix and suffix to terminal color codes that corresponds
+        to the log level name.
         """
         if not hasattr(record, "prefix"):
             record.prefix = self.LOG_LEVEL_COLOR.get(
