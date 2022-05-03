@@ -42,3 +42,14 @@ API Reference
 
 .. automodule:: bcdi.preprocessing.cdi_utils
    :members:
+
+process_scan
+^^^^^^^^^^^^
+
+This module provides the function which manage the preprocessing for a single scan.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.preprocessing.process_scan
+   :members:
