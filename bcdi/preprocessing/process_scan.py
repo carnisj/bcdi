@@ -1042,7 +1042,7 @@ def process_scan(
                 cmap=prm["colormap"].cmap,
             )
             nb_pix += processed_pix
-        logger.info("Total number of filtered pixels: ", nb_pix)
+        logger.info(f"Total number of filtered pixels: {nb_pix}")
     elif prm["median_filter"] == "median":  # apply median filter
         logger.info("Applying median filtering")
         for idx in range(
