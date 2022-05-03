@@ -60,6 +60,7 @@ API Reference
 
 from abc import ABC, abstractmethod
 from functools import partial
+import logging
 import numpy as np
 from numbers import Real, Integral
 import os
@@ -67,6 +68,8 @@ import pathlib
 
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def create_detector(name, **kwargs):
@@ -124,6 +127,7 @@ class Detector(ABC):
        parameter delta in xrayutilities hxrd.Ang2Q.area method
      - 'linearity_func': function to apply to each pixel of the detector in order to
        compensate the deviation of the detector linearity for large intensities.
+     - 'logger': an optional logger
 
     """
 
@@ -147,6 +151,7 @@ class Detector(ABC):
         self._name = name
 
         # load the kwargs
+        self.logger = kwargs.get("logger", module_logger)
         self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
         self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
         self.linearity_func = kwargs.get("linearity_func")
@@ -431,8 +436,7 @@ class Detector(ABC):
         if self.datadir:
             dir_path = os.path.abspath(os.path.join(self.datadir, os.pardir)) + "/"
             return dir_path.replace("\\", "/")
-        else:
-            return None
+        return None
 
     @property
     def sum_roi(self):
@@ -946,7 +950,7 @@ class Dummy(Detector):
             val is not None for val in self.custom_pixelnumber
         ):
             return self.custom_pixelnumber
-        print(f"Defaulting the pixel number to {516, 516}")
+        self.logger.info(f"Defaulting the pixel number to {516, 516}")
         return 516, 516
 
     @property
@@ -954,5 +958,5 @@ class Dummy(Detector):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         if self.custom_pixelsize is not None:
             return self.custom_pixelsize, self.custom_pixelsize
-        print(f"Defaulting the pixel size to {55e-06, 55e-06}")
+        self.logger.info(f"Defaulting the pixel size to {55e-06, 55e-06}")
         return 55e-06, 55e-06

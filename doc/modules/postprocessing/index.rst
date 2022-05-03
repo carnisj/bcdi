@@ -59,3 +59,14 @@ API Reference
 
 .. automodule:: bcdi.postprocessing.postprocessing_utils
    :members:
+
+process_scan
+^^^^^^^^^^^^
+
+This module provides the function which manage the postprocessing for a single scan.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.postprocessing.process_scan
+   :members:

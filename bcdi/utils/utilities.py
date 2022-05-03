@@ -14,13 +14,13 @@ import gc
 from inspect import signature
 import json
 import h5py
+import logging
 from matplotlib import pyplot as plt
 from numbers import Real, Integral
 import numpy as np
 import os
 from PIL import Image
 from scipy.interpolate import interp1d, RegularGridInterpolator
-from scipy.ndimage import map_coordinates
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
@@ -28,6 +28,8 @@ from typing import Any, List, Optional, Union, Sequence
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -523,7 +525,7 @@ def dos2unix(input_file: str, savedir: str) -> None:
             output.write(row + str.encode("\n"))
 
 
-def find_file(filename: Optional[str], default_folder: str) -> str:
+def find_file(filename: Optional[str], default_folder: str, **kwargs) -> str:
     """
     Locate a file.
 
@@ -533,15 +535,20 @@ def find_file(filename: Optional[str], default_folder: str) -> str:
     :param filename: the name or full path to the file
     :param default_folder: it will look for the file in that folder if filename is not
      the full path.
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: str, the path to the file
     """
+    logger = kwargs.get("logger", module_logger)
     if not isinstance(filename, str):
         raise TypeError("filename should be a string")
 
     if os.path.isfile(filename):
         # filename is already the full path to the file
         return filename
-    print(f"Could not find the file at: {filename}")
+    logger.info(f"Could not find the file at: {filename}")
 
     if not isinstance(default_folder, str):
         raise TypeError("default_folder should be a string")
@@ -553,7 +560,7 @@ def find_file(filename: Optional[str], default_folder: str) -> str:
     full_name = default_folder + filename
     if not os.path.isfile(full_name):
         raise ValueError(f"Could not localize the file at {filename} or {full_name}")
-    print(f"File localized at: {full_name}")
+    logger.info(f"File localized at: {full_name}")
     return full_name
 
 

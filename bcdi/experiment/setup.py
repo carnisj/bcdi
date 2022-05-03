@@ -15,6 +15,7 @@ beamline-dependent information from the child classes.
 """
 from collections.abc import Sequence
 import datetime
+import logging
 import multiprocessing as mp
 from numbers import Integral, Real
 import numpy as np
@@ -28,6 +29,8 @@ from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 from bcdi.experiment.beamline import create_beamline
 from bcdi.experiment.detector import create_detector, Detector
+
+module_logger = logging.getLogger(__name__)
 
 
 class Setup:
@@ -78,6 +81,7 @@ class Setup:
      - 'actuators': optional dictionary that can be used to define the entries
        corresponding to actuators in data files (useful at CRISTAL where the location
        of data keeps changing)
+     - 'logger': an optional logger
 
     """
 
@@ -129,9 +133,12 @@ class Setup:
                 "preprocessing_binning",
                 "custom_pixelsize",
                 "linearity_func",
+                "logger",
             },
             name="Setup.__init__",
         )
+        # kwarg for logging
+        self.logger = kwargs.get("logger", module_logger)
 
         # kwargs for loading and preprocessing data
         self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
@@ -157,9 +164,7 @@ class Setup:
 
         # create the beamline instance
         self.beamline_name = beamline_name
-        self.beamline = create_beamline(
-            name=beamline_name, sample_offsets=kwargs.get("sample_offsets")
-        )
+        self.beamline = create_beamline(name=beamline_name, **kwargs)
 
         # load positional arguments corresponding to instance properties
         self.beam_direction = beam_direction
@@ -720,7 +725,9 @@ class Setup:
             en=processed_positions[-1],
             delta=self.detector.offsets,
         )
-        print("Use the parameter 'sample_offsets' to correct diffractometer values.\n")
+        self.logger.info(
+            "Use the parameter 'sample_offsets' to correct diffractometer values.\n"
+        )
         return qx, qz, qy, frames_logical
 
     def check_setup(
@@ -792,11 +799,13 @@ class Setup:
 
         :param bragg_peak_position: [vertical, horizontal] position of the Bragg peak
          in the unbinned, full detector
-        :param verbose: True to print more comments
+        :param verbose: True to self.logger.info more comments
         """
         # check parameters
         if self.direct_beam is None or self.dirbeam_detector_angles is None:
-            print("direct beam position not defined, can't correct detector angles")
+            self.logger.info(
+                "direct beam position not defined, can't correct detector angles"
+            )
             return
 
         if any(
@@ -806,7 +815,9 @@ class Setup:
             raise ValueError("call setup.read_logfile before calling this method")
 
         if bragg_peak_position is None:
-            print("Bragg peak position not defined, can't correct detector angles")
+            self.logger.info(
+                "Bragg peak position not defined, can't correct detector angles"
+            )
             return
 
         if len(bragg_peak_position) == 3:
@@ -821,12 +832,12 @@ class Setup:
         valid.valid_item(verbose, allowed_types=bool, name="verbose")
 
         if verbose:
-            print(
-                f"\nDirect beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
+            self.logger.info(
+                f"Direct beam at (inplane {self.dirbeam_detector_angles[1]} deg, "
                 f"out-of-plane {self.dirbeam_detector_angles[0]} deg)"
                 f"(X, Y): {self.direct_beam[1]}, {self.direct_beam[0]}"
             )
-            print(
+            self.logger.info(
                 f"Detector angles before correction: inplane {self.inplane_angle:.2f}"
                 f" deg, outofplane {self.outofplane_angle:.2f} deg"
             )
@@ -856,7 +867,7 @@ class Setup:
         )
 
         if verbose:
-            print(
+            self.logger.info(
                 f"Corrected detector angles: inplane {self.inplane_angle:.2f} deg, "
                 f"outofplane {self.outofplane_angle:.2f} deg"
             )
@@ -868,11 +879,13 @@ class Setup:
         :return: a tuple representing the direct beam position at zero detector angles
         """
         if self.direct_beam is None:
-            print("direct beam position not defined")
+            self.logger.info("direct beam position not defined")
             return None
 
         if self.dirbeam_detector_angles is None:
-            print("detector angles for the direct beam measurement not defined")
+            self.logger.info(
+                "detector angles for the direct beam measurement not defined"
+            )
             return tuple(self.direct_beam)
 
         ver_direct = (
@@ -1119,8 +1132,8 @@ class Setup:
 
         start = time.time()
         if multiprocessing:
-            print(
-                "\nGridding",
+            self.logger.info(
+                "Gridding",
                 comment,
                 ", number of processors used: ",
                 min(mp.cpu_count(), number_y),
@@ -1154,7 +1167,7 @@ class Setup:
             # in the queue are done.
 
         else:  # no multiprocessing
-            print("\nGridding", comment, ", no multiprocessing")
+            self.logger.info("Gridding", comment, ", no multiprocessing")
             for idx in range(
                 number_y
             ):  # loop over 2D frames perpendicular to the rotation axis
@@ -1179,8 +1192,8 @@ class Setup:
                 sys.stdout.flush()
 
         end = time.time()
-        print(
-            "\nTime ellapsed for gridding data:",
+        self.logger.info(
+            "Time ellapsed for gridding data:",
             str(datetime.timedelta(seconds=int(end - start))),
         )
         return interp_array
@@ -1439,8 +1452,8 @@ class Setup:
             (self.direct_beam[1] - self.detector.roi[2]) / self.detector.binning[2]
         )
         # horizontal
-        print(
-            "\nDirect beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
+        self.logger.info(
+            "Direct beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
         )
 
         #######################################
@@ -1654,11 +1667,11 @@ class Setup:
             pixel_y=self.detector.pixelsize_y,
         )
         if verbose:
-            print(
-                "Sampling in the laboratory frame (z, y, x): ",
+            self.logger.info(
+                "Sampling in the laboratory frame (z, y, x): "
                 f"({dz_realspace:.2f} nm,"
                 f" {dy_realspace:.2f} nm,"
-                f" {dx_realspace:.2f} nm)",
+                f" {dx_realspace:.2f} nm)"
             )
 
         if input_shape != initial_shape:
@@ -1667,11 +1680,11 @@ class Setup:
             pixel_y = self.detector.pixelsize_y * initial_shape[1] / input_shape[1]
             pixel_x = self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
             if verbose:
-                print(
-                    "Tilt, pixel_y, pixel_x based on the shape of the cropped array:",
-                    f"({tilt:.4f} deg,"
-                    f" {pixel_y * 1e6:.2f} um,"
-                    f" {pixel_x * 1e6:.2f} um)",
+                self.logger.info(
+                    "Tilt, pixel_y, pixel_x based on the shape of the cropped array: "
+                    f"({tilt:.4f} deg, "
+                    f"{pixel_y * 1e6:.2f} um, "
+                    f"{pixel_x * 1e6:.2f} um)"
                 )
 
             # sanity check, the direct space voxel sizes
@@ -1680,11 +1693,11 @@ class Setup:
                 input_shape, tilt_angle=abs(tilt), pixel_x=pixel_x, pixel_y=pixel_y
             )
             if verbose:
-                print(
-                    "Sanity check, recalculated direct space voxel sizes (z, y, x): ",
-                    f"({dz_realspace:.2f} nm,"
-                    f" {dy_realspace:.2f} nm,"
-                    f" {dx_realspace:.2f} nm)",
+                self.logger.info(
+                    "Sanity check, recalculated direct space voxel sizes (z, y, x): "
+                    f"({dz_realspace:.2f} nm, "
+                    f"{dy_realspace:.2f} nm, "
+                    f"{dx_realspace:.2f} nm)"
                 )
         else:
             pixel_y = self.detector.pixelsize_y
@@ -1765,8 +1778,8 @@ class Setup:
         )
 
         if verbose:
-            print(
-                "\nCalculating the shape of the output array "
+            self.logger.info(
+                "Calculating the shape of the output array "
                 "fitting the data extent after transformation:"
                 f"\nSampling in the crystal frame (axis 0, axis 1, axis 2):    "
                 f"({d_along_z:.2f} nm,"
@@ -2064,9 +2077,9 @@ class Setup:
             + transfer_matrix[2, 2] * myz
         )
         if verbose:
-            print(
-                "\nInterpolating:"
-                f"\nSampling in q in the laboratory frame (z*, y*, x*):    "
+            self.logger.info(
+                "Interpolating:"
+                f"\n\tSampling in q in the laboratory frame (z*, y*, x*):    "
                 f"({dq_along_z:.5f} 1/nm, {dq_along_y:.5f} 1/nm, {dq_along_x:.5f} 1/nm)"
             )
         # these q values are not equally spaced, we just extract the q extent from them
@@ -2090,7 +2103,7 @@ class Setup:
                 np.array([q_along_x_com, q_along_y_com, q_along_z_com])
             )  # in 1/A
             if verbose:
-                print(f"\nAligning Q along {reference_axis} (x,y,z)")
+                self.logger.info(f"Aligning Q along {reference_axis} (x,y,z)")
 
             # calculate the rotation matrix from the crystal frame
             # to the laboratory frame
@@ -2146,8 +2159,8 @@ class Setup:
             nz_output = int(np.rint((q_along_z.max() - q_along_z.min()) / dq_along_z))
 
             if verbose:
-                print(
-                    f"\nSampling in q in the crystal frame (axis 0, axis 1, axis 2):  "
+                self.logger.info(
+                    f"Sampling in q in the crystal frame (axis 0, axis 1, axis 2):  "
                     f"({dq_along_z:.5f} 1/nm,"
                     f" {dq_along_y:.5f} 1/nm,"
                     f" {dq_along_x:.5f} 1/nm)"
@@ -2160,8 +2173,8 @@ class Setup:
             (nz_output, ny_output, nx_output), maxprime=7, required_dividers=(2,)
         )
         if verbose:
-            print(
-                f"\nInitial shape = ({nbz},{nby},{nbx})\n"
+            self.logger.info(
+                f"Initial shape = ({nbz},{nby},{nbx})\n"
                 f"Output shape  = ({nz_output},{ny_output},{nx_output})"
                 f" (satisfying FFT shape requirements)"
             )
@@ -2380,8 +2393,8 @@ class Setup:
 
         """
         if verbose:
-            print(
-                f"\nout-of plane detector angle={self.outofplane_angle:.3f} deg,"
+            self.logger.info(
+                f"out-of plane detector angle={self.outofplane_angle:.3f} deg,"
                 f" inplane_angle={self.inplane_angle:.3f} deg"
             )
 
@@ -2497,7 +2510,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        print("\nData shape after regridding:", numx, numy, numx)
+        self.logger.info("Data shape after regridding:", numx, numy, numx)
 
         # update the direct beam position due to an eventual padding along X
         if nbx - directbeam_x < directbeam_x:
@@ -2521,7 +2534,7 @@ class Setup:
         # vertical up opposite to detector Y
         qy = np.arange(directbeam_x - numx, directbeam_x, 1) * dqy
         # outboard opposite to detector X
-        print(
+        self.logger.info(
             "q spacing for the interpolation (z,y,x) = "
             f"({dqx:.6f}, {dqz:.6f},{dqy:.6f}) (1/nm)"
         )
@@ -2579,7 +2592,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        print("\nData shape after regridding:", numx, numy, numx)
+        self.logger.info("Data shape after regridding:", numx, numy, numx)
 
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = self.beamline.ewald_curvature_saxs(
@@ -2607,7 +2620,7 @@ class Setup:
         # interpolate the data onto the new points using griddata #
         # (the original grid is not regular, very slow)           #
         ###########################################################
-        print("Interpolating the data using griddata, will take time...")
+        self.logger.info("Interpolating the data using griddata, will take time...")
         output_arrays = []
         for idx, array in enumerate(arrays):
             # convert array type to float,
@@ -2677,7 +2690,7 @@ class Setup:
         dz = np.linalg.norm(transfer_matrix[2, :])  # along z downstream
 
         if verbose:
-            print(
+            self.logger.info(
                 "Direct space voxel size (z, y, x) = "
                 f"({dz:.2f}, {dy:.2f}, {dx:.2f}) (nm)"
             )
@@ -2710,7 +2723,7 @@ class Setup:
             self.wavelength * self.distance / (array_shape[2] * pixel_x) * 1e9
         )  # in nm
         if verbose:
-            print(
+            self.logger.info(
                 "voxelsize_z, voxelsize_y, voxelsize_x="
                 "({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)".format(voxel_z, voxel_y, voxel_x)
             )

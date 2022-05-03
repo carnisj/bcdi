@@ -9,11 +9,14 @@
 """Module containing decorators and context manager classes for input-output."""
 
 from functools import wraps
+import logging
 import os
 from typing import Callable, Optional, Union
 
 from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 class ContextFile:
@@ -22,6 +25,11 @@ class ContextFile:
 
     The supported opening callables are silx.io.specfile.Specfile, io.open, h5py.File
     and SIXS (nxsReady.Dataset, ReadNxs3.Dataset).
+
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     """
 
     def __init__(
@@ -34,7 +42,9 @@ class ContextFile:
         longname: Optional[str] = None,
         shortname: Optional[str] = None,
         directory: Optional[str] = None,
+        **kwargs,
     ):
+        self.logger = kwargs.get("logger", module_logger)
         self.filename = filename
         self.file = None
         self.open_func = open_func

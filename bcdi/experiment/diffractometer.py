@@ -50,12 +50,15 @@ API Reference
 
 from collections import namedtuple
 from functools import reduce
+import logging
 from numbers import Number, Real
 import numpy as np
 
 from bcdi.experiment.rotation_matrix import RotationMatrix
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 Geometry = namedtuple(
     "Geometry",
@@ -154,6 +157,9 @@ class Diffractometer:
      the offsets of each of the sample circles (the offset for the most outer circle
      should be at index 0). The number of circles is beamline dependent. Convention:
      the sample offsets will be subtracted to measurement the motor values.
+    :param kwargs:
+
+     - 'logger': an optional logger
 
     """
 
@@ -167,12 +173,11 @@ class Diffractometer:
     }  # + counter-clockwise, - clockwise
     valid_names = {"sample": "sample_circles", "detector": "detector_circles"}
 
-    def __init__(
-        self,
-        name,
-        sample_offsets=None,
-    ):
-        self._geometry = create_geometry(beamline=name, sample_offsets=sample_offsets)
+    def __init__(self, name, **kwargs):
+        self.logger = kwargs.get("logger", module_logger)
+        self._geometry = create_geometry(
+            beamline=name, sample_offsets=kwargs.get("sample_offsets")
+        )
         self.name = name
         self.sample_circles = self._geometry.sample_circles
         self.detector_circles = self._geometry.detector_circles
@@ -412,7 +417,7 @@ class Diffractometer:
         # create a list of rotation matrices corresponding to the circles,
         # index 0 corresponds to the most outer circle
         rotation_matrices = [
-            RotationMatrix(circle, angles[idx]).get_matrix()
+            RotationMatrix(circle, angles[idx], logger=self.logger).get_matrix()
             for idx, circle in enumerate(
                 self.__getattribute__(self.valid_names[stage_name])
             )

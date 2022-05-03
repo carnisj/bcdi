@@ -1,3 +1,11 @@
+Future:
+-------
+
+* Use multiprocessing for the analysis of several scans in ``bcdi_strain.py``. The
+  use-case is when there is a series of scans measured with the same geometry and only
+  an external parameter (gaz, temperature,...) changes. For each scan, a separate log
+  file is created and saved in `save_dir` along with processing results.
+
 Version 0.2.6:
 --------------
 

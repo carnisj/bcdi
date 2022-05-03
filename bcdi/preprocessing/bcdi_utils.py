@@ -12,6 +12,7 @@ try:
 except ModuleNotFoundError:
     pass
 
+import logging
 import matplotlib.pyplot as plt
 from numbers import Real
 import numpy as np
@@ -25,6 +26,8 @@ from bcdi.experiment import loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def center_fft(
@@ -614,6 +617,7 @@ def find_bragg(
     peak_method: str,
     roi: Optional[Tuple[int, int, int, int]] = None,
     binning: Optional[Tuple[int, ...]] = None,
+    **kwargs,
 ) -> Tuple[int, ...]:
     """
     Find the Bragg peak position in data based on the centering method.
@@ -628,9 +632,14 @@ def find_bragg(
      from the full sized detector.
     :param binning: tuple of integers of length data.ndim, binning applied to the data
      in each dimension.
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: the Bragg peak position in the unbinned, full size detector as a tuple of
      data.ndim elements
     """
+    logger = kwargs.get("logger", module_logger)
     # check parameters
     valid.valid_ndarray(arrays=data, ndim=(2, 3))
     valid.valid_container(
@@ -652,22 +661,25 @@ def find_bragg(
     if peak_method not in {"max", "com", "maxcom"}:
         raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
 
-    print(f"\nFinding Bragg peak position: input data shape {data.shape}")
-    print(f"Binning: {binning}")
-    print(f"Roi: {roi}")
+    logger.info(
+        f"Finding Bragg peak position:"
+        f"\n\tInput data shape {data.shape}"
+        f"\n\tBinning: {binning}"
+        f"\n\tRoi: {roi}"
+    )
     if peak_method == "max":
         position = np.unravel_index(abs(data).argmax(), data.shape)
-        print(f"Max at: {position}, Max = {int(data[position])}")
+        logger.info(f"Max at: {position}, Max = {int(data[position])}")
     elif peak_method == "com":
         position = center_of_mass(data)
         position = tuple(map(lambda x: int(np.rint(x)), position))
-        print(f"Center of mass at: {position}, COM = {int(data[position])}")
+        logger.info(f"Center of mass at: {position}, COM = {int(data[position])}")
     else:  # 'maxcom'
         valid.valid_ndarray(arrays=data, ndim=3)
         position = list(np.unravel_index(abs(data).argmax(), data.shape))
         position[1:] = center_of_mass(data[position[0], :, :])
         position = tuple(map(lambda x: int(np.rint(x)), position))
-        print(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
+        logger.info(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
 
     # unbin
     if binning is not None:
@@ -680,7 +692,7 @@ def find_bragg(
         position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
 
-    print(f"Bragg peak (full unbinned roi) at: {position}")
+    logger.info(f"Bragg peak (full unbinned roi) at: {position}")
     return tuple(position)
 
 
@@ -1182,12 +1194,14 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
+     - 'logger': an optional logger
 
     :return:
      - the updated 3D data and mask arrays
      - the monitor values used for the intensity normalization
 
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
@@ -1231,6 +1245,7 @@ def reload_bcdi_data(
             norm_to_min=True,
             savedir=setup.detector.savedir,
             debugging=True,
+            logger=logger,
         )
 
     # pad the data to the shape defined by the ROI
@@ -1291,11 +1306,7 @@ def reload_bcdi_data(
 
 
 def show_rocking_curve(
-    data,
-    roi_center,
-    integration_roi=None,
-    tilt_values=None,
-    savedir=None,
+    data, roi_center, integration_roi=None, tilt_values=None, savedir=None, **kwargs
 ):
     """
     Calculate the integrated intensity along a rocking curve and plot it.
@@ -1309,8 +1320,13 @@ def show_rocking_curve(
     :param integration_roi: the region of interest where to integrate the intensity
     :param tilt_values: the angular values along the rocking curve
     :param savedir: path to the saving directory
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: a dictionary containing the output metadata
     """
+    logger = kwargs.get("logger", module_logger)
     # check parameters
     valid.valid_ndarray(data, ndim=3, name="data")
     nb_frames = data.shape[0]
@@ -1332,7 +1348,7 @@ def show_rocking_curve(
     if integration_roi is None:
         integration_roi = (data.shape[1], data.shape[2])
     elif integration_roi[0] > data.shape[1] or integration_roi[1] > data.shape[2]:
-        print(
+        logger.info(
             "integration_roi larger than the frame size, using the full frame" "instead"
         )
         integration_roi = (data.shape[1], data.shape[2])
@@ -1374,7 +1390,7 @@ def show_rocking_curve(
         * (tilt_values.max() - tilt_values.min())
         / (interp_points - 1)
     )
-    print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
+    logger.info(f"FWHM by interpolation: {interp_fwhm:.3f} deg")
 
     plt.ion()
     fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
