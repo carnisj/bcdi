@@ -605,10 +605,8 @@ class Loader(ABC):
         # initialize the data array, the mask is binned afterwards in load_check_dataset
         if bin_during_loading:
             self.logger.info(
-                "Binning the data: detector vertical axis by",
-                detector.binning[1],
-                ", detector horizontal axis by",
-                detector.binning[2],
+                f"Binning the data: detector vertical axis by {detector.binning[1]}, "
+                f"detector horizontal axis by {detector.binning[2]}"
             )
 
             data = np.empty(

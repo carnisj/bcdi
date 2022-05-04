@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     pass
 
 import logging
+from typing import Any, Dict
 
 from bcdi.preprocessing.process_scan import process_scan
 from bcdi.utils.parameters import PreprocessingChecker
@@ -21,7 +22,7 @@ import bcdi.utils.utilities as util
 logger = logging.getLogger(__name__)
 
 
-def run(prm):
+def run(prm: Dict[str, Any]) -> None:
     """
     Run the postprocessing.
 

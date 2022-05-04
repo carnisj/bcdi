@@ -9,11 +9,13 @@
 
 import argparse
 from datetime import datetime
+import logging
 import matplotlib.pyplot as plt
 from pathlib import Path
 
 from bcdi.preprocessing.preprocessing_runner import run
 from bcdi.utils.parser import add_cli_parameters, ConfigParser
+from bcdi.utils.snippets_logging import configure_logging
 
 here = Path(__file__).parent
 CONFIG_FILE = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
@@ -304,6 +306,11 @@ Usage:
 """
 
 if __name__ == "__main__":
+
+    now = datetime.now()
+    configure_logging()
+    logging.info(f"Start script at {now}")
+
     # construct the argument parser and parse the command-line arguments
     ap = argparse.ArgumentParser()
     ap = add_cli_parameters(ap)
@@ -316,6 +323,7 @@ if __name__ == "__main__":
     args["time"] = f"{datetime.now()}"
     run(prm=args)
 
-    print("\nEnd of script")
+    now = datetime.now()
+    logging.info(f"End of script at {now}")
     plt.ioff()
     plt.show()
