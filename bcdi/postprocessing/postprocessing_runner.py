@@ -16,7 +16,7 @@ import multiprocessing as mp
 import numpy as np
 from typing import Any, Dict
 
-from bcdi.postprocessing.process_scan import move_log, process_scan
+from bcdi.postprocessing.process_scan import process_scan
 from bcdi.utils.parameters import PostprocessingChecker
 import bcdi.utils.utilities as util
 
@@ -148,7 +148,7 @@ def run(prm: Dict[str, Any]) -> None:
             pool.apply_async(
                 process_scan,
                 args=(scan_idx, prm),
-                callback=move_log,
+                callback=util.move_log,
                 error_callback=util.catch_error,
             )
         pool.close()
@@ -157,4 +157,4 @@ def run(prm: Dict[str, Any]) -> None:
     else:
         for scan_idx in range(nb_scans):
             result = process_scan(scan_idx=scan_idx, prm=prm)
-            move_log(result)
+            util.move_log(result)

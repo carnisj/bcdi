@@ -20,7 +20,7 @@ backend: "Qt5Agg"
 ##############################
 # parameters used in masking #
 ##############################
-flag_interact: False  # True to interact with plots, False to close it automatically
+flag_interact: True  # True to interact with plots, False to close it automatically
 background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 # For visual comfort during masking
 #########################################################

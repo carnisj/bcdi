@@ -16,15 +16,15 @@ except ModuleNotFoundError:
     pass
 import h5py
 import logging
+from logging import Logger
 import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import os
 from pathlib import Path
-import shutil
 import tkinter as tk
 from tkinter import filedialog
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 import yaml
 
 import bcdi.graph.graph_utils as gu
@@ -40,21 +40,9 @@ import bcdi.utils.utilities as util
 logger = logging.getLogger(__name__)
 
 
-def move_log(result: Tuple[Path, Path]):
-    """
-    Process the result after asynchronous multiprocessing.
-
-    It moves log files to the desired location.
-
-    :param result: the output of process_scan, containing the 2d data, 2d mask,
-     counter for each frame, and the file index
-    """
-    filename = result[0].name
-    shutil.move(result[0], result[1] / filename)
-    logger.info(f"{filename.replace('.log', '')} processed")
-
-
-def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
+def process_scan(
+    scan_idx: int, prm: Dict[str, Any]
+) -> Tuple[Path, Path, Optional[Logger]]:
     """
     Run the postprocessing defined by the configuration parameters for a single scan.
 
@@ -138,7 +126,7 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     setup.read_logfile(scan_number=scan_nb)
 
     ###################
-    # logger.info instances #
+    # print instances #
     ###################
     logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
@@ -1269,4 +1257,4 @@ def process_scan(scan_idx: int, prm: Dict[str, Any]) -> Tuple[Path, Path]:
     logger.removeHandler(filehandler)
     filehandler.close()
 
-    return tmpfile, Path(setup.detector.savedir)
+    return tmpfile, Path(setup.detector.savedir), logger

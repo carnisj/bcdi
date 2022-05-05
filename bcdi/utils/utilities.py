@@ -15,16 +15,19 @@ from inspect import signature
 import json
 import h5py
 import logging
+from logging import Logger
 from matplotlib import pyplot as plt
 from numbers import Real, Integral
 import numpy as np
 import os
+from pathlib import Path
 from PIL import Image
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-from typing import Any, List, Optional, Union, Sequence
+import shutil
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import validation as valid
@@ -1467,6 +1470,21 @@ def mean_filter(
         )
 
     return data, nb_pixels, mask
+
+
+def move_log(result: Tuple[Path, Path, Optional[Logger]]):
+    """
+    Move log files to the desired location, after processing a file.
+
+    It can be used as a standard function or as a callback for multiprocessing.
+
+    :param result: the output of process_scan, containing the 2d data, 2d mask,
+     counter for each frame; the file index; and an optional logger
+    """
+    logger = result[2] if result[2] is not None else module_logger
+    filename = result[0].name
+    shutil.move(result[0], result[1] / filename)
+    logger.info(f"{filename.replace('.log', '')} processed")
 
 
 def ndarray_to_list(array: np.ndarray) -> List:

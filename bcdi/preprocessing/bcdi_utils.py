@@ -72,12 +72,13 @@ def center_fft(
      - 'skip': keep the full dataset or crop it to the size defined by fix_size
 
     :param kwargs:
-     - 'fix_bragg' = user-defined position in pixels of the Bragg peak
+     - 'fix_bragg': user-defined position in pixels of the Bragg peak
        [z_bragg, y_bragg, x_bragg]
-     - 'fix_size' = user defined output array size
+     - 'fix_size': user defined output array size
        [zstart, zstop, ystart, ystop, xstart, xstop]
-     - 'pad_size' = user defined output array size [nbz, nby, nbx]
-     - 'q_values' = [qx, qz, qy], each component being a 1D array
+     - 'pad_size': user defined output array size [nbz, nby, nbx]
+     - 'q_values': [qx, qz, qy], each component being a 1D array
+     - 'logger': an optional logger
 
     :return:
      - updated data, mask (and q_values if provided, [] otherwise)
@@ -86,6 +87,8 @@ def center_fft(
      - updated frames_logical
 
     """
+    logger = kwargs.get("logger", module_logger)
+
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
@@ -110,18 +113,20 @@ def center_fft(
     if centering == "max":
         z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
         if q_values:
-            print(f"Max at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}")
+            logger.info(
+                f"Max at (qx, qz, qy): {qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}"
+            )
         else:
-            print("Max at pixel (Z, Y, X): ", z0, y0, x0)
+            logger.info(f"Max at pixel (Z, Y, X): ({z0, y0, x0})")
     elif centering == "com":
         z0, y0, x0 = center_of_mass(data)
         if q_values:
-            print(
+            logger.info(
                 "Center of mass at (qx, qz, qy): "
                 f"{qx[z0]:.5f}, {qz[y0]:.5f}, {qy[x0]:.5f}"
             )
         else:
-            print("Center of mass at pixel (Z, Y, X): ", z0, y0, x0)
+            logger.info(f"Center of mass at pixel (Z, Y, X): ({z0, y0, x0})")
     else:
         raise ValueError("Incorrect value for 'centering' parameter")
 
@@ -129,20 +134,18 @@ def center_fft(
         if len(fix_bragg) != 3:
             raise ValueError("fix_bragg should be a list of 3 integers")
         z0, y0, x0 = fix_bragg
-        print(
-            "Peak intensity position defined by user on the full detector: ", z0, y0, x0
+        logger.info(
+            "Peak intensity position defined by user on the full detector: "
+            f"({z0, y0, x0})"
         )
         y0 = (y0 - detector.roi[0]) / detector.binning[1]
         x0 = (x0 - detector.roi[2]) / detector.binning[2]
-        print(
-            "Peak intensity position with detector ROI and binning in detector plane: ",
-            z0,
-            y0,
-            x0,
+        logger.info(
+            "Peak intensity position with detector ROI and binning in detector plane: "
+            f"({z0, y0, x0})"
         )
-
     iz0, iy0, ix0 = int(round(z0)), int(round(y0)), int(round(x0))
-    print(f"Data peak value = {data[iz0, iy0, ix0]:.1f}")
+    logger.info(f"Data peak value = {data[iz0, iy0, ix0]:.1f}")
 
     # Max symmetrical box around center of mass
     nbz, nby, nbx = np.shape(data)
@@ -150,9 +153,9 @@ def center_fft(
     max_ny = 2 * min(iy0, nby - iy0)
     max_nx = abs(2 * min(ix0, nbx - ix0))
     if fft_option != "skip":
-        print("Max symmetrical box (qx, qz, qy): ", max_nz, max_ny, max_nx)
+        logger.info(f"Max symmetrical box (qx, qz, qy): ({max_nz, max_ny, max_nx})")
     if any(val == 0 for val in (max_nz, max_ny, max_nx)):
-        print(
+        logger.info(
             "Empty images or presence of hotpixel at the border,"
             ' defaulting fft_option to "skip"!'
         )
@@ -176,7 +179,7 @@ def center_fft(
             iy0 - ny1 // 2 : iy0 + ny1 // 2,
             ix0 - nx1 // 2 : ix0 + nx1 // 2,
         ]
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         if (iz0 - nz1 // 2) > 0:  # if 0, the first frame is used
             frames_logical[0 : iz0 - nz1 // 2] = 0
@@ -205,7 +208,7 @@ def center_fft(
             nby // 2 - ny1 // 2 : nby // 2 + ny1 // 2,
             nbx // 2 - nx1 // 2 : nbx // 2 + nx1 // 2,
         ]
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         if (nbz // 2 - nz1 // 2) > 0:  # if 0, the first frame is used
             frames_logical[0 : nbz // 2 - nz1 // 2] = 0
@@ -247,7 +250,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -265,7 +268,7 @@ def center_fft(
         # and crop detector (Bragg peak non-centered)
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of three elements")
-        print("pad_size for 1st axis before binning: ", pad_size[0])
+        logger.info(f"pad_size for 1st axis before binning: {pad_size[0]}")
         if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
@@ -299,7 +302,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -337,7 +340,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -380,7 +383,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -398,7 +401,7 @@ def center_fft(
         # and keep detector size
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of three elements")
-        print("pad_size for 1st axis before binning: ", pad_size[0])
+        logger.info(f"pad_size for 1st axis before binning: {pad_size[0]}")
         if pad_size[0] != util.higher_primes(
             pad_size[0], maxprime=7, required_dividers=(2,)
         ):
@@ -419,7 +422,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -449,7 +452,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -464,8 +467,8 @@ def center_fft(
         # pad both dimensions based on 'pad_size' (Bragg peak centered)
         if len(pad_size) != 3:
             raise ValueError("pad_size should be a list of 3 integers")
-        print("pad_size: ", pad_size)
-        print(
+        logger.info(f"pad_size: {pad_size}")
+        logger.info(
             "The 1st axis (stacking dimension) is padded before binning,"
             " detector plane after binning."
         )
@@ -497,7 +500,7 @@ def center_fft(
         mask = zero_pad(
             mask, padding_width=pad_width, mask_flag=True
         )  # mask padded pixels
-        print("FFT box (qx, qz, qy): ", data.shape)
+        logger.info(f"FFT box (qx, qz, qy): {data.shape}")
 
         temp_frames = -1 * np.ones(data.shape[0])
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
@@ -1089,6 +1092,7 @@ def load_bcdi_data(
      - 'frames_pattern': 1D array of int, of length data.shape[0]. If
        frames_pattern is 0 at index, the frame at data[index] will be skipped,
        if 1 the frame will added to the stack.
+     - 'logger': an optional logger
 
     :return:
      - the 3D data and mask arrays
@@ -1098,6 +1102,8 @@ def load_bcdi_data(
      - the monitor values used for the intensity normalization
 
     """
+    logger = kwargs.get("logger", module_logger)
+
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
@@ -1143,11 +1149,9 @@ def load_bcdi_data(
     if not bin_during_loading and (
         (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1)
     ):
-        print(
-            "Binning the data: detector vertical axis by",
-            setup.detector.binning[1],
-            ", detector horizontal axis by",
-            setup.detector.binning[2],
+        logger.info(
+            f"Binning the data: detector vertical axis by {setup.detector.binning[1]}, "
+            f"detector horizontal axis by {setup.detector.binning[2]}"
         )
         rawdata = util.bin_data(
             rawdata,
