@@ -1,7 +1,8 @@
 Future:
 -------
 
-* Implement logging in ``bcdi_preprocessing_BCDI.py``
+* Implement logging in ``bcdi_preprocessing_BCDI.py``. For each scan, a separate log
+  file is created and saved in `save_dir` along with processing results.
 
 * Use multiprocessing for the analysis of several scans in ``bcdi_strain.py``. The
   use-case is when there is a series of scans measured with the same geometry and only
