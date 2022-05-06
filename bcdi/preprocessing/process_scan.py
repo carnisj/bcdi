@@ -37,6 +37,7 @@ import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.utils.constants import AXIS_TO_ARRAY
 from bcdi.utils.snippets_logging import FILE_FORMATTER
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 logger = logging.getLogger(__name__)
 
@@ -830,6 +831,15 @@ def process_scan(
                 tuple_fieldnames="int",
                 origin=(qx0, qz0, qy0),
             )
+
+    ########################################################
+    # load an optional mask from the config and combine it #
+    ########################################################
+    if prm.get("mask") is not None:
+        config_mask = util.load_file(prm.get("mask"))
+        valid.valid_ndarray(config_mask, shape=data.shape)
+        config_mask[np.nonzero(config_mask)] = 1
+        mask = np.multiply(mask, config_mask.astype(mask.dtype))
 
     if prm["flag_interact"]:
         plt.ioff()
