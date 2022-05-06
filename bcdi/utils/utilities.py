@@ -1181,7 +1181,9 @@ def load_background(background_file):
     return background
 
 
-def load_file(file_path, fieldname=None):
+def load_file(
+    file_path: str, fieldname: Optional[str] = None
+) -> Tuple[np.ndarray, str]:
     """
     Load a file.
 
