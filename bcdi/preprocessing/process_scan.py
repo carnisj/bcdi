@@ -1023,14 +1023,12 @@ def process_scan(
     mask[np.nonzero(mask)] = 1
     data[mask == 1] = 0
 
-    ########################################################
-    # save the projected mask as hotpixels for later reuse #
-    ########################################################
-    hotpixels = mask.sum(axis=0)
-    hotpixels[np.nonzero(hotpixels)] = 1
+    #############################################
+    # save the interactive mask for later reuse #
+    #############################################
     np.savez_compressed(
-        setup.detector.savedir + f"S{scan_nb}_hotpixels",
-        hotpixels=hotpixels.astype(int),
+        setup.detector.savedir + f"S{scan_nb}_interactive_mask",
+        hotpixels=mask.astype(int),
     )
 
     ###############################################
