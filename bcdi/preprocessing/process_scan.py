@@ -837,8 +837,9 @@ def process_scan(
     ########################################################
     # load an optional mask from the config and combine it #
     ########################################################
-    if prm.get("mask") is not None:
-        config_mask, _ = util.load_file(prm.get("mask"))
+    mask_file = prm.get("mask")
+    if isinstance(mask_file, str):
+        config_mask, _ = util.load_file(mask_file)
         valid.valid_ndarray(config_mask, shape=data.shape)
         config_mask[np.nonzero(config_mask)] = 1
         mask = np.multiply(mask, config_mask.astype(mask.dtype))
