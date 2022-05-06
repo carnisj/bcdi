@@ -300,6 +300,11 @@ class PreprocessingChecker(ConfigChecker):
                 "non-interactive backend 'agg' not compatible with the "
                 "interactive masking GUI"
             )
+        if (
+            self._checked_params["flag_interact"]
+            or self._checked_params["reload_previous"]
+        ):
+            self._checked_params["multiprocessing"] = False
 
 
 class PostprocessingChecker(ConfigChecker):

@@ -46,11 +46,12 @@ def process_scan(
     scan_idx: int, prm: Dict[str, Any]
 ) -> Tuple[Path, Path, Optional[Logger]]:
     """
-    Run the postprocessing defined by the configuration parameters for a single scan.
+    Run the preprocessing defined by the configuration parameters for a single scan.
 
     This function is meant to be run as a process in multiprocessing, although it can
     also be used as a normal function for a single scan. It assumes that the dictionary
-    of parameters was validated via a ConfigChecker instance.
+    of parameters was validated via a ConfigChecker instance. Interactive masking and
+    reloading of previous masking are not compatible with multiprocessing.
 
     :param scan_idx: index of the scan to be processed in prm["scans"]
     :param prm: the parsed parameters
@@ -225,7 +226,8 @@ def process_scan(
     filehandler.setFormatter(FILE_FORMATTER)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
-    logger.propagate = True
+    if not prm["multiprocessing"] or len(prm["scans"]) == 1:
+        logger.propagate = True
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     comment = prm["comment"]  # re-initialize comment
@@ -836,7 +838,7 @@ def process_scan(
     # load an optional mask from the config and combine it #
     ########################################################
     if prm.get("mask") is not None:
-        config_mask = util.load_file(prm.get("mask"))
+        config_mask, _ = util.load_file(prm.get("mask"))
         valid.valid_ndarray(config_mask, shape=data.shape)
         config_mask[np.nonzero(config_mask)] = 1
         mask = np.multiply(mask, config_mask.astype(mask.dtype))

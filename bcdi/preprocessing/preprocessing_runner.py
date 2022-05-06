@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     pass
 
 import logging
+import multiprocessing as mp
 from typing import Any, Dict
 
 from bcdi.preprocessing.process_scan import process_scan
@@ -66,6 +67,7 @@ def run(prm: Dict[str, Any]) -> None:
             "mask_zero_event": False,
             "median_filter": "skip",
             "median_filter_order": 7,
+            "multiprocessing": True,
             "normalize_flux": False,
             "offset_inplane": 0,
             "outofplane_angle": None,
@@ -108,6 +110,30 @@ def run(prm: Dict[str, Any]) -> None:
     # start looping over scans #
     ############################
     nb_scans = len(prm["scans"])
-    for scan_idx in range(nb_scans):
-        result = process_scan(scan_idx=scan_idx, prm=prm)
-        util.move_log(result)
+    if prm["multiprocessing"]:
+        mp.freeze_support()
+        pool = mp.Pool(
+            processes=min(mp.cpu_count(), nb_scans)
+        )  # use this number of processes
+
+        for scan_idx, scan_nb in enumerate(prm["scans"]):
+            tmp_str = (
+                f"Scan {scan_idx + 1}/{len(prm['scans'])}: "
+                f"{prm['sample_name'][scan_idx]}{scan_nb}"
+            )
+            logger.info(
+                f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
+            )
+            pool.apply_async(
+                process_scan,
+                args=(scan_idx, prm),
+                callback=util.move_log,
+                error_callback=util.catch_error,
+            )
+        pool.close()
+        pool.join()  # postpones the execution of next line of code
+        # until all processes in the queue are done.
+    else:
+        for scan_idx in range(nb_scans):
+            result = process_scan(scan_idx=scan_idx, prm=prm)
+            util.move_log(result)
