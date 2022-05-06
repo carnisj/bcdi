@@ -664,6 +664,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             allow_none=True,
             name=key,
         )
+    elif key == "mask":
+        valid.valid_container(value, container_types=str, allow_none=True, name=key)
+        if value is not None and not os.path.isfile(value):
+            raise ValueError(f"The file '{value}' does not exist")
     elif key == "median_filter":
         allowed = {"median", "interp_isolated", "mask_isolated", "skip"}
         if value not in allowed:

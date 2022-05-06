@@ -72,6 +72,10 @@ Usage:
 
     :param flag_interact: e.g. True
      True to interact with plots, False to close it automatically
+    :param mask: e.g. "path_to/mask.npz"
+     path to a file containing a 3D mask array of the same shape as the data would have
+     during interactive masking (binned & cropped/padded). It will be used to mask the
+     data if flag_interact is False, or as an initial mask if flag_interact is True.
     :param background_plot: e.g. "0.5"
      background color for the GUI in level of grey in [0,1], 0 being dark. For visual
      comfort during interactive masking.

@@ -21,6 +21,9 @@ backend: "Qt5Agg"
 # parameters used in masking #
 ##############################
 flag_interact: True  # True to interact with plots, False to close it automatically
+mask: None  # path to a file containing a 3D mask array of the same size as data would
+# have during interactive masking (binned & cropped/padded). It will be used to mask the
+# data if flag_interact is False, or as an initial mask if flag_interact is True.
 background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 # For visual comfort during masking
 #########################################################
