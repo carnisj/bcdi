@@ -111,10 +111,12 @@ def bin_data(array, binning, debugging=False, **kwargs):
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: the binned array
     """
     cmap = kwargs.get("cmap", "turbo")
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=array, ndim=(1, 2, 3))
     ndim = array.ndim
     if isinstance(binning, int):
@@ -154,8 +156,8 @@ def bin_data(array, binning, debugging=False, **kwargs):
         raise ValueError("Array should be 1D, 2D, or 3D")
 
     if debugging:
-        print("array shape after cropping but before binning:", array.shape)
-        print("array shape after binning:", newarray.shape)
+        logger.info(f"array shape after cropping but before binning: {array.shape}")
+        logger.info(f"array shape after binning: {newarray.shape}")
         gu.combined_plots(
             tuple_array=(array, newarray),
             tuple_sum_frames=False,
@@ -280,9 +282,11 @@ def crop_pad(
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: myobj cropped or padded with zeros
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=array, ndim=3)
     valid.valid_container(
         output_shape,
@@ -305,7 +309,7 @@ def crop_pad(
         raise ValueError("crop_center should be a list or tuple of three indices")
 
     if debugging:
-        print(f"array shape before crop/pad = {array.shape}")
+        logger.info(f"array shape before crop/pad = {array.shape}")
         gu.multislices_plot(
             abs(array),
             sum_frames=True,
@@ -354,7 +358,7 @@ def crop_pad(
         ]
 
     if debugging:
-        print(f"array shape after crop/pad = {newobj.shape}")
+        logger.info(f"array shape after crop/pad = {newobj.shape}")
         gu.multislices_plot(
             abs(newobj),
             sum_frames=True,

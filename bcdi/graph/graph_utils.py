@@ -8,6 +8,7 @@
 """Functions related to visualization."""
 
 from lmfit import minimize, Parameters
+import logging
 import numpy as np
 from numbers import Real
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -33,6 +34,7 @@ from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 default_cmap = ColormapFactory(colormap="turbo").cmap
+module_logger = logging.getLogger(__name__)
 
 
 def close_event(event):
@@ -2392,6 +2394,7 @@ def save_to_vti(
     tuple_fieldnames,
     origin=(0, 0, 0),
     amplitude_threshold=0.01,
+    **kwargs,
 ):
     """
     Save arrays defined by their name in a single vti file.
@@ -2410,11 +2413,16 @@ def save_to_vti(
     :param origin: tuple of points for vtk SetOrigin()
     :param amplitude_threshold: lower threshold for saving the reconstruction
      modulus (save memory space)
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: nothing
     """
     import vtk
     from vtk.util import numpy_support
 
+    logger = kwargs.get("logger", module_logger)
     #########################
     # check some parameters #
     #########################
@@ -2465,7 +2473,7 @@ def save_to_vti(
         ] = 0  # theshold low amplitude values in order to save disk space
         is_amp = True
     except ValueError:
-        print('"amp" not in fieldnames, will save arrays without thresholding')
+        logger.info('"amp" not in fieldnames, will save arrays without thresholding')
         index_first = 0
         first_array = tuple_array[0]
         is_amp = False

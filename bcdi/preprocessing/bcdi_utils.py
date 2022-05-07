@@ -730,6 +730,7 @@ def grid_bcdi_labframe(
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
+     - 'logger': an optional logger
 
     :return:
 
@@ -740,6 +741,7 @@ def grid_bcdi_labframe(
        frame to the laboratory/crystal frame
 
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
@@ -773,9 +775,9 @@ def grid_bcdi_labframe(
     reference_axis = np.array(reference_axis)
 
     # grid the data
-    print(
-        "Gridding the data using the linearized matrix,"
-        " the result will be in the laboratory frame"
+    logger.info(
+        "Gridding the data using the linearized matrix, "
+        "the result will be in the laboratory frame"
     )
     string = "linmat_reciprocal_space_"
     (interp_data, interp_mask), q_values, transfer_matrix = setup.ortho_reciprocal(
@@ -909,22 +911,24 @@ def grid_bcdi_xrayutil(
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: the data and mask interpolated in the crystal frame, q values
      (downstream, vertical up, outboard). q values are in inverse angstroms.
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     cmap = kwargs.get("cmap", "turbo")
     numz, numy, numx = data.shape
-    print(
-        "Gridding the data using xrayutilities package,"
-        " the result will be in the crystal frame"
+    logger.info(
+        "Gridding the data using xrayutilities package, "
+        "the result will be in the crystal frame"
     )
     string = "xrutil_reciprocal_space_"
     if setup.filtered_data:
-        print(
-            "Trying to orthogonalize a filtered data,"
-            " the corresponding detector ROI should be provided\n"
+        logger.info(
+            "Trying to orthogonalize a filtered data, "
+            "the corresponding detector ROI should be provided "
             "otherwise q values will be wrong."
         )
     qx, qz, qy, frames_logical = setup.calc_qvalues_xrutils(
@@ -938,9 +942,11 @@ def grid_bcdi_xrayutil(
     for dim in (qx, qy, qz):
         maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
         maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
-    print(f"Maximum number of bins based on the sampling in q: {maxbins}")
+    logger.info(f"Maximum number of bins based on the sampling in q: {maxbins}")
     maxbins = util.smaller_primes(maxbins, maxprime=7, required_dividers=(2,))
-    print(f"Maximum number of bins based on the shape requirements for FFT: {maxbins}")
+    logger.info(
+        f"Maximum number of bins based on the shape requirements for FFT: {maxbins}"
+    )
     # only rectangular cuboidal voxels are supported in xrayutilities FuzzyGridder3D
     gridder = xu.FuzzyGridder3D(*maxbins)
     #
@@ -1088,6 +1094,7 @@ def load_bcdi_data(
      defined by detector.sum_roi, 'skip' to do nothing
     :param debugging:  set to True to see plots
     :param kwargs:
+
      - 'photon_threshold': float, photon threshold to apply before binning
      - 'frames_pattern': 1D array of int, of length data.shape[0]. If
        frames_pattern is 0 at index, the frame at data[index] will be skipped,
@@ -1140,7 +1147,7 @@ def load_bcdi_data(
     if photon_threshold != 0:
         rawmask[rawdata < photon_threshold] = 1
         rawdata[rawdata < photon_threshold] = 0
-        print("Applying photon threshold before binning: < ", photon_threshold)
+        logger.info(f"Applying photon threshold before binning: < {photon_threshold}")
 
     ####################################################################################
     # bin data and mask in the detector plane if not already done during loading       #
@@ -1197,6 +1204,7 @@ def reload_bcdi_data(
     :param normalize: set to True to normalize by the default monitor of the beamline
     :param debugging:  set to True to see plots
     :parama kwargs:
+
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
@@ -1226,15 +1234,14 @@ def reload_bcdi_data(
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
 
-    print(
-        (data < 0).sum(), " negative data points masked"
-    )  # can happen when subtracting a background
+    logger.info(f"{(data < 0).sum()} negative data points masked")
+    # can happen when subtracting a background
     mask[data < 0] = 1
     data[data < 0] = 0
 
     # normalize by the incident X-ray beam intensity
     if normalize_method == "skip":
-        print("Skip intensity normalization")
+        logger.info("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
         monitor = setup.loader.read_monitor(
@@ -1242,7 +1249,7 @@ def reload_bcdi_data(
             setup=setup,
         )
 
-        print("Intensity normalization using " + normalize_method)
+        logger.info(f"Intensity normalization using {normalize_method}")
         data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
@@ -1258,7 +1265,7 @@ def reload_bcdi_data(
         or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
         start = (np.nan, min(0, setup.detector.roi[0]), min(0, setup.detector.roi[2]))
-        print("Paddind the data to the shape defined by the ROI")
+        logger.info("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,
@@ -1283,16 +1290,15 @@ def reload_bcdi_data(
     if photon_threshold != 0:
         mask[data < photon_threshold] = 1
         data[data < photon_threshold] = 0
-        print("Applying photon threshold before binning: < ", photon_threshold)
+        logger.info(f"Applying photon threshold before binning: < {photon_threshold}")
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
     if (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1):
-        print(
-            "Binning the data: setup.detector vertical axis by",
-            setup.detector.binning[1],
-            ", setup.detector horizontal axis by",
-            setup.detector.binning[2],
+        logger.info(
+            "Binning the data: setup.detector vertical axis by "
+            f"{setup.detector.binning[1]}, setup.detector horizontal axis by "
+            f"{setup.detector.binning[2]}"
         )
         data = util.bin_data(
             data,
