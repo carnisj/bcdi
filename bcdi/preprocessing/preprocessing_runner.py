@@ -110,7 +110,7 @@ def run(prm: Dict[str, Any]) -> None:
     # start looping over scans #
     ############################
     nb_scans = len(prm["scans"])
-    if prm["multiprocessing"]:
+    if False:  # prm["multiprocessing"]:
         mp.freeze_support()
         pool = mp.Pool(
             processes=min(mp.cpu_count(), nb_scans)

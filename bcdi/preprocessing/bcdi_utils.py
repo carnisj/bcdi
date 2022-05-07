@@ -93,7 +93,7 @@ def center_fft(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"fix_bragg", "fix_size", "pad_size", "q_values"},
+        allowed_kwargs={"fix_bragg", "fix_size", "logger", "pad_size", "q_values"},
         name="kwargs",
     )
     fix_bragg = kwargs.get("fix_bragg")
@@ -746,7 +746,7 @@ def grid_bcdi_labframe(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"cmap", "fill_value", "reference_axis"},
+        allowed_kwargs={"cmap", "fill_value", "logger", "reference_axis"},
         name="kwargs",
     )
     cmap = kwargs.get("cmap", "turbo")
@@ -1114,7 +1114,7 @@ def load_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"photon_threshold", "frames_pattern"},
+        allowed_kwargs={"photon_threshold", "frames_pattern", "logger"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1218,7 +1218,7 @@ def reload_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"photon_threshold"},
+        allowed_kwargs={"logger", "photon_threshold"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
