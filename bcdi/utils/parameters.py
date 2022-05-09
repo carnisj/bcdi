@@ -300,6 +300,11 @@ class PreprocessingChecker(ConfigChecker):
                 "non-interactive backend 'agg' not compatible with the "
                 "interactive masking GUI"
             )
+        if (
+            self._checked_params["flag_interact"]
+            or self._checked_params["reload_previous"]
+        ):
+            self._checked_params["multiprocessing"] = False
 
 
 class PostprocessingChecker(ConfigChecker):
@@ -664,6 +669,10 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             allow_none=True,
             name=key,
         )
+    elif key == "mask":
+        valid.valid_container(value, container_types=str, allow_none=True, name=key)
+        if value is not None and not os.path.isfile(value):
+            raise ValueError(f"The file '{value}' does not exist")
     elif key == "median_filter":
         allowed = {"median", "interp_isolated", "mask_isolated", "skip"}
         if value not in allowed:

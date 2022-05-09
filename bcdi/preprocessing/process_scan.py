@@ -37,6 +37,7 @@ import bcdi.preprocessing.bcdi_utils as bu
 from bcdi.utils.constants import AXIS_TO_ARRAY
 from bcdi.utils.snippets_logging import FILE_FORMATTER
 import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,12 @@ def process_scan(
     scan_idx: int, prm: Dict[str, Any]
 ) -> Tuple[Path, Path, Optional[Logger]]:
     """
-    Run the postprocessing defined by the configuration parameters for a single scan.
+    Run the preprocessing defined by the configuration parameters for a single scan.
 
     This function is meant to be run as a process in multiprocessing, although it can
     also be used as a normal function for a single scan. It assumes that the dictionary
-    of parameters was validated via a ConfigChecker instance.
+    of parameters was validated via a ConfigChecker instance. Interactive masking and
+    reloading of previous masking are not compatible with multiprocessing.
 
     :param scan_idx: index of the scan to be processed in prm["scans"]
     :param prm: the parsed parameters
@@ -224,7 +226,8 @@ def process_scan(
     filehandler.setFormatter(FILE_FORMATTER)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
-    logger.propagate = True
+    if not prm["multiprocessing"] or len(prm["scans"]) == 1:
+        logger.propagate = True
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     comment = prm["comment"]  # re-initialize comment
@@ -263,6 +266,7 @@ def process_scan(
         binning=prm["phasing_binning"],
         preprocessing_binning=prm["preprocessing_binning"],
         linearity_func=prm["linearity_func"],
+        logger=logger,
     )
 
     # initialize the paths
@@ -381,12 +385,14 @@ def process_scan(
                     binning=setup.detector.binning,
                     debugging=False,
                     cmap=prm["colormap"].cmap,
+                    logger=logger,
                 )
                 mask = util.bin_data(
                     mask,
                     binning=setup.detector.binning,
                     debugging=False,
                     cmap=prm["colormap"].cmap,
+                    logger=logger,
                 )
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
@@ -417,6 +423,7 @@ def process_scan(
                 debugging=prm["debug"],
                 normalize=prm["normalize_flux"],
                 photon_threshold=prm["loading_threshold"],
+                logger=logger,
             )
 
     else:  # new masking process
@@ -436,6 +443,7 @@ def process_scan(
             normalize=prm["normalize_flux"],
             debugging=prm["debug"],
             photon_threshold=prm["loading_threshold"],
+            logger=logger,
         )
 
     nz, ny, nx = np.shape(data)
@@ -460,6 +468,7 @@ def process_scan(
                 peak_method="maxcom",
                 roi=setup.detector.roi,
                 binning=setup.detector.binning,
+                logger=logger,
             )
 
         if prm["bragg_peak"] is None:
@@ -475,6 +484,7 @@ def process_scan(
             roi_center=roi_center,
             tilt_values=setup.incident_angles,
             savedir=setup.detector.savedir,
+            logger=logger,
         )
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
@@ -603,6 +613,7 @@ def process_scan(
                     hxrd=hxrd,
                     debugging=prm["debug"],
                     cmap=prm["colormap"].cmap,
+                    logger=logger,
                 )
             else:  # 'linearization'
                 # for q values, the frame used is
@@ -619,6 +630,7 @@ def process_scan(
                     debugging=prm["debug"],
                     fill_value=(0, prm["fill_value_mask"]),
                     cmap=prm["colormap"].cmap,
+                    logger=logger,
                 )
                 prm["transformation_matrix"] = transfer_matrix
             nz, ny, nx = data.shape
@@ -687,6 +699,7 @@ def process_scan(
         fix_bragg=prm["bragg_peak"],
         fix_size=prm["fix_size"],
         q_values=q_values,
+        logger=logger,
     )
 
     starting_frame = [
@@ -829,7 +842,18 @@ def process_scan(
                 tuple_array=data,
                 tuple_fieldnames="int",
                 origin=(qx0, qz0, qy0),
+                logger=logger,
             )
+
+    ########################################################
+    # load an optional mask from the config and combine it #
+    ########################################################
+    mask_file = prm.get("mask")
+    if isinstance(mask_file, str):
+        config_mask, _ = util.load_file(mask_file)
+        valid.valid_ndarray(config_mask, shape=data.shape)
+        config_mask[np.nonzero(config_mask)] = 1
+        mask = np.multiply(mask, config_mask.astype(mask.dtype))
 
     if prm["flag_interact"]:
         plt.ioff()
@@ -1013,14 +1037,12 @@ def process_scan(
     mask[np.nonzero(mask)] = 1
     data[mask == 1] = 0
 
-    ########################################################
-    # save the projected mask as hotpixels for later reuse #
-    ########################################################
-    hotpixels = mask.sum(axis=0)
-    hotpixels[np.nonzero(hotpixels)] = 1
+    #############################################
+    # save the interactive mask for later reuse #
+    #############################################
     np.savez_compressed(
-        setup.detector.savedir + f"S{scan_nb}_hotpixels",
-        hotpixels=hotpixels.astype(int),
+        setup.detector.savedir + f"S{scan_nb}_interactive_mask",
+        hotpixels=mask.astype(int),
     )
 
     ###############################################
@@ -1151,12 +1173,14 @@ def process_scan(
             (setup.detector.binning[0], 1, 1),
             debugging=False,
             cmap=prm["colormap"].cmap,
+            logger=logger,
         )
         mask = util.bin_data(
             mask,
             (setup.detector.binning[0], 1, 1),
             debugging=False,
             cmap=prm["colormap"].cmap,
+            logger=logger,
         )
         mask[np.nonzero(mask)] = 1
         if not prm["use_rawdata"] and len(q_values) != 0:
@@ -1180,12 +1204,14 @@ def process_scan(
         output_shape=final_shape,
         crop_center=crop_center,
         cmap=prm["colormap"].cmap,
+        logger=logger,
     )
     mask = util.crop_pad(
         mask,
         output_shape=final_shape,
         crop_center=crop_center,
         cmap=prm["colormap"].cmap,
+        logger=logger,
     )
     logger.info(f"Data size after considering FFT shape requirements: {data.shape}")
     nz, ny, nx = data.shape

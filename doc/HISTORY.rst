@@ -1,8 +1,17 @@
 Future:
 -------
 
-* Implement logging in ``bcdi_preprocessing_BCDI.py``. For each scan, a separate log
-  file is created and saved in `save_dir` along with processing results.
+* Use multiprocessing for the analysis of several scans in `bcdi_preprocessing_BCDI.py`.
+  In this case, `flag_interact` has to be False, and an optional mask can be loaded to
+  be applied on the data. The use case is when one runs once the preprocessing manually
+  and creates such a mask (it is saved automatically after the interactive masking as
+  `interactive_mask.npz`), and afterwards wants to apply it to a series of scans
+  measured in the same geometry. For each scan, a separate log file is created and
+  saved in `save_dir` along with processing results.
+
+* A parameter `mask` was added to the config file for preprocessing. The loaded mask
+  will be combined with the one generated automatically and used independently of
+  `flag_interact`.
 
 * Use multiprocessing for the analysis of several scans in ``bcdi_strain.py``. The
   use-case is when there is a series of scans measured with the same geometry and only
