@@ -290,8 +290,8 @@ def convert_str_target(
         for key, item in value.items():
             value[key] = convert_str_target(item, target=target)
         return value
-    else:
-        return value
+
+    return value
 
 
 def crop_pad(
