@@ -9,6 +9,7 @@ nxsReady.
 This module contains Classes and functions to load data at SIXS beamline.
 """
 
+import os
 import pickle
 
 import numpy
@@ -41,6 +42,13 @@ class DataSet:
     the data to use it: MyFileObject=nxsRead.DataSet(path/filename, filename)
     """
 
+    allowed_alias_dict = [
+        "alias_dict_2018.txt",
+        "alias_dict_2019.txt",
+        "alias_dict_2020.txt",
+        "alias_dict_2021.txt",
+    ]
+
     # define a classe to enter .nxs fiel-related parameters
     # the long name is the pathename
     # short name should be the filenmane
@@ -49,6 +57,8 @@ class DataSet:
     def __init__(
         self, longname, shortname, alias_dict, datafilter=None, pref=None, scan="FLY"
     ):
+        if os.path.split(alias_dict)[-1] not in self.allowed_alias_dict:
+            raise ValueError(f"{alias_dict} is not in the list of allowed names")
         alias_dict = pickle.load(open(alias_dict, "rb"))
         if pref is None:
             pref = PrefParameters()
