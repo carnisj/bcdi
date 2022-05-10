@@ -7,18 +7,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from numbers import Real
-import numpy as np
-from numpy.fft import fftn, fftshift
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import h5py
 import pathlib
 import tkinter as tk
+from numbers import Real
 from tkinter import filedialog
-from bcdi.graph.colormap import ColormapFactory
+
+import h5py
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from numpy.fft import fftn, fftshift
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Open and plot the point-spread function (PSF) from a .cxi reconstruction file (from

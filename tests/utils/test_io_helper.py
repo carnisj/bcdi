@@ -7,8 +7,9 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import io
-from pathlib import Path
 import unittest
+from pathlib import Path
+
 from bcdi.utils.io_helper import ContextFile
 from tests.config import run_tests
 

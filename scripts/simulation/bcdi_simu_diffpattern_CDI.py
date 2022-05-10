@@ -10,11 +10,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
+from bcdi.experiment.detector import create_detector
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the position of the Bragg peaks for a mesocrystal given the lattice type,

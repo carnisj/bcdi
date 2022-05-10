@@ -7,7 +7,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from math import tan, pi
+from math import pi, tan
 
 helptext = """
 Calculate the vertical correction and correction along the beam to apply to a

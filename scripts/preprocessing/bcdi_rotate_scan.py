@@ -7,12 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import gc
+import tkinter as tk
+from tkinter import filedialog
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-import tkinter as tk
-from tkinter import filedialog
-import gc
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 

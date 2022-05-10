@@ -6,13 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from typing import Dict, Optional
+
 import h5py
 import numpy as np
-import os
-from pathlib import Path
-import tempfile
-from typing import Dict, Optional
-import unittest
 import yaml
 
 from bcdi.preprocessing.preprocessing_runner import run

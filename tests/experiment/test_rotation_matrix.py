@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+
 from bcdi.experiment.rotation_matrix import RotationMatrix
 from tests.config import run_tests
 

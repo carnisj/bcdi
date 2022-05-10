@@ -6,8 +6,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import matplotlib
 import unittest
+
+import matplotlib
 
 
 def has_backend(backend: str) -> bool:

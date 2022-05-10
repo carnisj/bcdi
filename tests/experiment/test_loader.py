@@ -6,13 +6,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import os
-from pyfakefs import fake_filesystem_unittest
 import unittest
 
+import numpy as np
+from pyfakefs import fake_filesystem_unittest
+
 from bcdi.experiment.beamline import create_beamline
-from bcdi.experiment.loader import create_loader, LoaderID01
+from bcdi.experiment.loader import LoaderID01, create_loader
 from bcdi.experiment.setup import Setup
 from tests.config import run_tests
 

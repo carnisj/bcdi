@@ -11,22 +11,23 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-from matplotlib import pyplot as plt
+import gc
+import sys
+import tkinter as tk
+from tkinter import filedialog
+
 import numpy as np
+import xrayutilities as xu
+from matplotlib import pyplot as plt
 from numpy.fft import fftn, fftshift
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-import tkinter as tk
-from tkinter import filedialog
-import xrayutilities as xu
-import gc
-import sys
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the resolution of a 2D BCDI reconstruction using the phase retrieval

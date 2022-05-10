@@ -8,11 +8,12 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import os
-import numpy as np
-from matplotlib import pyplot as plt
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import sys
+
+import numpy as np
+from matplotlib import pyplot as plt
 
 helptext = """
 Load the output file of xcca_3D_polar.py or xcca_3D_rect.py and plot the

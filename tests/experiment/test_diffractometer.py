@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+
 from bcdi.experiment.diffractometer import Diffractometer
 from tests.config import run_tests
 

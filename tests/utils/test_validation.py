@@ -8,7 +8,9 @@
 
 import unittest
 from numbers import Integral, Real
+
 import numpy as np
+
 import bcdi.utils.validation as valid
 from tests.config import run_tests
 

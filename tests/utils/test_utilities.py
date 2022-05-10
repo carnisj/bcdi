@@ -6,16 +6,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import os
-from pyfakefs import fake_filesystem_unittest
 import unittest
-import bcdi.utils.utilities as util
-from tests.config import run_tests
 
-from bcdi.experiment.detector import create_detector, Detector
+import numpy as np
+from pyfakefs import fake_filesystem_unittest
+
+import bcdi.utils.utilities as util
+from bcdi.experiment.detector import Detector, create_detector
 from bcdi.experiment.setup import Setup
 from bcdi.utils.io_helper import ContextFile
+from tests.config import run_tests
 
 
 class TestConvertStrTarget(unittest.TestCase):

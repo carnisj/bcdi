@@ -7,11 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import xrayutilities as xu
+import os
+
 import fabio
 import matplotlib.pyplot as plt
-import os
+import numpy as np
+import xrayutilities as xu
 
 helptext = """
 Calculate the cross-correlation of 2D detector images in live.

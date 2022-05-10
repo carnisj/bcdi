@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+
 import bcdi.xcca.xcca_utils as xcca
 
 

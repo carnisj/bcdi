@@ -7,23 +7,24 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from functools import reduce
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-import matplotlib.ticker as ticker
-from numbers import Real
-import numpy as np
-from numpy.fft import fftn, fftshift
 import pathlib
-from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
+from functools import reduce
+from numbers import Real
 from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib as mpl
+import matplotlib.ticker as ticker
+import numpy as np
+from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the diffraction pattern corresponding to a reconstructed 3D crystal

@@ -7,14 +7,15 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 
+import numpy as np
+from matplotlib import pyplot as plt
+
+import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.graph.colormap import ColormapFactory
-import bcdi.graph.graph_utils as gu
 
 helptext = """
 Load a 3D BCDI reconstruction (.npz file) containing the fields 'amp' and 'strain'.

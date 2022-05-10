@@ -11,21 +11,22 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import h5py
-import time
 import datetime
-import numpy as np
 import multiprocessing as mp
+import os
+import sys
+import time
+
+import h5py
 import matplotlib
 import matplotlib.pyplot as plt
-import os
+import numpy as np
 from scipy.io import savemat
-import sys
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.detector import create_detector
+from bcdi.graph.colormap import ColormapFactory
 
 matplotlib.use("Qt5Agg")
 

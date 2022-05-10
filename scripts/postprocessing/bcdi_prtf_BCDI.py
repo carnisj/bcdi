@@ -12,22 +12,23 @@ try:
 except ModuleNotFoundError:
     pass
 import gc
-from matplotlib import pyplot as plt
-import numpy as np
-from numpy.fft import fftn, fftshift
-from scipy.interpolate import interp1d
-from scipy.ndimage.measurements import center_of_mass
 import sys
 import tkinter as tk
 from tkinter import filedialog
-import xrayutilities as xu
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+import xrayutilities as xu
+from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
+from scipy.interpolate import interp1d
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the resolution of a BCDI reconstruction using the phase retrieval transfer

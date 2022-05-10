@@ -7,14 +7,16 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import gc
-import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.graph.colormap import ColormapFactory
-import bcdi.graph.graph_utils as gu
 
 helptext = """
 Crop a stacked 3D dataset saved in NPZ format, to the desired region of interest.

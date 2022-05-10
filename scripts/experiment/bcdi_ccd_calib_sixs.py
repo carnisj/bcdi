@@ -7,13 +7,15 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import xrayutilities as xu
-import fabio
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
+
+import fabio
+import matplotlib.pyplot as plt
+import numpy as np
+import xrayutilities as xu
 from scipy.ndimage.measurements import center_of_mass
+
 from bcdi.preprocessing import nxsReady
 
 helptext = """

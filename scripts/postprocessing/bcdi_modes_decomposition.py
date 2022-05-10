@@ -8,14 +8,16 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import gc
-import matplotlib.pyplot as plt
-from numbers import Real
-import numpy as np
 import os
-from scipy.ndimage.measurements import center_of_mass
 import sys
 import tkinter as tk
+from numbers import Real
 from tkinter import filedialog
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.image_registration as reg

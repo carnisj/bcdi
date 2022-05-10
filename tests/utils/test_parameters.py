@@ -6,19 +6,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 import copy
+import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
-from pathlib import Path
-import unittest
-from unittest.mock import patch
+
+from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.parameters import (
     ConfigChecker,
     MissingKeyError,
-    PreprocessingChecker,
     PostprocessingChecker,
+    PreprocessingChecker,
     valid_param,
 )
-from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.parser import ConfigParser
 from tests.config import has_backend, run_tests
 

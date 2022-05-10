@@ -6,10 +6,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import unittest
-import numpy as np
 import os
 import pathlib
+import unittest
+
+import numpy as np
+
 import bcdi.graph.graph_utils as gu
 from tests.config import run_tests
 

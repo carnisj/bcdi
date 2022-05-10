@@ -7,17 +7,19 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import tkinter as tk
+from tkinter import filedialog
+
+import matplotlib.ticker as ticker
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
-import tkinter as tk
-from tkinter import filedialog
-import matplotlib.ticker as ticker
-import bcdi.postprocessing.postprocessing_utils as pu
-from bcdi.utils import image_registration as reg
-from bcdi.graph.colormap import ColormapFactory
+
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
+from bcdi.utils import image_registration as reg
 
 helptext = """
 Load several reconstructed complex objects and calculate the coefficient variation

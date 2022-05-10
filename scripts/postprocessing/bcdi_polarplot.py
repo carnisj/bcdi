@@ -11,24 +11,25 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
-import xrayutilities as xu
-import scipy.signal  # for medfilt
-import matplotlib.pyplot as plt
-from scipy.interpolate import RegularGridInterpolator
+import gc
 import sys
 import tkinter as tk
 from tkinter import filedialog
-from numpy.fft import fftn, fftshift
-import gc
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.signal  # for medfilt
+import xrayutilities as xu
+from numpy.fft import fftn, fftshift
+from scipy.interpolate import RegularGridInterpolator
+
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.facet_recognition as fu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Stereographic projection of a measured 3D diffraction pattern or calculated from a

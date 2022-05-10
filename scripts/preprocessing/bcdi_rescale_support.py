@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import gc
+import sys
+import tkinter as tk
+from tkinter import filedialog
+
+import matplotlib.pyplot as plt
+
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-present : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 import numpy as np
-import matplotlib.pyplot as plt
-import tkinter as tk
-from tkinter import filedialog
 from scipy.interpolate import RegularGridInterpolator
-import gc
-import sys
-import bcdi.postprocessing.postprocessing_utils as pu
-from bcdi.graph.colormap import ColormapFactory
-import bcdi.graph.graph_utils as gu
+
 import bcdi.algorithms.algorithms_utils as algu
+import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
-
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Create a support from a reconstruction, using the indicated threshold. The support

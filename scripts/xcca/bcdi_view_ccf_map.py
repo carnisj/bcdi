@@ -8,15 +8,16 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import os
-import numpy as np
-from matplotlib import pyplot as plt
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import sys
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from matplotlib import pyplot as plt
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Load the output file of xcca_3D_map_polar.py or xcca_3D_map_rect.py and plot the 2D

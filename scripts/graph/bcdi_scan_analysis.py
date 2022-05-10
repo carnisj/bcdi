@@ -11,16 +11,18 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.widgets import RectangleSelector
 import matplotlib.ticker as ticker
-import os
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from matplotlib.widgets import RectangleSelector
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 matplotlib.use("Qt5Agg")
 

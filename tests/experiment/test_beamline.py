@@ -6,11 +6,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import unittest
-from bcdi.experiment.beamline import create_beamline, Beamline, BeamlineID01
-from tests.config import run_tests
 
+import numpy as np
+
+from bcdi.experiment.beamline import Beamline, BeamlineID01, create_beamline
+from tests.config import run_tests
 
 # conversion table from the laboratory frame (CXI convention)
 # (z downstream, y vertical up, x outboard) to the frame of xrayutilities

@@ -7,22 +7,23 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import datetime
+import gc
+import sys
+import time
+import tkinter as tk
+from tkinter import filedialog
+
 import numpy as np
 from matplotlib import pyplot as plt
 from skimage.feature import peak_local_max
-import tkinter as tk
-from tkinter import filedialog
-import gc
-import time
-import datetime
-import sys
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.detector import create_detector
-import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
+import bcdi.utils.utilities as util
+from bcdi.experiment.detector import create_detector
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the position of the Bragg peaks for a mesocrystal given the lattice type,

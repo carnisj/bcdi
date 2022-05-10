@@ -7,15 +7,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
+
+import numpy as np
+from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
-import bcdi.utils.utilities as util
-from bcdi.utils import image_registration as reg
-from bcdi.graph.colormap import ColormapFactory
+
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
+from bcdi.utils import image_registration as reg
 
 helptext = """
 Compare the correlation between several 3D objects.

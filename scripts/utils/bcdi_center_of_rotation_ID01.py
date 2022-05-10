@@ -7,11 +7,12 @@
 #       authors:
 #         Marie-Ingrid Richard, mrichard@esrf.fr
 
-from math import tan, pi
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
+from math import pi, tan
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 helptext = """
 Calculate the vertical correction and correction along the beam to apply to a

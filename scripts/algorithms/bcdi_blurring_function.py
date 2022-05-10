@@ -7,21 +7,22 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from collections import OrderedDict
-from lmfit import minimize, Parameters, report_fit
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-from numbers import Real
-import numpy as np
 import pathlib
-from scipy.ndimage.measurements import center_of_mass
-from scipy.signal import find_peaks
 import tkinter as tk
+from collections import OrderedDict
+from numbers import Real
 from tkinter import filedialog
 
+import matplotlib as mpl
+import numpy as np
+from lmfit import Parameters, minimize, report_fit
+from matplotlib import pyplot as plt
+from scipy.ndimage.measurements import center_of_mass
+from scipy.signal import find_peaks
+
 import bcdi.algorithms.algorithms_utils as algo
-import bcdi.postprocessing.facet_recognition as fu
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 

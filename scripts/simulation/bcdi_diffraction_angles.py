@@ -7,9 +7,11 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import sys
+
 import numpy as np
 import xrayutilities as xu
-import sys
+
 import bcdi.experiment.setup as exp
 import bcdi.simulation.simulation_utils as simu
 

@@ -8,15 +8,17 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import json
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pathlib
-from scipy.stats import pearsonr
 import sys
 import tkinter as tk
 from tkinter import filedialog
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

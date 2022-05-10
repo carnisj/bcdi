@@ -7,10 +7,11 @@
 #       authors:
 #         Steven Leake, steven.leake@esrf.fr
 
-import numpy as np
 import os
 import re
+
 import h5py
+import numpy as np
 
 helptext = """
 Script parsing the log file of P10.

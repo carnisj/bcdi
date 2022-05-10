@@ -7,12 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from scipy.stats import multivariate_normal
-import matplotlib.pyplot as plt
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import multivariate_normal
+
 import bcdi.postprocessing.postprocessing_utils as pu
 
 helptext = """

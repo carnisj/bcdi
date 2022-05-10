@@ -7,6 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
+
 import bcdi.algorithms.algorithms_utils as alg
 from tests.config import run_tests
 

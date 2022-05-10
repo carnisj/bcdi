@@ -7,23 +7,24 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from numpy.random import poisson
-from numpy.fft import fftn, fftshift
-from matplotlib import pyplot as plt
-import tkinter as tk
-from tkinter import filedialog
-from scipy.interpolate import RegularGridInterpolator
 import gc
 import os
 import sys
+import tkinter as tk
+from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
+from numpy.random import poisson
+from scipy.interpolate import RegularGridInterpolator
+
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Using a support created from a reconstructed object (real space), calculate the

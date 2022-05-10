@@ -7,15 +7,16 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 
 matplotlib.use("Qt5Agg")
 

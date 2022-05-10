@@ -6,9 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from setuptools import setup, find_packages
-from os import path
 from io import open
+from os import path
+
+from setuptools import find_packages, setup
 
 from bcdi import __version__
 
