@@ -23,8 +23,9 @@ import colorcet as cc
 import matplotlib
 import numpy as np
 
-import bcdi.utils.validation as valid
 from bcdi.graph.colormap import ColormapFactory
+import bcdi.utils.utilities as util
+import bcdi.utils.validation as valid
 
 logger = logging.getLogger(__name__)
 
@@ -364,21 +365,13 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     allowed: Optional[Set] = None
 
     # convert 'None' to None
-    if value == "None":
-        value = None
-    elif isinstance(value, (list, tuple)):
-        value = list(value)
-        for idx, val in enumerate(value):
-            if val == "None":
-                value[idx] = None
+    value = util.convert_str_target(value, target="none")
 
     # convert 'True' to True
-    if isinstance(value, str) and value.lower() == "true":
-        value = True
+    value = util.convert_str_target(value, target="true")
 
     # convert 'False' to False
-    if isinstance(value, str) and value.lower() == "false":
-        value = False
+    value = util.convert_str_target(value, target="false")
 
     # test the booleans first
     if key in {

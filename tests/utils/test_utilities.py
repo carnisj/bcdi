@@ -18,6 +18,75 @@ from bcdi.experiment.setup import Setup
 from bcdi.utils.io_helper import ContextFile
 
 
+class TestConvertStrTarget(unittest.TestCase):
+    """
+    Tests on the function utilities.convert_str_target.
+
+    def convert_str_target(
+        value: Any, target: str, conversion_table: Optional[Dict[str, Any]] = None
+    ) -> Any:
+    """
+
+    def test_conversion_table_not_provided(self):
+        value = "some object"
+        with self.assertRaises(ValueError):
+            util.convert_str_target(value, target="blue")
+
+    def test_conversion_table_provided(self):
+        target = "blue"
+        conversion_table = {"blue": "sky"}
+        out = util.convert_str_target(
+            "blue", target=target, conversion_table=conversion_table
+        )
+        self.assertEqual(out, conversion_table[target])
+
+    def test_value_none_str(self):
+        target = "none"
+        out = util.convert_str_target("none", target=target)
+        self.assertEqual(out, None)
+
+    def test_value_true_str(self):
+        target = "tRue"
+        out = util.convert_str_target("true", target=target)
+        self.assertEqual(out, True)
+
+    def test_value_false_str(self):
+        target = "fALSe"
+        out = util.convert_str_target("False", target=target)
+        self.assertEqual(out, False)
+
+    def test_value_none_mixed(self):
+        target = "none"
+        expected = [
+            [None, "blade", 1],
+            None,
+            [None, 2, [1, 2, None]],
+            {
+                1: {
+                    "time": None,
+                    "value": None,
+                    "blade": [1, None, int],
+                }
+            },
+        ]
+        out = util.convert_str_target(
+            [
+                ["NONE", "blade", 1],
+                "noNe",
+                (None, 2, [1, 2, "None"]),
+                {
+                    1: {
+                        "time": None,
+                        "value": "noNe",
+                        "blade": (1, "None", int),
+                    }
+                },
+            ],
+            target=target,
+        )
+        self.assertEqual(out, expected)
+
+
 class TestCast(unittest.TestCase):
     """
     Tests on the function utilities.cast.

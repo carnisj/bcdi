@@ -19,7 +19,7 @@ from inspect import signature
 from logging import Logger
 from numbers import Integral, Real
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
@@ -256,6 +256,42 @@ def catch_error(exception):
     :param exception: the arisen exception
     """
     print(exception)
+
+
+def convert_str_target(
+    value: Any, target: str, conversion_table: Optional[Dict[str, Any]] = None
+) -> Any:
+    """
+    Convert strings from value to the desired target.
+
+    :param value: an object containing strings to be converted
+    :param target: the target string, which has to be present in the conversion table
+    :param conversion_table: a dictionary for the conversion
+    :return: the converted object
+    """
+    conversion_table = (
+        conversion_table
+        if conversion_table is not None
+        else {"none": None, "true": True, "false": False}
+    )
+    target = target.lower()
+    if target not in conversion_table:
+        raise ValueError(
+            f"invalid target {target}, valid targets: {list(conversion_table.keys())}"
+        )
+    if isinstance(value, str) and value.lower() == target:
+        return conversion_table[target]
+    elif isinstance(value, (list, tuple)):
+        new_value = list(value)
+        for idx, val in enumerate(new_value):
+            new_value[idx] = convert_str_target(val, target=target)
+        return new_value
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            value[key] = convert_str_target(item, target=target)
+        return value
+    else:
+        return value
 
 
 def crop_pad(
