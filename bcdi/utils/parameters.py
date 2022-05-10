@@ -23,9 +23,9 @@ import colorcet as cc
 import matplotlib
 import numpy as np
 
-from bcdi.graph.colormap import ColormapFactory
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 logger = logging.getLogger(__name__)
 
