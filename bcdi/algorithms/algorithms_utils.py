@@ -11,11 +11,13 @@ Functions related to image deconvolution.
 Richardson-Lucy algorithm, blind deconvolution...
 """
 
-import matplotlib.pyplot as plt
-from numbers import Real
-import numpy as np
-from scipy.signal import fftconvolve, convolve
 import sys
+from numbers import Real
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import convolve, fftconvolve
+
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid

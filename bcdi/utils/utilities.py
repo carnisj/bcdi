@@ -7,27 +7,28 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to data loading, encoding, fitting, data manipulation."""
 
-from collections import OrderedDict
 import ctypes
-from functools import reduce
 import gc
-from inspect import signature
 import json
-import h5py
 import logging
-from logging import Logger
-from matplotlib import pyplot as plt
-from numbers import Real, Integral
-import numpy as np
 import os
+import shutil
+from collections import OrderedDict
+from functools import reduce
+from inspect import signature
+from logging import Logger
+from numbers import Integral, Real
 from pathlib import Path
+from typing import Any, List, Optional, Sequence, Tuple, Union
+
+import h5py
+import numpy as np
+from matplotlib import pyplot as plt
 from PIL import Image
-from scipy.interpolate import interp1d, RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator, interp1d
 from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.stats import multivariate_normal
-import shutil
-from typing import Any, List, Optional, Sequence, Tuple, Union
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import validation as valid

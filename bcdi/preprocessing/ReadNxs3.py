@@ -12,19 +12,20 @@ be used on the data produced after the 11/03/2019 data of the upgrade of the
 datarecorder.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import tables
+from __future__ import absolute_import, division, print_function
+
+import inspect
 import os
-import numpy as np
 import pickle
 import time
 from typing import Optional
+
+import numpy as np
+import tables
 from matplotlib import pyplot as plt
-import bcdi.utils.utilities as util
-import inspect
+
 import bcdi
+import bcdi.utils.utilities as util
 
 
 class EmptyO:

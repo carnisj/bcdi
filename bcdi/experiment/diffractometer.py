@@ -48,10 +48,11 @@ API Reference
 
 """
 
+import logging
 from collections import namedtuple
 from functools import reduce
-import logging
 from numbers import Number, Real
+
 import numpy as np
 
 from bcdi.experiment.rotation_matrix import RotationMatrix

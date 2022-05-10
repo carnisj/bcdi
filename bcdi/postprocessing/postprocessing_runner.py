@@ -13,12 +13,13 @@ except ModuleNotFoundError:
     pass
 import logging
 import multiprocessing as mp
-import numpy as np
 from typing import Any, Dict
 
+import numpy as np
+
+import bcdi.utils.utilities as util
 from bcdi.postprocessing.process_scan import process_scan
 from bcdi.utils.parameters import PostprocessingChecker
-import bcdi.utils.utilities as util
 
 logger = logging.getLogger(__name__)
 

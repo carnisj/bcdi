@@ -7,21 +7,21 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to facet recognition of nanocrystals."""
 
+import sys
+from numbers import Real
+
+import numpy as np
+from matplotlib import patches
+from matplotlib import pyplot as plt
+from scipy import ndimage, stats
+from scipy.interpolate import RegularGridInterpolator, griddata
 from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve
-from scipy.interpolate import RegularGridInterpolator
-from scipy.interpolate import griddata
-from scipy import stats
-from scipy import ndimage
 from skimage.feature import corner_peaks
 from skimage.segmentation import watershed
-from numbers import Real
-import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib import patches
-import sys
-from bcdi.graph.colormap import ColormapFactory
+
 from bcdi.graph import graph_utils as gu
+from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 

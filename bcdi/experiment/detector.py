@@ -58,13 +58,14 @@ API Reference
 
 """
 
-from abc import ABC, abstractmethod
-from functools import partial
 import logging
-import numpy as np
-from numbers import Real, Integral
 import os
 import pathlib
+from abc import ABC, abstractmethod
+from functools import partial
+from numbers import Integral, Real
+
+import numpy as np
 
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid

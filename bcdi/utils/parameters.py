@@ -12,19 +12,19 @@ Validation of configuration parameters.
 The validation is performed only on the expected parameters. Other parameters are simply
 discarded.
 """
-from abc import ABC, abstractmethod
 import copy
-
-import colorcet as cc
 import logging
-import matplotlib
-from numbers import Number, Real
-import numpy as np
 import os
+from abc import ABC, abstractmethod
+from numbers import Number, Real
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from bcdi.graph.colormap import ColormapFactory
+import colorcet as cc
+import matplotlib
+import numpy as np
+
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 logger = logging.getLogger(__name__)
 

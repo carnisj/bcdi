@@ -49,24 +49,25 @@ try:
 except ModuleNotFoundError:
     pass
 
-from abc import ABC, abstractmethod
-import fabio
-import h5py
 import logging
-import matplotlib.pyplot as plt
-from numbers import Integral
-import numpy as np
 import os
 import re
-from silx.io.specfile import SpecFile
 import tkinter as tk
+from abc import ABC, abstractmethod
+from numbers import Integral
 from tkinter import filedialog
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+
+import fabio
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+from silx.io.specfile import SpecFile
 
 from bcdi.graph import graph_utils as gu
-from bcdi.utils.io_helper import ContextFile, safeload
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+from bcdi.utils.io_helper import ContextFile, safeload
 
 if TYPE_CHECKING:
     from bcdi.experiment.setup import Setup

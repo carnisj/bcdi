@@ -47,11 +47,12 @@ API Reference
 -------------
 
 """
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 from math import hypot, isclose
-import numpy as np
 from numbers import Real
+
+import numpy as np
 import xrayutilities as xu
 
 from bcdi.experiment.diffractometer import Diffractometer

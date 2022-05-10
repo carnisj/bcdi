@@ -14,9 +14,10 @@
 # the data so you can match fringes. It may also be interesting to consider how to
 # make 3D supports from other characterisation methods (SEM etc...).
 
-import numpy as np
-import h5py as h5
 import sys
+
+import h5py as h5
+import numpy as np
 
 
 def AddPolyCen(array, center, planes):

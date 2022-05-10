@@ -7,27 +7,28 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to visualization."""
 
-from lmfit import minimize, Parameters
 import logging
-import numpy as np
+import os
+import pathlib
+import sys
 from numbers import Real
+from operator import itemgetter
+from typing import Any, Dict, List, Optional, Tuple
+
+import matplotlib as mpl
+import matplotlib.colors as colors
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import numpy as np
+from lmfit import Parameters, minimize
+from matplotlib.path import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from matplotlib.path import Path
-import matplotlib.patches as patches
-import matplotlib.ticker as ticker
-import matplotlib.colors as colors
-from operator import itemgetter
-import os
-import pathlib
 from scipy.interpolate import griddata
 from scipy.ndimage import map_coordinates
 from scipy.signal import find_peaks
-import sys
-from typing import Any, Dict, List, Optional, Tuple
 
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import utilities as util

@@ -10,9 +10,10 @@ Implementation of the colormap class.
 
 New colormaps can be added to the method generate_colormap.
 """
+from typing import Optional
+
 import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
-from typing import Optional
 
 from bcdi.graph.turbo_colormap import turbo_colormap_data
 from bcdi.utils.validation import is_float

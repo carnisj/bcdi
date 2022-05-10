@@ -10,7 +10,6 @@
 
 import numpy as np
 
-
 AXIS_TO_ARRAY = {
     "x": np.array([1, 0, 0]),
     "y": np.array([0, 1, 0]),

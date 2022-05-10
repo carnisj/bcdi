@@ -9,17 +9,18 @@
 
 """Parsing of command-line arguments and config files."""
 
-from argparse import ArgumentParser
-from functools import partial
 import logging
 import os
 import pathlib
+from argparse import ArgumentParser
+from functools import partial
 from typing import Any, Dict, List, Optional, Type
+
 import yaml
 
-from bcdi.utils.parameters import valid_param
-from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
+from bcdi.utils import utilities as util
+from bcdi.utils.parameters import valid_param
 
 logger = logging.getLogger(__name__)
 

@@ -16,9 +16,9 @@ import logging
 import multiprocessing as mp
 from typing import Any, Dict
 
+import bcdi.utils.utilities as util
 from bcdi.preprocessing.process_scan import process_scan
 from bcdi.utils.parameters import PreprocessingChecker
-import bcdi.utils.utilities as util
 
 logger = logging.getLogger(__name__)
 

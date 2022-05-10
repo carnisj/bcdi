@@ -13,22 +13,23 @@ You can think of it as the public interface for the Beamline and Diffractometer 
 classes. A script would call a method from Setup, which would then retrieve the required
 beamline-dependent information from the child classes.
 """
-from collections.abc import Sequence
 import datetime
 import logging
 import multiprocessing as mp
-from numbers import Integral, Real
-import numpy as np
-from scipy.interpolate import griddata, RegularGridInterpolator
 import sys
 import time
+from collections.abc import Sequence
+from numbers import Integral, Real
 from typing import Optional, Tuple
 
+import numpy as np
+from scipy.interpolate import RegularGridInterpolator, griddata
+
+from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
-from bcdi.experiment.beamline import create_beamline
-from bcdi.experiment.detector import create_detector, Detector
 
 module_logger = logging.getLogger(__name__)
 

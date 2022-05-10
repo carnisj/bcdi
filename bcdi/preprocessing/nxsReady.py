@@ -9,9 +9,10 @@ nxsReady.
 This module contains Classes and functions to load data at SIXS beamline.
 """
 
-import tables
-import numpy
 import pickle
+
+import numpy
+import tables
 
 print("importing nxsReady")
 print("'alias_dict.txt' path expected in 'specfile_name' parameter")

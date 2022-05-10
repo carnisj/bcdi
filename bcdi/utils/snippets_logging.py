@@ -10,15 +10,15 @@
 
 from dataclasses import dataclass
 from logging import (
-    basicConfig,
     CRITICAL,
     DEBUG,
     ERROR,
     INFO,
+    WARNING,
     FileHandler,
     Formatter,
     StreamHandler,
-    WARNING,
+    basicConfig,
 )
 from typing import Optional
 

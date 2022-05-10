@@ -8,13 +8,13 @@
 
 """Module containing decorators and context manager classes for input-output."""
 
-from functools import wraps
 import logging
 import os
+from functools import wraps
 from typing import Callable, Optional, Union
 
-from bcdi.utils import utilities as util
 import bcdi.utils.validation as valid
+from bcdi.utils import utilities as util
 
 module_logger = logging.getLogger(__name__)
 
