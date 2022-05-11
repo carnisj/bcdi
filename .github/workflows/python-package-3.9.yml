@@ -51,6 +51,9 @@ jobs:
     - name: Format the code with black
       run: python -m black bcdi --check
 
+    - name: Check imports with isort
+      run: python -m isort --profile black bcdi
+
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

@@ -11,16 +11,18 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
+import sys
+import tkinter as tk
+from tkinter import filedialog
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
-import tkinter as tk
-from tkinter import filedialog
-import sys
+
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.experiment.setup import Setup
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
 
 helptext = """
 Calculate exact inplane and out-of-plane detector angles from the direct beam and

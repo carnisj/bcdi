@@ -7,11 +7,12 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import xrayutilities as xu
-import numpy as np
-import matplotlib.pyplot as plt
-import h5py
 import sys
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import xrayutilities as xu
 from scipy.ndimage.measurements import center_of_mass
 
 helptext = """

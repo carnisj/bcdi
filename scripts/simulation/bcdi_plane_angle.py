@@ -8,6 +8,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import numpy as np
+
 import bcdi.simulation.simulation_utils as simu
 
 helptext = """

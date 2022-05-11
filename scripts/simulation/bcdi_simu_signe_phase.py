@@ -9,9 +9,9 @@
 
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.ticker as ticker
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from numpy.fft import fftn, fftshift
 
 matplotlib.use("Qt5Agg")

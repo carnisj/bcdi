@@ -7,11 +7,13 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import pathlib
-import matplotlib.pyplot as plt
-from scipy.stats import pearsonr
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util

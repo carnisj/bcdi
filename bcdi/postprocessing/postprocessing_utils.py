@@ -11,11 +11,12 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
+
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
-from numpy.fft import fftn, fftshift, ifftn, ifftshift
 import scipy
-import matplotlib.pyplot as plt
+from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve

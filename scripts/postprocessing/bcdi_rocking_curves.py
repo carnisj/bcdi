@@ -11,16 +11,17 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.graph.colormap import ColormapFactory
+
 import bcdi.graph.graph_utils as gu
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Open a series of rocking curve data and track the position of the Bragg peak over the

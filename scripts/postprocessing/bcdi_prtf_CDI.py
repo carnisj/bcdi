@@ -11,20 +11,21 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
-from numpy.fft import fftn, fftshift
-from matplotlib import pyplot as plt
+import gc
 import pathlib
-from scipy.ndimage.measurements import center_of_mass
+import sys
 import tkinter as tk
 from tkinter import filedialog
-from scipy.interpolate import interp1d
-import gc
-import sys
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
+from scipy.interpolate import interp1d
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the resolution of a forward CDI reconstruction using the phase retrieval

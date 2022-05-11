@@ -14,30 +14,31 @@ try:
 except ModuleNotFoundError:
     pass
 
-import h5py
 import logging
+import os
+import tkinter as tk
 from logging import Logger
+from pathlib import Path
+from tkinter import filedialog
+from typing import Any, Dict, List, Optional, Tuple
+
+import h5py
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-from pathlib import Path
 import scipy.signal  # for medfilt2d
-from scipy.ndimage.measurements import center_of_mass
-from scipy.io import savemat
-import tkinter as tk
-from tkinter import filedialog
-from typing import Any, Dict, List, Optional, Tuple
 import xrayutilities as xu
+from scipy.io import savemat
+from scipy.ndimage.measurements import center_of_mass
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.utils.constants import AXIS_TO_ARRAY
-from bcdi.utils.snippets_logging import FILE_FORMATTER
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.setup import Setup
+from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.utils.snippets_logging import FILE_FORMATTER
 
 logger = logging.getLogger(__name__)
 

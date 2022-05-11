@@ -6,8 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import unittest
+
+import numpy as np
+
 import bcdi.utils.image_registration as reg
 from tests.config import run_tests
 

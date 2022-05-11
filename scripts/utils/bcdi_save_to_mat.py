@@ -7,12 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import os
+import sys
 import tkinter as tk
 from tkinter import filedialog
+
+import numpy as np
 from scipy.io import savemat
-import sys
+
 import bcdi.utils.utilities as util
 
 helptext = """

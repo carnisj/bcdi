@@ -7,17 +7,18 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import os
 import gc
-import scipy.optimize as optimize
-import numpy as np
-from matplotlib import pyplot as plt
+import os
 import tkinter as tk
 from tkinter import filedialog
-import bcdi.utils.utilities as util
+
+import numpy as np
+import scipy.optimize as optimize
+from matplotlib import pyplot as plt
+
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
-
+import bcdi.utils.utilities as util
 
 helptext = """
 Apply intensity normalization of additive spatially multiplexed patterns with n

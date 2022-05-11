@@ -7,14 +7,16 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import tkinter as tk
+from tkinter import filedialog
+
+import matplotlib.ticker as ticker
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import interp1d
-import tkinter as tk
-from tkinter import filedialog
 from scipy.signal import convolve
-import matplotlib.ticker as ticker
+
 from bcdi.utils import image_registration as reg
 
 helptext = """

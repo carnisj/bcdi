@@ -6,8 +6,9 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
 import unittest
+
+import numpy as np
 
 from bcdi.preprocessing.bcdi_utils import find_bragg
 from bcdi.utils.utilities import gaussian_window

@@ -6,9 +6,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from setuptools import setup, find_packages
-from os import path
 from io import open
+from os import path
+
+from setuptools import find_packages, setup
 
 from bcdi import __version__
 
@@ -132,14 +133,14 @@ setup(
         "fabio==0.13.0",
         "hdf5plugin==3.2.0",
         "h5py==3.6.0",
-        "importlib-resources==5.4.0",
+        "importlib-resources==5.7.1",
         "ipywidgets==7.7.0",
         "lmfit==1.0.3",
-        "matplotlib==3.5.1",
+        "matplotlib==3.5.2",
         "moviepy==1.0.3",
         "numpy==1.22.3",
-        "pandas==1.4.1",
-        "pillow==9.0.1",
+        "pandas==1.4.2",
+        "pillow==9.1.0",
         "pyqt5==5.15.6",
         "pyyaml==6.0",
         "scikit-image==0.19.2",
@@ -152,18 +153,19 @@ setup(
     ],
     extras_require={
         "doc": [
-            "sphinx==4.4.0",
+            "sphinx==4.5.0",
             "sphinxcontrib-mermaid==0.7.1",
         ],
         "dev": [
             "black==22.3.0",
             "coverage==6.3.2",
             "doit==0.34.2",
-            "mypy==0.942",
+            "isort==5.10.1",
+            "mypy==0.950",
             "pycodestyle==2.8.0",
             "pydocstyle==6.1.1",
             "pyfakefs==4.5.6",
-            "twine==3.8.0",
+            "twine==4.0.0",
             "wheel==0.37.1",
         ],
     },

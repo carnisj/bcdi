@@ -7,15 +7,17 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from lmfit.models import RectangleModel
-import matplotlib.pyplot as plt
-from numbers import Real
-import numpy as np
 import os
 import pathlib
-from pprint import pprint
 import tkinter as tk
+from numbers import Real
+from pprint import pprint
 from tkinter import filedialog
+
+import matplotlib.pyplot as plt
+import numpy as np
+from lmfit.models import RectangleModel
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

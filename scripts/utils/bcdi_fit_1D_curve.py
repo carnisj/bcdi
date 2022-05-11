@@ -7,15 +7,15 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from lmfit import minimize, Parameters, report_fit
-import matplotlib.pyplot as plt
-import numpy as np
-
-from scipy.interpolate import interp1d
-
+import sys
 import tkinter as tk
 from tkinter import filedialog
-import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from lmfit import Parameters, minimize, report_fit
+from scipy.interpolate import interp1d
+
 import bcdi.utils.utilities as util
 
 helptext = """

@@ -11,14 +11,15 @@ try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.interpolate import interp1d
-from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.bcdi_utils as bu
-from bcdi.graph.colormap import ColormapFactory
+
 import bcdi.graph.graph_utils as gu
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Open a rocking curve data, plot the mask, the monitor and the stack along the first

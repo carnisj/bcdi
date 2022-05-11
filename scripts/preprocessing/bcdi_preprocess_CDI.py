@@ -12,22 +12,23 @@ try:
 except ModuleNotFoundError:
     pass
 import gc
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import scipy.signal  # for medfilt2d
-from scipy.ndimage.measurements import center_of_mass
 import sys
-from scipy.io import savemat
 import tkinter as tk
 from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.signal  # for medfilt2d
+from scipy.io import savemat
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
-import bcdi.utils.utilities as util
 import bcdi.preprocessing.cdi_utils as cdi
+import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.experiment.setup import Setup
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Prepare experimental data for forward CDI phasing: crop/pad, center, mask, normalize,

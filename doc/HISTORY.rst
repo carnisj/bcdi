@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Use the package `isort` to format imports in a standard way.
+
 * Use multiprocessing for the analysis of several scans in `bcdi_preprocessing_BCDI.py`.
   In this case, `flag_interact` has to be False, and an optional mask can be loaded to
   be applied on the data. The use case is when one runs once the preprocessing manually

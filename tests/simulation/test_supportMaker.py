@@ -6,8 +6,10 @@
 #       authors:
 #         Steven Leake, leake@esrf.fr
 
-import numpy as np
 import unittest
+
+import numpy as np
+
 import bcdi.simulation.supportMaker as sM
 from tests.config import run_tests
 

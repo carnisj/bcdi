@@ -7,12 +7,14 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import matplotlib.pyplot as plt
 import multiprocessing as mp
 import sys
 import tkinter as tk
 from tkinter import filedialog
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid

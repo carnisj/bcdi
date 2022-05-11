@@ -1,9 +1,10 @@
 """doit configuration for BCDI."""
 
-import coverage
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+import coverage
 
 # Generic functions go here
 
@@ -28,6 +29,15 @@ def task_black():
     path = get_path()
     return {
         "actions": [f"python -m black --line-length=88 {path}"],
+        "verbosity": 2,
+    }
+
+
+def task_isort():
+    """Run isort against the package."""
+    path = get_path()
+    return {
+        "actions": [f"python -m isort {path}"],
         "verbosity": 2,
     }
 

@@ -10,16 +10,17 @@
 
 """Postprocessing of the output from the facet analyzer plugin for Paraview."""
 
+import pathlib
+from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check
+
 import h5py
 import ipywidgets as widgets
-from ipywidgets import Layout, interactive
 import matplotlib.pyplot as plt
 import numpy as np
-import pathlib
 import pandas as pd
-from pandas import DataFrame
-from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
 import vtk
+from ipywidgets import Layout, interactive
+from pandas import DataFrame
 
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid

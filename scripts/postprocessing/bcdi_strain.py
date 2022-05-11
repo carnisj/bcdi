@@ -8,13 +8,14 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import argparse
-from datetime import datetime
 import logging
-from matplotlib import pyplot as plt
+from datetime import datetime
 from pathlib import Path
 
+from matplotlib import pyplot as plt
+
 from bcdi.postprocessing.postprocessing_runner import run
-from bcdi.utils.parser import add_cli_parameters, ConfigParser
+from bcdi.utils.parser import ConfigParser, add_cli_parameters
 from bcdi.utils.snippets_logging import configure_logging
 
 here = Path(__file__).parent

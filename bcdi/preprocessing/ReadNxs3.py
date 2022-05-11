@@ -12,19 +12,20 @@ be used on the data produced after the 11/03/2019 data of the upgrade of the
 datarecorder.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import tables
+from __future__ import absolute_import, division, print_function
+
+import inspect
 import os
-import numpy as np
 import pickle
 import time
 from typing import Optional
+
+import numpy as np
+import tables
 from matplotlib import pyplot as plt
-import bcdi.utils.utilities as util
-import inspect
+
 import bcdi
+import bcdi.utils.utilities as util
 
 
 class EmptyO:
@@ -53,6 +54,13 @@ class DataSet:
     produced after the 11/03/2019 data of the upgrade of the datarecorder.
     """
 
+    allowed_alias_dict = [
+        "alias_dict_2018.txt",
+        "alias_dict_2019.txt",
+        "alias_dict_2020.txt",
+        "alias_dict_2021.txt",
+    ]
+
     def __init__(self, filename, directory="", nxs2spec=False, alias_dict=None):
 
         self.directory = directory
@@ -74,6 +82,8 @@ class DataSet:
         if not alias_dict:
             print("Defaulting to alias_dict_2021.txt")
             alias_dict = self.path_aliases + "alias_dict_2021.txt"
+        if os.path.split(alias_dict)[-1] not in self.allowed_alias_dict:
+            raise ValueError(f"{alias_dict} is not in the list of allowed names")
         try:
             self._alias_dict = pickle.load(open(alias_dict, "rb"))
         except pickle.UnpicklingError:
@@ -84,7 +94,7 @@ class DataSet:
             ]  # e.g.'alias_dict_2021'
             util.dos2unix(
                 input_file=alias_dict,
-                output_file=dirname + f"\\{dict_name}_unix.txt",
+                savedir=dirname + f"\\{dict_name}_unix.txt",
             )
             alias_dict = dirname + f"\\{dict_name}_unix.txt"
             self._alias_dict = pickle.load(open(alias_dict, "rb"))

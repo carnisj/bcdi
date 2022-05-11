@@ -6,9 +6,11 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from pathlib import Path
 import unittest
+from pathlib import Path
+
+import numpy as np
+
 from bcdi.utils.parser import ConfigParser, str_to_list
 from tests.config import run_tests
 

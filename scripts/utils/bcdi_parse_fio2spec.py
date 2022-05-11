@@ -7,10 +7,11 @@
 #       authors:
 #         Steven Leake, steven.leake@esrf.fr
 
-import numpy as np
 import os
 import re
+
 import h5py
+import numpy as np
 
 helptext = """
 Script parsing the log file of P10.
@@ -25,8 +26,10 @@ logfilename = basepath + "SPOCK/spock_output_e1.log"
 
 def open_log(fn="SPOCK/spock_output_e1.log"):
     """Open P10 experimental log file."""
-    data = open(fn)
-    rows = data.readlines()
+    if not fn.endswith(".log"):
+        raise ValueError(f"file {fn} is not a regular .log file")
+    with open(fn, encoding="utf-8") as file:
+        rows = file.readlines()
     list1 = []
     list2 = []
     my_regions = {}
@@ -60,10 +63,12 @@ def open_log(fn="SPOCK/spock_output_e1.log"):
     return my_regions
 
 
-def parsefio(fio_filename):
+def parsefio(fio_filename: str):
     """Parse the P10 experimental fio file."""
-    data = open(fio_filename)
-    rows = data.readlines()
+    if not fio_filename.endswith(".fio"):
+        raise ValueError(f"file {fio_filename} is not a regular .fio file")
+    with open(fio_filename, encoding="utf-8") as file:
+        rows = file.readlines()
     index = rows.index("%c\n")
     ii = 0
     myheader = {}

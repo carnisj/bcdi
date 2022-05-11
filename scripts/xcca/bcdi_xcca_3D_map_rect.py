@@ -7,22 +7,23 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import time
-import warnings
 import datetime
-import numpy as np
-from matplotlib import pyplot as plt
-import tkinter as tk
-from tkinter import filedialog
 import gc
 import multiprocessing as mp
 import sys
+import time
+import tkinter as tk
+import warnings
+from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from matplotlib import pyplot as plt
+
 import bcdi.graph.graph_utils as gu
+import bcdi.postprocessing.facet_recognition as fu
 import bcdi.utils.utilities as util
 import bcdi.xcca.xcca_utils as xcca
-import bcdi.postprocessing.facet_recognition as fu
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Calculate the angular cross-correlation in a 3D reciprocal space dataset over a range

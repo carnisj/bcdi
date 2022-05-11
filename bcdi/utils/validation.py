@@ -7,7 +7,8 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to the validation of input parameters."""
 
-from numbers import Real, Number
+from numbers import Number, Real
+
 import numpy as np
 
 

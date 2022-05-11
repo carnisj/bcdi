@@ -7,35 +7,36 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Workflow for BCDI data postprocessing of a single scan, after phase retrieval."""
 
-from functools import reduce
 import gc
+from functools import reduce
 
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
     pass
-import h5py
 import logging
-from logging import Logger
-import matplotlib
-from matplotlib import pyplot as plt
-import numpy as np
 import os
-from pathlib import Path
 import tkinter as tk
+from logging import Logger
+from pathlib import Path
 from tkinter import filedialog
 from typing import Any, Dict, Optional, Tuple
+
+import h5py
+import matplotlib
+import numpy as np
 import yaml
+from matplotlib import pyplot as plt
 
 import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
-import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
-from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
-from bcdi.utils.snippets_logging import FILE_FORMATTER
 import bcdi.utils.utilities as util
+from bcdi.experiment.setup import Setup
+from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.utils.snippets_logging import FILE_FORMATTER
 
 logger = logging.getLogger(__name__)
 

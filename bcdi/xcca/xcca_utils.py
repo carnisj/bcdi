@@ -12,6 +12,7 @@ XCCA stands for X-ray cross-correlation analysis.
 """
 
 import numpy as np
+
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid

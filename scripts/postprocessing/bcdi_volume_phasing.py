@@ -7,9 +7,10 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-import matplotlib.pyplot as plt
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 helptext = """
 Calculate the volume of the reconstruction for different isosurfaces, save and plot

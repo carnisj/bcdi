@@ -13,14 +13,15 @@ except ModuleNotFoundError:
     pass
 
 import logging
-import matplotlib.pyplot as plt
-from numbers import Real
-import numpy as np
 import pathlib
+from numbers import Real
+from typing import Optional, Tuple, no_type_check
+
+import matplotlib.pyplot as plt
+import numpy as np
+import xrayutilities as xu
 from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
-from typing import no_type_check, Optional, Tuple
-import xrayutilities as xu
 
 from bcdi.experiment import loader
 from bcdi.graph import graph_utils as gu

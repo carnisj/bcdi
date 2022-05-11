@@ -8,12 +8,14 @@
 #         Steven Leake, leake@esrf.fr
 """example usage of supportMaker class."""
 
+import h5py as h5
+import numpy as np
+import scipy.fftpack as fft
+
+import bcdi.simulation.supportMaker as sM
+
 # cuboid
 from bcdi.experiment.rotation_matrix import RotationMatrix as R
-import scipy.fftpack as fft
-import bcdi.simulation.supportMaker as sM
-import numpy as np
-import h5py as h5
 
 
 def rot_planes(arrayPlanes, rot):

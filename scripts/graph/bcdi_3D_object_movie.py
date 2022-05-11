@@ -7,17 +7,18 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import matplotlib
-import matplotlib.animation as manimation
-from matplotlib import pyplot as plt
-import numpy as np
-import tkinter as tk
 import sys
+import tkinter as tk
 from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib
+import matplotlib.animation as manimation
+import numpy as np
+from matplotlib import pyplot as plt
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Create a movie from a 3D real space reconstruction in each direction. Requires

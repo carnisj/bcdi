@@ -7,14 +7,15 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.interpolate import interp1d
 import tkinter as tk
 from tkinter import filedialog
 
-import bcdi.utils.utilities as util
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.interpolate import interp1d
+
 import bcdi.graph.graph_utils as gu
+import bcdi.utils.utilities as util
 
 plt.switch_backend(
     "Qt5Agg"

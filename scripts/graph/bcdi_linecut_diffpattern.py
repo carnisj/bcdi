@@ -7,16 +7,18 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import gc
+import tkinter as tk
+from tkinter import filedialog
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
-import tkinter as tk
-from tkinter import filedialog
-import gc
-from bcdi.graph.colormap import ColormapFactory
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Graphical user interface for plotting linecuts along particular direction of a 3D array.

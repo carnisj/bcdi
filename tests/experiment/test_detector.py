@@ -6,20 +6,22 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from pyfakefs import fake_filesystem_unittest
-import numpy as np
 import os
 import unittest
 from unittest.mock import patch
+
+import numpy as np
+from pyfakefs import fake_filesystem_unittest
+
 from bcdi.experiment.detector import (
-    create_detector,
     Detector,
     Dummy,
-    Merlin,
-    Timepix,
     Eiger2M,
     Eiger4M,
     Maxipix,
+    Merlin,
+    Timepix,
+    create_detector,
 )
 from tests.config import run_tests
 

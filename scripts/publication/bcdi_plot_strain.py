@@ -7,19 +7,20 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-from matplotlib import pyplot as plt
-import matplotlib.ticker as ticker
-from numbers import Real
-import numpy as np
 import pathlib
-from scipy.ndimage.measurements import center_of_mass
 import tkinter as tk
+from numbers import Real
 from tkinter import filedialog
 
-from bcdi.graph.colormap import ColormapFactory
+import matplotlib.ticker as ticker
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy.ndimage.measurements import center_of_mass
+
 import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Template for figures of the following article:

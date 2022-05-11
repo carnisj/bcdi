@@ -7,18 +7,19 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import numpy as np
-from matplotlib import pyplot as plt
-from lmfit import minimize, Parameters, report_fit
+import os
 import pathlib
 import tkinter as tk
 from tkinter import filedialog
-import os
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+from lmfit import Parameters, minimize, report_fit
+from matplotlib import pyplot as plt
+
 import bcdi.graph.graph_utils as gu
-import bcdi.utils.utilities as util
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Extract the surface voxel layer of an object recontructed by BCDI phase retrieval and

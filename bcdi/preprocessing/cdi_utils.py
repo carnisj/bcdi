@@ -8,8 +8,9 @@
 """Functions related to forward CDI data preprocessing, before phase retrieval."""
 
 import logging
-import matplotlib.pyplot as plt
 from numbers import Real
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 from bcdi.experiment import loader

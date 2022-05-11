@@ -8,25 +8,26 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import collections
-import numpy as np
-from matplotlib import pyplot as plt
-from scipy.ndimage.measurements import center_of_mass
-import pathlib
-import vtk
-from vtk.util import numpy_support
+import gc
+import logging
 import os
+import pathlib
+import sys
 import tkinter as tk
 from tkinter import filedialog
-from skimage import measure
-import logging
-import sys
-import gc
 
-from bcdi.graph.colormap import ColormapFactory
+import numpy as np
+import vtk
+from matplotlib import pyplot as plt
+from scipy.ndimage.measurements import center_of_mass
+from skimage import measure
+from vtk.util import numpy_support
+
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.facet_recognition as fu
-import bcdi.simulation.simulation_utils as simu
 import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.simulation.simulation_utils as simu
+from bcdi.graph.colormap import ColormapFactory
 
 helptext = """
 Script for detecting facets on a 3D crytal reconstructed by a phasing algorithm

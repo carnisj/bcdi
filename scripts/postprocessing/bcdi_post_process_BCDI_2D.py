@@ -6,14 +6,15 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-import h5py
-import matplotlib
-from matplotlib.colors import LinearSegmentedColormap
-import matplotlib.pyplot as plt
-import numpy as np
 import sys
 import tkinter as tk
 from tkinter import filedialog
+
+import h5py
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage.measurements import center_of_mass
 
 matplotlib.use("Qt5Agg")
