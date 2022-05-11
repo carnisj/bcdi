@@ -1,5 +1,5 @@
-Future:
--------
+Version 0.2.7:
+--------------
 
 * Use the package `isort` to format imports in a standard way.
 
