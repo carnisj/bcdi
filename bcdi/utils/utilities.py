@@ -281,12 +281,12 @@ def convert_str_target(
         )
     if isinstance(value, str) and value.lower() == target:
         return conversion_table[target]
-    elif isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple)):
         new_value = list(value)
         for idx, val in enumerate(new_value):
             new_value[idx] = convert_str_target(val, target=target)
         return new_value
-    elif isinstance(value, dict):
+    if isinstance(value, dict):
         for key, item in value.items():
             value[key] = convert_str_target(item, target=target)
         return value
