@@ -7,14 +7,15 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Implementation of beamline-related classes.
+Implementation of beamline abstract classes.
 
 The class methods manage the calculations related to reciprocal or direct space
 transformation (interpolation in an orthonormal grid). Generic method are implemented
-in the abstract base class Beamline, and beamline-dependent methods need to be
-implemented in each child class (they are decorated by @abstractmethod in the base
-class; they are written in italic in the following diagram). These classes are not meant
-to be instantiated directly but via a Setup instance.
+in the abstract base classes Beamline and BeamlineSaxs; beamline-dependent methods
+need to be implemented in each child class (they are decorated by @abstractmethod in
+the base class; they are written in italic in the following diagram). These classes are
+not meant to be instantiated directly (although it is still possible) but via a Setup
+instance.
 
 .. mermaid::
   :align: center
@@ -50,6 +51,7 @@ API Reference
 
 import logging
 from abc import ABC, abstractmethod
+from math import hypot
 from numbers import Real
 
 import numpy as np
@@ -57,6 +59,7 @@ import xrayutilities as xu
 
 from bcdi.experiment.diffractometer import Diffractometer
 from bcdi.experiment.loader import create_loader
+from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
@@ -93,23 +96,6 @@ class Beamline(ABC):
             **loader_kwargs,
         )
         self.sample_angles = None
-        self.detector_angles = None
-
-    @property
-    def detector_angles(self):
-        """Tuple of goniometer angular values for the detector stages."""
-        return self._detector_angles
-
-    @detector_angles.setter
-    def detector_angles(self, value):
-        valid.valid_container(
-            value,
-            container_types=tuple,
-            item_types=(Real, np.ndarray),
-            allow_none=True,
-            name="detector_angles",
-        )
-        self._detector_angles = value
 
     @property
     @abstractmethod
@@ -117,7 +103,8 @@ class Beamline(ABC):
         """
         Horizontal detector orientation expressed in the laboratory frame.
 
-        This is beamline-dependent. The laboratory frame convention is
+        The orientation is defined when the detector plane is perpendicular to the
+        direct beam. This is beamline-dependent. The laboratory frame convention is
         (z downstream, y vertical, x outboard).
 
         :return: "x+" or "x-"
@@ -129,81 +116,12 @@ class Beamline(ABC):
         """
         Vertical detector orientation expressed in the laboratory frame.
 
-        This is beamline-dependent. The laboratory frame convention is
+        The orientation is defined when the detector plane is perpendicular to the
+        direct beam. This is beamline-dependent. The laboratory frame convention is
         (z downstream, y vertical, x outboard).
 
         :return: "y+" or "y-"
         """
-
-    def exit_wavevector(self, wavelength, inplane_angle, outofplane_angle):
-        """
-        Calculate the exit wavevector kout.
-
-        It uses the setup parameters. kout is expressed in 1/m in the
-        laboratory frame (z downstream, y vertical, x outboard).
-
-        :param wavelength: float, X-ray wavelength in meters.
-        :param inplane_angle: float, horizontal detector angle, in degrees.
-        :param outofplane_angle: float, vertical detector angle, in degrees.
-        :return: kout vector as a numpy array of shape (3)
-        """
-        # look for the index of the inplane detector circle
-        index = self.find_inplane()
-
-        factor = self.orientation_lookup[self.diffractometer.detector_circles[index]]
-
-        kout = (
-            2
-            * np.pi
-            / wavelength
-            * np.array(
-                [
-                    np.cos(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # z
-                    np.sin(np.pi * outofplane_angle / 180),  # y
-                    -1
-                    * factor
-                    * np.sin(np.pi * inplane_angle / 180)
-                    * np.cos(np.pi * outofplane_angle / 180),  # x
-                ]
-            )
-        )
-        return kout
-
-    def find_inplane(self):
-        """
-        Find the index of the detector inplane circle.
-
-        It looks for the index of the detector inplane rotation in the detector_circles
-        property of the diffractometer ("y+" or "y-") . The coordinate
-        convention is the laboratory  frame (z downstream, y vertical up, x outboard).
-
-        :return: int, the index. None if not found.
-        """
-        index = None
-        for idx, val in enumerate(self.diffractometer.detector_circles):
-            if val.startswith("y"):
-                index = idx
-        return index
-
-    def find_outofplane(self):
-        """
-        Find the index of the detector out-of-plane circle.
-
-        It looks for the index of the detector out-of-plane rotation in the
-        detector_circles property of the diffractometer (typically "x-") . The
-        coordinate convention is the laboratory  frame (z downstream, y vertical up,
-        x outboard). This is useful only for SIXS where there are two out-of-plane
-        detector rotations due to the beta circle. We need the index of the most inner
-        circle, not beta.
-
-        :return: int, the index. None if not found.
-        """
-        index = None
-        for idx, val in enumerate(self.diffractometer.detector_circles):
-            if val.startswith("x"):
-                index = idx
-        return index
 
     def flatten_sample(
         self,
@@ -348,95 +266,6 @@ class Beamline(ABC):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
 
-    def init_qconversion(self, conversion_table, beam_direction, offset_inplane):
-        """
-        Initialize the qconv object for xrayutilities depending on the setup parameters.
-
-        The convention in xrayutilities is x downstream, z vertical up, y outboard.
-        Note: the user-defined motor offsets are applied directly when reading motor
-        positions, therefore do not need to be taken into account in xrayutilities apart
-        from the detector inplane offset determined by the area detector calibration.
-
-        :param conversion_table: dictionary where keys are axes in the laboratory frame
-         (z downstream, y vertical up, x outboard) and values are the corresponding
-         axes in the frame of xrayutilities (x downstream, y outboard, z vertical up).
-         E.g. {"x+": "y+", "x-": "y-", "y+": "z+", "y-": "z-", "z+": "x+", "z-": "x-"}
-        :param beam_direction: direction of the incident X-ray beam in the frame of
-         xrayutilities.
-        :param offset_inplane: inplane offset of the detector defined as the outer angle
-         in xrayutilities area detector calibration.
-        :return: a tuple containing:
-
-         - the qconv object for xrayutilities
-         - a tuple of motor offsets used later for q calculation
-
-        """
-        # look for the index of the inplane detector circle
-        index = self.find_inplane()
-
-        # convert axes from the laboratory frame to the frame of xrayutilies
-        sample_circles = [
-            conversion_table[val] for val in self.diffractometer.sample_circles
-        ]
-        detector_circles = [
-            conversion_table[val] for val in self.diffractometer.detector_circles
-        ]
-        qconv = xu.experiment.QConversion(
-            sample_circles, detector_circles, r_i=beam_direction
-        )
-
-        # create the tuple of offsets, all 0 except for the detector inplane circle
-        if index is None:
-            self.logger.info(
-                "no detector inplane circle detected, discarding 'offset_inplane'"
-            )
-            offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
-        else:
-            offsets = [0 for _ in range(len(sample_circles) + index)]
-            offsets.append(offset_inplane)
-            for _ in range(len(detector_circles) - index - 1):
-                offsets.append(0)
-
-        return qconv, offsets
-
-    def inplane_coeff(self):
-        """
-        Coefficient related to the detector inplane orientation.
-
-        Define a coefficient +/- 1 depending on the detector inplane rotation direction
-        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
-        (1 for inboard, -1 for outboard).
-
-        See scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
-        # look for the index of the inplane detector circle
-        index = self.find_inplane()
-        return (
-            self.orientation_lookup[self.diffractometer.detector_circles[index]]
-            * self.orientation_lookup[self.detector_hor]
-        )
-
-    def outofplane_coeff(self):
-        """
-        Coefficient related to the detector vertical orientation.
-
-        Define a coefficient +/- 1 depending on the detector out of plane rotation
-        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
-        plane orientation (1 for downward, -1 for upward).
-
-        See scripts/postprocessing/correct_angles_detector.py for a use case.
-
-        :return: +1 or -1
-        """
-        # look for the index of the out-of-plane detector circle
-        index = self.find_outofplane()
-        return (
-            self.orientation_lookup[self.diffractometer.detector_circles[index]]
-            * self.orientation_lookup[self.detector_ver]
-        )
-
     @staticmethod
     @abstractmethod
     def process_positions(setup, nb_frames, scan_number, frames_logical=None):
@@ -526,6 +355,202 @@ class Beamline(ABC):
         )
         self._sample_angles = value
 
+
+class BeamlineGoniometer(Beamline):
+    """
+    Base class for defining a beamline where the detector is on a goniometer.
+
+    :param name: name of the beamline
+    :param kwargs:
+
+     - optional beamline-dependent parameters
+     - 'logger': an optional logger
+
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
+        self.detector_angles = None
+
+    @property
+    def detector_angles(self):
+        """Tuple of goniometer angular values for the detector stages."""
+        return self._detector_angles
+
+    @detector_angles.setter
+    def detector_angles(self, value):
+        valid.valid_container(
+            value,
+            container_types=tuple,
+            item_types=(Real, np.ndarray),
+            allow_none=True,
+            name="detector_angles",
+        )
+        self._detector_angles = value
+
+    def exit_wavevector(self, wavelength, inplane_angle, outofplane_angle):
+        """
+        Calculate the exit wavevector kout.
+
+        It uses the setup parameters. kout is expressed in 1/m in the
+        laboratory frame (z downstream, y vertical, x outboard).
+
+        :param wavelength: float, X-ray wavelength in meters.
+        :param inplane_angle: float, horizontal detector angle, in degrees.
+        :param outofplane_angle: float, vertical detector angle, in degrees.
+        :return: kout vector as a numpy array of shape (3)
+        """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane()
+
+        factor = self.orientation_lookup[self.diffractometer.detector_circles[index]]
+
+        kout = (
+            2
+            * np.pi
+            / wavelength
+            * np.array(
+                [
+                    np.cos(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # z
+                    np.sin(np.pi * outofplane_angle / 180),  # y
+                    -1
+                    * factor
+                    * np.sin(np.pi * inplane_angle / 180)
+                    * np.cos(np.pi * outofplane_angle / 180),  # x
+                ]
+            )
+        )
+        return kout
+
+    def find_inplane(self):
+        """
+        Find the index of the detector inplane circle.
+
+        It looks for the index of the detector inplane rotation in the detector_circles
+        property of the diffractometer ("y+" or "y-") . The coordinate
+        convention is the laboratory  frame (z downstream, y vertical up, x outboard).
+
+        :return: int, the index. None if not found.
+        """
+        index = None
+        for idx, val in enumerate(self.diffractometer.detector_circles):
+            if val.startswith("y"):
+                index = idx
+        return index
+
+    def find_outofplane(self):
+        """
+        Find the index of the detector out-of-plane circle.
+
+        It looks for the index of the detector out-of-plane rotation in the
+        detector_circles property of the diffractometer (typically "x-") . The
+        coordinate convention is the laboratory  frame (z downstream, y vertical up,
+        x outboard). This is useful only for SIXS where there are two out-of-plane
+        detector rotations due to the beta circle. We need the index of the most inner
+        circle, not beta.
+
+        :return: int, the index. None if not found.
+        """
+        index = None
+        for idx, val in enumerate(self.diffractometer.detector_circles):
+            if val.startswith("x"):
+                index = idx
+        return index
+
+    def init_qconversion(self, conversion_table, beam_direction, offset_inplane):
+        """
+        Initialize the qconv object for xrayutilities depending on the setup parameters.
+
+        The convention in xrayutilities is x downstream, z vertical up, y outboard.
+        Note: the user-defined motor offsets are applied directly when reading motor
+        positions, therefore do not need to be taken into account in xrayutilities apart
+        from the detector inplane offset determined by the area detector calibration.
+
+        :param conversion_table: dictionary where keys are axes in the laboratory frame
+         (z downstream, y vertical up, x outboard) and values are the corresponding
+         axes in the frame of xrayutilities (x downstream, y outboard, z vertical up).
+         E.g. {"x+": "y+", "x-": "y-", "y+": "z+", "y-": "z-", "z+": "x+", "z-": "x-"}
+        :param beam_direction: direction of the incident X-ray beam in the frame of
+         xrayutilities.
+        :param offset_inplane: inplane offset of the detector defined as the outer angle
+         in xrayutilities area detector calibration.
+        :return: a tuple containing:
+
+         - the qconv object for xrayutilities
+         - a tuple of motor offsets used later for q calculation
+
+        """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane()
+
+        # convert axes from the laboratory frame to the frame of xrayutilies
+        sample_circles = [
+            conversion_table[val] for val in self.diffractometer.sample_circles
+        ]
+        detector_circles = [
+            conversion_table[val] for val in self.diffractometer.detector_circles
+        ]
+        qconv = xu.experiment.QConversion(
+            sample_circles, detector_circles, r_i=beam_direction
+        )
+
+        # create the tuple of offsets, all 0 except for the detector inplane circle
+        if index is None:
+            self.logger.info(
+                "no detector inplane circle detected, discarding 'offset_inplane'"
+            )
+            offsets = [0 for _ in range(len(sample_circles) + len(detector_circles))]
+        else:
+            offsets = [0 for _ in range(len(sample_circles) + index)]
+            offsets.append(offset_inplane)
+            for _ in range(len(detector_circles) - index - 1):
+                offsets.append(0)
+
+        return qconv, offsets
+
+    def inplane_coeff(self):
+        """
+        Coefficient related to the detector inplane orientation.
+
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
+
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
+
+        :return: +1 or -1
+        """
+        # look for the index of the inplane detector circle
+        index = self.find_inplane()
+        return (
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
+            * self.orientation_lookup[self.detector_hor]
+        )
+
+    def outofplane_coeff(self):
+        """
+        Coefficient related to the detector vertical orientation.
+
+        Define a coefficient +/- 1 depending on the detector out of plane rotation
+        direction (1 for clockwise, -1 for anti-clockwise) and the detector out of
+        plane orientation (1 for downward, -1 for upward).
+
+        See scripts/postprocessing/correct_angles_detector.py for a use case.
+
+        :return: +1 or -1
+        """
+        # look for the index of the out-of-plane detector circle
+        index = self.find_outofplane()
+        return (
+            self.orientation_lookup[self.diffractometer.detector_circles[index]]
+            * self.orientation_lookup[self.detector_ver]
+        )
+
+    def __repr__(self):
+        """Representation string of the Beamline instance."""
+        return util.create_repr(self, BeamlineGoniometer)
+
     @abstractmethod
     def transformation_matrix(
         self,
@@ -573,11 +598,207 @@ class BeamlineSaxs(Beamline):
 
     The detector is fixed and its plane is always perpendicular to the direct beam,
     independently of its position.
-
-    :param name: name of the beamline
-    :param kwargs:
-
-     - optional beamline-dependent parameters
-     - 'logger': an optional logger
-
     """
+
+    @staticmethod
+    def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
+        """
+        Find the corresponding polar coordinates of a cartesian 2D grid.
+
+        The grid is assumed perpendicular to the rotation axis.
+
+        :param nb_pixels: number of pixels of the axis of the squared grid
+        :param pivot: position in pixels of the origin of the polar coordinates system
+        :param offset_angle: reference angle for the angle wrapping
+        :param debugging: True to see more plots
+        :return: the corresponding 1D array of angular coordinates, 1D array of radial
+         coordinates
+        """
+        # TODO: add rotation direction of the sample circle
+        z_interp, x_interp = np.meshgrid(
+            np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
+            np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
+            indexing="ij",
+        )  # z_interp changes along rows, x_interp along columns
+        # z_interp downstream, same direction as detector X rotated by +90deg
+        # x_interp along outboard opposite to detector X
+
+        # map these points to (cdi_angle, X), the measurement polar coordinates
+        interp_angle = util.wrap(
+            obj=np.arctan2(z_interp, -x_interp),
+            start_angle=offset_angle * np.pi / 180,
+            range_angle=np.pi,
+        )  # in radians, located in the range [start_angle, start_angle+np.pi[
+
+        sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
+        sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(
+            interp_angle[x_interp == 0]
+        )
+
+        interp_radius = np.multiply(sign_array, hypot(x_interp, z_interp))
+
+        if debugging:
+            gu.imshow_plot(
+                interp_angle * 180 / np.pi,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="calculated polar angle for the 2D grid",
+            )
+
+            gu.imshow_plot(
+                sign_array,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="sign_array",
+            )
+
+            gu.imshow_plot(
+                interp_radius,
+                plot_colorbar=True,
+                scale="linear",
+                labels=("Qx (z_interp)", "Qy (x_interp)"),
+                title="calculated polar radius for the 2D grid",
+            )
+        return interp_angle, interp_radius
+
+    @staticmethod
+    def ewald_curvature_saxs(
+        wavelength,
+        beam_direction,
+        pixelsize_x,
+        pixelsize_y,
+        distance,
+        array_shape,
+        cdi_angle,
+        direct_beam,
+        anticlockwise=True,
+    ):
+        """
+        Calculate q values taking into account the curvature of Ewald sphere.
+
+        Based on the CXI detector geometry convention: Laboratory frame: z downstream,
+        y vertical up, x outboard. Detector axes: Y vertical and X horizontal
+        (detector Y is vertical down at out-of-plane angle=0, detector X is opposite
+        to x at inplane angle=0)
+
+        :param wavelength: X-ray wavelength in nm
+        :param beam_direction: direction of the incident X-ray beam.
+        :param distance: detector distance in nm
+        :param pixelsize_x: horizontal binned detector pixel size in nm
+        :param pixelsize_y: vertical binned detector pixel size in nm
+        :param array_shape: tuple of three integers, shape of the dataset to be gridded
+        :param cdi_angle: 1D array of measurement angles in degrees
+        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
+        :param anticlockwise: True if the rotation is anticlockwise
+        :return: qx, qz, qy values in the laboratory frame
+         (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
+         nb_pixel_y * nb_angles
+        """
+        #########################
+        # check some parameters #
+        #########################
+        # TODO: add rotation direction of the sample circle
+        valid.valid_container(
+            direct_beam,
+            container_types=(tuple, list),
+            length=2,
+            item_types=int,
+            name="direct_beam",
+        )
+        valid.valid_container(
+            array_shape,
+            container_types=(tuple, list),
+            length=3,
+            item_types=int,
+            min_excluded=1,
+            name="array_shape",
+        )
+        valid.valid_1d_array(
+            cdi_angle,
+            allowed_types=Real,
+            allow_none=False,
+            name="cdi_angle",
+        )
+        valid.valid_item(anticlockwise, allowed_types=bool, name="anticlockwise")
+
+        # calculate q values of the measurement
+        nbz, nby, nbx = array_shape
+        qz = np.empty((nbz, nby, nbx), dtype=float)
+        qy = np.empty((nbz, nby, nbx), dtype=float)
+        qx = np.empty((nbz, nby, nbx), dtype=float)
+
+        # calculate q values of the detector frame
+        # for each angular position and stack them
+        for idx, item in enumerate(cdi_angle):
+            angle = item * np.pi / 180
+            if not anticlockwise:
+                rotation_matrix = np.array(
+                    [
+                        [np.cos(angle), 0, -np.sin(angle)],
+                        [0, 1, 0],
+                        [np.sin(angle), 0, np.cos(angle)],
+                    ]
+                )
+            else:
+                rotation_matrix = np.array(
+                    [
+                        [np.cos(angle), 0, np.sin(angle)],
+                        [0, 1, 0],
+                        [-np.sin(angle), 0, np.cos(angle)],
+                    ]
+                )
+
+            myy, myx = np.meshgrid(
+                np.linspace(
+                    -direct_beam[0], -direct_beam[0] + nby, num=nby, endpoint=False
+                ),
+                np.linspace(
+                    -direct_beam[1], -direct_beam[1] + nbx, num=nbx, endpoint=False
+                ),
+                indexing="ij",
+            )
+
+            two_theta = np.arctan(myx * pixelsize_x / distance)
+            alpha_f = np.arctan(
+                np.divide(
+                    myy * pixelsize_y,
+                    np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2)),
+                )
+            )
+
+            qlab0 = (
+                2
+                * np.pi
+                / wavelength
+                * (np.cos(alpha_f) * np.cos(two_theta) - beam_direction[0])
+            )
+            # along z* downstream
+            qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - beam_direction[1])
+            # along y* vertical up
+            qlab2 = (
+                2
+                * np.pi
+                / wavelength
+                * (np.cos(alpha_f) * np.sin(two_theta) - beam_direction[2])
+            )
+            # along x* outboard
+
+            qx[idx, :, :] = (
+                rotation_matrix[0, 0] * qlab0
+                + rotation_matrix[0, 1] * qlab1
+                + rotation_matrix[0, 2] * qlab2
+            )
+            qz[idx, :, :] = (
+                rotation_matrix[1, 0] * qlab0
+                + rotation_matrix[1, 1] * qlab1
+                + rotation_matrix[1, 2] * qlab2
+            )
+            qy[idx, :, :] = (
+                rotation_matrix[2, 0] * qlab0
+                + rotation_matrix[2, 1] * qlab1
+                + rotation_matrix[2, 2] * qlab2
+            )
+
+        return qx, qz, qy

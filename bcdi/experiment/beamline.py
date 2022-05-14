@@ -7,41 +7,7 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 """
-Implementation of beamline-related classes.
-
-The class methods manage the calculations related to reciprocal or direct space
-transformation (interpolation in an orthonormal grid). Generic method are implemented
-in the abstract base class Beamline, and beamline-dependent methods need to be
-implemented in each child class (they are decorated by @abstractmethod in the base
-class; they are written in italic in the following diagram). These classes are not meant
-to be instantiated directly but via a Setup instance.
-
-.. mermaid::
-  :align: center
-
-  classDiagram
-    class Beamline{
-      <<abstract>>
-      +diffractometer
-      +loader
-      +name
-      +sample_angles
-      +detector_angles
-      detector_hor()*
-      detector_ver()*
-      goniometer_values()*
-      process_positions()*
-      transformation_matrix()*
-      exit_wavevector()
-      find_inplane()
-      find_outofplane()
-      flatten_sample()
-      init_qconversion()
-      inplane_coeff()
-      outofplane_coeff()
-      process_tilt()
-  }
-    ABC <|-- Beamline
+Implementation of beamline-specific classes.
 
 API Reference
 -------------
@@ -54,7 +20,7 @@ from numbers import Real
 
 import numpy as np
 
-from bcdi.experiment.beamline_factory import Beamline, BeamlineSaxs
+from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
 
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -88,7 +54,7 @@ def create_beamline(name, **kwargs):
     raise ValueError(f"Beamline {name} not supported")
 
 
-class BeamlineCRISTAL(Beamline):
+class BeamlineCRISTAL(BeamlineGoniometer):
     """
     Definition of SOLEIL CRISTAL beamline.
 
@@ -392,7 +358,7 @@ class BeamlineCRISTAL(Beamline):
         return mymatrix, q_offset
 
 
-class BeamlineID01(Beamline):
+class BeamlineID01(BeamlineGoniometer):
     """
     Definition of ESRF ID01 beamline.
 
@@ -715,7 +681,7 @@ class BeamlineID01(Beamline):
         return mymatrix, q_offset
 
 
-class BeamlineNANOMAX(Beamline):
+class BeamlineNANOMAX(BeamlineGoniometer):
     """
     Definition of MAX IV NANOMAX beamline.
 
@@ -1021,7 +987,7 @@ class BeamlineNANOMAX(Beamline):
         return mymatrix, q_offset
 
 
-class BeamlineP10(Beamline):
+class BeamlineP10(BeamlineGoniometer):
     """
     Definition of PETRA III P10 beamline.
 
@@ -1363,7 +1329,7 @@ class BeamlineP10(Beamline):
         return mymatrix, q_offset
 
 
-class BeamlineP10SAXS(BeamlineP10):
+class BeamlineP10SAXS(BeamlineSaxs):
     """
     Definition of PETRA III P10 beamline for the USAXS setup.
 
@@ -1373,206 +1339,26 @@ class BeamlineP10SAXS(BeamlineP10):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
 
-    @staticmethod
-    def cartesian2polar(nb_pixels, pivot, offset_angle, debugging=False):
+    @property
+    def detector_hor(self):
         """
-        Find the corresponding polar coordinates of a cartesian 2D grid.
+        Horizontal detector orientation expressed in the laboratory frame.
 
-        The grid is assumed perpendicular to the rotation axis.
-
-        :param nb_pixels: number of pixels of the axis of the squared grid
-        :param pivot: position in pixels of the origin of the polar coordinates system
-        :param offset_angle: reference angle for the angle wrapping
-        :param debugging: True to see more plots
-        :return: the corresponding 1D array of angular coordinates, 1D array of radial
-         coordinates
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
         """
-        z_interp, x_interp = np.meshgrid(
-            np.linspace(-pivot, -pivot + nb_pixels, num=nb_pixels, endpoint=False),
-            np.linspace(pivot - nb_pixels, pivot, num=nb_pixels, endpoint=False),
-            indexing="ij",
-        )  # z_interp changes along rows, x_interp along columns
-        # z_interp downstream, same direction as detector X rotated by +90deg
-        # x_interp along outboard opposite to detector X
+        return "x-"
 
-        # map these points to (cdi_angle, X), the measurement polar coordinates
-        interp_angle = util.wrap(
-            obj=np.arctan2(z_interp, -x_interp),
-            start_angle=offset_angle * np.pi / 180,
-            range_angle=np.pi,
-        )  # in radians, located in the range [start_angle, start_angle+np.pi[
-
-        sign_array = -1 * np.sign(np.cos(interp_angle)) * np.sign(x_interp)
-        sign_array[x_interp == 0] = np.sign(z_interp[x_interp == 0]) * np.sign(
-            interp_angle[x_interp == 0]
-        )
-
-        interp_radius = np.multiply(sign_array, hypot(x_interp, z_interp))
-
-        if debugging:
-            gu.imshow_plot(
-                interp_angle * 180 / np.pi,
-                plot_colorbar=True,
-                scale="linear",
-                labels=("Qx (z_interp)", "Qy (x_interp)"),
-                title="calculated polar angle for the 2D grid",
-            )
-
-            gu.imshow_plot(
-                sign_array,
-                plot_colorbar=True,
-                scale="linear",
-                labels=("Qx (z_interp)", "Qy (x_interp)"),
-                title="sign_array",
-            )
-
-            gu.imshow_plot(
-                interp_radius,
-                plot_colorbar=True,
-                scale="linear",
-                labels=("Qx (z_interp)", "Qy (x_interp)"),
-                title="calculated polar radius for the 2D grid",
-            )
-        return interp_angle, interp_radius
-
-    @staticmethod
-    def ewald_curvature_saxs(
-        wavelength,
-        beam_direction,
-        pixelsize_x,
-        pixelsize_y,
-        distance,
-        array_shape,
-        cdi_angle,
-        direct_beam,
-        anticlockwise=True,
-    ):
+    @property
+    def detector_ver(self):
         """
-        Calculate q values taking into account the curvature of Ewald sphere.
+        Vertical detector orientation expressed in the laboratory frame.
 
-        Based on the CXI detector geometry convention: Laboratory frame: z downstream,
-        y vertical up, x outboard. Detector axes: Y vertical and X horizontal
-        (detector Y is vertical down at out-of-plane angle=0, detector X is opposite
-        to x at inplane angle=0)
-
-        :param wavelength: X-ray wavelength in nm
-        :param beam_direction: direction of the incident X-ray beam.
-        :param distance: detector distance in nm
-        :param pixelsize_x: horizontal binned detector pixel size in nm
-        :param pixelsize_y: vertical binned detector pixel size in nm
-        :param array_shape: tuple of three integers, shape of the dataset to be gridded
-        :param cdi_angle: 1D array of measurement angles in degrees
-        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
-        :param anticlockwise: True if the rotation is anticlockwise
-        :return: qx, qz, qy values in the laboratory frame
-         (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
-         nb_pixel_y * nb_angles
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
         """
-        #########################
-        # check some parameters #
-        #########################
-        valid.valid_container(
-            direct_beam,
-            container_types=(tuple, list),
-            length=2,
-            item_types=int,
-            name="direct_beam",
-        )
-        valid.valid_container(
-            array_shape,
-            container_types=(tuple, list),
-            length=3,
-            item_types=int,
-            min_excluded=1,
-            name="array_shape",
-        )
-        valid.valid_1d_array(
-            cdi_angle,
-            allowed_types=Real,
-            allow_none=False,
-            name="cdi_angle",
-        )
-        valid.valid_item(anticlockwise, allowed_types=bool, name="anticlockwise")
-
-        # calculate q values of the measurement
-        nbz, nby, nbx = array_shape
-        qz = np.empty((nbz, nby, nbx), dtype=float)
-        qy = np.empty((nbz, nby, nbx), dtype=float)
-        qx = np.empty((nbz, nby, nbx), dtype=float)
-
-        # calculate q values of the detector frame
-        # for each angular position and stack them
-        for idx, item in enumerate(cdi_angle):
-            angle = item * np.pi / 180
-            if not anticlockwise:
-                rotation_matrix = np.array(
-                    [
-                        [np.cos(angle), 0, -np.sin(angle)],
-                        [0, 1, 0],
-                        [np.sin(angle), 0, np.cos(angle)],
-                    ]
-                )
-            else:
-                rotation_matrix = np.array(
-                    [
-                        [np.cos(angle), 0, np.sin(angle)],
-                        [0, 1, 0],
-                        [-np.sin(angle), 0, np.cos(angle)],
-                    ]
-                )
-
-            myy, myx = np.meshgrid(
-                np.linspace(
-                    -direct_beam[0], -direct_beam[0] + nby, num=nby, endpoint=False
-                ),
-                np.linspace(
-                    -direct_beam[1], -direct_beam[1] + nbx, num=nbx, endpoint=False
-                ),
-                indexing="ij",
-            )
-
-            two_theta = np.arctan(myx * pixelsize_x / distance)
-            alpha_f = np.arctan(
-                np.divide(
-                    myy * pixelsize_y,
-                    np.sqrt(distance**2 + np.power(myx * pixelsize_x, 2)),
-                )
-            )
-
-            qlab0 = (
-                2
-                * np.pi
-                / wavelength
-                * (np.cos(alpha_f) * np.cos(two_theta) - beam_direction[0])
-            )
-            # along z* downstream
-            qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - beam_direction[1])
-            # along y* vertical up
-            qlab2 = (
-                2
-                * np.pi
-                / wavelength
-                * (np.cos(alpha_f) * np.sin(two_theta) - beam_direction[2])
-            )
-            # along x* outboard
-
-            qx[idx, :, :] = (
-                rotation_matrix[0, 0] * qlab0
-                + rotation_matrix[0, 1] * qlab1
-                + rotation_matrix[0, 2] * qlab2
-            )
-            qz[idx, :, :] = (
-                rotation_matrix[1, 0] * qlab0
-                + rotation_matrix[1, 1] * qlab1
-                + rotation_matrix[1, 2] * qlab2
-            )
-            qy[idx, :, :] = (
-                rotation_matrix[2, 0] * qlab0
-                + rotation_matrix[2, 1] * qlab1
-                + rotation_matrix[2, 2] * qlab2
-            )
-
-        return qx, qz, qy
+        return "y-"
 
     def goniometer_values(self, setup, **kwargs):
         """
@@ -1606,11 +1392,67 @@ class BeamlineP10SAXS(BeamlineP10):
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
         self.sample_angles = (phi,)
         self.detector_angles = (0, 0)
-
         return tilt_angle, grazing, 0, 0
 
+    def process_positions(
+        self,
+        setup,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at P10.
 
-class BeamlineSIXS(Beamline):
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        # TODO adapt this to USAXS
+        mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
+            setup=setup,
+            nb_frames=nb_frames,
+            scan_number=scan_number,
+            frames_logical=frames_logical,
+        )
+
+        # eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        self.logger.info("chi", chi)
+        self.logger.info("mu", mu)
+        if setup.rocking_angle == "outofplane":  # om rocking curve
+            self.logger.info("phi", phi)
+            nb_steps = len(om)
+            tilt_angle = (om[1:] - om[0:-1]).mean()
+            om = self.process_tilt(
+                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+            )
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            self.logger.info("om", om)
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+            phi = self.process_tilt(
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+            )
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[mu, om, chi, phi, gamma, delta, energy],
+        )
+
+
+class BeamlineSIXS(BeamlineGoniometer):
     """
     Definition of SOLEIL SIXS beamline.
 
@@ -1879,7 +1721,7 @@ class BeamlineSIXS(Beamline):
         return mymatrix, q_offset
 
 
-class Beamline34ID(Beamline):
+class Beamline34ID(BeamlineGoniometer):
     """
     Definition of APS 34ID-C beamline.
 
