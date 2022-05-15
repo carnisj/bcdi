@@ -55,7 +55,7 @@ sample_name = "gold_2_2_2"
 # it will be repeated to match the number of scans
 user_comment = ""  # string, should start with "_"
 debug = False  # set to True to see plots
-binning = [1, 2, 2]  # binning that will be used for phasing
+binning = [1, 3, 3]  # binning that will be used for phasing
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 bin_during_loading = False  # True to bin during loading, require less memory
 frames_pattern = None
@@ -72,12 +72,8 @@ background_plot = (
 ##############################################
 # parameters used in intensity normalization #
 ##############################################
-normalize_method = "monitor"  # 'skip' for no normalization,
-# 'monitor' to use the default monitor, 'sum_roi' to normalize
-# by the intensity summed in normalize_roi
-normalize_roi = None
-# roi for the integration of intensity used as a monitor for data normalization
-# [Vstart, Vstop, Hstart, Hstop]
+normalize_flux = "monitor"  # 'skip' for no normalization,
+# 'monitor' to use the default monitor
 #################################
 # parameters for data filtering #
 #################################
@@ -139,11 +135,13 @@ direct_beam = (1349, 1321)
 # tuple of int (vertical, horizontal): position of the direct beam in pixels, in the
 # unbinned detector.
 # This parameter is important for gridding the data onto the laboratory frame.
+center_roi_x = 1321
+center_roi_y = 1349
 roi_detector = [
-    direct_beam[0] - 250,
-    direct_beam[0] + 250,
-    direct_beam[1] - 354,
-    direct_beam[1] + 354,
+    center_roi_y - 250,
+    center_roi_y + 250,
+    center_roi_x - 354,
+    center_roi_x + 354,
 ]
 # [Vstart, Vstop, Hstart, Hstop]
 # leave it as None to use the full detector.
@@ -179,7 +177,7 @@ correct_curvature = False
 fit_datarange = True  # if True, crop the final array within data range,
 # avoiding areas at the corners of the window viewed from the top, data is circular,
 # but the interpolation window is rectangular, with nan values outside of data
-sdd = 4.95  # sample to detector distance in m, used only if use_rawdata is False
+detector_distance = 4.95  # sample to detector distance in m, used only if use_rawdata is False
 energy = 8700  # x-ray energy in eV, used only if use_rawdata is False
 custom_motors = None  # {"hprz": np.linspace(0, 184, num=737, endpoint=True)}
 # use this to declare motor positions if there is not log file
@@ -419,7 +417,7 @@ setup = Setup(
     beamline_name=beamline,
     energy=energy,
     rocking_angle="inplane",
-    distance=sdd,
+    distance=detector_distance,
     direct_beam=direct_beam,
     custom_scan=custom_scan,
     custom_images=custom_images,
@@ -428,7 +426,6 @@ setup = Setup(
     is_series=is_series,
     detector_name=detector,
     roi=roi_detector,
-    sum_roi=normalize_roi,
     binning=binning,
     preprocessing_binning=preprocessing_binning,
 )
@@ -481,7 +478,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
         scan_number=scan_nb, root_folder=root_folder, filename=setup.detector.specfile
     )
 
-    if normalize_method != "skip":
+    if normalize_flux != "skip":
         comment = comment + "_norm"
 
     #############
@@ -524,7 +521,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             except FileNotFoundError:
                 q_values = []
 
-            normalize_method = (
+            normalize_flux = (
                 "skip"  # we assume that normalization was already performed
             )
             monitor = []  # we assume that normalization was already performed
@@ -576,7 +573,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
                 mask=mask,
                 setup=setup,
                 debugging=debug,
-                normalize_method=normalize_method,
+                normalize_method=normalize_flux,
                 photon_threshold=loading_threshold,
             )
 
@@ -594,7 +591,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             flatfield=flatfield,
             hotpixels=hotpix_array,
             background=background,
-            normalize=normalize_method,
+            normalize=normalize_flux,
             debugging=debug,
             photon_threshold=loading_threshold,
         )
@@ -755,7 +752,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
             )
 
             # plot normalization by incident monitor for the gridded data
-            if normalize_method != "skip":
+            if normalize_flux != "skip":
                 plt.ion()
                 tmp_data = np.copy(
                     data
