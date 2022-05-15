@@ -382,6 +382,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "correct_refraction",
         "custom_scan",
         "debug",
+        "detector_on_goniometer",
         "flag_interact",
         "flip_reconstruction",
         "get_temperature",

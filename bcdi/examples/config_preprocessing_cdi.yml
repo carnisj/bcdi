@@ -1,4 +1,6 @@
 scans: 11  # scan number or list of scan numbers
+detector_on_goniometer: False  # True if the detector is on a goniometer, False if its
+# plane is alway perpendicular to the direct beam independently of its position.
 root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
 save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"

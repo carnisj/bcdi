@@ -41,7 +41,7 @@ where the data is.
 Usage:
 
  - command line:
-   `python path_to/bcdi_preprocess_BCDI.py --config_file path_to/config.yml`
+   `python path_to/bcdi_preprocess.py --config_file path_to/config.yml`
  - directly from a code editor:
    update the constant CONFIG_FILE at the top of the file
 
@@ -49,6 +49,9 @@ Usage:
 
     :param scans: e.g. 11
      scan number or list of scan numbers
+    :param detector_on_goniometer: e.g. True
+     True if the detector is on a goniometer, False if its plane is alway perpendicular
+     to the direct beam independently of its position.
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
      folder of the experiment, where all scans are stored
     :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"

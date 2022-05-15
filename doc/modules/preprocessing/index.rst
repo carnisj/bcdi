@@ -9,7 +9,7 @@
 preprocessing_runner
 ^^^^^^^^^^^^^^^^^^^^
 
-This module provides the function which manage the whole preprocessing.
+This module provides the function which manage the preprocessing.
 
 API Reference
 -------------
@@ -52,4 +52,17 @@ API Reference
 -------------
 
 .. automodule:: bcdi.preprocessing.process_scan
+   :members:
+
+process_scan_cdi
+^^^^^^^^^^^^^^^^
+
+This module provides the function which manage the preprocessing for a single scan when
+the detector is not on a goniometer (detector plane always perpendicular to the direct
+beam independently of its position).
+
+API Reference
+-------------
+
+.. automodule:: bcdi.preprocessing.process_scan_cdi
    :members:
