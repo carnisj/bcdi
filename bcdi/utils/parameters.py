@@ -584,6 +584,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             allow_none=True,
             name=key,
         )
+    elif key == "dirbeam_detector_position":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=3,
+            allow_none=True,
+            name=key,
+        )
     elif key == "direct_beam":
         valid.valid_container(
             value,
