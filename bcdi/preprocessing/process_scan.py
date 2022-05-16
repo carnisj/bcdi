@@ -975,7 +975,7 @@ def process_scan(
         flag_mask = True
         flag_pause = False  # press x to pause for pan/zoom
         previous_axis = None
-        xy: List[int] = []  # list of points for mask
+        xy: List[List[int]] = []  # list of points for mask
 
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(
             nrows=2, ncols=2, figsize=(12, 6)

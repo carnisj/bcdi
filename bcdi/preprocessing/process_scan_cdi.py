@@ -212,6 +212,15 @@ def process_scan_cdi(
         root.withdraw()
     plt.ion()
 
+    ##############################
+    # Initialize some parameters #
+    ##############################
+    min_range = None
+    q_values = None
+    qx = None
+    qy = None
+    qz = None
+
     ####################
     # Setup the logger #
     ####################
@@ -317,9 +326,8 @@ def process_scan_cdi(
         )
         mask, _ = util.load_file(file_path)
 
-        if prm[
-            "reload_orthogonal"
-        ]:  # the data is gridded in the orthonormal laboratory frame
+        if prm["reload_orthogonal"]:
+            # the data is gridded in the orthonormal laboratory frame
             prm["use_rawdata"] = False
             try:
                 file_path = filedialog.askopenfilename(
@@ -413,7 +421,7 @@ def process_scan_cdi(
     nz, ny, nx = np.shape(data)
     print("\nInput data shape:", nz, ny, nx)
 
-    if not reload_orthogonal:
+    if not prm["reload_orthogonal"]:
         dirbeam = int(
             (setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2]
         )
@@ -457,7 +465,7 @@ def process_scan_cdi(
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
             previous_axis = None
-            xy: List[int] = []  # list of points for mask
+            xy: List[List[int]] = []  # list of points for mask
 
             fig_mask = plt.figure(figsize=(12, 9))
             ax0 = fig_mask.add_subplot(121)
@@ -1015,7 +1023,7 @@ def process_scan_cdi(
     # only for non gridded data, bin the stacking axis           #
     # the detector plane was already binned during data loading  #
     ##############################################################
-    if setup.detector.binning[0] != 1 and not reload_orthogonal:
+    if setup.detector.binning[0] != 1 and not prm["reload_orthogonal"]:
         # for data to be gridded, binning[0] is set to 1
         data = util.bin_data(data, (setup.detector.binning[0], 1, 1), debugging=False)
         mask = util.bin_data(mask, (setup.detector.binning[0], 1, 1), debugging=False)
