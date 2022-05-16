@@ -50,7 +50,7 @@ def process_scan(
     scan_idx: int, prm: Dict[str, Any]
 ) -> Tuple[Path, Path, Optional[Logger]]:
     """
-    Run the preprocessing defined by the configuration parameters for a single scan.
+    Run the BCDI preprocessing with the configuration parameters for a single scan.
 
     This function is meant to be run as a process in multiprocessing, although it can
     also be used as a normal function for a single scan. It assumes that the dictionary
@@ -1074,9 +1074,8 @@ def process_scan(
         logger.info(f"Total number of filtered pixels: {nb_pix}")
     elif prm["median_filter"] == "median":  # apply median filter
         logger.info("Applying median filtering")
-        for idx in range(
-            pad_width[0], nz - pad_width[1]
-        ):  # filter only frames whith data (not padded)
+        for idx in range(pad_width[0], nz - pad_width[1]):
+            # filter only frames whith data (not padded)
             data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
     else:
         logger.info("Skipping median filtering")
@@ -1094,9 +1093,7 @@ def process_scan(
     ################################################
     nz, ny, nx = data.shape
     logger.info(f"Data size after masking: {data.shape}")
-
     data, mask = util.remove_nan(data=data, mask=mask)
-
     data[mask == 1] = 0
 
     ####################

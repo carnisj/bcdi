@@ -232,6 +232,19 @@ Usage:
      - template for NANOMAX: '%06d.h5'
      - template for 34ID: 'some_name_%05d.tif'
 
+    Parameters specific to tomography-like CDI datasets:
+
+    :param dirbeam_detector_position: e.g. [12.12, 43.05, -23.34]
+     Position of the detector [z, y, x] for the direct beam measurement in the
+     laboratory frame (z downstream, y vertical up, x outboard)
+    :param fit_datarange: e.g. True
+     If True, crop the final array within the defined data range, avoiding empty areas
+     at the corners of the interpolation window: the defined data is a cylinder
+     (of axis the axis of rotation), but the interpolation window is rectangular, with
+     nan values outside of data.
+    :param correct_curvature: e.g. True
+     True to correcture q values for the curvature of Ewald sphere.
+
     Parameters below if you want to orthogonalize the data before phasing:
 
     :param use_rawdata: e.g. True
@@ -250,7 +263,7 @@ Usage:
      tuple of offsets in degrees of the sample for each sample circle (outer first).
      convention: the sample offsets will be subtracted to the motor values. Leave None
      if there is no offset.
-    :param sdd: e.g. 0.50678
+    :param detector_distance: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
      X-ray energy in eV, it can be a number or a list in case of energy scans. Leave

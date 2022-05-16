@@ -112,6 +112,11 @@ roi_detector: None
 # Use with center_fft='skip' if you want this exact size.
 normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
 # the default monitor values, 'skip' to do nothing
+fit_datarange: True  #   Only for (tomography-like) CDI datasets.
+#   If True, crop the final array within the defined data range, avoiding empty areas
+#   at the corners of the interpolation window: the defined data is a cylinder
+#   (of axis the axis of rotation), but the interpolation window is rectangular, with
+#   nan values outside of data.
 photon_threshold: 0  # data[data < photon_threshold]: 0
 photon_filter: "loading"  # 'loading' or 'postprocessing',
 # when the photon threshold should be applied
@@ -155,8 +160,9 @@ direct_beam: [208, 154]  # [vertical, horizontal]
 # direct beam position on the unbinned, full detector measured
 # with detector angles given by dirbeam_detector_angles. It will be used to calculate
 # the real detector angles for the measured Bragg peak. Leave None for no correction.
-dirbeam_detector_position: [0, 0, 0]  # [z, y, x] detector position
-# for the direct beam measurement. Leave None for no correction.
+dirbeam_detector_position: [0, 0, 0]
+# Position of the detector [z, y, x] for the direct beam measurement in the
+# laboratory frame (z downstream, y vertical up, x outboard)
 detector_distance: 0.50678  # in m, sample to detector distance in m
 energy: 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors: None
