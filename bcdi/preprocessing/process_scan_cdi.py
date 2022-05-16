@@ -24,7 +24,7 @@ import tkinter as tk
 from logging import Logger
 from pathlib import Path
 from tkinter import filedialog
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -457,7 +457,7 @@ def process_scan_cdi(
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
             previous_axis = None
-            xy = []  # list of points for mask
+            xy: List[int] = []  # list of points for mask
 
             fig_mask = plt.figure(figsize=(12, 9))
             ax0 = fig_mask.add_subplot(121)
