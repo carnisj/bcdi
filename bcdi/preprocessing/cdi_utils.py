@@ -44,10 +44,10 @@ def beamstop_correction(data, setup, debugging=False, **kwargs):
 
     if energy not in [8200, 8700, 10000, 10235]:
         logger.info(
-            f"no beam stop information for the X-ray energy of {int(energy):d}eV,"
-            " defaulting to the correction for 8700 eV"
+            f"No beam stop information for the X-ray energy of {int(energy):d}eV,"
+            " skip beamstop masking"
         )
-        energy = 8700
+        return data
 
     ndim = data.ndim
     if ndim == 3:
@@ -590,6 +590,7 @@ def grid_cdi(
 def load_cdi_data(
     scan_number,
     setup,
+    mask_beamstop: bool = False,
     bin_during_loading=False,
     flatfield=None,
     hotpixels=None,
@@ -606,6 +607,8 @@ def load_cdi_data(
 
     :param scan_number: the scan number to load
     :param setup: an instance of the class Setup
+    :param mask_beamstop: True to apply beamstop correction (direct beam on the
+     detector, masked by a beam stop)
     :param bin_during_loading: True to bin the data during loading (faster)
     :param flatfield: the 2D flatfield array
     :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
@@ -664,7 +667,8 @@ def load_cdi_data(
     #################################
     # apply the beamstop correction #
     #################################
-    rawdata = beamstop_correction(data=rawdata, setup=setup, debugging=debugging)
+    if mask_beamstop:
+        rawdata = beamstop_correction(data=rawdata, setup=setup, debugging=debugging)
 
     #####################################################
     # apply an optional photon threshold before binning #
