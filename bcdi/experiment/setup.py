@@ -727,7 +727,7 @@ class Setup:
             delta=self.detector.offsets,
         )
         self.logger.info(
-            "Use the parameter 'sample_offsets' to correct diffractometer values.\n"
+            "Use the parameter 'sample_offsets' to correct diffractometer values."
         )
         return qx, qz, qy, frames_logical
 
@@ -1134,10 +1134,8 @@ class Setup:
         start = time.time()
         if multiprocessing:
             self.logger.info(
-                "Gridding",
-                comment,
-                ", number of processors used: ",
-                min(mp.cpu_count(), number_y),
+                f"Gridding {comment}, number of processors used: "
+                f"{min(mp.cpu_count(), number_y)}"
             )
             mp.freeze_support()
             pool = mp.Pool(
@@ -1168,7 +1166,7 @@ class Setup:
             # in the queue are done.
 
         else:  # no multiprocessing
-            self.logger.info("Gridding", comment, ", no multiprocessing")
+            self.logger.info(f"Gridding {comment}, no multiprocessing")
             for idx in range(
                 number_y
             ):  # loop over 2D frames perpendicular to the rotation axis
@@ -1194,8 +1192,8 @@ class Setup:
 
         end = time.time()
         self.logger.info(
-            "Time ellapsed for gridding data:",
-            str(datetime.timedelta(seconds=int(end - start))),
+            "Time ellapsed for gridding data: "
+            f"{str(datetime.timedelta(seconds=int(end - start)))}"
         )
         return interp_array
 
@@ -1454,7 +1452,8 @@ class Setup:
         )
         # horizontal
         self.logger.info(
-            "Direct beam for the ROI and binning (y, x):", directbeam_y, directbeam_x
+            "Direct beam for the ROI and binning (y, x): "
+            f"({directbeam_y},{directbeam_x}) "
         )
 
         #######################################
@@ -2176,8 +2175,8 @@ class Setup:
         if verbose:
             self.logger.info(
                 f"Initial shape = ({nbz},{nby},{nbx})\n"
-                f"Output shape  = ({nz_output},{ny_output},{nx_output})"
-                f" (satisfying FFT shape requirements)"
+                f"Output shape  = ({nz_output},{ny_output},{nx_output}) "
+                f"(satisfying FFT shape requirements)"
             )
 
         ########################################################
@@ -2395,8 +2394,8 @@ class Setup:
         """
         if verbose:
             self.logger.info(
-                f"out-of plane detector angle={self.outofplane_angle:.3f} deg,"
-                f" inplane_angle={self.inplane_angle:.3f} deg"
+                f"out-of plane detector angle={self.outofplane_angle:.3f} deg, "
+                f"inplane_angle={self.inplane_angle:.3f} deg"
             )
 
         # convert lengths to nanometers and angles to radians
@@ -2511,7 +2510,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        self.logger.info("Data shape after regridding:", numx, numy, numx)
+        self.logger.info(f"Data shape after regridding: ({numx},{numy},{numx})")
 
         # update the direct beam position due to an eventual padding along X
         if nbx - directbeam_x < directbeam_x:
@@ -2593,7 +2592,7 @@ class Setup:
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
-        self.logger.info("Data shape after regridding:", numx, numy, numx)
+        self.logger.info(f"Data shape after regridding: ({numx},{numy},{numx})")
 
         # calculate exact q values for each voxel of the 3D dataset
         old_qx, old_qz, old_qy = self.beamline.ewald_curvature_saxs(
@@ -2725,7 +2724,7 @@ class Setup:
         )  # in nm
         if verbose:
             self.logger.info(
-                "voxelsize_z, voxelsize_y, voxelsize_x="
-                "({0:.2f}, {1:.2f}, {2:.2f}) (1/nm)".format(voxel_z, voxel_y, voxel_x)
+                "(voxelsize_z, voxelsize_y, voxelsize_x) = "
+                f"({voxel_z:.2f}, {voxel_y:.2f}, {voxel_x:.2f}) (1/nm)"
             )
         return voxel_z, voxel_y, voxel_x
