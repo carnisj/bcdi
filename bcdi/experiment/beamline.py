@@ -15,14 +15,13 @@ API Reference
 """
 
 import logging
-from math import hypot, isclose
+from math import isclose
 from numbers import Real
 
 import numpy as np
 
 from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
 
-from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
