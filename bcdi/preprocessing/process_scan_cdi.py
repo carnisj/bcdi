@@ -212,15 +212,6 @@ def process_scan_cdi(
         root.withdraw()
     plt.ion()
 
-    ##############################
-    # Initialize some parameters #
-    ##############################
-    min_range = None
-    q_values = None
-    qx = None
-    qy = None
-    qz = None
-
     ####################
     # Setup the logger #
     ####################
@@ -307,7 +298,7 @@ def process_scan_cdi(
         comment = comment + "_norm"
 
     if prm["reload_previous"]:  # resume previous masking
-        print("Resuming previous masking")
+        logger.info("Resuming previous masking")
         file_path = filedialog.askopenfilename(
             initialdir=setup.detector.scandir,
             title="Select data file",
@@ -336,13 +327,13 @@ def process_scan_cdi(
                     filetypes=[("NPZ", "*.npz")],
                 )
                 reload_qvalues = np.load(file_path)
-                q_values = [
+                prm["q_values"] = [
                     reload_qvalues["qx"],
                     reload_qvalues["qz"],
                     reload_qvalues["qy"],
                 ]
             except FileNotFoundError:
-                q_values = []
+                prm["q_values"] = []
 
             prm["normalize_flux"] = "skip"
             # we assume that normalization was already performed
@@ -359,7 +350,9 @@ def process_scan_cdi(
                 or (setup.detector.binning[1] != 1)
                 or (setup.detector.binning[2] != 1)
             ):
-                print("Binning the reloaded orthogonal data by", setup.detector.binning)
+                logger.info(
+                    f"Binning the reloaded orthogonal data by {setup.detector.binning}"
+                )
                 data = util.bin_data(
                     data, binning=setup.detector.binning, debugging=False
                 )
@@ -367,10 +360,8 @@ def process_scan_cdi(
                     mask, binning=setup.detector.binning, debugging=False
                 )
                 mask[np.nonzero(mask)] = 1
-                if len(q_values) != 0:
-                    qx = q_values[0]
-                    qz = q_values[1]
-                    qy = q_values[2]
+                if len(prm["q_values"]) == 3:
+                    qx, qz, qy = prm["q_values"]  # downstream, vertical up, outboard
                     numz, numy, numx = len(qx), len(qz), len(qy)
                     qx = qx[
                         : numz
@@ -418,8 +409,8 @@ def process_scan_cdi(
             photon_threshold=prm["loading_threshold"],
         )
 
-    nz, ny, nx = np.shape(data)
-    print("\nInput data shape:", nz, ny, nx)
+    nz, ny, nx = data.shape
+    logger.info(f"Input data shape: {data.shape}")
 
     if not prm["reload_orthogonal"]:
         dirbeam = int(
@@ -427,9 +418,9 @@ def process_scan_cdi(
         )
         # updated horizontal direct beam
         min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
-        print(
-            "\nMaximum symmetrical range with defined data along"
-            " detector horizontal direction: 2*{0} pixels".format(min_range)
+        logger.info(
+            "Maximum symmetrical range with defined data along the "
+            f"detector horizontal direction: 2*{min_range} pixels"
         )
         if min_range <= 0:
             raise ValueError(
@@ -471,6 +462,7 @@ def process_scan_cdi(
             ax0 = fig_mask.add_subplot(121)
             ax1 = fig_mask.add_subplot(322)
             ax2 = fig_mask.add_subplot(324)
+            ax3 = None
             fig_mask.canvas.mpl_disconnect(fig_mask.canvas.manager.key_press_handler_id)
             original_data = np.copy(data)
             updated_mask = np.zeros((nz, ny, nx))
@@ -521,7 +513,7 @@ def process_scan_cdi(
             gc.collect()
 
         if prm["use_rawdata"]:
-            q_values = []
+            prm["q_values"] = []
             binning_comment = (
                 f"_{setup.detector.preprocessing_binning[0]*setup.detector.binning[0]}"
                 f"_{setup.detector.preprocessing_binning[1]*setup.detector.binning[1]}"
@@ -562,8 +554,8 @@ def process_scan_cdi(
             del tmp_data
             gc.collect()
 
-            print("\nGridding the data in the orthonormal laboratory frame")
-            data, mask, q_values, frames_logical = cdi.grid_cdi(
+            logger.info("Gridding the data in the orthonormal laboratory frame")
+            data, mask, prm["q_values"], frames_logical = cdi.grid_cdi(
                 data=data,
                 mask=mask,
                 setup=setup,
@@ -697,10 +689,8 @@ def process_scan_cdi(
     ###############################################
     # save the orthogonalized diffraction pattern #
     ###############################################
-    if not prm["use_rawdata"] and len(q_values) != 0:
-        qx = q_values[0]  # downstream
-        qz = q_values[1]  # vertical up
-        qy = q_values[2]  # outboard
+    if not prm["use_rawdata"] and len(prm["q_values"]) == 3:
+        qx, qz, qy = prm["q_values"]  # downstream, vertical up, outboard
 
         if prm["save_to_vti"]:
             (
@@ -710,7 +700,9 @@ def process_scan_cdi(
             ) = (
                 data.shape
             )  # in nexus z downstream, y vertical / in q z vertical, x downstream
-            print("\ndqx, dqy, dqz = ", qx[1] - qx[0], qy[1] - qy[0], qz[1] - qz[0])
+            logger.info(
+                f"(dqx, dqy, dqz) = {qx[1] - qx[0]}, {qy[1] - qy[0]}, {qz[1] - qz[0]}"
+            )
             # in nexus z downstream, y vertical / in q z vertical, x downstream
             qx0 = qx.min()
             dqx = (qx.max() - qx0) / nqx
@@ -883,7 +875,7 @@ def process_scan_cdi(
     # mask or median filter isolated empty pixels #
     ###############################################
     if prm["median_filter"] in {"mask_isolated", "interp_isolated"}:
-        print("\nFiltering isolated pixels")
+        logger.info("Filtering isolated pixels")
         nb_pix = 0
         for idx in range(nz):  # filter only frames whith data (not padded)
             data[idx, :, :], numb_pix, mask[idx, :, :] = util.mean_filter(
@@ -1008,7 +1000,7 @@ def process_scan_cdi(
         logger.info(
             f"Data size after taking the largest data-defined area: {data.shape}"
         )
-        if len(q_values) != 0:
+        if len(prm["q_values"]) != 0:
             qx = qx[
                 (nz - final_nxz) // 2 : (nz - final_nxz) // 2 + final_nxz
             ]  # along Z
@@ -1043,7 +1035,7 @@ def process_scan_cdi(
     mask[np.nonzero(mask)] = 1
     mask = mask.astype(int)
     logger.info(f"Mask type before saving: {mask.dtype}")
-    if not prm["use_rawdata"] and len(q_values) != 0:
+    if not prm["use_rawdata"] and len(prm["q_values"]) != 0:
         if prm["save_to_npz"]:
             np.savez_compressed(
                 setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment,
