@@ -19,7 +19,7 @@ from typing import Any, Dict
 import bcdi.utils.utilities as util
 from bcdi.preprocessing.process_scan import process_scan
 from bcdi.preprocessing.process_scan_cdi import process_scan_cdi
-from bcdi.utils.parameters import PreprocessingChecker
+from bcdi.utils.parameters import CDIPreprocessingChecker, PreprocessingChecker
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ def run(prm: Dict[str, Any]) -> None:
         ).check_config()
     else:
         func = process_scan_cdi
-        prm = PreprocessingChecker(
+        prm = CDIPreprocessingChecker(
             initial_params=prm,
             default_values={
                 "actuators": None,
@@ -121,6 +121,7 @@ def run(prm: Dict[str, Any]) -> None:
                 "bin_during_loading": False,
                 "centering_method": "max_com",
                 "colormap": "turbo",
+                "correct_curvature": False,
                 "comment": "",
                 "custom_monitor": None,
                 "custom_motors": None,
@@ -137,6 +138,7 @@ def run(prm: Dict[str, Any]) -> None:
                 "hotpixels_file": None,
                 "is_series": False,
                 "linearity_func": None,
+                "mask_beamstop": False,
                 "mask_zero_event": False,
                 "median_filter": "skip",
                 "median_filter_order": 7,
@@ -167,7 +169,6 @@ def run(prm: Dict[str, Any]) -> None:
                 "dirbeam_detector_position",
                 "direct_beam",
                 "phasing_binning",
-                "rocking_angle",
                 "root_folder",
                 "sample_name",
                 "scans",
