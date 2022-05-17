@@ -1112,12 +1112,6 @@ class Setup:
             # taking into account the flip of the detector Y axis (pointing down)
             # compare to the laboratory frame vertical axis (pointing up)
             interp_array[:, number_y - (result[1] + 1), :] = result[0]
-            sys.stdout.write(
-                "\r    gridding progress: {:d}%".format(
-                    int(slices_done / number_y * 100)
-                )
-            )
-            sys.stdout.flush()
 
         rotation_step = rotation_angle[1] - rotation_angle[0]
         if rotation_step < 0:
@@ -1185,10 +1179,6 @@ class Setup:
                 # detector Y axis (pointing down) compare to the laboratory frame
                 # vertical axis (pointing up)
                 interp_array[:, number_y - (idx + 1), :] = temp_array
-                sys.stdout.write(
-                    "\rGridding progress: {:d}%".format(int((idx + 1) / number_y * 100))
-                )
-                sys.stdout.flush()
 
         end = time.time()
         self.logger.info(
