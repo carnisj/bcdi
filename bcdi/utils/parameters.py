@@ -216,8 +216,10 @@ class CDIPreprocessingChecker(ConfigChecker):
                 "taking into account preprocessing_binning"
             )
             self._checked_params["direct_beam"] = (
-                self._checked_params["direct_beam"][0] // self._checked_params["preprocessing_binning"][1],
-                self._checked_params["direct_beam"][1] // self._checked_params["preprocessing_binning"][2],
+                self._checked_params["direct_beam"][0]
+                // self._checked_params["preprocessing_binning"][1],
+                self._checked_params["direct_beam"][1]
+                // self._checked_params["preprocessing_binning"][2],
             )
         else:
             self._checked_params["preprocessing_binning"] = (1, 1, 1)
@@ -245,7 +247,7 @@ class CDIPreprocessingChecker(ConfigChecker):
             # data in the detector frame, one cannot bin the first axis because it is
             # done during interpolation. The vertical axis y being the rotation axis,
             # binning along z downstream and x outboard will be the same
-            self._checked_params["binning"][0] = 1
+            self._checked_params["phasing_binning"][0] = 1
 
             self._checked_params["save_dirname"] = "pynx"
             self._checked_params["plot_title"] = ["QzQx", "QyQx", "QyQz"]
@@ -461,6 +463,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "invert_phase",
         "is_series",
         "keep_size",
+        "mask_beamstop",
         "mask_zero_event",
         "multiprocessing",
         "reload_orthogonal",
