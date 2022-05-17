@@ -167,7 +167,7 @@ class BeamlineCRISTAL(BeamlineGoniometer):
                 mgomega, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
-            self.logger.info("mgomega", mgomega)
+            self.logger.info(f"mgomega {mgomega}")
             nb_steps = len(mgphi)
             tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
             mgphi = self.process_tilt(
@@ -480,14 +480,14 @@ class BeamlineID01(BeamlineGoniometer):
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
-            self.logger.info("phi", phi)
+            self.logger.info(f"phi {phi}")
             nb_steps = len(eta)
             tilt_angle = (eta[1:] - eta[0:-1]).mean()
             eta = self.process_tilt(
                 eta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            self.logger.info("eta", eta)
+            self.logger.info(f"eta {eta}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
@@ -618,7 +618,7 @@ class BeamlineID01(BeamlineGoniometer):
                 raise ValueError("grazing_angle should be of length 2")
             if verbose:
                 self.logger.info(
-                    f"rocking angle is phi,"
+                    "rocking angle is phi,"
                     f" mu={grazing_angle[0] * 180 / np.pi:.3f} deg,"
                     f" eta={grazing_angle[1] * 180 / np.pi:.3f}deg"
                 )
@@ -1095,17 +1095,17 @@ class BeamlineP10(BeamlineGoniometer):
 
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
-        self.logger.info("chi", chi)
-        self.logger.info("mu", mu)
+        self.logger.info(f"chi {chi}")
+        self.logger.info(f"mu {mu}")
         if setup.rocking_angle == "outofplane":  # om rocking curve
-            self.logger.info("phi", phi)
+            self.logger.info(f"phi {phi}")
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
                 om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            self.logger.info("om", om)
+            self.logger.info(f"om {om}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
@@ -1426,17 +1426,17 @@ class BeamlineP10SAXS(BeamlineSaxs):
 
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
-        self.logger.info("chi", chi)
-        self.logger.info("mu", mu)
+        self.logger.info(f"chi {chi}")
+        self.logger.info(f"mu {mu}")
         if setup.rocking_angle == "outofplane":  # om rocking curve
-            self.logger.info("phi", phi)
+            self.logger.info(f"phi {phi}")
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
                 om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            self.logger.info("om", om)
+            self.logger.info(f"om {om}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
@@ -1559,7 +1559,7 @@ class BeamlineSIXS(BeamlineGoniometer):
 
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
-        self.logger.info("beta", beta)
+        self.logger.info(f"beta {beta}")
         if setup.rocking_angle == "inplane":  # mu rocking curve
             nb_steps = len(mu)
             tilt_angle = (mu[1:] - mu[0:-1]).mean()
