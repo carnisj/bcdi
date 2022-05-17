@@ -1453,7 +1453,7 @@ class Setup:
         # horizontal
         self.logger.info(
             "Direct beam for the ROI and binning (y, x): "
-            f"({directbeam_y},{directbeam_x}) "
+            f"({directbeam_y},{directbeam_x})"
         )
 
         #######################################
@@ -2536,7 +2536,7 @@ class Setup:
         # outboard opposite to detector X
         self.logger.info(
             "q spacing for the interpolation (z,y,x) = "
-            f"({dqx:.6f}, {dqz:.6f},{dqy:.6f}) (1/nm)"
+            f"({dqx:.6f}, {dqz:.6f}, {dqy:.6f}) (1/nm)"
         )
 
         ##############################################################

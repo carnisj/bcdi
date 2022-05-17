@@ -21,7 +21,7 @@ from bcdi.utils import validation as valid
 module_logger = logging.getLogger(__name__)
 
 
-def beamstop_correction(data, setup, debugging=False):
+def beamstop_correction(data, setup, debugging=False, **kwargs):
     """
     Correct absorption from the beamstops during P10 forward CDI experiment.
 
@@ -29,19 +29,23 @@ def beamstop_correction(data, setup, debugging=False):
      shape (nby, nbx)
     :param setup: an instance of the class Setup
     :param debugging: set to True to see plots
+    :param kwargs:
+     - 'logger': an optional logger
+
     :return: the corrected data
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=data, ndim=(2, 3))
     energy = setup.energy
     if not isinstance(energy, Real):
         raise TypeError(f"Energy should be a number in eV, not a {type(energy)}")
 
-    print(f"Applying beamstop correction for the X-ray energy of {energy}eV")
+    logger.info(f"Applying beamstop correction for the X-ray energy of {energy}eV")
 
     if energy not in [8200, 8700, 10000, 10235]:
-        print(
-            "no beam stop information for the X-ray energy of {:d}eV,"
-            " defaulting to the correction for 8700 eV".format(int(energy))
+        logger.info(
+            f"no beam stop information for the X-ray energy of {int(energy):d}eV,"
+            " defaulting to the correction for 8700 eV"
         )
         energy = 8700
 
@@ -321,7 +325,7 @@ def beamstop_correction(data, setup, debugging=False):
     return data
 
 
-def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
+def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False, **kwargs):
     """
     Check for overlaps of the sample rotation motor position in forward CDI experiment.
 
@@ -336,13 +340,17 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
      In case of padding the length changes. A frame whose index is set to 1 means
      that it is used, 0 means not used, -1 means padded (added) frame.
     :param debugging: True to have more printed comments
+    :param kwargs:
+     - 'logger': an optional logger
+
     :return: updated data, mask, detector cdi_angle, frames_logical
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     detector_angle = np.zeros(len(cdi_angle))
     # flip the rotation axis in order to compensate the rotation of the Ewald sphere
     # due to sample rotation
-    print(
+    logger.info(
         "Reverse the rotation direction to compensate the rotation of the Ewald sphere"
     )
     for idx, item in enumerate(cdi_angle):
@@ -359,7 +367,9 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
         )  # set frames_logical to 0 if duplicated angle
 
     if debugging:
-        print("frames_logical after checking duplicated angles:\n", frames_logical)
+        logger.info(
+            f"frames_logical after checking duplicated angles: {frames_logical}"
+        )
 
     # find first duplicated angle
     try:
@@ -370,15 +380,14 @@ def check_cdi_angle(data, mask, cdi_angle, frames_logical, debugging=False):
             detector_angle[index_duplicated] = detector_angle[index_duplicated] - 0.0001
         else:
             detector_angle[index_duplicated] = detector_angle[index_duplicated] + 0.0001
-        print(
-            "RegularGridInterpolator cannot take duplicated values: shifting frame",
-            index_duplicated,
-            "by 1/10000 degrees for the interpolation",
+        logger.info(
+            "RegularGridInterpolator cannot take duplicated values: shifting frame "
+            f"{index_duplicated} by 1/10000 degrees for the interpolation",
         )
 
         frames_logical[index_duplicated] = 1
     except IndexError:  # no duplicated angle
-        print("no duplicated angle")
+        logger.info("no duplicated angle")
 
     data = data[np.nonzero(frames_logical)[0], :, :]
     mask = mask[np.nonzero(frames_logical)[0], :, :]
@@ -415,10 +424,12 @@ def grid_cdi(
      - 'fill_value': tuple of two real numbers, fill values to use for pixels outside
        of the interpolation range. The first value is for the data, the second for the
        mask. Default is (0, 0)
+     - 'logger': an optional logger
 
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard)
     """
+    logger = kwargs.get("logger", module_logger)
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     if setup.name == "P10_SAXS":
@@ -443,10 +454,9 @@ def grid_cdi(
         debugging=debugging,
     )
     if debugging:
-        print("\ncdi_angle", cdi_angle)
-    nbz, nby, nbx = data.shape
-    print("\nData shape after check_cdi_angle and before regridding:", nbz, nby, nbx)
-    print("\nAngle range:", cdi_angle.min(), cdi_angle.max())
+        logger.info(f"cdi_angle {cdi_angle}")
+    logger.info(f"Data shape after check_cdi_angle and before regridding: {data.shape}")
+    logger.info(f"Angle range: {cdi_angle.min()}deg - {cdi_angle.max()}deg")
 
     (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_cdi(
         arrays=(data, mask),
@@ -478,9 +488,9 @@ def grid_cdi(
     # detector Y vertical down, opposite to qz vertical up
     pivot_x = int(numx - corrected_dirbeam[1])
     # detector X inboard at P10, opposite to qy outboard
-    print(
-        "\nOrigin of the reciprocal space (Qx,Qz,Qy): "
-        f"({pivot_z}, {pivot_y}, {pivot_x})\n"
+    logger.info(
+        "Origin of the reciprocal space (Qx,Qz,Qy): "
+        f"({pivot_z}, {pivot_y}, {pivot_x})"
     )
 
     # plot the gridded data
@@ -609,6 +619,7 @@ def load_cdi_data(
      - 'frames_pattern': 1D array of int, of length data.shape[0]. If
        frames_pattern is 0 at index, the frame at data[index] will be skipped,
        if 1 the frame will added to the stack.
+     - 'logger': an optional logger
 
     :return:
      - the 3D data and mask arrays
@@ -618,6 +629,7 @@ def load_cdi_data(
      - the monitor values used for the intensity normalization
 
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_item(bin_during_loading, allowed_types=bool, name="bin_during_loading")
     # check and load kwargs
     valid.valid_kwargs(
@@ -660,7 +672,7 @@ def load_cdi_data(
     if photon_threshold != 0:
         rawmask[rawdata < photon_threshold] = 1
         rawdata[rawdata < photon_threshold] = 0
-        print("Applying photon threshold before binning: < ", photon_threshold)
+        logger.info(f"Applying photon threshold before binning: < {photon_threshold}")
 
     ####################################################################################
     # bin data and mask in the detector plane if not already done during loading       #
@@ -669,11 +681,9 @@ def load_cdi_data(
     if not bin_during_loading and (
         (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1)
     ):
-        print(
-            "Binning the data: detector vertical axis by",
-            setup.detector.binning[1],
-            ", detector horizontal axis by",
-            setup.detector.binning[2],
+        logger.info(
+            f"Binning the data: detector vertical axis by {setup.detector.binning[1]}, "
+            f"detector horizontal axis by {setup.detector.binning[2]}"
         )
         rawdata = util.bin_data(
             rawdata,
@@ -695,6 +705,7 @@ def load_cdi_data(
         roi=setup.detector.roi,
         binning=setup.detector.binning[1:],
         pad_value=(0, 1),
+        logger=logger,
     )
 
     return rawdata, rawmask, frames_logical, monitor
@@ -720,7 +731,7 @@ def reload_cdi_data(
      monitor, 'sum_roi' to normalize by the integrated intensity in a defined region
      of interest
     :param debugging:  set to True to see plots
-    :parama kwargs:
+    :param kwargs:
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
@@ -748,15 +759,14 @@ def reload_cdi_data(
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
 
-    print(
-        (data < 0).sum(), " negative data points masked"
-    )  # can happen when subtracting a background
+    logger.info(f"{(data < 0).sum()} negative data points masked")
+    # can happen when subtracting a background
     mask[data < 0] = 1
     data[data < 0] = 0
 
     # normalize by the incident X-ray beam intensity
     if normalize_method == "skip":
-        print("Skip intensity normalization")
+        logger.info("Skip intensity normalization")
         monitor = []
     else:
         if normalize_method == "sum_roi":
@@ -771,7 +781,7 @@ def reload_cdi_data(
                 setup=setup,
             )
 
-        print("Intensity normalization using " + normalize_method)
+        logger.info(f"Intensity normalization using {normalize_method}")
         data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
@@ -791,7 +801,7 @@ def reload_cdi_data(
             max(0, abs(setup.detector.roi[0])),
             max(0, abs(setup.detector.roi[2])),
         )
-        print("Paddind the data to the shape defined by the ROI")
+        logger.info("Paddind the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,
@@ -816,16 +826,14 @@ def reload_cdi_data(
     if photon_threshold != 0:
         mask[data < photon_threshold] = 1
         data[data < photon_threshold] = 0
-        print("Applying photon threshold before binning: < ", photon_threshold)
+        logger.info(f"Applying photon threshold before binning: < {photon_threshold}")
 
     # bin data and mask in the detector plane if needed
     # binning in the stacking dimension is done at the very end of the data processing
     if (setup.detector.binning[1] != 1) or (setup.detector.binning[2] != 1):
-        print(
-            "Binning the data: detector vertical axis by",
-            setup.detector.binning[1],
-            ", detector horizontal axis by",
-            setup.detector.binning[2],
+        logger.info(
+            f"Binning the data: detector vertical axis by {setup.detector.binning[1]}, "
+            f"detector horizontal axis by {setup.detector.binning[2]}"
         )
         data = util.bin_data(
             data,
