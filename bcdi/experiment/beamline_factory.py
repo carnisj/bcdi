@@ -51,7 +51,6 @@ API Reference
 
 import logging
 from abc import ABC, abstractmethod
-from math import hypot
 from numbers import Real
 
 import numpy as np
@@ -635,7 +634,7 @@ class BeamlineSaxs(Beamline):
             interp_angle[x_interp == 0]
         )
 
-        interp_radius = np.multiply(sign_array, hypot(x_interp, z_interp))
+        interp_radius = np.multiply(sign_array, np.hypot(x_interp, z_interp))
 
         if debugging:
             gu.imshow_plot(
