@@ -155,7 +155,7 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
     is_intensity = np.zeros(data.shape[0])
     is_intensity[np.argwhere(data.sum(axis=(1, 2)))] = 1
     if is_intensity.sum() != data.shape[0]:
-        logger.info("\nEmpty frame detected, cropping the data\n")
+        logger.info("Empty frame detected, cropping the data")
 
     # update frames_logical
     frames_logical = np.multiply(frames_logical, is_intensity)
@@ -190,8 +190,8 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
 
     logger.info(
-        "number of masked pixels due to detector gaps ="
-        f" {int(mask.sum())} on a total of {nbx*nby}"
+        "number of masked pixels due to detector gaps = "
+        f"{int(mask.sum())} on a total of {nbx*nby}"
     )
     meandata = data.mean(axis=0)  # 2D
     vardata = 1 / data.var(axis=0)  # 2D
@@ -230,7 +230,7 @@ def check_pixels(data, mask, debugging=False, **kwargs):
         / nbz
     )
     logger.info(
-        "var_mean={:.2f}, 1/var_threshold={:.2f}".format(var_mean, 1 / var_singlephoton)
+        f"var_mean={var_mean:.2f}, 1/var_threshold={1 / var_singlephoton:.2f}"
     )
 
     # mask hotpixels with zero variance
@@ -239,16 +239,14 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     # this includes only hotpixels since zero intensity pixels were set to var_mean
     mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
     vardata[vardata == np.inf] = 0  # update the array
-    logger.info("number of zero variance hotpixels = {:d}".format(int(temp_mask.sum())))
+    logger.info(f"number of zero variance hotpixels = {int(temp_mask.sum()):d}")
 
     # filter out pixels which have a variance smaller that the threshold
     # (note that  vardata = 1/data.var())
     indices_badpixels = np.nonzero(vardata > 1 / var_singlephoton)
     mask[indices_badpixels] = 1  # mask is 2D
     logger.info(
-        "number of pixels with too low variance = {:d}".format(
-            indices_badpixels[0].shape[0]
-        )
+        f"number of pixels with too low variance = {indices_badpixels[0].shape[0]:d}"
     )
 
     # update the data array
@@ -420,16 +418,15 @@ def normalize_dataset(
         )  # the first axis is the normalization axis
 
     logger.info(
-        "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
-            monitor.min(), monitor.max(), monitor.mean()
-        )
+        "Monitor min, max, mean: "
+        f"{monitor.min():.1f}, {monitor.max():.1f}, {monitor.mean():.1f}"
     )
 
     if norm_to_min:
-        logger.info("Data normalization by monitor.min()/monitor\n")
+        logger.info("Data normalization by monitor.min()/monitor")
         monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
-        logger.info("Data normalization by monitor.max()/monitor\n")
+        logger.info("Data normalization by monitor.max()/monitor")
         monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
@@ -750,17 +747,17 @@ class Loader(ABC):
         self.logger.info(
             "User-defined ROI size (VxH): "
             f"({setup.detector.roi[1] - setup.detector.roi[0]}, "
-            f"({setup.detector.roi[3] - setup.detector.roi[2]}, "
+            f"{setup.detector.roi[3] - setup.detector.roi[2]})"
         )
         self.logger.info(
             "Detector physical size without binning (VxH): "
             f"({setup.detector.unbinned_pixel_number[0]}, "
-            f"({setup.detector.unbinned_pixel_number[1]}, "
+            f"{setup.detector.unbinned_pixel_number[1]})"
         )
         self.logger.info(
             "Detector size with binning (VxH): "
             f"({setup.detector.unbinned_pixel_number[0] // setup.detector.binning[1]}, "
-            f"({setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2]}, "
+            f"{setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2]})"
         )
 
         if setup.filtered_data:
@@ -835,7 +832,7 @@ class Loader(ABC):
             if normalize == "skip":
                 self.logger.info("Skip intensity normalization")
             else:
-                self.logger.info("Intensity normalization using " + normalize)
+                self.logger.info(f"Intensity normalization using {normalize}")
                 data, monitor = normalize_dataset(
                     array=data,
                     monitor=monitor,
@@ -1101,8 +1098,8 @@ class LoaderID01(Loader):
             except ValueError:
                 try:
                     self.logger.info(
-                        setup.detector.counter("ID01"),
-                        "not in the list, trying 'ccd_n'",
+                        f"{setup.detector.counter('ID01')} not in the list, "
+                        "trying 'ccd_n'",
                     )
                     ccdn = labels_data[labels.index("ccd_n"), :]
                 except ValueError:
@@ -1279,7 +1276,7 @@ class LoaderID01(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except ValueError:  # device not in the list
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
@@ -1840,7 +1837,7 @@ class LoaderSIXS(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = getattr(file, device_name)
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except AttributeError:
             self.logger.info(f"No device {device_name} in the logfile")
             device_values = []
@@ -2162,7 +2159,7 @@ class Loader34ID(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except ValueError:  # device not in the list
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
@@ -2340,7 +2337,7 @@ class LoaderP10(Loader):
                             idx += 1
                         except KeyError:
                             break
-            self.logger.info("Number of points :", nb_img)
+            self.logger.info(f"Number of points: {nb_img}")
         else:
             # create the template for the image files
             if len(setup.custom_images) > 0:
@@ -2597,7 +2594,7 @@ class LoaderP10(Loader):
         if index_device is None:
             self.logger.info(f"no device {device_name} in the logfile")
         else:
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         return np.asarray(device_values)
 
     def read_monitor(self, setup: "Setup", **kwargs):
@@ -2647,7 +2644,7 @@ class LoaderP10SAXS(LoaderP10):
                     # sprz or hprz (SAXS) scanned
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
-                    self.logger.info(words, "  Index Phi=", index_phi)
+                    self.logger.info(f"{words}, Index Phi= {index_phi}")
                 if index_phi is not None and valid.is_float(words[0]):
                     # we are reading data and index_phi is defined
                     positions.append(float(words[index_phi]))
@@ -2741,10 +2738,10 @@ class LoaderCRISTAL(Loader):
                 actuator_name = actuator_name.upper()
                 if actuator_name not in file[root].keys():
                     self.logger.info(
-                        f"\nCould not find the entry for the actuator'{actuator_name}'"
+                        f"Could not find the entry for the actuator'{actuator_name}'"
                     )
                     self.logger.info(
-                        "list of available actuators: " f"{list(file[root].keys())}\n"
+                        f"list of available actuators: {list(file[root].keys())}"
                     )
                     return 0
 
@@ -2761,12 +2758,12 @@ class LoaderCRISTAL(Loader):
                     ][:]
                 except KeyError:  # nothing else that we can do
                     self.logger.info(
-                        f"\nCould not find the field '{field_name}'"
+                        f"Could not find the field '{field_name}'"
                         f" in the actuator'{actuator_name}'"
                     )
                     self.logger.info(
-                        "list of available fields:"
-                        f" {list(file[root + '/' + actuator_name].keys())}\n"
+                        "list of available fields: "
+                        f"{list(file[root + '/' + actuator_name].keys())}"
                     )
                     return 0
         return util.unpack_array(dataset)
@@ -2822,8 +2819,8 @@ class LoaderCRISTAL(Loader):
                 if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
                     # founc the key corresponding to the detector
                     self.logger.info(
-                        f"subdirectory '{key}' contains the detector images,"
-                        f" shape={obj_shape}"
+                        f"subdirectory '{key}' contains the detector images, "
+                        f"shape={obj_shape}"
                     )
                     return file[root + data_path + "/" + key][:]
         raise ValueError(
@@ -2957,8 +2954,8 @@ class LoaderCRISTAL(Loader):
             if setup.energy is not None and abs(energy - setup.energy) > 1:
                 # difference larger than 1 eV
                 self.logger.info(
-                    f"\nWarning: user-defined energy = {setup.energy:.1f} eV different "
-                    f"from the energy recorded in the datafile = {energy[0]:.1f} eV\n"
+                    f"Warning: user-defined energy = {setup.energy:.1f} eV different "
+                    f"from the energy recorded in the datafile = {energy[0]:.1f} eV"
                 )
 
             scanned_motor = self.cristal_load_motor(
@@ -3039,7 +3036,7 @@ class LoaderCRISTAL(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = file["/" + group_key + "/scan_data/" + device_name][:]
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except KeyError:
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
@@ -3272,7 +3269,7 @@ class LoaderNANOMAX(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = file["/" + group_key + "/measurement/" + device_name][:]
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except KeyError:
             self.logger.info(f"No device {device_name} in the logfile")
             device_values = []
