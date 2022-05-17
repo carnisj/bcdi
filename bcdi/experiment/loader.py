@@ -229,9 +229,7 @@ def check_pixels(data, mask, debugging=False, **kwargs):
         * 1
         / nbz
     )
-    logger.info(
-        f"var_mean={var_mean:.2f}, 1/var_threshold={1 / var_singlephoton:.2f}"
-    )
+    logger.info(f"var_mean={var_mean:.2f}, 1/var_threshold={1 / var_singlephoton:.2f}")
 
     # mask hotpixels with zero variance
     temp_mask = np.zeros((nby, nbx))
