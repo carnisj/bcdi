@@ -423,12 +423,12 @@ def process_scan(
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = bu.reload_bcdi_data(
-                scan_number=scan_nb,
                 data=data,
                 mask=mask,
+                scan_number=scan_nb,
                 setup=setup,
-                debugging=prm["debug"],
                 normalize=prm["normalize_flux"],
+                debugging=prm["debug"],
                 photon_threshold=prm["loading_threshold"],
                 logger=logger,
             )
