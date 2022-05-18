@@ -429,6 +429,7 @@ def grid_cdi(
     :return: the data and mask interpolated in the laboratory frame, q values
      (downstream, vertical up, outboard)
     """
+    lookup_rotation = {"y+": 1, "y-": -1}
     logger = kwargs.get("logger", module_logger)
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
@@ -446,10 +447,13 @@ def grid_cdi(
     else:
         raise NotImplementedError("Not yet implemented for beamlines other than P10")
 
+    if len(setup.diffractometer.sample_circles) != 1:
+        raise NotImplementedError("Grazing angle not supported for this geometry.")
+
     data, mask, cdi_angle, frames_logical = check_cdi_angle(
         data=data,
         mask=mask,
-        cdi_angle=cdi_angle,
+        cdi_angle=cdi_angle * lookup_rotation[setup.diffractometer.sample_circles[-1]],
         frames_logical=frames_logical,
         debugging=debugging,
     )
