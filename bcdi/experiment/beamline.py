@@ -1328,129 +1328,6 @@ class BeamlineP10(BeamlineGoniometer):
         return mymatrix, q_offset
 
 
-class BeamlineP10SAXS(BeamlineSaxs):
-    """
-    Definition of PETRA III P10 beamline for the USAXS setup.
-
-    :param name: name of the beamline
-    """
-
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, **kwargs)
-
-    @property
-    def detector_hor(self):
-        """
-        Horizontal detector orientation expressed in the laboratory frame.
-
-        We look at the detector from upstream, detector X is opposite to the outboard
-        direction. The laboratory frame convention is (z downstream, y vertical,
-        x outboard).
-        """
-        return "x-"
-
-    @property
-    def detector_ver(self):
-        """
-        Vertical detector orientation expressed in the laboratory frame.
-
-        The origin is at the top, detector Y along vertical down. The laboratory frame
-        convention is (z downstream, y vertical, x outboard).
-        """
-        return "y-"
-
-    def goniometer_values(self, setup, **kwargs):
-        """
-        Retrieve goniometer motor positions for a CDI tomographic scan.
-
-        :param setup: the experimental setup: Class Setup
-        :return: a tuple of angular values in degrees (rocking angular step, grazing
-         incidence angles, inplane detector angle, outofplane detector angle). The
-         grazing incidence angles are the positions of circles below the rocking circle.
-        """
-        # load the motor positions
-        phi, energy, detector_distance = self.loader.motor_positions(setup=setup)
-
-        # define the circles of interest for CDI
-        # no circle yet below phi at P10
-        if setup.rocking_angle == "inplane":  # phi rocking curve
-            grazing = (0,)
-            tilt_angle = phi
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-        setup.check_setup(
-            grazing_angle=grazing,
-            inplane_angle=0,
-            outofplane_angle=0,
-            tilt_angle=tilt_angle,
-            detector_distance=detector_distance,
-            energy=energy,
-        )
-
-        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
-        self.sample_angles = (phi,)
-        self.detector_angles = (0, 0)
-        return tilt_angle, grazing, 0, 0
-
-    def process_positions(
-        self,
-        setup,
-        nb_frames,
-        scan_number,
-        frames_logical=None,
-    ):
-        """
-        Load and crop/pad motor positions depending on the number of frames at P10.
-
-        The current number of frames may be different from the original number of frames
-        if the data was cropped/padded, and motor values must be processed accordingly.
-
-        :param setup: an instance of the class Setup
-        :param nb_frames: the number of frames in the current dataset
-        :param scan_number: the scan number to load
-        :param frames_logical: array of length the number of measured frames.
-         In case of cropping/padding the number of frames changes. A frame whose
-         index is set to 1 means that it is used, 0 means not used, -1 means padded
-         (added) frame
-        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
-        """
-        # TODO adapt this to USAXS
-        mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
-            setup=setup,
-            nb_frames=nb_frames,
-            scan_number=scan_number,
-            frames_logical=frames_logical,
-        )
-
-        # eventually crop/pad motor values if the provided dataset was further
-        # cropped/padded
-        self.logger.info(f"chi {chi}")
-        self.logger.info(f"mu {mu}")
-        if setup.rocking_angle == "outofplane":  # om rocking curve
-            self.logger.info(f"phi {phi}")
-            nb_steps = len(om)
-            tilt_angle = (om[1:] - om[0:-1]).mean()
-            om = self.process_tilt(
-                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
-            )
-        elif setup.rocking_angle == "inplane":  # phi rocking curve
-            self.logger.info(f"om {om}")
-            nb_steps = len(phi)
-            tilt_angle = (phi[1:] - phi[0:-1]).mean()
-            phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
-            )
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
-
-        return util.bin_parameters(
-            binning=setup.detector.binning[0],
-            nb_frames=nb_frames,
-            params=[mu, om, chi, phi, gamma, delta, energy],
-        )
-
-
 class BeamlineSIXS(BeamlineGoniometer):
     """
     Definition of SOLEIL SIXS beamline.
@@ -2054,3 +1931,241 @@ class Beamline34ID(BeamlineGoniometer):
             raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
         return mymatrix, q_offset
+
+
+class BeamlineP10SAXS(BeamlineSaxs):
+    """
+    Definition of PETRA III P10 beamline for the USAXS setup.
+
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x-"
+
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a CDI tomographic scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        phi, energy, detector_distance = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest for CDI
+        # no circle yet below phi at P10
+        if setup.rocking_angle == "inplane":  # phi rocking curve
+            grazing = (0,)
+            tilt_angle = phi
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=0,
+            outofplane_angle=0,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
+        self.sample_angles = (phi,)
+        self.detector_angles = (0, 0)
+        return tilt_angle, grazing, 0, 0
+
+    def process_positions(
+        self,
+        setup,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at P10.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        # TODO adapt this to USAXS
+        mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
+            setup=setup,
+            nb_frames=nb_frames,
+            scan_number=scan_number,
+            frames_logical=frames_logical,
+        )
+
+        # eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        self.logger.info(f"chi {chi}")
+        self.logger.info(f"mu {mu}")
+        if setup.rocking_angle == "outofplane":  # om rocking curve
+            self.logger.info(f"phi {phi}")
+            nb_steps = len(om)
+            tilt_angle = (om[1:] - om[0:-1]).mean()
+            om = self.process_tilt(
+                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+            )
+        elif setup.rocking_angle == "inplane":  # phi rocking curve
+            self.logger.info(f"om {om}")
+            nb_steps = len(phi)
+            tilt_angle = (phi[1:] - phi[0:-1]).mean()
+            phi = self.process_tilt(
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+            )
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[mu, om, chi, phi, gamma, delta, energy],
+        )
+
+
+class BeamlineID27SAXS(BeamlineSaxs):
+    """
+    Definition of ID27 beamline for the high-energy BCDI setup.
+
+    The detector is not on a goniometer, its plane is always perpendiculat to the direct
+    beam.
+
+    :param name: name of the beamline
+    """
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    @property
+    def detector_hor(self):
+        """
+        Horizontal detector orientation expressed in the laboratory frame.
+
+        We look at the detector from upstream, detector X is opposite to the outboard
+        direction. The laboratory frame convention is (z downstream, y vertical,
+        x outboard).
+        """
+        return "x-"  # TODO check
+
+    @property
+    def detector_ver(self):
+        """
+        Vertical detector orientation expressed in the laboratory frame.
+
+        The origin is at the top, detector Y along vertical down. The laboratory frame
+        convention is (z downstream, y vertical, x outboard).
+        """
+        return "y-"  # TODO check
+
+    def goniometer_values(self, setup, **kwargs):
+        """
+        Retrieve goniometer motor positions for a scan.
+
+        :param setup: the experimental setup: Class Setup
+        :return: a tuple of angular values in degrees (rocking angular step, grazing
+         incidence angles, inplane detector angle, outofplane detector angle). The
+         grazing incidence angles are the positions of circles below the rocking circle.
+        """
+        # load the motor positions
+        nath, energy, detector_distance = self.loader.motor_positions(setup=setup)
+
+        # define the circles of interest
+        # no circle yet below nath at ID27
+        if setup.rocking_angle == "inplane":  # nath rocking curve
+            grazing = (0,)
+            tilt_angle = nath
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        setup.check_setup(
+            grazing_angle=grazing,
+            inplane_angle=0,
+            outofplane_angle=0,
+            tilt_angle=tilt_angle,
+            detector_distance=detector_distance,
+            energy=energy,
+        )
+
+        # ID27 SAXS goniometer, 1S + 0D (sample: nath / detector: None)
+        self.sample_angles = (nath,)
+        self.detector_angles = (0, 0)
+        return tilt_angle, grazing, 0, 0
+
+    def process_positions(
+        self,
+        setup,
+        nb_frames,
+        scan_number,
+        frames_logical=None,
+    ):
+        """
+        Load and crop/pad motor positions depending on the number of frames at ID27.
+
+        The current number of frames may be different from the original number of frames
+        if the data was cropped/padded, and motor values must be processed accordingly.
+
+        :param setup: an instance of the class Setup
+        :param nb_frames: the number of frames in the current dataset
+        :param scan_number: the scan number to load
+        :param frames_logical: array of length the number of measured frames.
+         In case of cropping/padding the number of frames changes. A frame whose
+         index is set to 1 means that it is used, 0 means not used, -1 means padded
+         (added) frame
+        :return: a tuple of 1D arrays (sample circles, detector circles, energy)
+        """
+        nath, energy, _ = super().process_positions(
+            setup=setup,
+            nb_frames=nb_frames,
+            scan_number=scan_number,
+            frames_logical=frames_logical,
+        )
+
+        # eventually crop/pad motor values if the provided dataset was further
+        # cropped/padded
+        if setup.rocking_angle == "inplane":  # nath rocking curve
+            nb_steps = len(nath)
+            tilt_angle = (nath[1:] - nath[0:-1]).mean()
+            nath = self.process_tilt(
+                nath, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+            )
+        else:
+            raise ValueError('Wrong value for "rocking_angle" parameter')
+
+        return util.bin_parameters(
+            binning=setup.detector.binning[0],
+            nb_frames=nb_frames,
+            params=[nath, energy],
+        )
