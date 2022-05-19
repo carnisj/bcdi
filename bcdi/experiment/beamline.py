@@ -38,6 +38,8 @@ def create_beamline(name, **kwargs):
     """
     if name in {"ID01", "ID01BLISS"}:
         return BeamlineID01(name=name, **kwargs)
+    if name == "ID27":
+        return BeamlineID27(name=name, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
         return BeamlineSIXS(name=name, **kwargs)
     if name == "34ID":
@@ -2056,7 +2058,7 @@ class BeamlineP10SAXS(BeamlineSaxs):
         )
 
 
-class BeamlineID27SAXS(BeamlineSaxs):
+class BeamlineID27(BeamlineSaxs):
     """
     Definition of ID27 beamline for the high-energy BCDI setup.
 

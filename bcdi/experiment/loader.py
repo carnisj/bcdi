@@ -92,6 +92,8 @@ def create_loader(name, sample_offsets, **kwargs):
     """
     if name == "ID01":
         return LoaderID01(name=name, sample_offsets=sample_offsets, **kwargs)
+    if name == "ID27":
+        return LoaderID27(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "ID01BLISS":
         return LoaderID01BLISS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
@@ -1352,7 +1354,7 @@ class LoaderID01BLISS(Loader):
         :param name: str, the name of the beamline, e.g. 'ID01BLISS'
         :param root_folder: str, the root directory of the experiment
         :param scan_number: the scan number to load
-        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param filename: not used at ID01BLISS
         :param template_imagefile: str, template for data file name,
          e.g. 'ihhc3715_sample5.h5'
         :return: an instance of a context manager ContextFile
@@ -1387,7 +1389,7 @@ class LoaderID01BLISS(Loader):
 
          - homedir: the path of the scan folder
          - default_dirname: the name of the folder containing images / raw data
-         - specfile: not used at CRISTAL
+         - specfile: not used at ID01BLISS
          - template_imagefile: the template for data/image file names
 
         """
@@ -1582,6 +1584,239 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
             monitor_name = setup.actuators.get("monitor", "imon")
+        else:
+            monitor_name = "imon"
+        return self.read_device(
+            setup=setup, scan_number=scan_number, device_name=monitor_name
+        )
+
+
+class LoaderID27(Loader):
+    """Loader for ESRF ID27 beamline."""
+
+    def create_logfile(
+        self,
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
+        """
+        Create the logfile, which is the h5 file for ID27.
+
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'ID27'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for data file name,
+         e.g. 'Ptx7_0007.h5'
+        :return: an instance of a context manager ContextFile
+        """
+        valid.valid_container(datadir, container_types=str, name="datadir")
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+        filename = util.find_file(
+            filename=template_imagefile, default_folder=datadir, logger=self.logger
+        )
+        return ContextFile(
+            filename=filename, open_func=h5py.File, scan_number=scan_number
+        )
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at ID27.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: not used at ID27
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder
+        default_dirname = ""
+        return homedir, default_dirname, None, template_imagefile
+
+    @safeload
+    def load_data(
+        self,
+        setup: "Setup",
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
+        **kwargs,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
+        """
+        Load ID27 data, apply filters and concatenate it for phasing.
+
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
+        :return:
+         - the 3D data array in the detector frame
+         - the 2D mask array
+         - the monitor values for normalization
+         - the detector region of interest used for loading the data
+
+        """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        key_path = sample_name + "_" + str(scan_number) + ".1/measurement/"  # TODO check the path
+        try:
+            raw_data = file[key_path + "mpx1x4"]
+        except KeyError:
+            self.logger.info("Looking for mpxgaas key")
+            try:
+                raw_data = file[key_path + "mpxgaas"]
+            except KeyError:
+                raise KeyError("No detector key found")
+
+        # find the number of images
+        nb_img = raw_data.shape[0]
+
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
+            detector=setup.detector,
+            setup=setup,
+            normalize=normalize,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
+        )
+
+        # loop over frames, mask the detector and normalize / bin
+        for idx in range(nb_img):
+            data[idx, :, :], mask2d, monitor[idx] = load_frame(
+                frame=raw_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=setup.detector,
+                loading_roi=loading_roi,
+                flatfield=flatfield,
+                background=background,
+                hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+        return data, mask2d, monitor, loading_roi
+
+    @safeload
+    def motor_positions(
+        self, setup: "Setup", **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
+        """
+        Load the scan data and extract motor positions.
+
+        :param setup: an instance of the class Setup
+        :return: (nath, energy) values
+        """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        # load positioners
+        positioners = file[
+            sample_name + "_" + str(scan_number) + ".1/instrument/positioners"  # TODO check this
+        ]
+        if not setup.custom_scan:
+            nath = util.cast(positioners["nath"][()], target_type=float)
+            # for now, return the setup.energy
+            energy = setup.energy
+
+        else:  # manually defined custom scan
+            nath = setup.custom_motors["nath"]
+            energy = setup.energy
+
+        # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+        detector_distance = setup.distance
+        return nath, energy, detector_distance
+
+    @safeload
+    def read_device(self, setup: "Setup", device_name: str, **kwargs) -> np.ndarray:
+        """
+        Extract the scanned device values at ID27 beamline.
+
+        :param setup: an instance of the class Setup
+        :param device_name: name of the scanned device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        # load positioners
+        positioners = file[
+            setup.detector.sample_name + "_" + str(scan_number) + ".1/measurement"  # TODO check this
+        ]
+        try:
+            device_values = util.cast(positioners[device_name][()], target_type=float)
+        except KeyError:
+            self.logger.info(f"No device {device_name} found in the logfile")
+            device_values = []
+        return np.asarray(device_values)
+
+    def read_monitor(self, setup: "Setup", **kwargs):
+        """
+        Load the default monitor for a dataset measured at ID27.
+
+        :param setup: an instance of the class Setup
+        :return: the default monitor values
+        """
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor", "imon")  # TODO check the name of the monitor
         else:
             monitor_name = "imon"
         return self.read_device(

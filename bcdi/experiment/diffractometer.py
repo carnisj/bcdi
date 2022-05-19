@@ -99,6 +99,13 @@ def create_geometry(beamline, sample_offsets=None):
             default_offsets=(0, 0, 0),
             user_offsets=sample_offsets,
         )
+    if beamline == "ID27":
+        return Geometry(
+            sample_circles=["y+"],  # TODO check the rotation direction
+            detector_circles=[],
+            default_offsets=(0,),
+            user_offsets=sample_offsets,
+        )
     if beamline in {"SIXS_2018", "SIXS_2019"}:
         return Geometry(
             sample_circles=["x-", "y+"],
