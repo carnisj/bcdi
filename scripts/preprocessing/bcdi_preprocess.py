@@ -19,7 +19,8 @@ from bcdi.utils.parser import ConfigParser, add_cli_parameters
 from bcdi.utils.snippets_logging import configure_logging
 
 here = Path(__file__).parent
-CONFIG_FILE = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
+CONFIG_FILE = str(here.parents[1] / "bcdi/examples/ID27_config_preprocessing_cdi.yml")
+# "bcdi/examples/S11_config_preprocessing.yml")
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
@@ -268,6 +269,13 @@ Usage:
     :param energy: e.g. 9000
      X-ray energy in eV, it can be a number or a list in case of energy scans. Leave
      None to use the default from the log file.
+    :param direct_beam: e.g. [125, 362]
+     [vertical, horizontal]
+     BCDI: direct beam position on the unbinned, full detector measured with detector
+     angles given by `dirbeam_detector_angles`. It will be used to calculate the real
+     detector angles for the measured Bragg peak. Leave None for no correction.
+     CDI: direct beam position on the unbinned, full detector measured at the detector
+     position given by dirbeam_detector_position. It will be used to calculate q values.
     :param custom_motors: e.g. {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0,
      "delta": -0.5685, "gamma": 33.3147}
      use this to declare motor positions if there is not log file, None otherwise
@@ -279,11 +287,6 @@ Usage:
      if True it rotates the crystal to align q, along one axis of the array. It is used
      only when interp_method is 'linearization'
     :param ref_axis_q: e.g. "y"  # q will be aligned along that axis
-    :param direct_beam: e.g. [125, 362]
-     [vertical, horizontal], direct beam position on the unbinned, full detector
-     measured with detector angles given by `dirbeam_detector_angles`. It will be used
-     to calculate the real detector angles for the measured Bragg peak. Leave None for
-     no correction.
     :param dirbeam_detector_angles: e.g. [1, 25]
      [outofplane, inplane] detector angles in degrees for the direct beam measurement.
      Leave None for no correction
