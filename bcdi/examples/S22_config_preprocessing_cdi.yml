@@ -60,7 +60,7 @@ save_as_int: False
 ######################################
 beamline: "P10_SAXS"
 # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: "P10_SAXS"
+# supported beamlines: "P10_SAXS", "ID27"
 actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
@@ -88,12 +88,12 @@ custom_monitor: None
 ###############################
 # detector related parameters #
 ###############################
-detector: "Eiger4M"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
+detector: "Eiger4M"  # "Maxipix", "Eiger2M", "Eiger4M", "Eiger9M", "Merlin" or "Timepix"
 detector_on_goniometer: False  # True if the detector is on a goniometer, False if its
 # plane is alway perpendicular to the direct beam independently of its position.
-mask_beamstop: True
+mask_beamstop: False
 # True to apply beamstop correction (direct beam on the detector, masked by a beam stop)
-phasing_binning: [1, 3, 3]  # binning to apply to the data
+phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
