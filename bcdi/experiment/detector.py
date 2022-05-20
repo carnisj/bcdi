@@ -86,6 +86,8 @@ def create_detector(name, **kwargs):
         return Eiger2M(name=name, **kwargs)
     if name == "Eiger4M":
         return Eiger4M(name=name, **kwargs)
+    if name == "Eiger9M":
+        return Eiger9M(name=name, **kwargs)
     if name == "Timepix":
         return Timepix(name=name, **kwargs)
     if name == "Merlin":
@@ -832,6 +834,63 @@ class Eiger4M(Detector):
         Convention: (vertical, horizontal)
         """
         return 2167, 2070
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 75e-06, 75e-06
+
+
+class Eiger9M(Detector):
+    """Implementation of the Eiger9M detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.saturation_threshold = 4000000000  # TODO check this
+
+    def _mask_gaps(self, data, mask):
+        """
+        Mask the gaps between sensors in the detector.
+
+        :param data: a 2D numpy array
+        :param mask: a 2D numpy array of the same shape as data
+        :return:
+
+         - the masked data
+         - the updated mask
+
+        """
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
+        # TODO check this
+        # data[:, 0:1] = 0
+        # data[:, -1:] = 0
+        # data[0:1, :] = 0
+        # data[-1:, :] = 0
+        # data[:, 1029:1041] = 0
+        # data[513:552, :] = 0
+        # data[1064:1103, :] = 0
+        # data[1615:1654, :] = 0
+        #
+        # mask[:, 0:1] = 1
+        # mask[:, -1:] = 1
+        # mask[0:1, :] = 1
+        # mask[-1:, :] = 1
+        # mask[:, 1029:1041] = 1
+        # mask[513:552, :] = 1
+        # mask[1064:1103, :] = 1
+        # mask[1615:1654, :] = 1
+        return data, mask
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 3262, 3108
 
     @property
     def unbinned_pixel_size(self):
