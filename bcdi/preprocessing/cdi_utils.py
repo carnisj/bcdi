@@ -13,7 +13,7 @@ from numbers import Real
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bcdi.experiment import loader
+from bcdi.constants import BEAMLINES_SAXS
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -433,19 +433,23 @@ def grid_cdi(
     logger = kwargs.get("logger", module_logger)
     fill_value = kwargs.get("fill_value", (0, 0))
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
-    if setup.name == "P10_SAXS":
-        if setup.rocking_angle == "inplane":
-            if setup.custom_scan:
-                cdi_angle = setup.custom_motors["hprz"]
+    if setup.rocking_angle == "inplane":
+        if setup.custom_scan:
+            if setup.name == "P10_SAXS":
+                cdi_angle = setup.custom_motors["hprz"]  # TODO solve this
+            elif setup.name == "ID27":
+                cdi_angle = setup.custom_motors["nath"]  # TODO solve this
             else:
-                cdi_angle, _, _ = setup.loader.motor_positions(setup=setup)
-                # second return value is the X-ray energy, third the detector distance
+                raise NotImplementedError(
+                    f"Not yet implemented for beamlines other than {BEAMLINES_SAXS}"
+                )
         else:
-            raise ValueError(
-                "out-of-plane rotation not yet implemented for forward CDI data"
-            )
+            cdi_angle, _, _ = setup.loader.motor_positions(setup=setup)
+            # second return value is the X-ray energy, third the detector distance
     else:
-        raise NotImplementedError("Not yet implemented for beamlines other than P10")
+        raise ValueError(
+            "out-of-plane rotation not yet implemented for forward CDI data"
+        )
 
     if len(setup.diffractometer.sample_circles) != 1:
         raise NotImplementedError("Grazing angle not supported for this geometry.")
@@ -790,7 +794,7 @@ def reload_cdi_data(
             )
 
         logger.info(f"Intensity normalization using {normalize_method}")
-        data, monitor = loader.normalize_dataset(
+        data, monitor = setup.loader.normalize_dataset(
             array=data,
             monitor=monitor,
             norm_to_min=True,
