@@ -242,7 +242,7 @@ Usage:
      If True, crop the final array within the defined data range, avoiding empty areas
      at the corners of the interpolation window: the defined data is a cylinder
      (of axis the axis of rotation), but the interpolation window is rectangular, with
-     nan values outside of data.
+     nan values outside of data. Set it to False for BCDI (e.g. ID27).
     :param correct_curvature: e.g. True
      True to correcture q values for the curvature of Ewald sphere.
 

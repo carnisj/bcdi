@@ -818,13 +818,13 @@ class Loader(ABC):
             ####################################
             # check for empty frames (no beam) #
             ####################################
-            data, mask3d, monitor, frames_logical = check_empty_frames(
-                data=data,
-                mask=mask3d,
-                monitor=monitor,
-                frames_logical=frames_logical,
-                logger=self.logger,
-            )
+            # data, mask3d, monitor, frames_logical = check_empty_frames(
+            #     data=data,
+            #     mask=mask3d,
+            #     monitor=monitor,
+            #     frames_logical=frames_logical,
+            #     logger=self.logger,
+            # )
 
             ###########################
             # intensity normalization #
@@ -1697,15 +1697,8 @@ class LoaderID27(Loader):
         if sample_name is None:
             raise ValueError("'sample_name' parameter required")
 
-        key_path = sample_name + "_" + str(scan_number) + ".1/measurement/"  # TODO check the path
-        try:
-            raw_data = file[key_path + "mpx1x4"]
-        except KeyError:
-            self.logger.info("Looking for mpxgaas key")
-            try:
-                raw_data = file[key_path + "mpxgaas"]
-            except KeyError:
-                raise KeyError("No detector key found")
+        key_path = str(scan_number) + ".1/measurement/"
+        raw_data = file[key_path + "eiger"]  # Dataset, does not actually the data
 
         # find the number of images
         nb_img = raw_data.shape[0]
@@ -1761,9 +1754,7 @@ class LoaderID27(Loader):
             raise ValueError("'sample_name' parameter required")
 
         # load positioners
-        positioners = file[
-            sample_name + "_" + str(scan_number) + ".1/instrument/positioners"  # TODO check this
-        ]
+        positioners = file[str(scan_number) + ".1/instrument/positioners"]
         if not setup.custom_scan:
             nath = util.cast(positioners["nath"][()], target_type=float)
             # for now, return the setup.energy
@@ -1795,9 +1786,7 @@ class LoaderID27(Loader):
             raise ValueError("'scan_number' parameter required")
 
         # load positioners
-        positioners = file[
-            setup.detector.sample_name + "_" + str(scan_number) + ".1/measurement"  # TODO check this
-        ]
+        positioners = file[str(scan_number) + ".1/measurement"]
         try:
             device_values = util.cast(positioners[device_name][()], target_type=float)
         except KeyError:
@@ -1816,7 +1805,9 @@ class LoaderID27(Loader):
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
-            monitor_name = setup.actuators.get("monitor", "imon")  # TODO check the name of the monitor
+            monitor_name = setup.actuators.get(
+                "monitor", "imon"
+            )  # TODO check the name of the monitor
         else:
             monitor_name = "imon"
         return self.read_device(
