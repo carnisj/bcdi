@@ -132,6 +132,7 @@ def run(prm: Dict[str, Any]) -> None:
                 "detector_distance": None,
                 "energy": None,
                 "fill_value_mask": 0,
+                "fit_datarange": False,
                 "flag_interact": True,
                 "flatfield_file": None,
                 "frames_pattern": None,
