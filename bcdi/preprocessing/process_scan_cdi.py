@@ -211,6 +211,8 @@ def process_scan_cdi(
         root = tk.Tk()
         root.withdraw()
     plt.ion()
+    min_range: Optional[float] = None
+    # used to define the crop size when fit_datarange is True
 
     ####################
     # Setup the logger #
@@ -338,10 +340,10 @@ def process_scan_cdi(
             prm["normalize_flux"] = "skip"
             # we assume that normalization was already performed
             monitor = []  # we assume that normalization was already performed
-            min_range = (nx / 2) * np.sqrt(
-                2
-            )  # used when fit_datarange is True, keep the full array because
-            # we do not know the position of the origin of reciprocal space
+            if prm["fit_datarange"]:
+                min_range = (nx / 2) * np.sqrt(2)
+                # used when fit_datarange is True, keep the full array because
+                # we do not know the position of the origin of reciprocal space
             frames_logical = np.ones(nz)
 
             # bin data and mask if needed
@@ -417,15 +419,17 @@ def process_scan_cdi(
             (setup.direct_beam[1] - setup.detector.roi[2]) / setup.detector.binning[2]
         )
         # updated horizontal direct beam
-        min_range = min(dirbeam, nx - dirbeam)  # crop at the maximum symmetrical range
-        logger.info(
-            "Maximum symmetrical range with defined data along the "
-            f"detector horizontal direction: 2*{min_range} pixels"
-        )
-        if min_range <= 0:
-            raise ValueError(
-                "error in calculating min_range, check the direct beam " "position"
+        if prm["fit_datarange"]:
+            min_range = min(dirbeam, nx - dirbeam)
+            # crop at the maximum symmetrical range
+            logger.info(
+                "Maximum symmetrical range with defined data along the "
+                f"detector horizontal direction: 2*{min_range} pixels"
             )
+            if min_range <= 0:
+                raise ValueError(
+                    "error in calculating min_range, check the direct beam " "position"
+                )
 
         if prm["save_rawdata"]:
             np.savez_compressed(
@@ -983,7 +987,7 @@ def process_scan_cdi(
     ############################################################
     # this is to avoid having large masked areas near the corner of the area
     # which is a side effect of regridding the data from cylindrical coordinates
-    if not prm["use_rawdata"] and prm["fit_datarange"]:
+    if not prm["use_rawdata"] and prm["fit_datarange"] and min_range is not None:
         final_nxz = int(np.floor(min_range * 2 / np.sqrt(2)))
         if (final_nxz % 2) != 0:
             final_nxz = final_nxz - 1  # we want the number of pixels to be even
