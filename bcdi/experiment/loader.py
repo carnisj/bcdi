@@ -1757,16 +1757,22 @@ class LoaderID27(Loader):
         positioners = file[str(scan_number) + ".1/instrument/positioners"]
         if not setup.custom_scan:
             nath = util.cast(positioners["nath"][()], target_type=float)
+            eigx = util.cast(positioners["eigx"][()], target_type=float)
+            eigy = util.cast(positioners["eigy"][()], target_type=float)
+            eigz = util.cast(positioners["eigz"][()], target_type=float)
             # for now, return the setup.energy
             energy = setup.energy
 
         else:  # manually defined custom scan
             nath = setup.custom_motors["nath"]
+            eigx = setup.custom_motors["eigx"]
+            eigy = setup.custom_motors["eigy"]
+            eigz = setup.custom_motors["eigz"]
             energy = setup.energy
 
         # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
         detector_distance = setup.distance
-        return nath, energy, detector_distance
+        return nath, eigx, eigz, eigy, energy, detector_distance
 
     @safeload
     def read_device(self, setup: "Setup", device_name: str, **kwargs) -> np.ndarray:
@@ -2844,8 +2850,10 @@ class LoaderP10SAXS(LoaderP10):
         """
         Load the .fio file from the scan and extract motor positions.
 
+        The detector positions are returned in the laboratory frame z, y, x
+
         :param setup: an instance of the class Setup
-        :return: (phi, energy) values
+        :return: (phi, det_z, det_y, det_x, energy, detector_distance) values
         """
         # load and check kwargs
         file = kwargs.get("file")  # this kwarg is provided by @safeload
@@ -2857,12 +2865,28 @@ class LoaderP10SAXS(LoaderP10):
 
         if not setup.custom_scan:
             index_phi = None
+            detx = None
+            dety2 = None
+            detz = None
             positions: List[float] = []
 
             lines = file.readlines()
             for line in lines:
                 this_line = line.strip()
                 words = this_line.split()
+
+                if (
+                    "detx" in words and "=" in words
+                ):  # template for positioners: 'detx = -0.2\n'
+                    detx = float(words[2])
+                if (
+                    "dety2" in words and "=" in words
+                ):  # template for positioners: 'dety2 = 320.0\n'
+                    dety2 = float(words[2])
+                if (
+                    "detz" in words and "=" in words
+                ):  # template for positioners: 'detz = 28.5\n'
+                    detz = float(words[2])
 
                 if "Col" in words and ("sprz" in words or "hprz" in words):
                     # sprz or hprz (SAXS) scanned
@@ -2876,7 +2900,10 @@ class LoaderP10SAXS(LoaderP10):
             phi = np.asarray(positions, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
-        return phi, setup.energy, setup.distance
+            detx = setup.custom_motors.get("detx", 0)
+            detz = setup.custom_motors.get("detz", 0)
+            dety2 = setup.custom_motors.get("dety2", 0)
+        return phi, detx, detz, dety2, setup.energy, setup.distance
 
 
 class LoaderCRISTAL(Loader):

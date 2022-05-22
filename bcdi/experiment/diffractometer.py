@@ -80,6 +80,25 @@ Describe the geometry of the diffractometer.
  length as sample_circles.
 """
 
+Geometry_SAXS = namedtuple(
+    "Geometry",
+    ["sample_circles", "detector_axes", "default_offsets", "user_offsets"],
+)
+Geometry.__doc__ = """
+Describe the geometry of the diffractometer.
+
+:param sample_circles: list of sample circles from outer to inner (e.g. mu eta
+ chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
+ 'z-'}. For example: ['y+' ,'x-', 'z-', 'y+']
+:param detector_axes: list of the translation direction of detector axes for a detector
+ not sitting on a goninometer, expressed in the laboratory frame.
+ For example: ['z+', 'y+', 'x-']
+:param default_offsets: tuple, default sample offsets of the diffractometer, same length
+ as sample_circles.
+:param user_offsets: tuple, user-defined sample offsets of the diffractometer, same
+ length as sample_circles.
+"""
+
 
 def create_geometry(beamline, sample_offsets=None):
     """
@@ -100,9 +119,9 @@ def create_geometry(beamline, sample_offsets=None):
             user_offsets=sample_offsets,
         )
     if beamline == "ID27":
-        return Geometry(
+        return Geometry_SAXS(
             sample_circles=["y+"],  # TODO check the rotation direction
-            detector_circles=[],
+            detector_axes=["z+", "y+", "x+"],  # TODO check the translation directions
             default_offsets=(0,),
             user_offsets=sample_offsets,
         )
@@ -128,9 +147,9 @@ def create_geometry(beamline, sample_offsets=None):
             user_offsets=sample_offsets,
         )
     if beamline == "P10_SAXS":
-        return Geometry(
+        return Geometry_SAXS(
             sample_circles=["y+"],
-            detector_circles=[],
+            detector_axes=["z+", "y+", "x+"],  # TODO check the translation directions
             default_offsets=(0,),
             user_offsets=sample_offsets,
         )

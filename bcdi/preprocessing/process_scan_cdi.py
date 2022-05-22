@@ -256,6 +256,7 @@ def process_scan_cdi(
         detector_name=prm["detector"],
         template_imagefile=prm["template_imagefile"][scan_idx],
         direct_beam=prm["direct_beam"],
+        dirbeam_detector_position=prm["dirbeam_detector_position"],
         roi=prm["roi_detector"],
         binning=prm["phasing_binning"],
         preprocessing_binning=prm["preprocessing_binning"],

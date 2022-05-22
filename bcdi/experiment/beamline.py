@@ -1976,7 +1976,14 @@ class BeamlineP10SAXS(BeamlineSaxs):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load the motor positions
-        phi, energy, detector_distance = self.loader.motor_positions(setup=setup)
+        (
+            phi,
+            det_z,
+            det_y,
+            det_x,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
 
         # define the circles of interest for CDI
         # no circle yet below phi at P10
@@ -1986,10 +1993,9 @@ class BeamlineP10SAXS(BeamlineSaxs):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_setup(
+        setup.check_setup_cdi(
             grazing_angle=grazing,
-            inplane_angle=0,
-            outofplane_angle=0,
+            detector_position=(det_z, det_y, det_x),
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
             energy=energy,
@@ -1997,7 +2003,6 @@ class BeamlineP10SAXS(BeamlineSaxs):
 
         # P10 SAXS goniometer, 1S + 0D (sample: phi / detector: None)
         self.sample_angles = (phi,)
-        self.detector_angles = (0, 0)
         return tilt_angle, grazing, 0, 0
 
     def process_positions(
@@ -2102,7 +2107,14 @@ class BeamlineID27(BeamlineSaxs):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
         # load the motor positions
-        nath, energy, detector_distance = self.loader.motor_positions(setup=setup)
+        (
+            nath,
+            det_z,
+            det_y,
+            det_x,
+            energy,
+            detector_distance,
+        ) = self.loader.motor_positions(setup=setup)
 
         # define the circles of interest
         # no circle yet below nath at ID27
@@ -2112,10 +2124,9 @@ class BeamlineID27(BeamlineSaxs):
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
-        setup.check_setup(
+        setup.check_setup_cdi(
             grazing_angle=grazing,
-            inplane_angle=0,
-            outofplane_angle=0,
+            detector_position=(det_z, det_y, det_x),
             tilt_angle=tilt_angle,
             detector_distance=detector_distance,
             energy=energy,
@@ -2123,8 +2134,7 @@ class BeamlineID27(BeamlineSaxs):
 
         # ID27 SAXS goniometer, 1S + 0D (sample: nath / detector: None)
         self.sample_angles = (nath,)
-        self.detector_angles = (0, 0)
-        return tilt_angle, grazing, 0, 0
+        return tilt_angle, grazing
 
     def process_positions(
         self,
