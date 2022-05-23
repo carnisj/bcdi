@@ -251,7 +251,7 @@ class Diffractometer(ABC):
         self._sample_circles = list(value)
 
     @property
-    def sample_offsets(self) -> Tuple[Real, ...]:
+    def sample_offsets(self) -> Union[Tuple[Real, ...], List[Real]]:
         """
         List or tuple of sample angular offsets in degrees.
 
