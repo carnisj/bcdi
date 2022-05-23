@@ -48,13 +48,16 @@ API Reference
 
 """
 
+from abc import ABC
 import logging
 from collections import namedtuple
 from functools import reduce
 from numbers import Number, Real
+from typing import List, Tuple, Union
 
 import numpy as np
 
+from bcdi.constants import BEAMLINES_BCDI, BEAMLINES_SAXS
 from bcdi.experiment.rotation_matrix import RotationMatrix
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -66,7 +69,7 @@ Geometry = namedtuple(
     ["sample_circles", "detector_circles", "default_offsets", "user_offsets"],
 )
 Geometry.__doc__ = """
-Describe the geometry of the diffractometer.
+Describe the geometry of the diffractometer including detector circles.
 
 :param sample_circles: list of sample circles from outer to inner (e.g. mu eta
  chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
@@ -81,11 +84,15 @@ Describe the geometry of the diffractometer.
 """
 
 Geometry_SAXS = namedtuple(
-    "Geometry",
+    "Geometry_SAXS",
     ["sample_circles", "detector_axes", "default_offsets", "user_offsets"],
 )
 Geometry.__doc__ = """
-Describe the geometry of the diffractometer.
+Describe the geometry of the diffractometer with a detector not on a circle.
+
+The detector plane is always perpendicular to the direct beam, independently of its
+position. The frame used is the laboratory frame with the CXI convention
+(z downstream, y vertical up, x outboard).
 
 :param sample_circles: list of sample circles from outer to inner (e.g. mu eta
  chi phi), expressed using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+',
@@ -172,7 +179,7 @@ def create_geometry(beamline, sample_offsets=None):
     )
 
 
-class Diffractometer:
+class Diffractometer(ABC):
     """
     Base class for defining diffractometers.
 
@@ -198,9 +205,9 @@ class Diffractometer:
         "z+",
         "z-",
     }  # + counter-clockwise, - clockwise
-    valid_names = {"sample": "sample_circles", "detector": "detector_circles"}
+    valid_names = {"sample": "sample_circles"}
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         self.logger = kwargs.get("logger", module_logger)
         self._geometry = create_geometry(
             beamline=name, sample_offsets=kwargs.get("sample_offsets")
@@ -215,36 +222,7 @@ class Diffractometer:
         )
 
     @property
-    def detector_circles(self):
-        """
-        List of detector circles.
-
-        The circles should be listed from outer to inner (e.g. gamma delta), expressed
-        using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
-        example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
-        y vertical up, x outboard), + for a counter-clockwise rotation, - for a
-        clockwise rotation.
-        """
-        return self._detector_circles
-
-    @detector_circles.setter
-    def detector_circles(self, value):
-        valid.valid_container(
-            value,
-            container_types=(tuple, list),
-            min_length=0,
-            item_types=str,
-            name="Diffractometer.detector_circles",
-        )
-        if any(val not in self.valid_circles for val in value):
-            raise ValueError(
-                "Invalid circle value encountered in detector_circles,"
-                f" valid are {self.valid_circles}"
-            )
-        self._detector_circles = list(value)
-
-    @property
-    def sample_circles(self):
+    def sample_circles(self) -> List[str]:
         """
         List of sample circles.
 
@@ -257,7 +235,7 @@ class Diffractometer:
         return self._sample_circles
 
     @sample_circles.setter
-    def sample_circles(self, value):
+    def sample_circles(self, value: Union[Tuple[str, ...], List[str]]) -> None:
         valid.valid_container(
             value,
             container_types=(tuple, list),
@@ -273,7 +251,7 @@ class Diffractometer:
         self._sample_circles = list(value)
 
     @property
-    def sample_offsets(self):
+    def sample_offsets(self) -> Tuple[Real, ...]:
         """
         List or tuple of sample angular offsets in degrees.
 
@@ -284,7 +262,7 @@ class Diffractometer:
         return self._sample_offsets
 
     @sample_offsets.setter
-    def sample_offsets(self, value):
+    def sample_offsets(self, value: Union[Tuple[Real, ...], List[Real]]) -> None:
         nb_circles = len(self.__getattribute__(self.valid_names["sample"]))
         if value is None:
             value = (0,) * nb_circles
@@ -297,7 +275,7 @@ class Diffractometer:
         )
         self._sample_offsets = value
 
-    def add_circle(self, stage_name, index, circle):
+    def add_circle(self, stage_name: str, index: int, circle: str) -> None:
         """
         Add a circle to the list of circles.
 
@@ -324,7 +302,7 @@ class Diffractometer:
             )
         self.__getattribute__(self.valid_names[stage_name]).insert(index, circle)
 
-    def get_circles(self, stage_name):
+    def get_circles(self, stage_name: str) -> None:
         """
         Return the list of circles for the stage.
 
@@ -393,7 +371,7 @@ class Diffractometer:
                 )
         return index_circle
 
-    def remove_circle(self, stage_name, index):
+    def remove_circle(self, stage_name: str, index: int) -> None:
         """
         Remove the circle at index from the list of sample circles.
 
@@ -416,11 +394,11 @@ class Diffractometer:
             )
             del self.__getattribute__(self.valid_names[stage_name])[index]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representation string of the Diffractometer instance."""
         return util.create_repr(self, Diffractometer)
 
-    def rotation_matrix(self, stage_name, angles):
+    def rotation_matrix(self, stage_name: str, angles: List[Real]) -> np.ndarray:
         """
         Calculate a 3D rotation matrix given rotation axes and angles.
 
@@ -454,14 +432,134 @@ class Diffractometer:
         # from outer circles to inner circles
         return np.array(reduce(np.matmul, rotation_matrices))
 
-    def valid_name(self, stage_name):
+    def valid_name(self, stage_name: str) -> None:
         """
         Check if the stage is defined.
 
-        :param stage_name: supported stage name, 'sample' or 'detector'
+        :param stage_name: supported stage name, e.g. 'sample'
         """
         if stage_name not in self.valid_names:
             raise NotImplementedError(
                 f"'{stage_name}' is not implemented,"
                 f" available are {list(self.valid_names.keys())}"
             )
+
+
+class FullDiffractometer(Diffractometer):
+    """
+    Class for defining diffractometers including detector circles.
+
+    The frame used is the laboratory frame with the CXI convention (z downstream,
+    y vertical up, x outboard).
+
+    :param name: name of the beamline
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
+    :param kwargs:
+
+     - 'logger': an optional logger
+
+    """
+
+    valid_names = {"sample": "sample_circles", "detector": "detector_circles"}
+
+    def __init__(self, name: str, **kwargs) -> None:
+        super().__init__(name=name, **kwargs)
+        self.detector_circles = self._geometry.detector_circles
+
+    @property
+    def detector_circles(self) -> List[str]:
+        """
+        List of detector circles.
+
+        The circles should be listed from outer to inner (e.g. gamma delta), expressed
+        using a valid pattern within {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For
+        example: ['y+' ,'x-', 'z-', 'y+']. Convention: CXI convention (z downstream,
+        y vertical up, x outboard), + for a counter-clockwise rotation, - for a
+        clockwise rotation.
+        """
+        return self._detector_circles
+
+    @detector_circles.setter
+    def detector_circles(self, value: Union[Tuple[str, ...], List[str]]) -> None:
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            min_length=0,
+            item_types=str,
+            name="Diffractometer.detector_circles",
+        )
+        if any(val not in self.valid_circles for val in value):
+            raise ValueError(
+                "Invalid circle value encountered in detector_circles,"
+                f" valid are {self.valid_circles}"
+            )
+        self._detector_circles = list(value)
+
+
+class DiffractometerSAXS(Diffractometer):
+    """
+    Class for defining diffractometers where the detector is not on a circle.
+
+    The detector plane is always perpendicular to the direct beam, independently of its
+    position. The frame used is the laboratory frame with the CXI convention
+    (z downstream, y vertical up, x outboard).
+
+    :param name: name of the beamline
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
+    :param kwargs:
+
+     - 'logger': an optional logger
+
+    """
+
+    valid_names = {"sample": "sample_circles", "detector": "detector_circles"}
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.detector_axes = self._geometry.detector_axes
+
+    @property
+    def detector_axes(self) -> List[str]:
+        """
+        List of detector axes.
+
+        The axes are expressed in the order [z, y, x], the sign corresponding to the
+        translation direction using a valid pattern within
+        {'x+', 'x-', 'y+', 'y-', 'z+', 'z-'}. For example: ['z+' ,'y-', 'x-'].
+        Convention: CXI convention (z downstream, y vertical up, x outboard).
+        """
+        return self._detector_axes
+
+    @detector_axes.setter
+    def detector_axes(self, value: Union[Tuple[str, ...], List[str]]) -> None:
+        valid.valid_container(
+            value,
+            container_types=(tuple, list),
+            length=3,
+            item_types=str,
+            name="Diffractometer.detector_circles",
+        )
+        if any(val not in self.valid_circles for val in value):
+            raise ValueError(
+                "Invalid circle value encountered in detector_axes,"
+                f" valid are {self.valid_circles}"
+            )
+        self._detector_axes = list(value)
+
+
+class DiffractometerFactory:
+    @staticmethod
+    def create_diffractometer(
+        name: str, **kwargs
+    ) -> Union[FullDiffractometer, DiffractometerSAXS]:
+        if name in BEAMLINES_BCDI:
+            return FullDiffractometer(name=name, **kwargs)
+        if name in BEAMLINES_SAXS:
+            return DiffractometerSAXS(name=name, **kwargs)
+        raise NotImplementedError(f"Beamline {name} not supported")

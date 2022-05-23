@@ -56,7 +56,7 @@ from numbers import Real
 import numpy as np
 import xrayutilities as xu
 
-from bcdi.experiment.diffractometer import Diffractometer
+from bcdi.experiment.diffractometer import DiffractometerFactory
 from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -87,7 +87,9 @@ class Beamline(ABC):
     def __init__(self, name, **kwargs):
         self.logger = kwargs.get("logger", module_logger)
         self.name = name
-        self.diffractometer = Diffractometer(name=name, **kwargs)
+        self.diffractometer = DiffractometerFactory().create_diffractometer(
+            name=name, **kwargs
+        )
         loader_kwargs = {"logger": self.logger} if kwargs.get("logger") else {}
         self.loader = create_loader(
             name=name,

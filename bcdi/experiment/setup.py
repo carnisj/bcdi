@@ -116,6 +116,7 @@ class Setup:
             allowed_kwargs={
                 "direct_beam",
                 "dirbeam_detector_angles",
+                "dirbeam_detector_position",
                 "filtered_data",
                 "custom_scan",
                 "custom_images",
