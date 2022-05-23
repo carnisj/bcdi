@@ -144,6 +144,9 @@ Usage:
     :param isosurface_strain: e.g. 0.2
      threshold use for removing the outer layer (the strain is undefined at the exact
      surface voxel)
+    :param skip_unwrap: e.g. False
+     If 'skip_unwrap', it will not unwrap the phase. It can be used when there is a
+     defect and phase unwrapping does not work well.
     :param strain_method: e.g. "default"
      how to calculate the strain, available options:
 

@@ -400,6 +400,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "save_to_mat",
         "save_to_npz",
         "save_to_vti",
+        "skip_unwrap",
         "simulation",
         "use_rawdata",
     }:
