@@ -2255,7 +2255,7 @@ def unwrap(
     # 0 is a valid entry for ma.masked_array
     phase_wrapped: np.ndarray = ma.masked_array(np.angle(obj), mask=unwrap_support)
 
-    plot_title = "applying support threshold only" if skip_unwrap else "unwrapping"
+    plot_title = "applying support threshold\n" if skip_unwrap else "unwrapping"
     if debugging and ndim == 3:
         gu.multislices_plot(
             phase_wrapped.data,
@@ -2276,7 +2276,7 @@ def unwrap(
         gu.multislices_plot(
             phase_unwrapped,
             plot_colorbar=True,
-            title=f"Before {plot_title}",
+            title=f"After {plot_title}",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),
