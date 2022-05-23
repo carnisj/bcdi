@@ -284,37 +284,36 @@ def process_scan(
     ################
     # unwrap phase #
     ################
-    if prm["skip_unwrap"]:
-        phase = np.angle(avg_obj)
-    else:
-        phase, extent_phase = pu.unwrap(
-            avg_obj,
-            support_threshold=prm["threshold_unwrap_refraction"],
-            debugging=prm["debug"],
+    phase, extent_phase = pu.unwrap(
+        avg_obj,
+        support_threshold=prm["threshold_unwrap_refraction"],
+        skip_unwrap=prm["skip_unwrap"],
+        debugging=prm["debug"],
+        reciprocal_space=False,
+        is_orthogonal=prm["is_orthogonal"],
+        cmap=prm["colormap"].cmap,
+    )
+
+    logger.info(
+        "Extent of the phase over an extended support (ceil(phase range)) ~ "
+        f"{int(extent_phase)} (rad)",
+    )
+    if not prm["skip_unwrap"]:
+        phase = util.wrap(
+            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+        )
+    if prm["debug"]:
+        gu.multislices_plot(
+            phase,
+            width_z=2 * zrange,
+            width_y=2 * yrange,
+            width_x=2 * xrange,
+            plot_colorbar=True,
+            title="Phase after unwrap + wrap",
             reciprocal_space=False,
             is_orthogonal=prm["is_orthogonal"],
             cmap=prm["colormap"].cmap,
         )
-
-        logger.info(
-            "Extent of the phase over an extended support (ceil(phase range)) ~ "
-            f"{int(extent_phase)} (rad)",
-        )
-        phase = util.wrap(
-            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
-        )
-        if prm["debug"]:
-            gu.multislices_plot(
-                phase,
-                width_z=2 * zrange,
-                width_y=2 * yrange,
-                width_x=2 * xrange,
-                plot_colorbar=True,
-                title="Phase after unwrap + wrap",
-                reciprocal_space=False,
-                is_orthogonal=prm["is_orthogonal"],
-                cmap=prm["colormap"].cmap,
-            )
 
     #############################################
     # phase ramp removal before phase filtering #
@@ -704,18 +703,21 @@ def process_scan(
     ####################
     # Phase unwrapping #
     ####################
-    if prm["skip_unwrap"]:
-        phase = np.angle(obj_ortho)
-    else:
-        logger.info("Phase unwrapping")
-        phase, extent_phase = pu.unwrap(
-            obj_ortho,
-            support_threshold=prm["threshold_unwrap_refraction"],
-            debugging=True,
-            reciprocal_space=False,
-            is_orthogonal=True,
-            cmap=prm["colormap"].cmap,
-        )
+    log_text = (
+        "Applying support threshold to the phase"
+        if prm["skip_unwrap"]
+        else "Phase unwrapping"
+    )
+    logger.info(log_text)
+    phase, extent_phase = pu.unwrap(
+        obj_ortho,
+        support_threshold=prm["threshold_unwrap_refraction"],
+        skip_unwrap=prm["skip_unwrap"],
+        debugging=True,
+        reciprocal_space=False,
+        is_orthogonal=True,
+        cmap=prm["colormap"].cmap,
+    )
     amp = abs(obj_ortho)
     del obj_ortho
     gc.collect()
