@@ -302,14 +302,14 @@ class Diffractometer(ABC):
             )
         self.__getattribute__(self.valid_names[stage_name]).insert(index, circle)
 
-    def get_circles(self, stage_name: str) -> None:
+    def get_circles(self, stage_name: str) -> List[str]:
         """
         Return the list of circles for the stage.
 
         :param stage_name: supported stage name, 'sample' or 'detector'
         """
         self.valid_name(stage_name)
-        return self.__getattribute__(self.valid_names[stage_name])
+        return list(self.__getattribute__(self.valid_names[stage_name]))
 
     def get_rocking_circle(self, rocking_angle, stage_name, angles):
         """
