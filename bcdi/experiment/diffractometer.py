@@ -214,7 +214,6 @@ class Diffractometer(ABC):
         )
         self.name = name
         self.sample_circles = self._geometry.sample_circles
-        self.detector_circles = self._geometry.detector_circles
         self.sample_offsets = (
             self._geometry.user_offsets
             if self._geometry.user_offsets is not None
