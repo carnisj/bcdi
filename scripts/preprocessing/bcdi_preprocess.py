@@ -185,6 +185,9 @@ Usage:
     :param phasing_binning: e.g. [1, 2, 2]
      binning to apply to the data (stacking dimension, detector vertical axis, detector
      horizontal axis)
+    :param correct_curvature: e.g. True
+     Correct for the curvature of Ewald sphere. You can use False only at P10_SAXS
+     (~ 8keV).
     :param linearity_func: e.g. [1, -2, -0.0021, 32.0, 1.232]
      coefficients of the 4th order polynomial ax^4 + bx^3 + cx^2 + dx + e which it used
      to correct the non-linearity of the detector at high intensities. Leave None

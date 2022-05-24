@@ -121,7 +121,7 @@ def run(prm: Dict[str, Any]) -> None:
                 "bin_during_loading": False,
                 "centering_method": "max_com",
                 "colormap": "turbo",
-                "correct_curvature": False,
+                "correct_curvature": True,
                 "comment": "",
                 "custom_monitor": None,
                 "custom_motors": None,
