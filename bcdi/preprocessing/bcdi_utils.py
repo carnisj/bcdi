@@ -1219,7 +1219,7 @@ def reload_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"logger", "photon_threshold"},
+        allowed_kwargs={"logger", "photon_threshold", "logfile"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1230,8 +1230,6 @@ def reload_bcdi_data(
         name="photon_threshold",
     )
 
-    normalize_method = "monitor" if normalize else "skip"
-
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
 
@@ -1241,7 +1239,7 @@ def reload_bcdi_data(
     data[data < 0] = 0
 
     # normalize by the incident X-ray beam intensity
-    if normalize_method == "skip":
+    if normalize == "skip":
         logger.info("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
@@ -1250,7 +1248,7 @@ def reload_bcdi_data(
             setup=setup,
         )
 
-        logger.info(f"Intensity normalization using {normalize_method}")
+        logger.info(f"Intensity normalization using {normalize}")
         data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,
