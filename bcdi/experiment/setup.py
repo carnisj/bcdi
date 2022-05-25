@@ -1197,8 +1197,11 @@ class Setup:
         #########################################################
         # calculate the index range relative to the direct beam #
         #########################################################
-        y_start, x_start = self.get_detector_offset(direct_beam=direct_beam)
-
+        y_start, x_start = self.get_detector_offset()
+        direct_beam_y, direct_beam_x = (
+            y_start - direct_beam[0],
+            x_start - direct_beam[1],
+        )
         ##########################################################################
         # calculate q values of the detector frame for each angle and stack them #
         ##########################################################################
@@ -1228,10 +1231,16 @@ class Setup:
 
             myy, myx = np.meshgrid(
                 np.linspace(
-                    -direct_beam[0], -direct_beam[0] + nby, num=nby, endpoint=False
+                    direct_beam_y,
+                    direct_beam_y + nby,
+                    num=nby,
+                    endpoint=False,
                 ),
                 np.linspace(
-                    -direct_beam[1], -direct_beam[1] + nbx, num=nbx, endpoint=False
+                    direct_beam_x,
+                    direct_beam_x + nbx,
+                    num=nbx,
+                    endpoint=False,
                 ),
                 indexing="ij",
             )
@@ -1277,9 +1286,9 @@ class Setup:
                 + rotation_matrix[2, 2] * qlab2
             )
 
-        return qx, qz, qy
+        return (qx, qz, qy), (direct_beam_y, direct_beam_x)
 
-    def get_detector_offset(self, direct_beam):
+    def get_detector_offset(self):
         delta = [
             val2 - val1
             for (val1, val2) in zip(
@@ -1287,13 +1296,21 @@ class Setup:
             )
         ]  # [delta_z, delta_y, delta_x]
         if not np.isclose(delta[0], 0):
-            raise NotImplementedError("the detector moved along the beam")
-        delta_pixel = (
-            delta[1] * self.detector.pixelsize_y,
-            delta[2] * self.detector.pixelsize_x,
+            self.logger.warning(
+                "the detector moved along the beam, neglecting any detector tilt"
+            )
+
+        delta_pixel_y = (
+            delta[1] * self.detector.pixelsize_y * 1000  # convert to mm
+            + self.beamline.orientation_lookup[self.beamline.detector_ver]
+            * self.detector.roi[0]
         )
-        # todo: calculate the offset from the direct beam, given detector orientation and motor directions
-        # todo: and binning and roi
+        delta_pixel_x = (
+            delta[2] * self.detector.pixelsize_x * 1000  # convert to mm
+            + self.beamline.orientation_lookup[self.beamline.detector_hor]
+            * self.detector.roi[2]
+        )
+        return delta_pixel_y, delta_pixel_x
 
     def grid_cylindrical(
         self,
@@ -1684,7 +1701,11 @@ class Setup:
         # interpolate the diffraction pattern #
         #######################################
         if correct_curvature:
-            arrays, q_values = self.transformation_cdi_ewald(
+            (
+                arrays,
+                q_values,
+                (directbeam_y, directbeam_x),
+            ) = self.transformation_cdi_ewald(
                 arrays=arrays,
                 direct_beam=(directbeam_y, directbeam_x),
                 cdi_angle=cdi_angle,
@@ -2821,7 +2842,7 @@ class Setup:
         self.logger.info(f"Data shape after regridding: ({numx},{numy},{numx})")
 
         # calculate exact q values for each voxel of the 3D dataset
-        old_qx, old_qz, old_qy = self.ewald_curvature_saxs(
+        (old_qx, old_qz, old_qy), offseted_direct_beam = self.ewald_curvature_saxs(
             array_shape=(nbz, nby, nbx),
             cdi_angle=cdi_angle,
             direct_beam=direct_beam,
@@ -2869,7 +2890,7 @@ class Setup:
             )
             ortho_array = ortho_array.reshape((numx, numy, numx))
             output_arrays.append(ortho_array)
-        return output_arrays, (qx, qz, qy)
+        return output_arrays, (qx, qz, qy), offseted_direct_beam
 
     def voxel_sizes(self, array_shape, tilt_angle, pixel_x, pixel_y, verbose=False):
         """

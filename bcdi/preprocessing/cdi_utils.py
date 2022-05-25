@@ -443,8 +443,8 @@ def grid_cdi(
                     f"Not yet implemented for beamlines other than {BEAMLINES_SAXS}"
                 )
         else:
-            cdi_angle, _, _ = setup.loader.motor_positions(setup=setup)
-            # second return value is the X-ray energy, third the detector distance
+            cdi_angle, _, _, _, _, _ = setup.loader.motor_positions(setup=setup)
+
     else:
         raise ValueError(
             "out-of-plane rotation not yet implemented for forward CDI data"
