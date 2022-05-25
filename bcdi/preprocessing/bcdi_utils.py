@@ -1202,7 +1202,8 @@ def reload_bcdi_data(
     :param mask: the 3D mask array
     :param scan_number: the scan number to load
     :param setup: an instance of the class Setup
-    :param normalize: set to True to normalize by the default monitor of the beamline
+    :param normalize: set to "monitor" to normalize by the default monitor of
+     the beamline, otherwise set to "skip"
     :param debugging:  set to True to see plots
     :parama kwargs:
 
@@ -1219,7 +1220,7 @@ def reload_bcdi_data(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"logger", "photon_threshold", "logfile"},
+        allowed_kwargs={"logger", "photon_threshold"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)

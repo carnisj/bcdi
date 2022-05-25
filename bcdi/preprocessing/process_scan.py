@@ -416,7 +416,6 @@ def process_scan(
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = bu.reload_bcdi_data(
-                logfile=logfile,
                 scan_number=scan_nb,
                 data=data,
                 mask=mask,
