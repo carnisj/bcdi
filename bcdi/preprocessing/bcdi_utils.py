@@ -1202,7 +1202,8 @@ def reload_bcdi_data(
     :param mask: the 3D mask array
     :param scan_number: the scan number to load
     :param setup: an instance of the class Setup
-    :param normalize: set to True to normalize by the default monitor of the beamline
+    :param normalize: set to "monitor" to normalize by the default monitor of
+     the beamline, otherwise set to "skip"
     :param debugging:  set to True to see plots
     :parama kwargs:
 
@@ -1230,8 +1231,6 @@ def reload_bcdi_data(
         name="photon_threshold",
     )
 
-    normalize_method = "monitor" if normalize else "skip"
-
     nbz, nby, nbx = data.shape
     frames_logical = np.ones(nbz)
 
@@ -1241,7 +1240,7 @@ def reload_bcdi_data(
     data[data < 0] = 0
 
     # normalize by the incident X-ray beam intensity
-    if normalize_method == "skip":
+    if normalize == "skip":
         logger.info("Skip intensity normalization")
         monitor = []
     else:  # use the default monitor of the beamline
@@ -1250,7 +1249,7 @@ def reload_bcdi_data(
             setup=setup,
         )
 
-        logger.info(f"Intensity normalization using {normalize_method}")
+        logger.info(f"Intensity normalization using {normalize}")
         data, monitor = loader.normalize_dataset(
             array=data,
             monitor=monitor,

@@ -282,7 +282,7 @@ def process_scan(
         template_imagefile=prm["template_imagefile"][scan_idx],
     )
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan_nb,
         root_folder=prm["root_folder"],
         filename=setup.detector.specfile,
@@ -416,7 +416,6 @@ def process_scan(
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = bu.reload_bcdi_data(
-                logfile=logfile,
                 scan_number=scan_nb,
                 data=data,
                 mask=mask,
