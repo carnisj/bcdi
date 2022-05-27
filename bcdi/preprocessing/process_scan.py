@@ -282,7 +282,7 @@ def process_scan(
         template_imagefile=prm["template_imagefile"][scan_idx],
     )
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan_nb,
         root_folder=prm["root_folder"],
         filename=setup.detector.specfile,
