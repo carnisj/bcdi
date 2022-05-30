@@ -1445,14 +1445,19 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'sample_name' parameter required")
 
         key_path = sample_name + "_" + str(scan_number) + ".1/measurement/"
-        try:
-            raw_data = file[key_path + "mpx1x4"]
-        except KeyError:
-            self.logger.info("Looking for mpxgaas key")
+        if setup.detector_name == "Maxipix":
             try:
-                raw_data = file[key_path + "mpxgaas"]
+                raw_data = file[key_path + "mpx1x4"]
             except KeyError:
-                raise KeyError("No detector key found")
+                self.logger.info("Looking for 'mpxgaas' key")
+                try:
+                    raw_data = file[key_path + "mpxgaas"]
+                except KeyError:
+                    raise KeyError("No detector key found")
+        elif setup.detector_name == "Eiger2M":
+            raw_data = file[key_path + "eiger2M"]
+        else:
+            raise NotImplementedError("Unknown detector '{}' for beamline ID01BLISS")
 
         # find the number of images
         nb_img = raw_data.shape[0]
