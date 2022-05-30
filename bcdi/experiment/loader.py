@@ -1457,7 +1457,9 @@ class LoaderID01BLISS(Loader):
         elif setup.detector_name == "Eiger2M":
             raw_data = file[key_path + "eiger2M"]
         else:
-            raise NotImplementedError("Unknown detector '{}' for beamline ID01BLISS")
+            raise NotImplementedError(
+                f"Unknown detector '{setup.detector_name}' for beamline ID01BLISS"
+            )
 
         # find the number of images
         nb_img = raw_data.shape[0]
