@@ -1,3 +1,8 @@
+Future:
+-------
+
+* Allow loading of Eiger2M detector data at ID01BLISS.
+
 Version 0.2.7:
 --------------
 
