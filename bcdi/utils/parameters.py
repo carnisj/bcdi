@@ -839,7 +839,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "save_dir":
-        if isinstance(value, str):
+        if isinstance(value, str) or value is None:
             value = [
                 value,
             ]
