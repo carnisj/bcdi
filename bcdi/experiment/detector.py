@@ -718,7 +718,7 @@ class Eiger2M(Detector):
         super().__init__(name=name, **kwargs)
         self._counter_table = {"ID01": "ei2minr"}  # useful if the same type of detector
         # is used at several beamlines
-        self.saturation_threshold = 1e6
+        self.saturation_threshold = 1e7
 
     def _mask_gaps(self, data, mask):
         """
