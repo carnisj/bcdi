@@ -518,7 +518,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "comment":
         valid.valid_container(value, container_types=str, name=key)
         if value and not value.startswith("_"):
-            value += "_"
+            value = "_" + value
     elif key == "config_file":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
         if not os.path.isfile(value):
@@ -764,7 +764,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
         if value is not None:
             for val in value:
-                if not os.path.isfile(val):
+                if val is not None and not os.path.isfile(val):
                     raise ValueError(f"The file '{val}' does not exist")
     elif key in {"ref_axis_q", "ref_axis"}:
         allowed = {"x", "y", "z"}
