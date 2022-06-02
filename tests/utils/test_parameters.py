@@ -16,6 +16,7 @@ from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils.parameters import (
     ConfigChecker,
     MissingKeyError,
+    ParameterError,
     PostprocessingChecker,
     PreprocessingChecker,
     valid_param,
@@ -43,7 +44,7 @@ class TestConfigChecker(unittest.TestCase):
         }
         self.parser = ConfigParser(CONFIG_POST, self.command_line_args)
         self.args = self.parser.load_arguments()
-        self.checker = ConfigChecker(initial_params=self.args)
+        self.checker = ConfigChecker(initial_params=self.args)  # type: ignore
         if not has_backend(self.checker._checked_params["backend"]):
             self.skipTest(
                 reason=f"cannot load backend {self.checker._checked_params['backend']}"
@@ -418,6 +419,187 @@ class TestParameters(unittest.TestCase):
     def test_data_dir_existing(self):
         val, flag = valid_param(key="data_dir", value=THIS_DIR)
         self.assertTrue(val == (THIS_DIR,) and flag is True)
+
+    def test_save_dir_none(self):
+        val, flag = valid_param(key="save_dir", value=None)
+        self.assertTrue(val == [None] and flag is True)
+
+    def test_save_dir_str(self):
+        val, flag = valid_param(key="save_dir", value=THIS_DIR)
+        self.assertTrue(val == [THIS_DIR + "/"] and flag is True)
+
+    def test_save_dir_str_2(self):
+        folder = THIS_DIR + "/"
+        val, flag = valid_param(key="save_dir", value=folder)
+        self.assertTrue(val == [folder] and flag is True)
+
+    def test_save_dir_list(self):
+        folder = THIS_DIR + "/"
+        val, flag = valid_param(key="save_dir", value=[folder, THIS_DIR])
+        self.assertTrue(val == [folder, folder] and flag is True)
+
+    def test_save_dir_tuple(self):
+        folder = THIS_DIR + "/"
+        val, flag = valid_param(key="save_dir", value=(folder, THIS_DIR))
+        self.assertTrue(val == [folder, folder] and flag is True)
+
+    def test_save_dir_list_none(self):
+        folder = THIS_DIR + "/"
+        val, flag = valid_param(key="save_dir", value=[folder, None])
+        self.assertTrue(val == [folder, None] and flag is True)
+
+    def test_tick_direction(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="tick_direction", value="skip")
+
+    def test_strain_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="strain_method", value="skip")
+
+    def test_save_frame(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="save_frame", value="skip")
+
+    def test_center_fft(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="center_fft", value="fake")
+
+    def test_rocking_angle(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="rocking_angle", value="skip")
+
+    def test_ref_axis_q(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="ref_axis_q", value="skip")
+
+    def test_ref_axis(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="ref_axis", value="skip")
+
+    def test_photon_filter(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="photon_filter", value="skip")
+
+    def test_phase_ramp_removal(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="phase_ramp_removal", value="skip")
+
+    def test_optical_path_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="optical_path_method", value="skip")
+
+    def test_normalize_flux(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="normalize_flux", value="crash")
+
+    def test_median_filter(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="median_filter", value="custom")
+
+    def test_interpolation_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="interpolation_method", value="skip")
+
+    def test_fill_value_mask(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="fill_value_mask", value=2)
+
+    def test_backend(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="backend", value="skip")
+
+    def test_data_frame(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="data_frame", value="skip")
+
+    def test_averaging_space(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="averaging_space", value="skip")
+
+    def test_apodization_window(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="apodization_window", value="skip")
+
+    def test_sort_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="sort_method", value="skip")
+
+    def test_offset_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="offset_method", value="skip")
+
+    def test_centering_method(self):
+        with self.assertRaises(ParameterError):
+            valid_param(key="centering_method", value="skip")
+
+    def test_root_folder(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="root_folder", value="this_dir_does_not_exist")
+
+    def test_reconstruction_files_none(self):
+        val, flag = valid_param(key="reconstruction_files", value=None)
+        self.assertTrue(val is None and flag is True)
+
+    def test_reconstruction_files_str(self):
+        val, flag = valid_param(key="reconstruction_files", value=CONFIG_PRE)
+        self.assertTrue(val == (CONFIG_PRE,) and flag is True)
+
+    def test_reconstruction_files_list_unexisting_file(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="reconstruction_files", value=[CONFIG_PRE, "fake_file.h5"])
+
+    def test_reconstruction_files_list_none(self):
+        val, flag = valid_param(key="reconstruction_files", value=[CONFIG_PRE, None])
+        self.assertTrue(val == [CONFIG_PRE, None] and flag is True)
+
+    def test_mask(self):
+        val, flag = valid_param(key="mask", value=None)
+        self.assertTrue(val is None and flag is True)
+
+    def test_mask_unexisting_file(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="mask", value="fake_file.h5")
+
+    def test_comment_empty(self):
+        val, flag = valid_param(key="comment", value="")
+        self.assertTrue(val == "" and flag is True)
+
+    def test_comment(self):
+        val, flag = valid_param(key="comment", value="test")
+        self.assertTrue(val == "_test" and flag is True)
+
+    def test_comment_underscore(self):
+        val, flag = valid_param(key="comment", value="_test")
+        self.assertTrue(val == "_test" and flag is True)
+
+    def test_colormap_not_supported(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="colormap", value="fake")
+
+    def test_config_file_unexisting_file(self):
+        with self.assertRaises(ValueError):
+            valid_param(key="config_file", value="fake_file.h5")
+
+    def test_energy_none(self):
+        val, flag = valid_param(key="energy", value=None)
+        self.assertTrue(val is None and flag is True)
+
+    def test_energy_number(self):
+        val, flag = valid_param(key="energy", value=10000)
+        self.assertTrue(val == 10000 and flag is True)
+
+    def test_energy_list(self):
+        val, flag = valid_param(key="energy", value=[1, 2, 3])
+        self.assertTrue(val == [1, 2, 3] and flag is True)
+
+    def test_frames_pattern(self):
+        correct = np.array([0, 1, 1, 0])
+        val, flag = valid_param(key="frames_pattern", value=[0, 1, 1, 0])
+        self.assertTrue(np.array_equal(val, correct) and flag is True)
+
+    def test_frames_pattern_none(self):
+        val, flag = valid_param(key="frames_pattern", value=None)
+        self.assertTrue(val is None and flag is True)
 
 
 if __name__ == "__main__":

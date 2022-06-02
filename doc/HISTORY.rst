@@ -1,6 +1,11 @@
 Future:
 -------
 
+* Modify the saturation threshold of the Eiger2M detector from 1e6 to 1e7 photons.
+
+* The log file will be created in `save_dir` if this parameter is defined, otherwise
+  it will be created in `root_folder`.
+
 * Allow loading of Eiger2M detector data at ID01BLISS.
 
 Version 0.2.7:
