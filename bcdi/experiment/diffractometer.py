@@ -127,8 +127,8 @@ def create_geometry(beamline, sample_offsets=None):
         )
     if beamline == "ID27":
         return Geometry_SAXS(
-            sample_circles=["y+"],  # TODO check the rotation direction
-            detector_axes=["z+", "y+", "x+"],  # TODO check the translation directions
+            sample_circles=["y+"],
+            detector_axes=["z+", "y+", "x+"],
             default_offsets=(0,),
             user_offsets=sample_offsets,
         )
