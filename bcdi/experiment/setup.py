@@ -19,7 +19,7 @@ import multiprocessing as mp
 import time
 from collections.abc import Sequence
 from numbers import Integral, Real
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
@@ -2830,32 +2830,33 @@ class Setup:
          for the RegularGridInterpolator, same length as the number of arrays
         :return:
         """
-        nbz, nby, nbx = arrays[0].shape
-        _, directbeam_x = direct_beam
-        # calculate the number of voxels available to accomodate the gridded data
-        # directbeam_x and directbeam_y already are already taking into account
-        # the ROI and binning
-        numx = 2 * max(directbeam_x, nbx - directbeam_x)
-        # number of interpolated voxels in the plane perpendicular
-        # to the rotation axis. It will accomodate the full data range.
-        numy = nby  # no change of the voxel numbers along the rotation axis
-        self.logger.info(f"Data shape after regridding: ({numx},{numy},{numx})")
-
         # calculate exact q values for each voxel of the 3D dataset
         (old_qx, old_qz, old_qy), offseted_direct_beam = self.ewald_curvature_saxs(
-            array_shape=(nbz, nby, nbx),
+            array_shape=arrays[0].shape,
             cdi_angle=cdi_angle,
             direct_beam=direct_beam,
         )
 
+        # calculate the number of voxels needed to accomodate the gridded data
+        maxbins: List[int] = []
+        for dim in (old_qx, old_qz, old_qy):
+            maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
+            maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
+        self.logger.info(
+            f"Maximum number of bins based on the sampling in q: {maxbins}"
+        )
+        maxbins = util.smaller_primes(maxbins, maxprime=7, required_dividers=(2,))
+        self.logger.info(
+            f"Maximum number of bins based on the shape requirements for FFT: {maxbins}"
+        )
+
         # create the grid for interpolation
-        qx = np.linspace(
-            old_qx.min(), old_qx.max(), numx, endpoint=False
-        )  # z downstream
-        qz = np.linspace(
-            old_qz.min(), old_qz.max(), numy, endpoint=False
-        )  # y vertical up
-        qy = np.linspace(old_qy.min(), old_qy.max(), numx, endpoint=False)  # x outboard
+        qx = np.linspace(old_qx.min(), old_qx.max(), maxbins[0], endpoint=False)
+        # along z downstream
+        qz = np.linspace(old_qz.min(), old_qz.max(), maxbins[1], endpoint=False)
+        # along y vertical up
+        qy = np.linspace(old_qy.min(), old_qy.max(), maxbins[2], endpoint=False)
+        # along x outboard
 
         new_qx, new_qz, new_qy = np.meshgrid(qx, qz, qy, indexing="ij")
 
@@ -2888,7 +2889,7 @@ class Setup:
                 method="linear",
                 fill_value=fill_value[idx],
             )
-            ortho_array = ortho_array.reshape((numx, numy, numx))
+            ortho_array = ortho_array.reshape(maxbins)
             output_arrays.append(ortho_array)
         return output_arrays, (qx, qz, qy), offseted_direct_beam
 
