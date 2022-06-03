@@ -56,7 +56,7 @@ import tkinter as tk
 from abc import ABC, abstractmethod
 from numbers import Integral
 from tkinter import filedialog
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import fabio
 import h5py
@@ -1282,7 +1282,7 @@ class LoaderID01(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at ID01.
 
@@ -1298,9 +1298,10 @@ class LoaderID01(Loader):
             monitor_name = setup.actuators.get("monitor", "exp1")
         else:
             monitor_name = "exp1"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
     def retrieve_distance(self, setup: "Setup") -> Optional[float]:
         """
@@ -1572,7 +1573,7 @@ class LoaderID01BLISS(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at ID01 BLISS.
 
@@ -1586,9 +1587,10 @@ class LoaderID01BLISS(Loader):
             monitor_name = setup.actuators.get("monitor", "imon")
         else:
             monitor_name = "imon"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
 
 class LoaderID27(Loader):
@@ -1800,7 +1802,7 @@ class LoaderID27(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at ID27.
 
@@ -1808,17 +1810,20 @@ class LoaderID27(Loader):
         :return: the default monitor values
         """
         scan_number = setup.logfile.scan_number
+        monitor_name: Optional[str] = None
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
         if setup.actuators is not None:
-            monitor_name = setup.actuators.get(
-                "monitor", "imon"
-            )  # TODO check the name of the monitor
-        else:
-            monitor_name = "imon"
-        return self.read_device(
+            monitor_name = setup.actuators.get("monitor")
+        if monitor_name is None:
+            self.logger.info(
+                "'monitor_name' is None, no default monitor defined for ID27."
+            )
+            return np.asarray([])
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
 
 class LoaderSIXS(Loader):
@@ -2073,7 +2078,7 @@ class LoaderSIXS(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at SIXS.
 
@@ -2083,10 +2088,11 @@ class LoaderSIXS(Loader):
         if setup.beamline is None:
             raise ValueError("'beamline' parameter required")
         if setup.beamline == "SIXS_2018":
-            return self.read_device(setup=setup, device_name="imon1")
-        # SIXS_2019
-        monitor = self.read_device(setup=setup, device_name="imon0")
-        if len(monitor) == 0:  # the alias dictionnary was probably not provided
+            monitor: np.ndarray = self.read_device(setup=setup, device_name="imon1")
+        else:  # "SIXS_2019"
+            monitor = self.read_device(setup=setup, device_name="imon0")
+        if len(monitor) == 0:
+            # the alias dictionnary was probably not provided
             monitor = self.read_device(setup=setup, device_name="intensity")
         return monitor
 
@@ -2395,7 +2401,7 @@ class Loader34ID(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at 34ID-C.
 
@@ -2412,9 +2418,10 @@ class Loader34ID(Loader):
             monitor_name = setup.actuators.get("monitor", "Monitor")
         else:
             monitor_name = "Monitor"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
 
 class LoaderP10(Loader):
@@ -2827,14 +2834,14 @@ class LoaderP10(Loader):
             self.logger.info(f"{device_name} found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at P10.
 
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        monitor = self.read_device(setup=setup, device_name="ipetra")
+        monitor: np.ndarray = self.read_device(setup=setup, device_name="ipetra")
         if len(monitor) == 0:
             monitor = self.read_device(setup=setup, device_name="curpetra")
         return monitor
@@ -2846,7 +2853,7 @@ class LoaderP10SAXS(LoaderP10):
     @safeload
     def motor_positions(
         self, setup: "Setup", **kwargs
-    ) -> Tuple[Union[float, List, np.ndarray], ...]:
+    ) -> Tuple[Union[float, List, np.ndarray, Any], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
@@ -3293,7 +3300,7 @@ class LoaderCRISTAL(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
@@ -3304,7 +3311,8 @@ class LoaderCRISTAL(Loader):
             monitor_name = setup.actuators.get("monitor", "data_04")
         else:
             monitor_name = "data_04"
-        return self.read_device(setup=setup, device_name=monitor_name)
+        monitor: np.ndarray = self.read_device(setup=setup, device_name=monitor_name)
+        return monitor
 
 
 class LoaderNANOMAX(Loader):
@@ -3526,11 +3534,12 @@ class LoaderNANOMAX(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at NANOMAX.
 
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        return self.read_device(setup=setup, device_name="alba2")
+        monitor: np.ndarray = self.read_device(setup=setup, device_name="alba2")
+        return monitor
