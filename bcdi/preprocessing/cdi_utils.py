@@ -463,7 +463,7 @@ def grid_cdi(
     if debugging:
         logger.info(f"cdi_angle {cdi_angle}")
     logger.info(f"Data shape after check_cdi_angle and before regridding: {data.shape}")
-    logger.info(f"Angle range: {cdi_angle.min()}deg - {cdi_angle.max()}deg")
+    logger.info(f"Angle range: {cdi_angle.min():.3f}deg - {cdi_angle.max():.3f}deg")
 
     (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_cdi(
         arrays=(data, mask),
