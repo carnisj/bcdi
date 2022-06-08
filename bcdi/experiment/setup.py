@@ -1142,19 +1142,15 @@ class Setup:
         self,
         array_shape,
         cdi_angle,
-        direct_beam,
     ):
         """
         Calculate q values taking into account the curvature of Ewald sphere.
 
         Based on the CXI detector geometry convention: Laboratory frame: z downstream,
-        y vertical up, x outboard. Detector axes: Y vertical and X horizontal
-        (detector Y is vertical down at out-of-plane angle=0, detector X is opposite
-        to x at inplane angle=0)
+        y vertical up, x outboard. Detector axes: Y vertical and X horizontal.
 
         :param array_shape: tuple of three integers, shape of the dataset to be gridded
         :param cdi_angle: 1D array of measurement angles in degrees
-        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
         :return: qx, qz, qy values in the laboratory frame
          (downstream, vertical up, outboard). Each array has the shape: nb_pixel_x *
          nb_pixel_y * nb_angles
@@ -1166,13 +1162,6 @@ class Setup:
         #########################
         # check some parameters #
         #########################
-        valid.valid_container(
-            direct_beam,
-            container_types=(tuple, list),
-            length=2,
-            item_types=int,
-            name="direct_beam",
-        )
         valid.valid_container(
             array_shape,
             container_types=(tuple, list),
@@ -1188,25 +1177,32 @@ class Setup:
             name="cdi_angle",
         )
 
-        # calculate q values of the measurement
+        if not np.array_equal(self.beam_direction, np.array([1, 0, 0])):
+            raise NotImplementedError(
+                "Only the geometry with the beam along downstream is implemented, "
+                f"'beam_direction'={self.beam_direction}"
+            )
+
+        # initialize arrays for q values
         nbz, nby, nbx = array_shape
-        qz = np.empty((nbz, nby, nbx), dtype=float)
-        qy = np.empty((nbz, nby, nbx), dtype=float)
-        qx = np.empty((nbz, nby, nbx), dtype=float)
+        q_downstream = np.empty((nbz, nby, nbx), dtype=float)
+        q_vertical = np.empty((nbz, nby, nbx), dtype=float)
+        q_outboard = np.empty((nbz, nby, nbx), dtype=float)
 
         #########################################################
         # calculate the index range relative to the direct beam #
         #########################################################
-        y_start, x_start = self.get_detector_offset()
-        direct_beam_y, direct_beam_x = (
-            y_start - direct_beam[0],
-            x_start - direct_beam[1],
+        offseted_direct_beam_y, offseted_direct_beam_x = self.get_offseted_beam(
+            detector_offsets=self.get_detector_offset()
         )
+
         ##########################################################################
         # calculate q values of the detector frame for each angle and stack them #
         ##########################################################################
         for idx, item in enumerate(cdi_angle):
             angle = item * np.pi / 180
+
+            # rotation matrix around y vertical up
             rotation_matrix = np.array(
                 [
                     [
@@ -1229,23 +1225,26 @@ class Setup:
                 ]
             )
 
+            # generate a grid with pixel indices relative to the direct beam
             myy, myx = np.meshgrid(
                 np.linspace(
-                    direct_beam_y,
-                    direct_beam_y + nby,
+                    -offseted_direct_beam_y,
+                    -offseted_direct_beam_y + nby,
                     num=nby,
                     endpoint=False,
                 ),
                 np.linspace(
-                    direct_beam_x,
-                    direct_beam_x + nbx,
+                    -offseted_direct_beam_x,
+                    -offseted_direct_beam_x + nbx,
                     num=nbx,
                     endpoint=False,
                 ),
                 indexing="ij",
             )
 
+            # angle of the exit wavevector along the outboard direction
             two_theta = np.arctan(myx * pixelsize_x / distance)
+            # angle of the exit wavevector along the vertical direction
             alpha_f = np.arctan(
                 np.divide(
                     myy * pixelsize_y,
@@ -1253,42 +1252,44 @@ class Setup:
                 )
             )
 
-            qlab0 = (
-                2
-                * np.pi
-                / wavelength
-                * (np.cos(alpha_f) * np.cos(two_theta) - self.beam_direction[0])
-            )
-            # along z* downstream
-            qlab1 = 2 * np.pi / wavelength * (np.sin(alpha_f) - self.beam_direction[1])
-            # along y* vertical up
-            qlab2 = (
-                2
-                * np.pi
-                / wavelength
-                * (np.cos(alpha_f) * np.sin(two_theta) - self.beam_direction[2])
-            )
-            # along x* outboard
+            q_along_z = (
+                2 * np.pi / wavelength * (np.cos(alpha_f) * np.cos(two_theta) - 1)
+            )  # downstream
+            q_along_x = (
+                2 * np.pi / wavelength * (np.cos(alpha_f) * np.sin(two_theta))
+            )  # outboard
+            q_along_y = 2 * np.pi / wavelength * (np.sin(alpha_f))  # vertical up
 
-            qx[idx, :, :] = (
-                rotation_matrix[0, 0] * qlab0
-                + rotation_matrix[0, 1] * qlab1
-                + rotation_matrix[0, 2] * qlab2
+            q_downstream[idx, :, :] = (
+                rotation_matrix[0, 0] * q_along_x
+                + rotation_matrix[0, 1] * q_along_y
+                + rotation_matrix[0, 2] * q_along_z
             )
-            qz[idx, :, :] = (
-                rotation_matrix[1, 0] * qlab0
-                + rotation_matrix[1, 1] * qlab1
-                + rotation_matrix[1, 2] * qlab2
+            q_vertical[idx, :, :] = (
+                rotation_matrix[1, 0] * q_along_x
+                + rotation_matrix[1, 1] * q_along_y
+                + rotation_matrix[1, 2] * q_along_z
             )
-            qy[idx, :, :] = (
-                rotation_matrix[2, 0] * qlab0
-                + rotation_matrix[2, 1] * qlab1
-                + rotation_matrix[2, 2] * qlab2
+            q_outboard[idx, :, :] = (
+                rotation_matrix[2, 0] * q_along_x
+                + rotation_matrix[2, 1] * q_along_y
+                + rotation_matrix[2, 2] * q_along_z
             )
 
-        return (qx, qz, qy), (direct_beam_y, direct_beam_x)
+        return (q_downstream, q_vertical, q_outboard), (
+            offseted_direct_beam_y,
+            offseted_direct_beam_x,
+        )
 
-    def get_detector_offset(self):
+    def get_detector_offset(self) -> Tuple[float, float]:
+        """
+        Calculate the offset in pixels in the detector frame.
+
+        The offset is calculated by comparing the detector position for the direct beam
+        measurement and the detector position during the BCDI data collection.
+
+        :return: (offset_y, offset_x) in unbinned pixels in the detector frame.
+        """
         delta = [
             val2 - val1
             for (val1, val2) in zip(
@@ -1300,17 +1301,59 @@ class Setup:
                 "the detector moved along the beam, neglecting any detector tilt"
             )
 
+        # convert to mm (factor 1000)
         delta_pixel_y = (
-            delta[1] * self.detector.pixelsize_y * 1000  # convert to mm
-            + self.beamline.orientation_lookup[self.beamline.detector_ver]
-            * self.detector.roi[0]
+            delta[1]
+            * self.detector.unbinned_pixel_size[0]
+            * 1000
+            * self.beamline.orientation_lookup[self.beamline.detector_ver]
+            * self.beamline.orientation_lookup[self.diffractometer.detector_axes[1]]
         )
+        # convert to mm (factor 1000)
         delta_pixel_x = (
-            delta[2] * self.detector.pixelsize_x * 1000  # convert to mm
-            + self.beamline.orientation_lookup[self.beamline.detector_hor]
-            * self.detector.roi[2]
+            delta[2]
+            * self.detector.unbinned_pixel_size[1]
+            * 1000
+            * self.beamline.orientation_lookup[self.beamline.detector_hor]
+            * self.beamline.orientation_lookup[self.diffractometer.detector_axes[1]]
         )
         return delta_pixel_y, delta_pixel_x
+
+    def get_offseted_beam(
+        self, detector_offsets: Tuple[float, float] = (0, 0)
+    ) -> Tuple[int, int]:
+        """
+        Calculate the position of the direct beam compared to the origin of the frame.
+
+        It takes into account an eventual shift of the detector between the direct beam
+        measurement and the detector position during the BCDI data collection, an
+        eventual user-defined region of interest when loading the data, and binning.
+
+        :param detector_offsets: a tuple of two floats indicating the offset in unbinned
+         pixels due to the detector shift.
+         Orientation convention: Y vertical down, X inboard
+        :return: a tuple of int, position of the offseted direct beam compare to the
+         origin of indices.
+        """
+        # vertical
+        binning_y = self.detector.preprocessing_binning[1] * self.detector.binning[1]
+        offseted_direct_beam_y = int(
+            (self.direct_beam[0] - self.detector.roi[0] + detector_offsets[0])
+            / binning_y
+        )
+        # horizontal
+        binning_x = self.detector.preprocessing_binning[2] * self.detector.binning[2]
+        offseted_direct_beam_x = int(
+            (self.direct_beam[1] - self.detector.roi[2])
+            + detector_offsets[1] / binning_x
+        )
+        self.logger.info(
+            f"Direct beam including detector shift {detector_offsets}, "
+            f"region of interest {self.detector.roi} and binning {binning_y, binning_x}"
+            "(vertical, horizontal): "
+            f"({offseted_direct_beam_y},{offseted_direct_beam_x})"
+        )
+        return offseted_direct_beam_y, offseted_direct_beam_x
 
     def grid_cylindrical(
         self,
@@ -1679,49 +1722,25 @@ class Setup:
             name="fill_value",
         )
 
-        #####################################################
-        # recalculate the direct beam position with binning #
-        #####################################################
-        directbeam_y = int(
-            (self.direct_beam[0] - self.detector.roi[0])
-            / (self.detector.preprocessing_binning[1] * self.detector.binning[1])
-        )
-        # vertical
-        directbeam_x = int(
-            (self.direct_beam[1] - self.detector.roi[2])
-            / (self.detector.preprocessing_binning[2] * self.detector.binning[2])
-        )
-        # horizontal
-        self.logger.info(
-            "Direct beam for the ROI and binning (y, x): "
-            f"({directbeam_y},{directbeam_x})"
-        )
-
         #######################################
         # interpolate the diffraction pattern #
         #######################################
         if correct_curvature:
-            (
-                arrays,
-                q_values,
-                (directbeam_y, directbeam_x),
-            ) = self.transformation_cdi_ewald(
+            (arrays, q_values, offseted_direct_beam,) = self.transformation_cdi_ewald(
                 arrays=arrays,
-                direct_beam=(directbeam_y, directbeam_x),
                 cdi_angle=cdi_angle,
                 fill_value=fill_value,
             )
         elif self.beamline_name != "P10_SAXS":
             raise NotImplementedError("Method implemented only for P10 USAXS setup")
         else:
-            arrays, q_values = self.transformation_cdi(
+            arrays, q_values, offseted_direct_beam = self.transformation_cdi(
                 arrays=arrays,
-                direct_beam=(directbeam_y, directbeam_x),
                 cdi_angle=cdi_angle,
                 fill_value=fill_value,
                 debugging=debugging,
             )
-        return arrays, q_values, (directbeam_y, directbeam_x)
+        return arrays, q_values, offseted_direct_beam
 
     def ortho_directspace(
         self,
@@ -2689,7 +2708,7 @@ class Setup:
         # reciprocal length scale in  1/nm
         return mymatrix, q_offset
 
-    def transformation_cdi(self, arrays, direct_beam, cdi_angle, fill_value, debugging):
+    def transformation_cdi(self, arrays, cdi_angle, fill_value, debugging):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -2698,7 +2717,6 @@ class Setup:
 
         :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
          diffraction pattern and mask), in the detector frame
-        :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
         :param cdi_angle: 1D array of measurement angles in degrees
         :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
          for the RegularGridInterpolator, same length as the number of arrays
@@ -2709,19 +2727,14 @@ class Setup:
            number of input arrays)
          - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
            downstream, qz is vertical up and qy is outboard.
+         - a tuple of 2 floats: position of the direct beam after taking into accout the
+          region of interest and binning.
 
         """
         #########################
         # check some parameters #
         #########################
         valid.valid_ndarray(arrays, ndim=3)
-        valid.valid_container(
-            direct_beam,
-            container_types=(tuple, list),
-            length=2,
-            item_types=int,
-            name="direct_beam",
-        )
         valid.valid_1d_array(
             cdi_angle,
             allowed_types=Real,
@@ -2749,21 +2762,26 @@ class Setup:
         lambdaz = wavelength * distance
 
         _, nby, nbx = arrays[0].shape
-        directbeam_y, directbeam_x = direct_beam
-        # calculate the number of voxels available to accomodate the gridded data
-        # directbeam_x and directbeam_y already are already taking into account
-        # the ROI and binning
-        numx = 2 * max(directbeam_x, nbx - directbeam_x)
+
+        #########################################################
+        # calculate the index range relative to the direct beam #
+        #########################################################
+        offseted_direct_beam_y, offseted_direct_beam_x = self.get_offseted_beam()
+
+        ###########################################################################
+        # calculate the number of voxels available to accomodate the gridded data #
+        ###########################################################################
+        numx = 2 * max(offseted_direct_beam_x, nbx - offseted_direct_beam_x)
         # number of interpolated voxels in the plane perpendicular
         # to the rotation axis. It will accomodate the full data range.
         numy = nby  # no change of the voxel numbers along the rotation axis
         self.logger.info(f"Data shape after regridding: ({numx},{numy},{numx})")
 
         # update the direct beam position due to an eventual padding along X
-        if nbx - directbeam_x < directbeam_x:
-            pivot = directbeam_x
+        if nbx - offseted_direct_beam_x < offseted_direct_beam_x:
+            pivot = offseted_direct_beam_x
         else:  # padding to the left along x, need to correct the pivot position
-            pivot = nbx - directbeam_x
+            pivot = nbx - offseted_direct_beam_x
 
         dqx = 2 * np.pi / lambdaz * pixel_x
         # in 1/nm, downstream, pixel_x is the binned pixel size
@@ -2775,11 +2793,11 @@ class Setup:
         ##########################################
         # calculation of q based on P10 geometry #
         ##########################################
-        qx = np.arange(-directbeam_x, -directbeam_x + numx, 1) * dqx
+        qx = np.arange(-offseted_direct_beam_x, -offseted_direct_beam_x + numx, 1) * dqx
         # downstream, same direction as detector X rotated by +90deg
-        qz = np.arange(directbeam_y - numy, directbeam_y, 1) * dqz
+        qz = np.arange(offseted_direct_beam_y - numy, offseted_direct_beam_y, 1) * dqz
         # vertical up opposite to detector Y
-        qy = np.arange(directbeam_x - numx, directbeam_x, 1) * dqy
+        qy = np.arange(offseted_direct_beam_x - numx, offseted_direct_beam_x, 1) * dqy
         # outboard opposite to detector X
         self.logger.info(
             "q spacing for the interpolation (z,y,x) = "
@@ -2808,7 +2826,7 @@ class Setup:
             ortho_array = self.grid_cylindrical(
                 array=array,
                 rotation_angle=cdi_angle,
-                direct_beam=directbeam_x,
+                direct_beam=offseted_direct_beam_x,
                 interp_angle=interp_angle,
                 interp_radius=interp_radius,
                 fill_value=fill_value[idx],
@@ -2816,15 +2834,18 @@ class Setup:
             )
             output_arrays.append(ortho_array)
 
-        return output_arrays, (qx, qz, qy)
+        return (
+            output_arrays,
+            (qx, qz, qy),
+            (offseted_direct_beam_y, offseted_direct_beam_x),
+        )
 
-    def transformation_cdi_ewald(self, arrays, direct_beam, cdi_angle, fill_value):
+    def transformation_cdi_ewald(self, arrays, cdi_angle, fill_value):
         """
         Interpolate forward CDI data considering the curvature of the Ewald sphere.
 
         :param arrays: tuple of 3D arrays of the same shape (e.g.: reciprocal space
          diffraction pattern and mask), in the detector frame
-         :param direct_beam: tuple of 2 integers, position of the direction beam (V, H)
         :param cdi_angle: 1D array of measurement angles in degrees
         :param fill_value: tuple of real numbers (np.nan allowed), fill_value parameter
          for the RegularGridInterpolator, same length as the number of arrays
@@ -2834,7 +2855,6 @@ class Setup:
         (old_qx, old_qz, old_qy), offseted_direct_beam = self.ewald_curvature_saxs(
             array_shape=arrays[0].shape,
             cdi_angle=cdi_angle,
-            direct_beam=direct_beam,
         )
 
         # calculate the number of voxels needed to accomodate the gridded data

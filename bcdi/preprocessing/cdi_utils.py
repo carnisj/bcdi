@@ -465,14 +465,13 @@ def grid_cdi(
     logger.info(f"Data shape after check_cdi_angle and before regridding: {data.shape}")
     logger.info(f"Angle range: {cdi_angle.min():.3f}deg - {cdi_angle.max():.3f}deg")
 
-    (interp_data, interp_mask), q_values, corrected_dirbeam = setup.ortho_cdi(
+    (interp_data, interp_mask), q_values, offseted_direct_beam = setup.ortho_cdi(
         arrays=(data, mask),
         cdi_angle=cdi_angle,
         fill_value=fill_value,
         correct_curvature=correct_curvature,
         debugging=debugging,
     )
-    qx, qz, qy = q_values
 
     # check for Nan
     interp_mask[np.isnan(interp_data)] = 1
@@ -491,9 +490,9 @@ def grid_cdi(
     )
     # 90 degrees conter-clockwise rotation of detector X around qz, downstream
     _, numy, numx = interp_data.shape
-    pivot_y = int(numy - corrected_dirbeam[0])
+    pivot_y = int(numy - offseted_direct_beam[0])
     # detector Y vertical down, opposite to qz vertical up
-    pivot_x = int(numx - corrected_dirbeam[1])
+    pivot_x = int(numx - offseted_direct_beam[1])
     # detector X inboard at P10, opposite to qy outboard
     logger.info(
         "Origin of the reciprocal space (Qx,Qz,Qy): "
@@ -516,7 +515,7 @@ def grid_cdi(
     max_z = interp_data.sum(axis=0).max()
     fig, _, _ = gu.contour_slices(
         interp_data,
-        (qx, qz, qy),
+        q_values,
         sum_frames=True,
         title="Regridded data",
         levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=True),
@@ -537,7 +536,7 @@ def grid_cdi(
 
     fig, _, _ = gu.contour_slices(
         interp_data,
-        (qx, qz, qy),
+        q_values,
         sum_frames=False,
         title="Regridded data",
         levels=np.linspace(
@@ -591,7 +590,7 @@ def grid_cdi(
             reciprocal_space=True,
         )
 
-    return interp_data, interp_mask, [qx, qz, qy], frames_logical
+    return interp_data, interp_mask, list(q_values), frames_logical
 
 
 def load_cdi_data(
