@@ -1344,8 +1344,8 @@ class Setup:
         # horizontal
         binning_x = self.detector.preprocessing_binning[2] * self.detector.binning[2]
         offseted_direct_beam_x = int(
-            (self.direct_beam[1] - self.detector.roi[2])
-            + detector_offsets[1] / binning_x
+            (self.direct_beam[1] - self.detector.roi[2] + detector_offsets[1])
+            / binning_x
         )
         self.logger.info(
             f"Direct beam including detector shift {detector_offsets}, "
