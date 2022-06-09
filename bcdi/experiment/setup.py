@@ -1348,9 +1348,9 @@ class Setup:
             / binning_x
         )
         self.logger.info(
-            f"Direct beam including detector shift {detector_offsets}, "
-            f"region of interest {self.detector.roi} and binning {binning_y, binning_x}"
-            "(vertical, horizontal): "
+            f"Direct beam (VxH) including detector shift {detector_offsets}, "
+            f"region of interest {self.detector.roi} and "
+            f"binning {binning_y, binning_x} : "
             f"({offseted_direct_beam_y},{offseted_direct_beam_x})"
         )
         return offseted_direct_beam_y, offseted_direct_beam_x
@@ -2884,7 +2884,7 @@ class Setup:
         # interpolate the data onto the new points using griddata #
         # (the original grid is not regular, very slow)           #
         ###########################################################
-        self.logger.info("Interpolating the data using griddata, will take time...")
+        self.logger.info("Interpolating the data using griddata, make some coffee...")
         output_arrays = []
         for idx, array in enumerate(arrays):
             # convert array type to float,
