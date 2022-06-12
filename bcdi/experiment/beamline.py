@@ -2235,7 +2235,7 @@ class BeamlineSIXS(Beamline):
         return util.bin_parameters(
             binning=setup.detector.binning[0],
             nb_frames=nb_frames,
-            params=[beta, mu, gamma, delta, energy],
+            params=[beta, mu, beta, gamma, delta, energy],
         )
 
     def transformation_matrix(
