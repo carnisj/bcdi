@@ -1275,7 +1275,13 @@ class Setup:
                 + rotation_matrix[2, 1] * q_along_y
                 + rotation_matrix[2, 2] * q_along_z
             )
-
+        center_slice = np.s_[nbz // 2, nby // 2, nbx // 2]
+        q_center = np.sqrt(
+            q_downstream[center_slice] ** 2
+            + q_vertical[center_slice] ** 2
+            + q_outboard[center_slice] ** 2
+        )
+        self.logger.info(f"q at the center of the ROI: {q_center:.2f} 1/nm")
         return (q_downstream, q_vertical, q_outboard), (
             offseted_direct_beam_y,
             offseted_direct_beam_x,
