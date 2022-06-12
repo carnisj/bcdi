@@ -1,8 +1,8 @@
 Future:
 -------
 
-* Bug: provide the correct number of motor position to xrayutilities Qconv for SIXS
-  (beta needs to be duplicated because it is also below the detector circles.)
+* Bug: provide the correct number of motor positions to xrayutilities Qconv for the SIXS
+  beamline (beta needs to be duplicated because it is also below the detector circles.)
 
 * Modify the saturation threshold of the Eiger2M detector from 1e6 to 1e7 photons.
 
