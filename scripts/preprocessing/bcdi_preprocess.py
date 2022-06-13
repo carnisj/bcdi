@@ -19,8 +19,7 @@ from bcdi.utils.parser import ConfigParser, add_cli_parameters
 from bcdi.utils.snippets_logging import configure_logging
 
 here = Path(__file__).parent
-CONFIG_FILE = str(here.parents[1] / "bcdi/examples/ID27_config_preprocessing_cdi.yml")
-# "bcdi/examples/S11_config_preprocessing.yml")
+CONFIG_FILE = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
 
 helptext = """
 Prepare experimental data for Bragg CDI phasing: crop/pad, center, mask, normalize and
