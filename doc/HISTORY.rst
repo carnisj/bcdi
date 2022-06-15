@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Add option to skip unwrapping: add the boolean parameter `skip_unwrap` to the
+  postprocessing. This can be useful when there are defects in the crystal and phase
+  unwrapping does not work well.
+
 * Bug: provide the correct number of motor positions to xrayutilities Qconv for the SIXS
   beamline (beta needs to be duplicated because it is also below the detector circles.)
 

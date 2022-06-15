@@ -1,10 +1,10 @@
 scans: 11  # scan number or list of scan numbers
-root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
+root_folder: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
+save_dir: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/test/"
 # images will be saved here, leave it to None otherwise (default to data directory's
 # parent). Provide a single path or a list of paths for multiple scans.
-data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
+data_dir: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/S11/"
 # leave None to use the beamline default, or provide the full path to the data. Provide
 # a list of paths for multiple scans.
 sample_name: "S"
@@ -72,6 +72,9 @@ save_frame: "crystal"  # 'crystal', 'laboratory' or 'lab_flat_sample'
 # (which is done in the crystal frame along ref_axis_q)
 isosurface_strain: 0.3  # threshold use for removing the outer layer
 # (strain is undefined at the exact surface voxel)
+skip_unwrap: False
+# If 'skip_unwrap', it will not unwrap the phase. It can be used when there is a defect
+# and phase unwrapping does not work well.
 strain_method: "default"  # 'default' or 'defect'.
 # If 'defect', will offset the phase in a loop and keep the smallest
 # magnitude value for the strain.

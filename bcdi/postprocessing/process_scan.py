@@ -287,6 +287,7 @@ def process_scan(
     phase, extent_phase = pu.unwrap(
         avg_obj,
         support_threshold=prm["threshold_unwrap_refraction"],
+        skip_unwrap=prm["skip_unwrap"],
         debugging=prm["debug"],
         reciprocal_space=False,
         is_orthogonal=prm["is_orthogonal"],
@@ -297,7 +298,10 @@ def process_scan(
         "Extent of the phase over an extended support (ceil(phase range)) ~ "
         f"{int(extent_phase)} (rad)",
     )
-    phase = util.wrap(phase, start_angle=-extent_phase / 2, range_angle=extent_phase)
+    if not prm["skip_unwrap"]:
+        phase = util.wrap(
+            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+        )
     if prm["debug"]:
         gu.multislices_plot(
             phase,
@@ -536,7 +540,7 @@ def process_scan(
     #######################
     logger.info(f"Shape before orthogonalization {avg_obj.shape}\n")
     if prm["data_frame"] == "detector":
-        if prm["debug"]:
+        if prm["debug"] and not prm["skip_unwrap"]:
             phase, _ = pu.unwrap(
                 avg_obj,
                 support_threshold=prm["threshold_unwrap_refraction"],
@@ -699,10 +703,16 @@ def process_scan(
     ####################
     # Phase unwrapping #
     ####################
-    logger.info("Phase unwrapping")
+    log_text = (
+        "Applying support threshold to the phase"
+        if prm["skip_unwrap"]
+        else "Phase unwrapping"
+    )
+    logger.info(log_text)
     phase, extent_phase = pu.unwrap(
         obj_ortho,
         support_threshold=prm["threshold_unwrap_refraction"],
+        skip_unwrap=prm["skip_unwrap"],
         debugging=True,
         reciprocal_space=False,
         is_orthogonal=True,
