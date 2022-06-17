@@ -16,9 +16,13 @@ def get_git_version():
     :return: the version name
     """
     from subprocess import Popen, PIPE
+
     try:
-        p = Popen(['git', 'describe', '--tags', '--dirty', '--always'],
-                  stdout=PIPE, stderr=PIPE)
+        p = Popen(
+            ["git", "describe", "--tags", "--dirty", "--always"],
+            stdout=PIPE,
+            stderr=PIPE,
+        )
         return p.stdout.readlines()[0].strip().decode("UTF-8")
     except:
         # in distributed & installed versions this is replaced by a string
