@@ -24,7 +24,7 @@ def get_git_version():
             stderr=PIPE,
         )
         return p.stdout.readlines()[0].strip().decode("UTF-8")
-    except:
+    except IndexError:
         # in distributed & installed versions this is replaced by a string
         __git_version_static__ = "git_version_placeholder"
         if "placeholder" in __git_version_static__:
