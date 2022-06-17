@@ -2061,7 +2061,8 @@ def plot_linecut(
             fig.savefig(base + "_fits.png")
 
     except IndexError:  # fits not successfull
-        plt.close()
+        print("Automatic fitting of linecuts failed.")
+        plt.close(fig)
 
 
 def plot_3dmesh(
