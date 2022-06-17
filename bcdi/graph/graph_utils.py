@@ -2018,47 +2018,50 @@ def plot_linecut(
         fig.savefig(filename)
 
     # plot the derivatives and the fits
-    fig, axes = plt.subplots(nrows=len(linecuts), ncols=2, figsize=(12, 9))
-    for idx, key in enumerate(linecuts.keys()):
-        factor = voxel_sizes[idx] if voxel_sizes is not None else 1
-        for subkey in linecuts[key].keys():
-            if subkey.startswith("derivative"):
-                index = int(subkey[-1])
-                (line1,) = axes[idx][index].plot(
-                    linecuts[key][subkey][0] * factor,
-                    linecuts[key][subkey][1],
-                    ".b",
-                    label="derivative",
-                )
-                (line2,) = axes[idx][index].plot(
-                    linecuts[key][f"fit_{index}"][0] * factor,
-                    linecuts[key][f"fit_{index}"][1],
-                    "-r",
-                    label="gaussian fit",
-                )
-                axes[idx][index].set_xlabel(labels.get(key, key))
-                axes[idx][index].legend(handles=[line1, line2])
-                fwhm = (
-                    2
-                    * np.sqrt(2 * np.log(2))
-                    * factor
-                    * linecuts[key][f"param_{index}"]["sig"]
-                )
+    try:
+        fig, axes = plt.subplots(nrows=len(linecuts), ncols=2, figsize=(12, 9))
+        for idx, key in enumerate(linecuts.keys()):
+            factor = voxel_sizes[idx] if voxel_sizes is not None else 1
+            for subkey in linecuts[key].keys():
+                if subkey.startswith("derivative"):
+                    index = int(subkey[-1])
+                    (line1,) = axes[idx][index].plot(
+                        linecuts[key][subkey][0] * factor,
+                        linecuts[key][subkey][1],
+                        ".b",
+                        label="derivative",
+                    )
+                    (line2,) = axes[idx][index].plot(
+                        linecuts[key][f"fit_{index}"][0] * factor,
+                        linecuts[key][f"fit_{index}"][1],
+                        "-r",
+                        label="gaussian fit",
+                    )
+                    axes[idx][index].set_xlabel(labels.get(key, key))
+                    axes[idx][index].legend(handles=[line1, line2])
+                    fwhm = (
+                        2
+                        * np.sqrt(2 * np.log(2))
+                        * factor
+                        * linecuts[key][f"param_{index}"]["sig"]
+                    )
 
-                axes[idx][index].text(
-                    x=0.05,
-                    y=0.9,
-                    s=f"FWHM={fwhm:.2f} {unit}",
-                    transform=axes[idx][index].transAxes,
-                )
+                    axes[idx][index].text(
+                        x=0.05,
+                        y=0.9,
+                        s=f"FWHM={fwhm:.2f} {unit}",
+                        transform=axes[idx][index].transAxes,
+                    )
 
-    plt.tight_layout()  # avoids the overlap of subplots with axes labels
-    plt.pause(0.1)
-    plt.ioff()
+        plt.tight_layout()  # avoids the overlap of subplots with axes labels
+        plt.pause(0.1)
+        plt.ioff()
+        if filename:
+            base, _ = os.path.splitext(filename)
+            fig.savefig(base + "_fits.png")
 
-    if filename:
-        base, _ = os.path.splitext(filename)
-        fig.savefig(base + "_fits.png")
+    except IndexError:  # fits not successfull
+        plt.close()
 
 
 def plot_3dmesh(
