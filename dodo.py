@@ -6,19 +6,14 @@ from pathlib import Path
 
 import coverage
 
+from bcdi import __version__
+
 # Generic functions go here
 
 
 def get_path():
     """Get the path of the dodo.py file."""
     return os.path.dirname(os.path.abspath(__file__))
-
-
-def get_version():
-    """Get the version of the distribution."""
-    with open("bcdi/__init__.py", "r") as version_file:
-        version = version_file.readlines()[-1].split("=")[1].strip().split('"')[1]
-    return version
 
 
 # Tasks go here
@@ -38,6 +33,15 @@ def task_isort():
     path = get_path()
     return {
         "actions": [f"python -m isort {path}"],
+        "verbosity": 2,
+    }
+
+
+def task_mypy():
+    """Run mypy against the package."""
+    path = get_path()
+    return {
+        "actions": [f"python -m mypy {path}"],
         "verbosity": 2,
     }
 
@@ -181,7 +185,7 @@ def task_build_distribution():
     """Build the distribution."""
     return {
         "actions": ["python setup.py sdist bdist_wheel"],
-        "targets": [f"dist/bcdi-{get_version()}.tar.gz"],
+        "targets": [f"dist/bcdi-{__version__}.tar.gz"],
         "verbosity": 1,
     }
 
@@ -208,6 +212,6 @@ def task_check_long_description_pypi():
     """Check whether the long description will render correctly on PyPI."""
     return {
         "actions": ["twine check dist/*"],
-        "file_dep": [f"dist/bcdi-{get_version()}.tar.gz"],
+        "file_dep": [f"dist/bcdi-{__version__}.tar.gz"],
         "verbosity": 2,
     }
