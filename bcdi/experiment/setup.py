@@ -1296,6 +1296,8 @@ class Setup:
 
         :return: (offset_y, offset_x) in unbinned pixels in the detector frame.
         """
+        if self.detector_position is None:
+            raise ValueError("'detector_position' is None")
         delta = [
             val2 - val1
             for (val1, val2) in zip(

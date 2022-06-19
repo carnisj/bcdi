@@ -1058,9 +1058,7 @@ def process_scan_cdi(
             (qx, qz, qy),
             sum_frames=True,
             title="Final data",
-            levels=np.linspace(
-                0, int(np.log10(data.max(initial=None))), 150, endpoint=False
-            ),
+            levels=np.linspace(0, int(np.log10(data.max())), 150, endpoint=False),
             plot_colorbar=True,
             scale="log",
             is_orthogonal=True,
