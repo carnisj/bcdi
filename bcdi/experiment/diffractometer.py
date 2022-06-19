@@ -559,6 +559,12 @@ class DiffractometerFactory:
     def create_diffractometer(
         name: str, **kwargs
     ) -> Union[FullDiffractometer, DiffractometerSAXS]:
+        """
+        Create a diffractometer instance of the corresponding class.
+
+        :param name: name of the beamline
+        :return: an instance of the corresponding class
+        """
         if name in BEAMLINES_BCDI:
             return FullDiffractometer(name=name, **kwargs)
         if name in BEAMLINES_SAXS:

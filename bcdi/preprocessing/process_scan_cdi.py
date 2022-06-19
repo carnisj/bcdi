@@ -277,7 +277,7 @@ def process_scan_cdi(
         template_imagefile=prm["template_imagefile"][scan_idx],
     )
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan_nb,
         root_folder=prm["root_folder"],
         filename=setup.detector.specfile,
@@ -395,7 +395,6 @@ def process_scan_cdi(
             )
 
     else:  # new masking process
-        reload_orthogonal = False  # the data is in the detector plane
         flatfield = util.load_flatfield(prm["flatfield_file"])
         hotpix_array = util.load_hotpixels(prm["hotpixels_file"])
         background = util.load_background(prm["background_file"])
@@ -457,7 +456,6 @@ def process_scan_cdi(
             plt.ioff()
             width = 0
             max_colorbar = 5
-            detector_plane = True
             flag_aliens = False
             flag_mask = True
             flag_pause = False  # press x to pause for pan/zoom
@@ -514,7 +512,6 @@ def process_scan_cdi(
 
             mask[np.nonzero(updated_mask)] = 1
             data = original_data
-            detector_plane = False
             del fig_mask, original_data, updated_mask
             gc.collect()
 
