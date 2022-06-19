@@ -56,7 +56,7 @@ import tkinter as tk
 from abc import ABC, abstractmethod
 from numbers import Integral
 from tkinter import filedialog
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import fabio
 import h5py

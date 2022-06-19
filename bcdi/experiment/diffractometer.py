@@ -48,8 +48,8 @@ API Reference
 
 """
 
-from abc import ABC
 import logging
+from abc import ABC
 from collections import namedtuple
 from functools import reduce
 from numbers import Number, Real
