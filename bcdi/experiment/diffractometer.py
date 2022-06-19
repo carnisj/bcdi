@@ -553,6 +553,8 @@ class DiffractometerSAXS(Diffractometer):
 
 
 class DiffractometerFactory:
+    """Create a diffractometer depending on the beamline name."""
+
     @staticmethod
     def create_diffractometer(
         name: str, **kwargs

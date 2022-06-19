@@ -5,7 +5,8 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
-"""Workflow for CDI data preprocessing of a single scan, before phase retrieval.
+"""
+Workflow for CDI data preprocessing of a single scan, before phase retrieval.
 
 The detector is expected to be fixed, its plane being always perpendicular to the direct
 beam independently of the detector position.
