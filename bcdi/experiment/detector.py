@@ -846,7 +846,7 @@ class Eiger9M(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.saturation_threshold = 4000000000  # TODO check this
+        self.saturation_threshold = 4000000000
 
     def _mask_gaps(self, data, mask):
         """
@@ -863,24 +863,35 @@ class Eiger9M(Detector):
         valid.valid_ndarray(
             (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
         )
-        # TODO check this
-        # data[:, 0:1] = 0
-        # data[:, -1:] = 0
-        # data[0:1, :] = 0
-        # data[-1:, :] = 0
-        # data[:, 1029:1041] = 0
-        # data[513:552, :] = 0
-        # data[1064:1103, :] = 0
-        # data[1615:1654, :] = 0
-        #
-        # mask[:, 0:1] = 1
-        # mask[:, -1:] = 1
-        # mask[0:1, :] = 1
-        # mask[-1:, :] = 1
-        # mask[:, 1029:1041] = 1
-        # mask[513:552, :] = 1
-        # mask[1064:1103, :] = 1
-        # mask[1615:1654, :] = 1
+        data[:, 0:1] = 0
+        data[:, -1:] = 0
+        data[0:1, :] = 0
+        data[-1:, :] = 0
+        data[:, 513:515] = 0
+        data[:, 1028:1040] = 0
+        data[:, 1553:1555] = 0
+        data[:, 2068:2080] = 0
+        data[:, 2593:2595] = 0
+        data[512:550, :] = 0
+        data[1062:1100, :] = 0
+        data[1612:1650, :] = 0
+        data[2162:2200, :] = 0
+        data[2712:2750, :] = 0
+
+        mask[:, 0:1] = 1
+        mask[:, -1:] = 1
+        mask[0:1, :] = 1
+        mask[-1:, :] = 1
+        mask[:, 513:515] = 1
+        mask[:, 1028:1040] = 1
+        mask[:, 1553:1555] = 1
+        mask[:, 2068:2080] = 1
+        mask[:, 2593:2595] = 1
+        mask[512:550, :] = 1
+        mask[1062:1100, :] = 1
+        mask[1612:1650, :] = 1
+        mask[2162:2200, :] = 1
+        mask[2712:2750, :] = 1
         return data, mask
 
     @property
