@@ -818,13 +818,13 @@ class Loader(ABC):
             ####################################
             # check for empty frames (no beam) #
             ####################################
-            # data, mask3d, monitor, frames_logical = check_empty_frames(
-            #     data=data,
-            #     mask=mask3d,
-            #     monitor=monitor,
-            #     frames_logical=frames_logical,
-            #     logger=self.logger,
-            # )
+            data, mask3d, monitor, frames_logical = check_empty_frames(
+                data=data,
+                mask=mask3d,
+                monitor=monitor,
+                frames_logical=frames_logical,
+                logger=self.logger,
+            )
 
             ###########################
             # intensity normalization #
