@@ -41,7 +41,7 @@ def task_mypy():
     """Run mypy against the package."""
     path = get_path()
     return {
-        "actions": [f"python -m mypy {path}"],
+        "actions": [f"python -m mypy {path + '/bcdi'}"],
         "verbosity": 2,
     }
 
@@ -150,14 +150,6 @@ def task_tests():
         "actions": ["coverage run --source=bcdi -m unittest discover"],
         "targets": [".coverage"],
         "verbosity": 1,
-    }
-
-
-def task_mypy():
-    """Type check using mypy."""
-    return {
-        "actions": ["python -m mypy bcdi"],
-        "verbosity": 2,
     }
 
 
