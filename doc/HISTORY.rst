@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Add support for high-energy BCDI at ESRF ID27 beamline. Add an example configuration
+  file to the package.
+
 * Rename `bcdi_preprocess_BCDI.py` to `bcdi_preprocess.py`, add support for CDI in the
   script.
 
