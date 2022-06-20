@@ -156,7 +156,7 @@ def create_geometry(beamline, sample_offsets=None):
     if beamline == "P10_SAXS":
         return Geometry_SAXS(
             sample_circles=["y+"],
-            detector_axes=["z+", "y+", "x+"],  # TODO check the translation directions
+            detector_axes=["z+", "y+", "x+"],  # check the translation directions!
             default_offsets=(0,),
             user_offsets=sample_offsets,
         )
