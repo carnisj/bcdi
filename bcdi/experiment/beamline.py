@@ -2084,7 +2084,7 @@ class BeamlineID27(BeamlineSaxs):
         direction. The laboratory frame convention is (z downstream, y vertical,
         x outboard).
         """
-        return "x-"  # TODO check
+        return "x-"
 
     @property
     def detector_ver(self):
@@ -2094,7 +2094,7 @@ class BeamlineID27(BeamlineSaxs):
         The origin is at the top, detector Y along vertical down. The laboratory frame
         convention is (z downstream, y vertical, x outboard).
         """
-        return "y-"  # TODO check
+        return "y-"
 
     def goniometer_values(self, setup, **kwargs):
         """
