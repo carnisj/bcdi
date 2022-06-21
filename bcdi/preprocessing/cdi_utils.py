@@ -434,7 +434,8 @@ def grid_cdi(
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     if setup.rocking_angle == "inplane":
         if setup.custom_scan:
-            # TODO: create a list of stage names per beamline to avoid harcoding it here  # skipcq: PYL-W0511
+            # TODO: create a list of stage names per beamline  # skipcq: PYL-W0511
+            # to avoid having to harcode it here
             if setup.name == "P10_SAXS":
                 cdi_angle = setup.custom_motors["hprz"]
             elif setup.name == "ID27":
