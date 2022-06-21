@@ -144,18 +144,10 @@ bcdi_interpolate_CDI.py
    :end-before: """
    :language: rst
 
-bcdi_preprocess_BCDI.py
-^^^^^^^^^^^^^^^^^^^^^^^
+bcdi_preprocess.py
+^^^^^^^^^^^^^^^^^^
 
-.. literalinclude:: ../../scripts/preprocessing/bcdi_preprocess_BCDI.py
-   :start-after: helptext
-   :end-before: """
-   :language: rst
-
-bcdi_preprocess_CDI.py
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. literalinclude:: ../../scripts/preprocessing/bcdi_preprocess_CDI.py
+.. literalinclude:: ../../scripts/preprocessing/bcdi_preprocess.py
    :start-after: helptext
    :end-before: """
    :language: rst

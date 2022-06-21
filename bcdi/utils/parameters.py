@@ -196,6 +196,77 @@ class ConfigChecker(ABC):
         )
 
 
+class CDIPreprocessingChecker(ConfigChecker):
+    """Configure preprocessing-dependent parameters for the 'CDI' case."""
+
+    def _configure_params(self) -> None:
+        """Hard-code processing-dependent parameter configuration."""
+        self._checked_params["roi_detector"] = self._create_roi()
+        if self._checked_params["photon_filter"] == "loading":
+            self._checked_params["loading_threshold"] = self._checked_params[
+                "photon_threshold"
+            ]
+        else:
+            self._checked_params["loading_threshold"] = 0
+
+        if self._checked_params["reload_previous"]:
+            self._checked_params["comment"] += "_reloaded"
+            logger.info(
+                "Reloading... update the direct beam position "
+                "taking into account preprocessing_binning"
+            )
+            self._checked_params["direct_beam"] = (
+                self._checked_params["direct_beam"][0]
+                // self._checked_params["preprocessing_binning"][1],
+                self._checked_params["direct_beam"][1]
+                // self._checked_params["preprocessing_binning"][2],
+            )
+        else:
+            self._checked_params["preprocessing_binning"] = (1, 1, 1)
+            self._checked_params["reload_orthogonal"] = False
+        if self._checked_params["reload_orthogonal"]:
+            self._checked_params["use_rawdata"] = False
+
+        if self._checked_params["use_rawdata"]:
+            self._checked_params["save_dirname"] = "pynxraw"
+            self._checked_params["plot_title"] = ["YZ", "XZ", "XY"]
+            logger.info("Output will be non orthogonal, in the detector frame")
+        else:
+            if (
+                self._checked_params["reload_orthogonal"]
+                and self._checked_params["preprocessing_binning"][0] != 1
+            ):
+                raise ValueError(
+                    "preprocessing_binning along axis 0 should be 1"
+                    " when gridding reloaded data (angles won't match)"
+                )
+            logger.info(
+                "use_rawdata=False: defaulting the binning factor "
+                "along the stacking dimension to 1"
+            )
+            # data in the detector frame, one cannot bin the first axis because it is
+            # done during interpolation. The vertical axis y being the rotation axis,
+            # binning along z downstream and x outboard will be the same
+            self._checked_params["phasing_binning"][0] = 1
+
+            self._checked_params["save_dirname"] = "pynx"
+            self._checked_params["plot_title"] = ["QzQx", "QyQx", "QyQz"]
+            logger.info("Output will be interpolated in the (Qx, Qy, Qz) frame.")
+        if (
+            self._checked_params["backend"].lower() == "agg"
+            and self._checked_params["flag_interact"]
+        ):
+            raise ValueError(
+                "non-interactive backend 'agg' not compatible with the "
+                "interactive masking GUI"
+            )
+        if (
+            self._checked_params["flag_interact"]
+            or self._checked_params["reload_previous"]
+        ):
+            self._checked_params["multiprocessing"] = False
+
+
 class PreprocessingChecker(ConfigChecker):
     """Configure preprocessing-dependent parameters."""
 
@@ -379,9 +450,12 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "align_q",
         "apodize",
         "bin_during_loading",
+        "correct_curvature",
         "correct_refraction",
         "custom_scan",
         "debug",
+        "detector_on_goniometer",
+        "fit_datarange",
         "flag_interact",
         "flip_reconstruction",
         "get_temperature",
@@ -389,6 +463,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "invert_phase",
         "is_series",
         "keep_size",
+        "mask_beamstop",
         "mask_zero_event",
         "multiprocessing",
         "reload_orthogonal",
@@ -581,6 +656,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             container_types=(list, tuple),
             item_types=Real,
             length=2,
+            allow_none=True,
+            name=key,
+        )
+    elif key == "dirbeam_detector_position":
+        valid.valid_container(
+            value,
+            container_types=(list, tuple),
+            item_types=Real,
+            length=3,
             allow_none=True,
             name=key,
         )

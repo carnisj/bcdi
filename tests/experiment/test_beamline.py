@@ -10,7 +10,7 @@ import unittest
 
 import numpy as np
 
-from bcdi.experiment.beamline import Beamline, BeamlineID01, create_beamline
+from bcdi.experiment.beamline import BeamlineID01, create_beamline
 from tests.config import run_tests
 
 # conversion table from the laboratory frame (CXI convention)
@@ -28,10 +28,6 @@ labframe_to_xrayutil = {
 
 class TestBeamline(unittest.TestCase):
     """Tests related to beamline instantiation."""
-
-    def test_create_beamline_from_abc(self):
-        with self.assertRaises(TypeError):
-            Beamline(name="ID01")
 
     def test_find_inplane_CRISTAL(self):
         beamline = create_beamline("CRISTAL")

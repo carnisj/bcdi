@@ -3,6 +3,12 @@
 API Reference:
 ==============
 
+constants
+^^^^^^^^^
+
+.. automodule:: bcdi.constants
+    :members:
+
 .. toctree::
    :maxdepth: 1
 

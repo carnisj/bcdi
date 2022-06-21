@@ -1,6 +1,12 @@
 Future:
 -------
 
+* Add support for high-energy BCDI at ESRF ID27 beamline. Add an example configuration
+  file to the package.
+
+* Rename `bcdi_preprocess_BCDI.py` to `bcdi_preprocess.py`, add support for CDI in the
+  script.
+
 * Add option to skip unwrapping: add the boolean parameter `skip_unwrap` to the
   postprocessing. This can be useful when there are defects in the crystal and phase
   unwrapping does not work well.

@@ -41,7 +41,7 @@ where the data is.
 Usage:
 
  - command line:
-   `python path_to/bcdi_preprocess_BCDI.py --config_file path_to/config.yml`
+   `python path_to/bcdi_preprocess.py --config_file path_to/config.yml`
  - directly from a code editor:
    update the constant CONFIG_FILE at the top of the file
 
@@ -49,6 +49,9 @@ Usage:
 
     :param scans: e.g. 11
      scan number or list of scan numbers
+    :param detector_on_goniometer: e.g. True
+     True if the detector is on a goniometer, False if its plane is alway perpendicular
+     to the direct beam independently of its position.
     :param root_folder: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/"
      folder of the experiment, where all scans are stored
     :param save_dir: e.g. "C:/Users/Jerome/Documents/data/dataset_ID01/test/"
@@ -181,6 +184,9 @@ Usage:
     :param phasing_binning: e.g. [1, 2, 2]
      binning to apply to the data (stacking dimension, detector vertical axis, detector
      horizontal axis)
+    :param correct_curvature: e.g. True
+     Correct for the curvature of Ewald sphere. You can use False only at P10_SAXS
+     (~ 8keV).
     :param linearity_func: e.g. [1, -2, -0.0021, 32.0, 1.232]
      coefficients of the 4th order polynomial ax^4 + bx^3 + cx^2 + dx + e which it used
      to correct the non-linearity of the detector at high intensities. Leave None
@@ -229,6 +235,19 @@ Usage:
      - template for NANOMAX: '%06d.h5'
      - template for 34ID: 'some_name_%05d.tif'
 
+    Parameters specific to tomography-like CDI datasets:
+
+    :param dirbeam_detector_position: e.g. [12.12, 43.05, -23.34]
+     Position of the detector [z, y, x] for the direct beam measurement in the
+     laboratory frame (z downstream, y vertical up, x outboard)
+    :param fit_datarange: e.g. True
+     If True, crop the final array within the defined data range, avoiding empty areas
+     at the corners of the interpolation window: the defined data is a cylinder
+     (of axis the axis of rotation), but the interpolation window is rectangular, with
+     nan values outside of data. Set it to False for BCDI (e.g. ID27).
+    :param correct_curvature: e.g. True
+     True to correcture q values for the curvature of Ewald sphere.
+
     Parameters below if you want to orthogonalize the data before phasing:
 
     :param use_rawdata: e.g. True
@@ -247,11 +266,18 @@ Usage:
      tuple of offsets in degrees of the sample for each sample circle (outer first).
      convention: the sample offsets will be subtracted to the motor values. Leave None
      if there is no offset.
-    :param sdd: e.g. 0.50678
+    :param detector_distance: e.g. 0.50678
      in m, sample to detector distance in m
     :param energy: e.g. 9000
      X-ray energy in eV, it can be a number or a list in case of energy scans. Leave
      None to use the default from the log file.
+    :param direct_beam: e.g. [125, 362]
+     [vertical, horizontal]
+     BCDI: direct beam position on the unbinned, full detector measured with detector
+     angles given by `dirbeam_detector_angles`. It will be used to calculate the real
+     detector angles for the measured Bragg peak. Leave None for no correction.
+     CDI: direct beam position on the unbinned, full detector measured at the detector
+     position given by dirbeam_detector_position. It will be used to calculate q values.
     :param custom_motors: e.g. {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0,
      "delta": -0.5685, "gamma": 33.3147}
      use this to declare motor positions if there is not log file, None otherwise
@@ -263,11 +289,6 @@ Usage:
      if True it rotates the crystal to align q, along one axis of the array. It is used
      only when interp_method is 'linearization'
     :param ref_axis_q: e.g. "y"  # q will be aligned along that axis
-    :param direct_beam: e.g. [125, 362]
-     [vertical, horizontal], direct beam position on the unbinned, full detector
-     measured with detector angles given by `dirbeam_detector_angles`. It will be used
-     to calculate the real detector angles for the measured Bragg peak. Leave None for
-     no correction.
     :param dirbeam_detector_angles: e.g. [1, 25]
      [outofplane, inplane] detector angles in degrees for the direct beam measurement.
      Leave None for no correction

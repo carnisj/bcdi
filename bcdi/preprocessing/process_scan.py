@@ -5,7 +5,11 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
-"""Workflow for BCDI data preprocessing of a single scan, before phase retrieval."""
+"""
+Workflow for BCDI data preprocessing of a single scan, before phase retrieval.
+
+The detector is expected to be on a goniometer.
+"""
 
 import gc
 
@@ -47,7 +51,7 @@ def process_scan(
     scan_idx: int, prm: Dict[str, Any]
 ) -> Tuple[Path, Path, Optional[Logger]]:
     """
-    Run the preprocessing defined by the configuration parameters for a single scan.
+    Run the BCDI preprocessing with the configuration parameters for a single scan.
 
     This function is meant to be run as a process in multiprocessing, although it can
     also be used as a normal function for a single scan. It assumes that the dictionary
@@ -420,12 +424,12 @@ def process_scan(
                     del numz, numy, numx
         else:  # the data is in the detector frame
             data, mask, frames_logical, monitor = bu.reload_bcdi_data(
-                scan_number=scan_nb,
                 data=data,
                 mask=mask,
+                scan_number=scan_nb,
                 setup=setup,
-                debugging=prm["debug"],
                 normalize=prm["normalize_flux"],
+                debugging=prm["debug"],
                 photon_threshold=prm["loading_threshold"],
                 logger=logger,
             )
@@ -972,7 +976,7 @@ def process_scan(
         flag_mask = True
         flag_pause = False  # press x to pause for pan/zoom
         previous_axis = None
-        xy: List[int] = []  # list of points for mask
+        xy: List[List[int]] = []  # list of points for mask
 
         fig_mask, ((ax0, ax1), (ax2, ax3)) = plt.subplots(
             nrows=2, ncols=2, figsize=(12, 6)
@@ -1071,9 +1075,8 @@ def process_scan(
         logger.info(f"Total number of filtered pixels: {nb_pix}")
     elif prm["median_filter"] == "median":  # apply median filter
         logger.info("Applying median filtering")
-        for idx in range(
-            pad_width[0], nz - pad_width[1]
-        ):  # filter only frames whith data (not padded)
+        for idx in range(pad_width[0], nz - pad_width[1]):
+            # filter only frames whith data (not padded)
             data[idx, :, :] = scipy.signal.medfilt2d(data[idx, :, :], [3, 3])
     else:
         logger.info("Skipping median filtering")
@@ -1091,9 +1094,7 @@ def process_scan(
     ################################################
     nz, ny, nx = data.shape
     logger.info(f"Data size after masking: {data.shape}")
-
     data, mask = util.remove_nan(data=data, mask=mask)
-
     data[mask == 1] = 0
 
     ####################

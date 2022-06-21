@@ -86,6 +86,8 @@ def create_detector(name, **kwargs):
         return Eiger2M(name=name, **kwargs)
     if name == "Eiger4M":
         return Eiger4M(name=name, **kwargs)
+    if name == "Eiger9M":
+        return Eiger9M(name=name, **kwargs)
     if name == "Timepix":
         return Timepix(name=name, **kwargs)
     if name == "Merlin":
@@ -832,6 +834,74 @@ class Eiger4M(Detector):
         Convention: (vertical, horizontal)
         """
         return 2167, 2070
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 75e-06, 75e-06
+
+
+class Eiger9M(Detector):
+    """Implementation of the Eiger9M detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.saturation_threshold = 4000000000
+
+    def _mask_gaps(self, data, mask):
+        """
+        Mask the gaps between sensors in the detector.
+
+        :param data: a 2D numpy array
+        :param mask: a 2D numpy array of the same shape as data
+        :return:
+
+         - the masked data
+         - the updated mask
+
+        """
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
+        data[:, 0:1] = 0
+        data[:, -1:] = 0
+        data[0:1, :] = 0
+        data[-1:, :] = 0
+        data[:, 513:515] = 0
+        data[:, 1028:1040] = 0
+        data[:, 1553:1555] = 0
+        data[:, 2068:2080] = 0
+        data[:, 2593:2595] = 0
+        data[512:550, :] = 0
+        data[1062:1100, :] = 0
+        data[1612:1650, :] = 0
+        data[2162:2200, :] = 0
+        data[2712:2750, :] = 0
+
+        mask[:, 0:1] = 1
+        mask[:, -1:] = 1
+        mask[0:1, :] = 1
+        mask[-1:, :] = 1
+        mask[:, 513:515] = 1
+        mask[:, 1028:1040] = 1
+        mask[:, 1553:1555] = 1
+        mask[:, 2068:2080] = 1
+        mask[:, 2593:2595] = 1
+        mask[512:550, :] = 1
+        mask[1062:1100, :] = 1
+        mask[1612:1650, :] = 1
+        mask[2162:2200, :] = 1
+        mask[2712:2750, :] = 1
+        return data, mask
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 3262, 3108
 
     @property
     def unbinned_pixel_size(self):

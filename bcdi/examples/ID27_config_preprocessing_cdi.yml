@@ -1,13 +1,13 @@
-scans: 11  # scan number or list of scan numbers
-root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
+scans: 6  # scan number or list of scan numbers
+root_folder: "C:/Users/carnisj/Documents/data/dataset_ID27/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
+save_dir: "C:/Users/carnisj/Documents/data/dataset_ID27/test/"
 # images will be saved here, leave it to None otherwise (default to data directory's
 # parent). Provide a single path or a list of paths for multiple scans.
-data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
+data_dir: "C:/Users/carnisj/Documents/data/dataset_ID27/"
 # leave None to use the beamline default, or provide the full path to the data. Provide
 # a list of paths for multiple scans.
-sample_name: "S"  # str or list of str of sample names
+sample_name: "Ptx7_0007"  # str or list of str of sample names
 # (string in front of the scan number in the folder name).
 # If only one name is indicated, it will be repeated to match the number of scans.
 comment: ""  # string, should start with "_"
@@ -26,22 +26,9 @@ mask: None  # path to a file containing a 3D mask array of the same size as data
 # data if flag_interact is False, or as an initial mask if flag_interact is True.
 background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 # For visual comfort during masking
-#########################################################
-# parameters related to data cropping/padding/centering #
-#########################################################
-centering_method: "max"  # Bragg peak determination: 'max' or 'com', 'max' is better usually.
-#  It will be overridden by 'fix_bragg' if not empty
-fix_size: None  # crop the array to predefined size considering the full detector,
-# leave None otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
-# ROI will be defaulted to []
-center_fft: "skip"
-# 'crop_sym_ZYX','crop_asym_ZYX','pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX',
-# 'pad_sym_Z', 'pad_asym_Z', 'pad_sym_ZYX','pad_asym_ZYX' or 'skip'
-pad_size: None  # size after padding, e.g. [256, 512, 512]. Use this to pad the array.
-# Leave None otherwise. Used in 'pad_sym_Z_crop_sym_YX', 'pad_sym_Z', 'pad_sym_ZYX'.
-#################################
-# parameters for data filtering #
-#################################
+##########################################
+# parameters for data filtering/cropping #
+##########################################
 mask_zero_event: False  # mask pixels where the sum along the rocking curve is zero
 # may be dead pixels
 median_filter: "skip"
@@ -71,18 +58,15 @@ save_as_int: False
 ######################################
 # define beamline related parameters #
 ######################################
-beamline: "ID01"
+beamline: "ID27"
 # name of the beamline, used for data loading and normalization by monitor
-# supported beamlines: 'ID01', 'ID01BLISS', 'SIXS_2018', 'SIXS_2019', 'CRISTAL', 'P10',
-# 'NANOMAX', '34ID'
+# supported beamlines: "P10_SAXS", "ID27"
 actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # Optional dictionary that can be used to define the entries corresponding to
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
-is_series: False  # specific to series measurement at P10
-rocking_angle: "outofplane"  # "outofplane" for a sample rotation around x outboard,
-# "inplane" for a sample rotation around y vertical up, "energy"
-specfile_name: "l5.spec"
+is_series: True  # specific to series measurement at P10
+specfile_name: None
 # string or list of strings for multiple scans.
 # template for ID01 and 34ID: name of the spec file if it is at the default location
 # (in root_folder) or full path to the spec file
@@ -104,18 +88,24 @@ custom_monitor: None
 ###############################
 # detector related parameters #
 ###############################
-detector: "Maxipix"  # "Eiger2M", "Maxipix", "Eiger4M", "Merlin" or "Timepix"
-phasing_binning: [1, 2, 2]  # binning to apply to the data
+detector: "Eiger9M"  # "Maxipix", "Eiger2M", "Eiger4M", "Eiger9M", "Merlin" or "Timepix"
+detector_on_goniometer: False  # True if the detector is on a goniometer, False if its
+# plane is alway perpendicular to the direct beam independently of its position.
+mask_beamstop: True
+# True to apply beamstop correction (direct beam on the detector, masked by a beam stop)
+phasing_binning: [1, 3, 3]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
+correct_curvature: True
+# Correct for the curvature of Ewald sphere. You can use False only at P10_SAXS (~ 8keV)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
 # polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
 # the detector at high intensities. Leave None otherwise.
-center_roi_x: None  # horizontal pixel number of the center of the ROI for data
+center_roi_x: 360  # horizontal pixel number of the center of the ROI for data
 # loading, leave None to use the full detector
-center_roi_y: None  # vertical pixel number of the center of the ROI for data
+center_roi_y: 855  # vertical pixel number of the center of the ROI for data
 # loading, leave None to use the full detector
-roi_detector: None
+roi_detector: [100, 100, 100, 100]
 # [Vstart, Vstop, Hstart, Hstop]. If "center_roi_x" or "center_roi_y" are not None, it
 # will consider that the current values in roi_detector define a window around the
 # center position and the final output will be
@@ -123,8 +113,13 @@ roi_detector: None
 # center_roi_x - roi_detector[2], center_roi_x + roi_detector[3]].
 # leave None to use the full detector.
 # Use with center_fft='skip' if you want this exact size.
-normalize_flux: "monitor"  # 'skip'  # 'monitor' to normalize the intensity by
+normalize_flux: 'skip'  # 'skip'  # 'monitor' to normalize the intensity by
 # the default monitor values, 'skip' to do nothing
+fit_datarange: False  #   Only for (tomography-like) CDI datasets.
+# If True, crop the final array within the defined data range, avoiding empty areas
+# at the corners of the interpolation window: the defined data is a cylinder
+# (of axis the axis of rotation), but the interpolation window is rectangular, with
+# nan values outside of data. Set it to False for BCDI (e.g. ID27).
 photon_threshold: 0  # data[data < photon_threshold]: 0
 photon_filter: "loading"  # 'loading' or 'postprocessing',
 # when the photon threshold should be applied
@@ -138,7 +133,7 @@ frames_pattern: None
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
-template_imagefile: "data_mpx4_%05d.edf.gz"
+template_imagefile: "Ptx7_0007.h5"
 # string or list of strings for multiple scans.
 # template for ID01: 'data_mpx4_%05d.edf.gz' or 'align_eiger2M_%05d.edf.gz'
 # template for ID01BLISS: 'ihhc3715_sample5.h5'
@@ -151,9 +146,8 @@ template_imagefile: "data_mpx4_%05d.edf.gz"
 ################################################################################
 # define parameters below if you want to orthogonalize the data before phasing #
 ################################################################################
-use_rawdata: True  # False for using data gridded in laboratory frame
+use_rawdata: False  # False for using data gridded in laboratory frame
 # True for using data in detector frame
-interpolation_method: "linearization"  # 'xrayutilities' or 'linearization'
 fill_value_mask: 0  # 0 (not masked) or 1 (masked).
 # It will define how the pixels outside the data range are
 # processed during the interpolation. Because of the large number of masked pixels,
@@ -161,12 +155,18 @@ fill_value_mask: 0  # 0 (not masked) or 1 (masked).
 # imposed). The data is by default set to 0 outside the defined range.
 beam_direction: [1, 0, 0]
 # beam direction in the laboratory frame (downstream, vertical up, outboard)
-sample_offsets: [90, 0, 0]
+sample_offsets: None
 # tuple of offsets in degrees of the sample for each sample circle (outer first).
 # convention: the sample offsets will be subtracted to the motor values.
 # Leave None if no offset.
-detector_distance: 0.50678  # in m, sample to detector distance in m
-energy: 9000  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
+direct_beam: [1598.66, 1537.544]  # [vertical, horizontal]
+# direct beam position on the unbinned, full detector measured at the detector position
+# given by dirbeam_detector_position. It will be used to calculate q values.
+dirbeam_detector_position: [2000, -11.9353, 263]
+# Position of the detector [z, y, x] for the direct beam measurement in the
+# laboratory frame (z downstream, y vertical up, x outboard)
+detector_distance: 0.3103  # in m, sample to detector distance in m
+energy: 33167  # np.linspace(11100, 10900, num=51)  # x-ray energy in eV
 custom_motors: None
 # {"mu": 0, "phi": -15.98, "chi": 90, "theta": 0, "delta": -0.5685, "gamma": 33.3147}
 # use this to declare motor positions if there is not log file, None otherwise
@@ -179,48 +179,6 @@ custom_motors: None
 # NANOMAX: theta, phi, gamma, delta, energy, radius
 # 34ID: mu, phi (incident angle), chi, theta (inplane),
 # delta (inplane), gamma (outofplane)
-#######################################################
-# parameters when orthogonalizing the data before     #
-# phasing  using the linearized transformation matrix #
-######################################################
-align_q: True  # used only when interp_method is 'linearization',
-# if True it rotates the crystal to align q
-# along one axis of the array
-ref_axis_q: "y"  # q will be aligned along that axis
-bragg_peak: None  # list of three integers, position of the Bragg peak on the unbinned
-# and full-sized detector. It will be used to calculate the real detector angles for the
-# and full-sized detector. It will be used to calculate the real detector angles for the
-# measured Bragg peak. Leave None to determine the Bragg peak position automatically.
-direct_beam: [208, 154]  # [vertical, horizontal]
-# direct beam position on the unbinned, full detector measured
-# with detector angles given by dirbeam_detector_angles. It will be used to calculate
-# the real detector angles for the measured Bragg peak. Leave None for no correction.
-dirbeam_detector_angles: [0, 0]  # [outofplane, inplane] detector angles in degrees
-# for the direct beam measurement. Leave None for no correction.
-outofplane_angle: None  # 35.3627
-# detector angle in deg (rotation around x outboard, typically delta),
-# corrected for the direct beam position. Leave None to use the uncorrected position.
-inplane_angle: None  # 0.4864
-# detector angle in deg(rotation around y vertical up, typically gamma),
-# corrected for the direct beam position. Leave None to use the uncorrected position.
-################################################################################
-# parameters when orthogonalizing the data before phasing  using xrayutilities #
-################################################################################
-# xrayutilities uses the xyz crystal frame: for incident angle: 0,
-# x is downstream, y outboard, and z vertical up
-sample_inplane: [1, 0, 0]
-# sample inplane reference direction along the beam at 0 angles in xrayutilities frame
-sample_outofplane: [0, 0, 1]
-# surface normal of the sample at 0 angles in xrayutilities frame
-offset_inplane: 0  # outer detector angle offset as determined by
-# xrayutilities area detector initialization
-cch1: 208  # direct beam vertical position in the full unbinned detector for
-# xrayutilities 2D detector calibration
-cch2: 154  # direct beam horizontal position in the full unbinned detector for
-# xrayutilities 2D detector calibration
-detrot: 0  # detrot parameter from xrayutilities 2D detector calibration
-tiltazimuth: 360  # tiltazimuth parameter from xrayutilities 2D detector calibration
-tilt_detector: 0  # tilt parameter from xrayutilities 2D detector calibration
 ##################################
 # end of user-defined parameters #
 ##################################

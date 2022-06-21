@@ -56,7 +56,7 @@ import tkinter as tk
 from abc import ABC, abstractmethod
 from numbers import Integral
 from tkinter import filedialog
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import fabio
 import h5py
@@ -92,6 +92,8 @@ def create_loader(name, sample_offsets, **kwargs):
     """
     if name == "ID01":
         return LoaderID01(name=name, sample_offsets=sample_offsets, **kwargs)
+    if name == "ID27":
+        return LoaderID27(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "ID01BLISS":
         return LoaderID01BLISS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
@@ -155,7 +157,7 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
     is_intensity = np.zeros(data.shape[0])
     is_intensity[np.argwhere(data.sum(axis=(1, 2)))] = 1
     if is_intensity.sum() != data.shape[0]:
-        logger.info("\nEmpty frame detected, cropping the data\n")
+        logger.info("Empty frame detected, cropping the data")
 
     # update frames_logical
     frames_logical = np.multiply(frames_logical, is_intensity)
@@ -190,8 +192,8 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     valid.valid_ndarray(arrays=mask, shape=(nby, nbx))
 
     logger.info(
-        "number of masked pixels due to detector gaps ="
-        f" {int(mask.sum())} on a total of {nbx*nby}"
+        "number of masked pixels due to detector gaps = "
+        f"{int(mask.sum())} on a total of {nbx*nby}"
     )
     meandata = data.mean(axis=0)  # 2D
     vardata = 1 / data.var(axis=0)  # 2D
@@ -229,9 +231,7 @@ def check_pixels(data, mask, debugging=False, **kwargs):
         * 1
         / nbz
     )
-    logger.info(
-        "var_mean={:.2f}, 1/var_threshold={:.2f}".format(var_mean, 1 / var_singlephoton)
-    )
+    logger.info(f"var_mean={var_mean:.2f}, 1/var_threshold={1 / var_singlephoton:.2f}")
 
     # mask hotpixels with zero variance
     temp_mask = np.zeros((nby, nbx))
@@ -239,16 +239,14 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     # this includes only hotpixels since zero intensity pixels were set to var_mean
     mask[np.nonzero(temp_mask)] = 1  # update the mask with zero variance hotpixels
     vardata[vardata == np.inf] = 0  # update the array
-    logger.info("number of zero variance hotpixels = {:d}".format(int(temp_mask.sum())))
+    logger.info(f"number of zero variance hotpixels = {int(temp_mask.sum()):d}")
 
     # filter out pixels which have a variance smaller that the threshold
     # (note that  vardata = 1/data.var())
     indices_badpixels = np.nonzero(vardata > 1 / var_singlephoton)
     mask[indices_badpixels] = 1  # mask is 2D
     logger.info(
-        "number of pixels with too low variance = {:d}".format(
-            indices_badpixels[0].shape[0]
-        )
+        f"number of pixels with too low variance = {indices_badpixels[0].shape[0]:d}"
     )
 
     # update the data array
@@ -420,16 +418,15 @@ def normalize_dataset(
         )  # the first axis is the normalization axis
 
     logger.info(
-        "Monitor min, max, mean: {:.1f}, {:.1f}, {:.1f}".format(
-            monitor.min(), monitor.max(), monitor.mean()
-        )
+        "Monitor min, max, mean: "
+        f"{monitor.min():.1f}, {monitor.max():.1f}, {monitor.mean():.1f}"
     )
 
     if norm_to_min:
-        logger.info("Data normalization by monitor.min()/monitor\n")
+        logger.info("Data normalization by monitor.min()/monitor")
         monitor = monitor.min() / monitor  # will divide higher intensities
     else:  # norm to max
-        logger.info("Data normalization by monitor.max()/monitor\n")
+        logger.info("Data normalization by monitor.max()/monitor")
         monitor = monitor.max() / monitor  # will multiply lower intensities
 
     nbz = array.shape[0]
@@ -750,17 +747,17 @@ class Loader(ABC):
         self.logger.info(
             "User-defined ROI size (VxH): "
             f"({setup.detector.roi[1] - setup.detector.roi[0]}, "
-            f"({setup.detector.roi[3] - setup.detector.roi[2]}, "
+            f"{setup.detector.roi[3] - setup.detector.roi[2]})"
         )
         self.logger.info(
             "Detector physical size without binning (VxH): "
             f"({setup.detector.unbinned_pixel_number[0]}, "
-            f"({setup.detector.unbinned_pixel_number[1]}, "
+            f"{setup.detector.unbinned_pixel_number[1]})"
         )
         self.logger.info(
             "Detector size with binning (VxH): "
             f"({setup.detector.unbinned_pixel_number[0] // setup.detector.binning[1]}, "
-            f"({setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2]}, "
+            f"{setup.detector.unbinned_pixel_number[1] // setup.detector.binning[2]})"
         )
 
         if setup.filtered_data:
@@ -835,7 +832,7 @@ class Loader(ABC):
             if normalize == "skip":
                 self.logger.info("Skip intensity normalization")
             else:
-                self.logger.info("Intensity normalization using " + normalize)
+                self.logger.info(f"Intensity normalization using {normalize}")
                 data, monitor = normalize_dataset(
                     array=data,
                     monitor=monitor,
@@ -1101,8 +1098,8 @@ class LoaderID01(Loader):
             except ValueError:
                 try:
                     self.logger.info(
-                        setup.detector.counter("ID01"),
-                        "not in the list, trying 'ccd_n'",
+                        f"{setup.detector.counter('ID01')} not in the list, "
+                        "trying 'ccd_n'",
                     )
                     ccdn = labels_data[labels.index("ccd_n"), :]
                 except ValueError:
@@ -1279,13 +1276,13 @@ class LoaderID01(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except ValueError:  # device not in the list
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at ID01.
 
@@ -1301,9 +1298,10 @@ class LoaderID01(Loader):
             monitor_name = setup.actuators.get("monitor", "exp1")
         else:
             monitor_name = "exp1"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
     def retrieve_distance(self, setup: "Setup") -> Optional[float]:
         """
@@ -1357,7 +1355,7 @@ class LoaderID01BLISS(Loader):
         :param name: str, the name of the beamline, e.g. 'ID01BLISS'
         :param root_folder: str, the root directory of the experiment
         :param scan_number: the scan number to load
-        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param filename: not used at ID01BLISS
         :param template_imagefile: str, template for data file name,
          e.g. 'ihhc3715_sample5.h5'
         :return: an instance of a context manager ContextFile
@@ -1392,7 +1390,7 @@ class LoaderID01BLISS(Loader):
 
          - homedir: the path of the scan folder
          - default_dirname: the name of the folder containing images / raw data
-         - specfile: not used at CRISTAL
+         - specfile: not used at ID01BLISS
          - template_imagefile: the template for data/image file names
 
         """
@@ -1575,7 +1573,7 @@ class LoaderID01BLISS(Loader):
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at ID01 BLISS.
 
@@ -1589,9 +1587,243 @@ class LoaderID01BLISS(Loader):
             monitor_name = setup.actuators.get("monitor", "imon")
         else:
             monitor_name = "imon"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
+
+
+class LoaderID27(Loader):
+    """Loader for ESRF ID27 beamline."""
+
+    def create_logfile(
+        self,
+        datadir: str,
+        name: str,
+        root_folder: str,
+        scan_number: int,
+        filename: Optional[str] = None,
+        template_imagefile: Optional[str] = None,
+    ) -> ContextFile:
+        """
+        Create the logfile, which is the h5 file for ID27.
+
+        :param datadir: str, the data directory
+        :param name: str, the name of the beamline, e.g. 'ID27'
+        :param root_folder: str, the root directory of the experiment
+        :param scan_number: the scan number to load
+        :param filename: str, absolute path to the spec/fio/alias file when it exists
+        :param template_imagefile: str, template for data file name,
+         e.g. 'Ptx7_0007.h5'
+        :return: an instance of a context manager ContextFile
+        """
+        valid.valid_container(datadir, container_types=str, name="datadir")
+        if not os.path.isdir(datadir):
+            raise ValueError(f"The directory {datadir} does not exist")
+        valid.valid_container(
+            template_imagefile, container_types=str, name="template_imagefile"
+        )
+        valid.valid_item(
+            scan_number, allowed_types=int, min_included=0, name="scan_number"
+        )
+        filename = util.find_file(
+            filename=template_imagefile, default_folder=datadir, logger=self.logger
+        )
+        return ContextFile(
+            filename=filename, open_func=h5py.File, scan_number=scan_number
+        )
+
+    @staticmethod
+    def init_paths(root_folder, sample_name, scan_number, template_imagefile, **kwargs):
+        """
+        Initialize paths used for data processing and logging at ID27.
+
+        :param root_folder: folder of the experiment, where all scans are stored
+        :param sample_name: string in front of the scan number in the data folder
+         name.
+        :param scan_number: int, the scan number
+        :param template_imagefile: template for the data files, e.g. 'S%d.h5'
+        :return: a tuple of strings:
+
+         - homedir: the path of the scan folder
+         - default_dirname: the name of the folder containing images / raw data
+         - specfile: not used at ID27
+         - template_imagefile: the template for data/image file names
+
+        """
+        homedir = root_folder
+        default_dirname = ""
+        return homedir, default_dirname, None, template_imagefile
+
+    @safeload
+    def load_data(
+        self,
+        setup: "Setup",
+        flatfield: Optional[np.ndarray] = None,
+        hotpixels: Optional[np.ndarray] = None,
+        background: Optional[np.ndarray] = None,
+        normalize: str = "skip",
+        bin_during_loading: bool = False,
+        debugging: bool = False,
+        **kwargs,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List]:
+        """
+        Load ID27 data, apply filters and concatenate it for phasing.
+
+        :param setup: an instance of the class Setup
+        :param flatfield: the 2D flatfield array
+        :param hotpixels: the 2D hotpixels array
+        :param background: the 2D background array to subtract to the data
+        :param normalize: 'monitor' to return the default monitor values, 'sum_roi' to
+         return a monitor based on the integrated intensity in the region of interest
+         defined by detector.sum_roi, 'skip' to do nothing
+        :param bin_during_loading: if True, the data will be binned in the detector
+         frame while loading. It saves a lot of memory space for large 2D detectors.
+        :param debugging: set to True to see plots
+        :return:
+         - the 3D data array in the detector frame
+         - the 2D mask array
+         - the monitor values for normalization
+         - the detector region of interest used for loading the data
+
+        """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        key_path = str(scan_number) + ".1/measurement/"
+        raw_data = file[key_path + "eiger"]  # Dataset, does not actually the data
+
+        # find the number of images
+        nb_img = raw_data.shape[0]
+
+        data, mask2d, monitor, loading_roi = self.init_data_mask(
+            detector=setup.detector,
+            setup=setup,
+            normalize=normalize,
+            nb_frames=nb_img,
+            bin_during_loading=bin_during_loading,
+            scan_number=scan_number,
+        )
+
+        # loop over frames, mask the detector and normalize / bin
+        for idx in range(nb_img):
+            data[idx, :, :], mask2d, monitor[idx] = load_frame(
+                frame=raw_data[idx, :, :],
+                mask2d=mask2d,
+                monitor=monitor[idx],
+                frames_per_point=1,
+                detector=setup.detector,
+                loading_roi=loading_roi,
+                flatfield=flatfield,
+                background=background,
+                hotpixels=hotpixels,
+                normalize=normalize,
+                bin_during_loading=bin_during_loading,
+                debugging=debugging,
+            )
+        return data, mask2d, monitor, loading_roi
+
+    @safeload
+    def motor_positions(
+        self, setup: "Setup", **kwargs
+    ) -> Tuple[Union[float, List, np.ndarray], ...]:
+        """
+        Load the scan data and extract motor positions.
+
+        :param setup: an instance of the class Setup
+        :return: (nath, energy) values
+        """
+        # load and check kwargs
+        file = kwargs.get("file")  # this kwarg is provided by @safeload
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        sample_name = setup.detector.sample_name
+        if sample_name is None:
+            raise ValueError("'sample_name' parameter required")
+
+        # load positioners
+        positioners = file[str(scan_number) + ".1/instrument/positioners"]
+        if not setup.custom_scan:
+            nath = util.cast(positioners["nath"][()], target_type=float)
+            eigx = util.cast(positioners["eigx"][()], target_type=float)
+            eigy = util.cast(positioners["eigy"][()], target_type=float)
+            eigz = util.cast(positioners["eigz"][()], target_type=float)
+            # for now, return the setup.energy
+            energy = setup.energy
+
+        else:  # manually defined custom scan
+            nath = setup.custom_motors["nath"]
+            eigx = setup.custom_motors["eigx"]
+            eigy = setup.custom_motors["eigy"]
+            eigz = setup.custom_motors["eigz"]
+            energy = setup.energy
+
+        # detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+        detector_distance = setup.distance
+        return nath, eigx, eigz, eigy, energy, detector_distance
+
+    @safeload
+    def read_device(self, setup: "Setup", device_name: str, **kwargs) -> np.ndarray:
+        """
+        Extract the scanned device values at ID27 beamline.
+
+        :param setup: an instance of the class Setup
+        :param device_name: name of the scanned device
+        :return: the positions/values of the device as a numpy 1D array
+        """
+        file = kwargs.get("file")  # this kwarg is provided by @safeload_static
+        if file is None:
+            raise ValueError("file should be the opened file, not None")
+
+        scan_number = setup.logfile.scan_number
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+
+        # load positioners
+        positioners = file[str(scan_number) + ".1/measurement"]
+        try:
+            device_values = util.cast(positioners[device_name][()], target_type=float)
+        except KeyError:
+            self.logger.info(f"No device {device_name} found in the logfile")
+            device_values = []
+        return np.asarray(device_values)
+
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
+        """
+        Load the default monitor for a dataset measured at ID27.
+
+        :param setup: an instance of the class Setup
+        :return: the default monitor values
+        """
+        scan_number = setup.logfile.scan_number
+        monitor_name: Optional[str] = None
+        if scan_number is None:
+            raise ValueError("'scan_number' parameter required")
+        if setup.actuators is not None:
+            monitor_name = setup.actuators.get("monitor")
+        if monitor_name is None:
+            self.logger.info(
+                "'monitor_name' is None, no default monitor defined for ID27."
+            )
+            return np.asarray([])
+        monitor: np.ndarray = self.read_device(
+            setup=setup, scan_number=scan_number, device_name=monitor_name
+        )
+        return monitor
 
 
 class LoaderSIXS(Loader):
@@ -1840,13 +2072,13 @@ class LoaderSIXS(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = getattr(file, device_name)
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except AttributeError:
             self.logger.info(f"No device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at SIXS.
 
@@ -1856,10 +2088,11 @@ class LoaderSIXS(Loader):
         if setup.beamline is None:
             raise ValueError("'beamline' parameter required")
         if setup.beamline == "SIXS_2018":
-            return self.read_device(setup=setup, device_name="imon1")
-        # SIXS_2019
-        monitor = self.read_device(setup=setup, device_name="imon0")
-        if len(monitor) == 0:  # the alias dictionnary was probably not provided
+            monitor: np.ndarray = self.read_device(setup=setup, device_name="imon1")
+        else:  # "SIXS_2019"
+            monitor = self.read_device(setup=setup, device_name="imon0")
+        if len(monitor) == 0:
+            # the alias dictionnary was probably not provided
             monitor = self.read_device(setup=setup, device_name="intensity")
         return monitor
 
@@ -2162,13 +2395,13 @@ class Loader34ID(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = list(labels_data[labels.index(device_name), :])
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except ValueError:  # device not in the list
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at 34ID-C.
 
@@ -2185,9 +2418,10 @@ class Loader34ID(Loader):
             monitor_name = setup.actuators.get("monitor", "Monitor")
         else:
             monitor_name = "Monitor"
-        return self.read_device(
+        monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
+        return monitor
 
 
 class LoaderP10(Loader):
@@ -2340,7 +2574,7 @@ class LoaderP10(Loader):
                             idx += 1
                         except KeyError:
                             break
-            self.logger.info("Number of points :", nb_img)
+            self.logger.info(f"Number of points: {nb_img}")
         else:
             # create the template for the image files
             if len(setup.custom_images) > 0:
@@ -2597,17 +2831,17 @@ class LoaderP10(Loader):
         if index_device is None:
             self.logger.info(f"no device {device_name} in the logfile")
         else:
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         return np.asarray(device_values)
 
-    def read_monitor(self, setup: "Setup", **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at P10.
 
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        monitor = self.read_device(setup=setup, device_name="ipetra")
+        monitor: np.ndarray = self.read_device(setup=setup, device_name="ipetra")
         if len(monitor) == 0:
             monitor = self.read_device(setup=setup, device_name="curpetra")
         return monitor
@@ -2619,12 +2853,14 @@ class LoaderP10SAXS(LoaderP10):
     @safeload
     def motor_positions(
         self, setup: "Setup", **kwargs
-    ) -> Tuple[Union[float, List, np.ndarray], ...]:
+    ) -> Tuple[Union[float, List, np.ndarray, Any], ...]:
         """
         Load the .fio file from the scan and extract motor positions.
 
+        The detector positions are returned in the laboratory frame z, y, x
+
         :param setup: an instance of the class Setup
-        :return: (phi, energy) values
+        :return: (phi, det_z, det_y, det_x, energy, detector_distance) values
         """
         # load and check kwargs
         file = kwargs.get("file")  # this kwarg is provided by @safeload
@@ -2636,6 +2872,9 @@ class LoaderP10SAXS(LoaderP10):
 
         if not setup.custom_scan:
             index_phi = None
+            detx = None
+            dety2 = None
+            detz = None
             positions: List[float] = []
 
             lines = file.readlines()
@@ -2643,11 +2882,24 @@ class LoaderP10SAXS(LoaderP10):
                 this_line = line.strip()
                 words = this_line.split()
 
+                if (
+                    "detx" in words and "=" in words
+                ):  # template for positioners: 'detx = -0.2\n'
+                    detx = float(words[2])
+                if (
+                    "dety2" in words and "=" in words
+                ):  # template for positioners: 'dety2 = 320.0\n'
+                    dety2 = float(words[2])
+                if (
+                    "detz" in words and "=" in words
+                ):  # template for positioners: 'detz = 28.5\n'
+                    detz = float(words[2])
+
                 if "Col" in words and ("sprz" in words or "hprz" in words):
                     # sprz or hprz (SAXS) scanned
                     # template = ' Col 0 sprz DOUBLE\n'
                     index_phi = int(words[1]) - 1  # python index starts at 0
-                    self.logger.info(words, "  Index Phi=", index_phi)
+                    self.logger.info(f"{words}, Index Phi= {index_phi}")
                 if index_phi is not None and valid.is_float(words[0]):
                     # we are reading data and index_phi is defined
                     positions.append(float(words[index_phi]))
@@ -2655,7 +2907,10 @@ class LoaderP10SAXS(LoaderP10):
             phi = np.asarray(positions, dtype=float)
         else:
             phi = setup.custom_motors["phi"]
-        return phi, setup.energy, setup.distance
+            detx = setup.custom_motors.get("detx", 0)
+            detz = setup.custom_motors.get("detz", 0)
+            dety2 = setup.custom_motors.get("dety2", 0)
+        return phi, detx, detz, dety2, setup.energy, setup.distance
 
 
 class LoaderCRISTAL(Loader):
@@ -2741,10 +2996,10 @@ class LoaderCRISTAL(Loader):
                 actuator_name = actuator_name.upper()
                 if actuator_name not in file[root].keys():
                     self.logger.info(
-                        f"\nCould not find the entry for the actuator'{actuator_name}'"
+                        f"Could not find the entry for the actuator'{actuator_name}'"
                     )
                     self.logger.info(
-                        "list of available actuators: " f"{list(file[root].keys())}\n"
+                        f"list of available actuators: {list(file[root].keys())}"
                     )
                     return 0
 
@@ -2761,12 +3016,12 @@ class LoaderCRISTAL(Loader):
                     ][:]
                 except KeyError:  # nothing else that we can do
                     self.logger.info(
-                        f"\nCould not find the field '{field_name}'"
+                        f"Could not find the field '{field_name}'"
                         f" in the actuator'{actuator_name}'"
                     )
                     self.logger.info(
-                        "list of available fields:"
-                        f" {list(file[root + '/' + actuator_name].keys())}\n"
+                        "list of available fields: "
+                        f"{list(file[root + '/' + actuator_name].keys())}"
                     )
                     return 0
         return util.unpack_array(dataset)
@@ -2822,8 +3077,8 @@ class LoaderCRISTAL(Loader):
                 if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
                     # founc the key corresponding to the detector
                     self.logger.info(
-                        f"subdirectory '{key}' contains the detector images,"
-                        f" shape={obj_shape}"
+                        f"subdirectory '{key}' contains the detector images, "
+                        f"shape={obj_shape}"
                     )
                     return file[root + data_path + "/" + key][:]
         raise ValueError(
@@ -2957,8 +3212,8 @@ class LoaderCRISTAL(Loader):
             if setup.energy is not None and abs(energy - setup.energy) > 1:
                 # difference larger than 1 eV
                 self.logger.info(
-                    f"\nWarning: user-defined energy = {setup.energy:.1f} eV different "
-                    f"from the energy recorded in the datafile = {energy[0]:.1f} eV\n"
+                    f"Warning: user-defined energy = {setup.energy:.1f} eV different "
+                    f"from the energy recorded in the datafile = {energy[0]:.1f} eV"
                 )
 
             scanned_motor = self.cristal_load_motor(
@@ -3039,13 +3294,13 @@ class LoaderCRISTAL(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = file["/" + group_key + "/scan_data/" + device_name][:]
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except KeyError:
             self.logger.info(f"no device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at CRISTAL.
 
@@ -3056,7 +3311,8 @@ class LoaderCRISTAL(Loader):
             monitor_name = setup.actuators.get("monitor", "data_04")
         else:
             monitor_name = "data_04"
-        return self.read_device(setup=setup, device_name=monitor_name)
+        monitor: np.ndarray = self.read_device(setup=setup, device_name=monitor_name)
+        return monitor
 
 
 class LoaderNANOMAX(Loader):
@@ -3272,17 +3528,18 @@ class LoaderNANOMAX(Loader):
         self.logger.info(f"Trying to load values for {device_name}...")
         try:
             device_values = file["/" + group_key + "/measurement/" + device_name][:]
-            self.logger.info("found!")
+            self.logger.info(f"{device_name} found!")
         except KeyError:
             self.logger.info(f"No device {device_name} in the logfile")
             device_values = []
         return np.asarray(device_values)
 
-    def read_monitor(self, setup, **kwargs):
+    def read_monitor(self, setup: "Setup", **kwargs: Dict[str, Any]) -> np.ndarray:
         """
         Load the default monitor for a dataset measured at NANOMAX.
 
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        return self.read_device(setup=setup, device_name="alba2")
+        monitor: np.ndarray = self.read_device(setup=setup, device_name="alba2")
+        return monitor

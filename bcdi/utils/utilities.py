@@ -1589,7 +1589,7 @@ def line(x_array, a, b):
     return a * x_array + b
 
 
-def pad_from_roi(arrays, roi, binning, pad_value=0):
+def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
     """
     Pad a 3D stack of frames provided a region of interest.
 
@@ -1600,9 +1600,13 @@ def pad_from_roi(arrays, roi, binning, pad_value=0):
      arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
     :param binning: tuple of two integers (binning along Y, binning along X)
     :param pad_value: number or tuple of nb_arrays numbers, will pad using this value
+    :param kwargs:
+     - 'logger': an optional logger
+
     :return: an array (if a single array was provided) or a tuple of arrays interpolated
      on an orthogonal grid (same length as the number of input arrays)
     """
+    logger = kwargs.get("logger", module_logger)
     ####################
     # check parameters #
     ####################
@@ -1654,7 +1658,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0):
         else:  # padding on the right
             startx = 0
         start = [int(val) for val in [0, starty, startx]]
-        print("Paddind the data to the shape defined by the ROI")
+        logger.info("Paddind the data to the shape defined by the ROI")
 
         ##############
         # pad arrays #

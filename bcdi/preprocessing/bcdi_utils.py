@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
-from typing import Optional, Tuple, no_type_check
+from typing import List, Optional, Tuple, no_type_check
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -939,7 +939,7 @@ def grid_bcdi_xrayutil(
         frames_logical=frames_logical,
     )
 
-    maxbins = []
+    maxbins: List[int] = []
     for dim in (qx, qy, qz):
         maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
         maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
@@ -954,8 +954,8 @@ def grid_bcdi_xrayutil(
     # define the width of data points (rectangular datapoints, xrayutilities use half
     # of these values but there are artefacts sometimes)
     wx = (qx.max() - qx.min()) / maxbins[0]
-    wz = (qz.max() - qz.min()) / maxbins[1]
-    wy = (qy.max() - qy.min()) / maxbins[2]
+    wy = (qy.max() - qy.min()) / maxbins[1]
+    wz = (qz.max() - qz.min()) / maxbins[2]
     # convert mask to rectangular grid in reciprocal space
     gridder(
         qx, qz, qy, mask, width=(wx, wz, wy)
