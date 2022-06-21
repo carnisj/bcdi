@@ -2026,7 +2026,7 @@ class BeamlineP10SAXS(BeamlineSaxs):
          (added) frame
         :return: a tuple of 1D arrays (sample circles, detector circles, energy)
         """
-        # TODO adapt this to USAXS
+        # TODO adapt this to the USAXS setup  # skipcq: PYL-W0511
         mu, om, chi, phi, gamma, delta, energy, _ = super().process_positions(
             setup=setup,
             nb_frames=nb_frames,

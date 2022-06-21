@@ -434,10 +434,11 @@ def grid_cdi(
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     if setup.rocking_angle == "inplane":
         if setup.custom_scan:
+            # TODO: create a list of stage names per beamline to avoid harcoding it here  # skipcq: PYL-W0511
             if setup.name == "P10_SAXS":
-                cdi_angle = setup.custom_motors["hprz"]  # TODO solve this
+                cdi_angle = setup.custom_motors["hprz"]
             elif setup.name == "ID27":
-                cdi_angle = setup.custom_motors["nath"]  # TODO solve this
+                cdi_angle = setup.custom_motors["nath"]
             else:
                 raise NotImplementedError(
                     f"Not yet implemented for beamlines other than {BEAMLINES_SAXS}"
