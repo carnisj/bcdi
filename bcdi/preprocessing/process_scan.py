@@ -483,6 +483,7 @@ def process_scan(
             (prm["bragg_peak"][2] - setup.detector.roi[2]) // setup.detector.binning[2],
         )
 
+        logger.info("Plotting the rocking curve.")
         metadata = bu.show_rocking_curve(
             data,
             roi_center=roi_center,

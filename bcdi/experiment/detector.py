@@ -90,6 +90,8 @@ def create_detector(name, **kwargs):
         return Timepix(name=name, **kwargs)
     if name == "Merlin":
         return Merlin(name=name, **kwargs)
+    if name == "MerlinSixS":
+        return MerlinSixS(name=name, **kwargs)
     if name == "Dummy":
         return Dummy(name=name, **kwargs)
     raise NotImplementedError(f"No implementation for the {name} detector")
@@ -99,7 +101,7 @@ class Detector(ABC):
     """
     Class to handle the configuration of the detector used for data acquisition.
 
-    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'Eiger2M',
+    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'MerlinSixS', 'Eiger2M',
      'Eiger4M', 'Dummy'}
     :param datadir: directory where the data files are located
     :param savedir: directory where to save the results
@@ -903,6 +905,51 @@ class Merlin(Detector):
     def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         return 55e-06, 55e-06
+
+class MerlinSixS(Detector):
+    """Implementation of the Merlin detector for SixS"""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.saturation_threshold = 1e6
+
+    def _mask_gaps(self, data, mask):
+        """
+        Mask the gaps between sensors in the detector.
+
+        :param data: a 2D numpy array
+        :param mask: a 2D numpy array of the same shape as data
+        :return:
+
+         - the masked data
+         - the updated mask
+
+        """
+        valid.valid_ndarray(
+            (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
+        )
+
+        data[:, 255:256] = 0
+        data[255:256, :] = 0
+
+        mask[:, 255:256] = 1
+        mask[255:256, :] = 1
+        return data, mask
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 512, 512
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
+        return 55e-06, 55e-06
+
 
 
 class Dummy(Detector):

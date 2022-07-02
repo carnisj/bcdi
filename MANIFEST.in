@@ -18,6 +18,7 @@ include bcdi/preprocessing/alias_dict_2018.txt
 include bcdi/preprocessing/alias_dict_2019.txt
 include bcdi/preprocessing/alias_dict_2020.txt
 include bcdi/preprocessing/alias_dict_2021.txt
+include bcdi/preprocessing/alias_dict_2022.txt
 include tests/postprocessing/3572_fa.vtk
 include doc/example/alien_removal.PNG
 include doc/example/hotpixel_removal.PNG

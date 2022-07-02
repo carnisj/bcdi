@@ -59,6 +59,7 @@ class DataSet:
         "alias_dict_2019.txt",
         "alias_dict_2020.txt",
         "alias_dict_2021.txt",
+        "alias_dict_2022.txt",
     ]
 
     def __init__(self, filename, directory="", nxs2spec=False, alias_dict=None):
@@ -80,8 +81,8 @@ class DataSet:
 
         print("### ReadNxs3 ###")
         if not alias_dict:
-            print("Defaulting to alias_dict_2021.txt")
-            alias_dict = self.path_aliases + "alias_dict_2021.txt"
+            print("Defaulting to alias_dict_2022.txt")
+            alias_dict = self.path_aliases + "alias_dict_2022.txt"
         if os.path.split(alias_dict)[-1] not in self.allowed_alias_dict:
             raise ValueError(f"{alias_dict} is not in the list of allowed names")
         try:
@@ -178,7 +179,7 @@ class DataSet:
             120: "xpad70",
             240: "xpad140",
             515: "merlin",
-            512: "maxipix",
+            512: "merlin",
             1065: "eiger",
             1040: "cam2",
         }
