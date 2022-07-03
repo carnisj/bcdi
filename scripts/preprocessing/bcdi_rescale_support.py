@@ -490,10 +490,8 @@ print(
 print(
     "Original voxel sizes in detector coordinates based on "
     "experimental parameters (ver, hor): "
-    "{:.2f} nm, {:.2f} nm".format(
-        12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9,
-        12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9,
-    )
+    f"{12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9:.2f} nm, "
+    f"{12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9:.2f} nm"
 )
 
 rebinned_shape = [
@@ -645,15 +643,11 @@ if not all(
 
     print(
         "Original voxel sizes zyx (nm):",
-        str("{:.2f}".format(voxelsize_z)),
-        str("{:.2f}".format(voxelsize_y)),
-        str("{:.2f}".format(voxelsize_x)),
+        f"{voxelsize_z:.2f}, {voxelsize_y:.2f}, {voxelsize_x:.2f}",
     )
     print(
         "Output voxel sizes zyx (nm):",
-        str("{:.2f}".format(newvoxelsize_z)),
-        str("{:.2f}".format(newvoxelsize_y)),
-        str("{:.2f}".format(newvoxelsize_x)),
+        f"{newvoxelsize_z:.2f}, {newvoxelsize_y:.2f}, {newvoxelsize_x:.2f}",
     )
 
     # Interpolate the support
