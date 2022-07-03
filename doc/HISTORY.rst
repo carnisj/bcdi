@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Add a placeholder "-f" command line parameter to host the automatically generated
+ parameter in Jupyter notebooks (path of the kernel json file).
+
 * Add support for high-energy BCDI at ESRF ID27 beamline. Add an example configuration
   file to the package.
 

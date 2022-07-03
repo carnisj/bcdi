@@ -287,7 +287,7 @@ def valid_item(
     # check the type of obj
     if value is not None and not isinstance(value, allowed_types):
         raise TypeError(
-            f"{name}: wrong type for value, "
+            f"{name}: wrong type for value {value}, "
             f"allowed is {allowed_types}, got {type(value)}"
         )
 

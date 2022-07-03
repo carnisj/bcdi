@@ -33,6 +33,11 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
     :return: the updated instance
     """
     argument_parser.add_argument(
+        "-f",
+        type=str,
+        help="don't use it, kernel json file in Jupyter notebooks",
+    )
+    argument_parser.add_argument(
         "--align_q",
         type=str,
         help="If orthogonalized, do not align q",
@@ -80,7 +85,6 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
         type=str,
         help="the voxel size used for interpolation",
     )
-
     argument_parser.add_argument(
         "-flip",
         "--flip_reconstruction",

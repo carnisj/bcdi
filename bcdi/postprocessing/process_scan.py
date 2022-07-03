@@ -174,10 +174,8 @@ def process_scan(
     original_size = prm["original_size"] if prm["original_size"] else obj.shape
     logger.info(f"FFT size before accounting for phasing_binning: {original_size}")
     original_size = tuple(
-        [
-            original_size[index] // prm["phasing_binning"][index]
-            for index in range(len(prm["phasing_binning"]))
-        ]
+        original_size[index] // prm["phasing_binning"][index]
+        for index in range(len(prm["phasing_binning"]))
     )
     logger.info(f"Binning used during phasing: {setup.detector.binning}")
     logger.info(f"Padding back to original FFT size: {original_size}")
@@ -1117,7 +1115,7 @@ def process_scan(
     fig.text(
         0.60,
         0.40,
-        "Bulk - isosurface=" + str("{:.2f}".format(prm["isosurface_strain"])),
+        f"Bulk - isosurface= {prm['isosurface_strain']:.2f}",
         size=20,
     )
     plt.pause(0.1)
