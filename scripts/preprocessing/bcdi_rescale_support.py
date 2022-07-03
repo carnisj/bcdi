@@ -55,7 +55,7 @@ save_intermediate = False  # if True, will save the masked data just after the
 # other filtering and interpolation
 is_ortho = True  # True if the data is already orthogonalized
 center = True  # will center the support based on the center of mass
-flip_crystal = False  # True if you want to get the conjugate object
+flip_reconstruction = False  # True if you want to get the conjugate object
 roll_modes = (
     0,
     0,
@@ -277,7 +277,7 @@ data, _ = util.load_file(file_path)
 nz, ny, nx = data.shape
 data = np.roll(data, roll_modes, axis=(0, 1, 2))
 
-if flip_crystal:
+if flip_reconstruction:
     data = pu.flip_reconstruction(data, debugging=True)
 
 data = abs(data)  # take the real part

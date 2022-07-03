@@ -227,7 +227,7 @@ def process_scan(
         logger.info(f"Opening {file_path[value]}")
         prm[f"from_file_{counter}"] = file_path[value]
 
-        if prm["flip_crystal"]:
+        if prm["flip_reconstruction"]:
             obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"].cmap)
 
         if extension == ".h5":

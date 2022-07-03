@@ -457,7 +457,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "detector_on_goniometer",
         "fit_datarange",
         "flag_interact",
-        "flip_crystal",
+        "flip_reconstruction",
         "get_temperature",
         "grey_background",
         "invert_phase",

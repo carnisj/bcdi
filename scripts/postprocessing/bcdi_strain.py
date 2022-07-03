@@ -281,7 +281,7 @@ Usage:
     :param invert_phase: e.g. True
     True for the displacement to have the right sign (FFT convention), it is False only
     for simulations
-    :param flip_crystal: e.g. True
+    :param flip_reconstruction: e.g. True
      True if you want to get the conjugate object
     :param phase_ramp_removal: e.g. "gradient"
      'gradient' or 'upsampling', 'gradient' is much faster
