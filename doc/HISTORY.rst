@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Rename the parameter 'flip_reconstruction' to 'flip_crystal', there was a parsing
+  issue with YAML deserialization on Jupyter notebooks.
+
 * Add support for high-energy BCDI at ESRF ID27 beamline. Add an example configuration
   file to the package.
 
