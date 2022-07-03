@@ -47,7 +47,7 @@ automatically. Below are few important points about parameters:
     `phasing_binning` and `preprocessing_binning` are incorrect.
 
   -  in case of asymmetric crystal where the orientation is known, and if your crystal
-     looks flipped after interpolation, use the parameter `flip_reconstruction` to
+     looks flipped after interpolation, use the parameter `flip_crystal` to
      use the complex conjugate instead.
 
   -  `invert_phase` should be True for experimental data. This is due to the sign

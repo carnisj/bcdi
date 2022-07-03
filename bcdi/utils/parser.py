@@ -83,7 +83,7 @@ def add_cli_parameters(argument_parser: ArgumentParser) -> ArgumentParser:
 
     argument_parser.add_argument(
         "-flip",
-        "--flip_reconstruction",
+        "--flip_crystal",
         type=str,
         help="choose to flip or not the reconstruction",
     )

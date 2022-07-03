@@ -1,10 +1,10 @@
 scans: 11  # scan number or list of scan numbers
-root_folder: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/"
+root_folder: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/test/"
+save_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/"
 # images will be saved here, leave it to None otherwise (default to data directory's
 # parent). Provide a single path or a list of paths for multiple scans.
-data_dir: "C:/Users/carnisj/Documents/data/CXIDB-I182/CH4760/S11/"
+data_dir: "C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/"
 # leave None to use the beamline default, or provide the full path to the data. Provide
 # a list of paths for multiple scans.
 sample_name: "S"
@@ -195,7 +195,7 @@ simulation: False  # set to True if it is a simulation, the parameter invert_pha
 # will be set to 0 (see below)
 invert_phase: True  # True for the displacement to have the right sign
 # (FFT convention), False only for simulations
-flip_reconstruction: True  # True if you want to get the conjugate object
+flip_crystal: True  # True if you want to get the conjugate object
 phase_ramp_removal: "gradient"
 # 'gradient'  # 'gradient' or 'upsampling', 'gradient' is much faster
 threshold_gradient: 1.0
