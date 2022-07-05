@@ -929,11 +929,11 @@ class MerlinSixS(Detector):
             (data, mask), ndim=2, shape=self.unbinned_pixel_number, fix_shape=True
         )
 
-        data[:, 255:256] = 0
-        data[255:256, :] = 0
+        data[:, 254:257] = 0
+        data[254:257, :] = 0
 
-        mask[:, 255:256] = 1
-        mask[255:256, :] = 1
+        mask[:, 254:257] = 1
+        mask[254:257, :] = 1
         return data, mask
 
     @property
