@@ -679,10 +679,6 @@ def find_bragg(
         position = tuple(map(lambda x: int(np.rint(x)), position))
         logger.info(f"Center of mass at: {position}, COM = {int(data[position])}")
     else:  # 'maxcom'
-        np.save(
-            "/nfs/ruche-sixs/sixs-soleil/com-sixs/2022/Run3/Chatelier_20211332/reconstructions/align/test_data.npy",
-            data
-            )
         valid.valid_ndarray(arrays=data, ndim=3)
         max_rc = data.sum(axis=(1, 2)).argmax()
         com_in_max_frame = center_of_mass(data[max_rc])
@@ -692,7 +688,7 @@ def find_bragg(
 
     # unbin
     if binning is not None:
-        position = [a * b for a, b in zip(position, binning)]
+        position[1:] = [a * b for a, b in zip(position[1:], binning[1:])]
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
