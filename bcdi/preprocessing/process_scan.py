@@ -536,9 +536,8 @@ def process_scan(
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:
-            tmp_data = np.copy(
-                data
-            )  # do not modify the raw data before the interpolation
+            tmp_data = np.copy(data)
+            # do not modify the raw data before the interpolation
             tmp_data[mask == 1] = 0
             fig, _, _ = gu.multislices_plot(
                 tmp_data,
