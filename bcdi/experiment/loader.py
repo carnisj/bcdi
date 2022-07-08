@@ -2946,7 +2946,11 @@ class LoaderCRISTAL(Loader):
         )
 
         # no specfile, load directly the dataset
-        filename = os.path.join(datadir + template_imagefile % scan_number)
+        try:
+            filename = os.path.join(datadir + template_imagefile % scan_number)
+        except TypeError:
+            self.logger.error("Formatting issue for 'template_imagefile % scan_number'")
+            raise ValueError("Formatting issue for 'template_imagefile % scan_number'")
         return ContextFile(
             filename=filename, open_func=h5py.File, scan_number=scan_number
         )
