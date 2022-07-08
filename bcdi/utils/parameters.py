@@ -272,21 +272,19 @@ class PreprocessingChecker(ConfigChecker):
 
     def _configure_params(self) -> None:
         """Hard-code processing-dependent parameter configuration."""
-        if (
-            self._nb_scans is not None
-            and self._nb_scans > 1
-            and self._checked_params["center_fft"]
-            not in [
+        if self._nb_scans is not None and self._nb_scans > 1:
+            if self._checked_params["center_fft"] not in [
                 "crop_asymmetric_ZYX",
                 "pad_Z",
                 "pad_asymmetric_ZYX",
                 "skip",
-            ]
-        ):
-            self._checked_params["center_fft"] = "skip"
-            # avoid croping the detector plane XY while centering the Bragg peak
-            # otherwise outputs may have a different size,
-            # which will be problematic for combining or comparing them
+            ]:
+                self._checked_params["center_fft"] = "skip"
+                # avoid croping the detector plane XY while centering the Bragg peak
+                # otherwise outputs may have a different size,
+                # which will be problematic for combining or comparing them
+        else:
+            self._checked_params["multiprocessing"] = False
 
         self._checked_params["roi_detector"] = self._create_roi()
         if self._checked_params["fix_size"]:
