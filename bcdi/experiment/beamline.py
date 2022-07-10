@@ -165,14 +165,20 @@ class BeamlineCRISTAL(BeamlineGoniometer):
             nb_steps = len(mgomega)
             tilt_angle = (mgomega[1:] - mgomega[0:-1]).mean()
             mgomega = self.process_tilt(
-                mgomega, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                mgomega, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # mgphi rocking curve
             self.logger.info(f"mgomega {mgomega}")
             nb_steps = len(mgphi)
             tilt_angle = (mgphi[1:] - mgphi[0:-1]).mean()
             mgphi = self.process_tilt(
-                mgphi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                mgphi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
+        elif setup.rocking_angle == "energy":
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -482,21 +488,23 @@ class BeamlineID01(BeamlineGoniometer):
         # eventually crop/pad motor values if the provided dataset was further
         # cropped/padded
         if setup.rocking_angle == "outofplane":  # eta rocking curve
-            self.logger.info(f"phi {phi}")
             nb_steps = len(eta)
             tilt_angle = (eta[1:] - eta[0:-1]).mean()
             eta = self.process_tilt(
-                eta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                eta, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
-            self.logger.info(f"eta {eta}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "energy":
-            pass
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -793,16 +801,20 @@ class BeamlineNANOMAX(BeamlineGoniometer):
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
             theta = self.process_tilt(
-                theta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                theta, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "energy":
-            pass
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -1104,14 +1116,20 @@ class BeamlineP10(BeamlineGoniometer):
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
-                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                om, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             self.logger.info(f"om {om}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
+        elif setup.rocking_angle == "energy":
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -1443,7 +1461,13 @@ class BeamlineSIXS(BeamlineGoniometer):
             nb_steps = len(mu)
             tilt_angle = (mu[1:] - mu[0:-1]).mean()
             mu = self.process_tilt(
-                mu, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                mu, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
+        elif setup.rocking_angle == "energy":
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         else:
             raise ValueError("Out-of-plane rocking curve not implemented for SIXS")
@@ -1725,16 +1749,20 @@ class Beamline34ID(BeamlineGoniometer):
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # theta rocking curve
             nb_steps = len(theta)
             tilt_angle = (theta[1:] - theta[0:-1]).mean()
             theta = self.process_tilt(
-                theta, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                theta, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "energy":
-            pass
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
 
@@ -2045,14 +2073,20 @@ class BeamlineP10SAXS(BeamlineSaxs):
             nb_steps = len(om)
             tilt_angle = (om[1:] - om[0:-1]).mean()
             om = self.process_tilt(
-                om, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                om, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             self.logger.info(f"om {om}")
             nb_steps = len(phi)
             tilt_angle = (phi[1:] - phi[0:-1]).mean()
             phi = self.process_tilt(
-                phi, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                phi, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
+        elif setup.rocking_angle == "energy":
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
@@ -2172,7 +2206,13 @@ class BeamlineID27(BeamlineSaxs):
             nb_steps = len(nath)
             tilt_angle = (nath[1:] - nath[0:-1]).mean()
             nath = self.process_tilt(
-                nath, nb_steps=nb_steps, nb_frames=nb_frames, angular_step=tilt_angle
+                nath, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
+            )
+        elif setup.rocking_angle == "energy":
+            nb_steps = len(energy)
+            tilt_angle = (energy[1:] - energy[0:-1]).mean()
+            energy = self.process_tilt(
+                energy, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         else:
             raise ValueError('Wrong value for "rocking_angle" parameter')
