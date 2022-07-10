@@ -467,7 +467,11 @@ def process_scan(
     # correct detector angles and save values for postprocessing #
     ##############################################################
     metadata = None
-    if not prm["outofplane_angle"] and not prm["inplane_angle"]:
+    if (
+        not prm["outofplane_angle"]
+        and not prm["inplane_angle"]
+        and prm["rocking_angle"] != "energy"
+    ):
         # corrected detector angles not provided
         bragg_peaks = {"user": prm["bragg_peak"]}
         if prm["bragg_peak"] is None:
@@ -501,15 +505,19 @@ def process_scan(
     ####################################
     # wavevector transfer calculations #
     ####################################
-    kin = (
-        2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
-    )  # in lab frame z downstream, y vertical, x outboard
-    kout = setup.exit_wavevector  # in lab.frame z downstream, y vertical, x outboard
-    q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
-    qnorm = np.linalg.norm(q)
-    dist_plane = 2 * np.pi / qnorm
-    logger.info(f"Wavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
-    logger.info(f"Interplanar distance: {dist_plane:.6f} angstroms")
+    if prm["rocking_angle"] != "energy":
+        # kin and kout: in laboratory frame z downstream, y vertical, x outboard
+        kin = 2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
+        kout = setup.exit_wavevector
+        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
+        qnorm = np.linalg.norm(q)
+        dist_plane = 2 * np.pi / qnorm
+        logger.info(f"Wavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
+        logger.info(f"Interplanar distance: {dist_plane:.6f} angstroms")
+    else:  # TODO: calculate  q values
+        q = 0
+        qnorm = 0
+        dist_plane = 0
 
     ##############################################################
     # optional interpolation of the data onto an orthogonal grid #
@@ -830,7 +838,8 @@ def process_scan(
                 data.shape
             )  # in nexus z downstream, y vertical / in q z vertical, x downstream
             logger.info(
-                f"dqx, dqy, dqz = ({qx[1] - qx[0]}, {qy[1] - qy[0]}, {qz[1] - qz[0]})"
+                f"(dqx, dqy, dqz) = ({qx[1] - qx[0]:2f}, {qy[1] - qy[0]:2f}, "
+                f"{qz[1] - qz[0]:2f})"
             )
             # in nexus z downstream, y vertical / in q z vertical, x downstream
             qx0 = qx.min()
@@ -1309,8 +1318,9 @@ def process_scan(
         out.create_dataset("q", data=q)
         out.create_dataset("qnorm", data=qnorm)
         out.create_dataset("dist_plane", data=dist_plane)
-        out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
-        out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
+        if prm["rocking_angle"] != "energy":
+            out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
+            out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
 
         par.create_dataset("detector", data=str(setup.detector.params))
         par.create_dataset("setup", data=str(setup.params))
