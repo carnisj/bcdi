@@ -19,7 +19,7 @@ import multiprocessing as mp
 import time
 from collections.abc import Sequence
 from numbers import Integral, Real
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
@@ -759,10 +759,10 @@ class Setup:
         self,
         grazing_angle: Optional[Tuple[Real, ...]],
         inplane_angle: Real,
-        outofplane_angle: Real,
+        outofplane_angle: Union[Real, np.ndarray],
         tilt_angle: np.ndarray,
         detector_distance: Real,
-        energy: Real,
+        energy: Union[Real, np.ndarray],
     ) -> None:
         """
         Check if the required parameters are correctly defined.
@@ -782,10 +782,9 @@ class Setup:
         self.grazing_angle = grazing_angle
 
         self.energy = self.energy or energy
+        # the user-defined energy overrides the logged energy
         if self.energy is None:
             raise ValueError("the X-ray energy is not defined")
-        if not isinstance(self.energy, Real):
-            raise TypeError("the X-ray energy should be fixed")
 
         self.distance = self.distance or detector_distance
         if self.distance is None:
