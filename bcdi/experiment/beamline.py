@@ -111,8 +111,9 @@ class BeamlineCRISTAL(BeamlineGoniometer):
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (mgomega,)
             tilt_angle = mgphi
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
+        else:  # energy scan
+            grazing = None
+            tilt_angle = energy
 
         setup.check_setup(
             grazing_angle=grazing,
@@ -430,8 +431,9 @@ class BeamlineID01(BeamlineGoniometer):
         elif setup.rocking_angle == "inplane":  # phi rocking curve
             grazing = (mu, eta)  # mu below eta but not used at ID01
             tilt_angle = phi
-        else:
-            raise ValueError('Wrong value for "rocking_angle" parameter')
+        else:  # energy scan
+            grazing = None
+            tilt_angle = energy
 
         setup.check_setup(
             grazing_angle=grazing,
