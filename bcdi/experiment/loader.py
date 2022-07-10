@@ -3000,10 +3000,9 @@ class LoaderCRISTAL(Loader):
                 actuator_name = actuator_name.upper()
                 if actuator_name not in file[root].keys():
                     self.logger.info(
-                        f"Could not find the entry for the actuator'{actuator_name}'"
-                    )
-                    self.logger.info(
-                        f"list of available actuators: {list(file[root].keys())}"
+                        f"Could not find the entry for the actuator'{actuator_name}': "
+                        f"list of available actuators {list(file[root].keys())}. "
+                        f"Defaulting '{actuator_name}' to 0 deg"
                     )
                     return 0
 
@@ -3021,11 +3020,9 @@ class LoaderCRISTAL(Loader):
                 except KeyError:  # nothing else that we can do
                     self.logger.info(
                         f"Could not find the field '{field_name}'"
-                        f" in the actuator'{actuator_name}'"
-                    )
-                    self.logger.info(
-                        "list of available fields: "
-                        f"{list(file[root + '/' + actuator_name].keys())}"
+                        f" in the actuator'{actuator_name}': list of available fields "
+                        f"{list(file[root + '/' + actuator_name].keys())}. "
+                        f"Defaulting '{actuator_name}' to 0 deg"
                     )
                     return 0
         return util.unpack_array(dataset)
@@ -3079,7 +3076,7 @@ class LoaderCRISTAL(Loader):
             if bool(re.match(pattern, key)):
                 obj_shape = file[root + data_path + "/" + key][:].shape
                 if nb_pix_ver in obj_shape and nb_pix_hor in obj_shape:
-                    # founc the key corresponding to the detector
+                    # found the key corresponding to the detector
                     self.logger.info(
                         f"subdirectory '{key}' contains the detector images, "
                         f"shape={obj_shape}"
@@ -3204,60 +3201,94 @@ class LoaderCRISTAL(Loader):
         if not setup.custom_scan:
             with setup.logfile as file:
                 group_key = list(file.keys())[0]
-            energy = (
-                self.cristal_load_motor(
-                    setup=setup,
-                    root="/" + group_key + "/CRISTAL/",
-                    actuator_name="Monochromator",
-                    field_name="energy",
-                )
-                * 1000
-            )  # in eV
-            if setup.energy is not None and abs(energy - setup.energy) > 1:
-                # difference larger than 1 eV
-                self.logger.info(
-                    f"Warning: user-defined energy = {setup.energy:.1f} eV different "
-                    f"from the energy recorded in the datafile = {energy[0]:.1f} eV"
-                )
 
-            scanned_motor = self.cristal_load_motor(
-                setup=setup,
-                root="/" + group_key,
-                actuator_name="scan_data",
-                field_name=setup.actuators.get("rocking_angle", "actuator_1_1"),
-            )
-
-            if setup.rocking_angle == "outofplane":
-                mgomega = scanned_motor  # mgomega is scanned
-                mgphi = self.cristal_load_motor(
+            if setup.rocking_angle != "energy":
+                delta = self.cristal_load_motor(
                     setup=setup,
-                    root="/" + group_key + "/CRISTAL/",
-                    actuator_name="i06-c-c07-ex-mg_phi",
+                    root="/" + group_key + "/CRISTAL/Diffractometer/",
+                    actuator_name="I06-C-C07-EX-DIF-DELTA",
                     field_name="position",
                 )
-            elif setup.rocking_angle == "inplane":
-                mgphi = scanned_motor  # mgphi is scanned
+                gamma = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key + "/CRISTAL/Diffractometer/",
+                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
+                    field_name="position",
+                )
+                energy = (
+                    self.cristal_load_motor(
+                        setup=setup,
+                        root="/" + group_key + "/CRISTAL/",
+                        actuator_name="Monochromator",
+                        field_name="energy",
+                    )
+                    * 1000
+                )  # in eV
+                if (
+                    setup.energy is not None
+                    and isinstance(energy, (int, float))
+                    and abs(energy - setup.energy) > 1
+                ):
+                    # difference larger than 1 eV
+                    self.logger.warning(
+                        f"user-defined energy = {setup.energy:.1f} eV different from "
+                        f"the energy in the datafile = {energy:.1f} eV"
+                    )
+
+                scanned_motor = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key,
+                    actuator_name="scan_data",
+                    field_name=setup.actuators.get("rocking_angle", "actuator_1_1"),
+                )
+
+                if setup.rocking_angle == "outofplane":
+                    mgomega = scanned_motor  # mgomega is scanned
+                    mgphi = self.cristal_load_motor(
+                        setup=setup,
+                        root="/" + group_key + "/CRISTAL/",
+                        actuator_name="i06-c-c07-ex-mg_phi",
+                        field_name="position",
+                    )
+                else:  # "inplane"
+                    mgphi = scanned_motor  # mgphi is scanned
+                    mgomega = self.cristal_load_motor(
+                        setup=setup,
+                        root="/" + group_key + "/CRISTAL/",
+                        actuator_name="i06-c-c07-ex-mg_omega",
+                        field_name="position",
+                    )
+            else:  # energy scan
+                delta = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key,
+                    actuator_name="scan_data",
+                    field_name=setup.actuators.get("delta", "actuator_1_2"),
+                )
+                energy = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key,
+                    actuator_name="scan_data",
+                    field_name=setup.actuators.get("rocking_angle", "actuator_1_3"),
+                )
                 mgomega = self.cristal_load_motor(
                     setup=setup,
                     root="/" + group_key + "/CRISTAL/",
                     actuator_name="i06-c-c07-ex-mg_omega",
                     field_name="position",
                 )
-            else:
-                raise ValueError('Wrong value for "rocking_angle" parameter')
-
-            delta = self.cristal_load_motor(
-                setup=setup,
-                root="/" + group_key + "/CRISTAL/Diffractometer/",
-                actuator_name="I06-C-C07-EX-DIF-DELTA",
-                field_name="position",
-            )
-            gamma = self.cristal_load_motor(
-                setup=setup,
-                root="/" + group_key + "/CRISTAL/Diffractometer/",
-                actuator_name="I06-C-C07-EX-DIF-GAMMA",
-                field_name="position",
-            )
+                mgphi = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key + "/CRISTAL/",
+                    actuator_name="i06-c-c07-ex-mg_phi",
+                    field_name="position",
+                )
+                gamma = self.cristal_load_motor(
+                    setup=setup,
+                    root="/" + group_key + "/CRISTAL/Diffractometer/",
+                    actuator_name="I06-C-C07-EX-DIF-GAMMA",
+                    field_name="position",
+                )
 
             # remove user-defined sample offsets (sample: mgomega, mgphi)
             mgomega = mgomega - self.sample_offsets[0]
