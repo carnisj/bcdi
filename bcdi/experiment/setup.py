@@ -690,9 +690,9 @@ class Setup:
         self._tilt_angle = value
 
     @property
-    def wavelength(self):
+    def wavelength(self) -> Optional[float]:
         """Wavelength in meters."""
-        if self.energy:
+        if isinstance(self.energy, Real):
             return 12.398 * 1e-7 / self.energy  # in m
         return None
 
