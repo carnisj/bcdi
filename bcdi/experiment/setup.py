@@ -25,6 +25,7 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
 from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.beamline_factory import Beamline
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -592,8 +593,11 @@ class Setup:
 
     @outofplane_angle.setter
     def outofplane_angle(self, value):
-        if not isinstance(value, Real) and value is not None:
-            raise TypeError("outofplane_angle should be a number in degrees")
+        if not isinstance(value, (Real, np.ndarray)) and value is not None:
+            raise TypeError(
+                "outofplane_angle should be a number in degrees "
+                "or an array of numbers in degrees"
+            )
         self._outofplane_angle = value
 
     @property
