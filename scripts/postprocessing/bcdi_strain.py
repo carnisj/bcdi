@@ -91,8 +91,11 @@ Usage:
 
     Parameters related to centering:
 
-    :param centering_method: e.g. "max_com"
-    'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
+    :param centering_method: e.g. {"direct_space": "max_com", "reciprocal_space": "max"}
+     dictionary with the centering methods for direct and reciprocal space. Supported
+     methods are: 'com' (center of mass), 'max', 'max_com' (max then com), 'skip'.
+     If a simple string is provided, it will use that method for both direct and
+     reciprocal space.
     :param roll_modes: e.g. [0, 0, 0]
     correct a roll of few pixels after the decomposition into modes in PyNX
     axis=(0, 1, 2)

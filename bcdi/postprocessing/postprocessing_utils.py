@@ -531,6 +531,27 @@ def center_max(array, debugging=False, **kwargs):
     return array
 
 
+def center_object(method: str, obj: np.ndarray) -> np.ndarray:
+    """
+    Center an object based on its modulus.
+
+    :param method: method used for centering. 'com' (center of mass), 'max', 'max_com'
+     (max then com), 'skip'.
+    :param obj: a 3D numpy array
+    :return: the centered array of the same shape as obj
+    """
+    valid.valid_ndarray(obj, ndim=3)
+    if method == "max":
+        return center_max(obj)
+        # shift based on max value, use this if the object spans across the edge of the
+        # window before using the center of mass
+    if method == "com":
+        return center_com(obj)
+    if method == "max_com":
+        return center_com(center_max(obj))
+    return obj
+
+
 def filter_3d(
     array, filter_name="gaussian_highpass", kernel_length=21, debugging=False, **kwargs
 ):

@@ -230,11 +230,8 @@ def process_scan(
         if prm["flip_reconstruction"]:
             obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"].cmap)
 
-        if extension == ".h5":
-            prm[
-                "centering_method"
-            ] = "do_nothing"  # do not center, data is already cropped
-            # just on support for mode decomposition
+        if extension == ".h5":  # data is already cropped by PyNX
+            prm["centering_method"] = "skip"
             # correct a roll after the decomposition into modes in PyNX
             obj = np.roll(obj, prm["roll_modes"], axis=(0, 1, 2))
             fig, _, _ = gu.multislices_plot(
@@ -433,18 +430,12 @@ def process_scan(
     del amp, phase, gridz, gridy, gridx, rampz, rampy, rampx
     gc.collect()
 
-    ######################
-    # centering of array #
-    ######################
-    if prm["centering_method"] == "max":
-        avg_obj = pu.center_max(avg_obj)
-        # shift based on max value,
-        # required if it spans across the edge of the array before COM
-    elif prm["centering_method"] == "com":
-        avg_obj = pu.center_com(avg_obj)
-    elif prm["centering_method"] == "max_com":
-        avg_obj = pu.center_max(avg_obj)
-        avg_obj = pu.center_com(avg_obj)
+    #####################################
+    # centering the direct space object #
+    #####################################
+    avg_obj = pu.center_object(
+        method=prm["centering_method"]["direct_space"], obj=avg_obj
+    )
 
     #######################
     #  save support & vti #
