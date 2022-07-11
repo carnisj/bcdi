@@ -33,7 +33,10 @@ roll_modes: [0, 0, 0]
 # axis=(0, 1, 2), correct a roll of few pixels
 # after the decomposition into modes in PyNX
 centering_method: "max_com"
-# 'com' (center of mass), 'max', 'max_com' (max then com), 'do_nothing'
+# dictionary with the centering methods for direct and reciprocal space, e.g.
+# {"direct_space": "max_com", "reciprocal_space": "max"}. The method supported are
+# 'com' (center of mass), 'max', 'max_com' (max then com), 'skip'. If a simple string
+# is provided, it will use that method for both direct and reciprocal space.
 #########################################################
 # parameters relative to the FFT window and voxel sizes #
 #########################################################

@@ -581,7 +581,17 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "centering_method":
-        allowed = {"com", "max", "max_com", "do_nothing"}
+        allowed_keys = {"direct_space", "reciprocal_space"}
+        allowed_values = {"com", "max", "max_com", "skip"}
+        if isinstance(value, dict):
+            if any(
+                key not in allowed_keys or val not in allowed_values
+                for (key, val) in value.items()
+            ):
+                raise ValueError(
+                    f"Invalid value {value} for 'centering_method'. "
+                    f"Allowed keys: {allowed_keys}, allowed values: {allowed_values}"
+                )
         if value not in allowed:
             raise ParameterError(key, value, allowed)
     elif key == "center_roi_x":

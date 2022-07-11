@@ -48,7 +48,10 @@ def run(prm: Dict[str, Any]) -> None:
             "background_file": None,
             "beam_direction": [1, 0, 0],
             "bragg_peak": None,
-            "centering_method": "max_com",
+            "centering_method": {
+                "direct_space": "max_com",
+                "reciprocal_space": "max_com",
+            },
             "colormap": "turbo",
             "comment": "",
             "correct_refraction": False,
