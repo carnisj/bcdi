@@ -605,7 +605,7 @@ def process_scan(
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,
-            q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
+            q_bragg=np.array([q_lab[2], q_lab[1], q_lab[0]]),
             initial_shape=original_size,
             voxel_size=prm["fix_voxel"],
             reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
@@ -903,7 +903,7 @@ def process_scan(
             (amp, phase, strain), q_final = setup.beamline.flatten_sample(
                 arrays=(amp, phase, strain),
                 voxel_size=voxel_size,
-                q_com=q_lab[::-1],  # q_com needs to be in xyz order
+                q_bragg=q_lab[::-1],  # q_bragg needs to be in xyz order
                 is_orthogonal=True,
                 reciprocal_space=False,
                 rocking_angle=setup.rocking_angle,
@@ -991,7 +991,7 @@ def process_scan(
             phase=phase,
             bulk=bulk,
             strain=strain,
-            q_com=q_final,
+            q_bragg=q_final,
             voxel_sizes=voxel_size,
             detector=setup.detector.params,
             setup=str(yaml.dump(setup.params)),
@@ -1010,7 +1010,7 @@ def process_scan(
             out.create_dataset("bulk", data=bulk)
             out.create_dataset("phase", data=phase)
             out.create_dataset("strain", data=strain)
-            out.create_dataset("q_com", data=q_final)
+            out.create_dataset("q_bragg", data=q_final)
             out.create_dataset("voxel_sizes", data=voxel_size)
             par.create_dataset("detector", data=str(setup.detector.params))
             par.create_dataset("setup", data=str(setup.params))
