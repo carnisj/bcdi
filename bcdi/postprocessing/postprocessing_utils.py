@@ -345,18 +345,18 @@ def calc_coordination(
     return mycoord
 
 
-def center_com(array, debugging=False, **kwargs):
+def center_com(array: np.ndarray, debugging: bool = False, **kwargs) -> np.ndarray:
     """
     Center array based on center_of_mass(abs(array)) using pixel shift.
 
-    :param array: 3D array to be centered based on the center of mass of abs(array)
+    :param array: 3D array to be centered using the center of mass of abs(array)
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle
+     - width_z: size of the area to plot in z (axis 0), centered in the middle
        of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle
+     - width_y: size of the area to plot in y (axis 1), centered in the middle
        of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle
+     - width_x: size of the area to plot in x (axis 2), centered in the middle
        of the initial array
 
     :return: array centered by pixel shift
@@ -446,18 +446,18 @@ def center_com(array, debugging=False, **kwargs):
     return array
 
 
-def center_max(array, debugging=False, **kwargs):
+def center_max(array: np.ndarray, debugging: bool = False, **kwargs) -> np.ndarray:
     """
     Center array based on max(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on max(abs(array))
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle
+     - width_z: size of the area to plot in z (axis 0), centered in the middle
        of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle
+     - width_y: size of the area to plot in y (axis 1), centered in the middle
        of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle
+     - width_x: size of the area to plot in x (axis 2), centered in the middle
        of the initial array
 
     :return: array centered by pixel shift
