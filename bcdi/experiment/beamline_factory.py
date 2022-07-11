@@ -128,7 +128,7 @@ class Beamline(ABC):
         self,
         arrays,
         voxel_size,
-        q_com,
+        q_bragg,
         rocking_angle,
         central_angle=None,
         fill_value=0,
@@ -146,7 +146,7 @@ class Beamline(ABC):
         :param arrays: tuple of 3D real arrays of the same shape.
         :param voxel_size: tuple, voxel size of the 3D array in z, y, and x
          (CXI convention)
-        :param q_com: diffusion vector of the center of mass of the Bragg peak,
+        :param q_bragg: diffusion vector of the center of mass of the Bragg peak,
          expressed in an orthonormal frame x y z
         :param rocking_angle: angle which is tilted during the rocking curve in
          {'outofplane', 'inplane'}
@@ -154,7 +154,7 @@ class Beamline(ABC):
          of the rotation matrix for the rocking angle. If None, it will be defined as
          the angle value at the middle of the rocking curve.
         :param fill_value: tuple of numeric values used in the RegularGridInterpolator
-         for points outside of the interpolation domain. The length of the tuple
+         for points outside the interpolation domain. The length of the tuple
          should be equal to the number of input arrays.
         :param is_orthogonal: set to True is the frame is orthogonal, False otherwise.
          Used for plot labels.
@@ -183,14 +183,14 @@ class Beamline(ABC):
 
         # check few parameters, the rest will be validated in rotate_crystal
         valid.valid_container(
-            q_com,
+            q_bragg,
             container_types=(tuple, list, np.ndarray),
             length=3,
             item_types=Real,
-            name="q_com",
+            name="q_bragg",
         )
-        if np.linalg.norm(q_com) == 0:
-            raise ValueError("the norm of q_com is zero")
+        if np.linalg.norm(q_bragg) == 0:
+            raise ValueError("the norm of q_bragg is zero")
         if self.sample_angles is None:
             raise ValueError(
                 "call diffractometer.goniometer_values before calling this method"
@@ -249,7 +249,7 @@ class Beamline(ABC):
             **kwargs,
         )
         rotated_q = util.rotate_vector(
-            vectors=q_com, rotation_matrix=np.linalg.inv(rotation_matrix)
+            vectors=q_bragg, rotation_matrix=np.linalg.inv(rotation_matrix)
         )
         return rotated_arrays, rotated_q
 

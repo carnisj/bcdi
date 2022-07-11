@@ -59,14 +59,14 @@ class TestRun(unittest.TestCase):
             ) as h5file:
                 amp = h5file["output/amp"][()]
                 voxel_sizes = h5file["output/voxel_sizes"][()]
-                q_com = h5file["output/q_com"][()]
+                q_bragg = h5file["output/q_bragg"][()]
         amp = amp / amp.max()
         amp[amp < self.args["isosurface_strain"]] = 0
         amp[np.nonzero(amp)] = 1
         volume = amp.sum() * reduce(lambda x, y: x * y, voxel_sizes)
 
         self.assertEqual(volume, expected_volume)
-        self.assertTrue(np.allclose(q_com, expected_q_com))
+        self.assertTrue(np.allclose(q_bragg, expected_q_com))
 
 
 if __name__ == "__main__":
