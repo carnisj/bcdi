@@ -662,8 +662,10 @@ def find_bragg(
         allow_none=True,
         name="binning",
     )
-    if peak_method not in {"max", "com", "maxcom"}:
-        raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
+    if peak_method not in {"max", "com", "max_com"}:
+        raise ValueError(
+            "peak_method should be 'max', 'com' or 'max_com', " f"got {peak_method}"
+        )
 
     logger.info(
         f"Finding Bragg peak position:"
@@ -673,17 +675,17 @@ def find_bragg(
     )
     if peak_method == "max":
         position = np.unravel_index(abs(data).argmax(), data.shape)
-        logger.info(f"Max at: {position}, Max = {int(data[position])}")
+        logger.info(f"Max at: {position}, value = {int(data[position])}")
     elif peak_method == "com":
         position = center_of_mass(data)
         position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"Center of mass at: {position}, COM = {int(data[position])}")
-    else:  # 'maxcom'
+        logger.info(f"Center of mass at: {position}, value = {int(data[position])}")
+    else:  # 'max_com'
         valid.valid_ndarray(arrays=data, ndim=3)
         position = list(np.unravel_index(abs(data).argmax(), data.shape))
         position[1:] = center_of_mass(data[position[0], :, :])
         position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
+        logger.info(f"MaxCom at (z, y, x): {position}, value = {int(data[position])}")
 
     # unbin
     if binning is not None:

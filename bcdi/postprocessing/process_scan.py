@@ -231,7 +231,7 @@ def process_scan(
             obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"].cmap)
 
         if extension == ".h5":  # data is already cropped by PyNX
-            prm["centering_method"] = "skip"
+            prm["centering_method"]["direct_space"] = "skip"
             # correct a roll after the decomposition into modes in PyNX
             obj = np.roll(obj, prm["roll_modes"], axis=(0, 1, 2))
             fig, _, _ = gu.multislices_plot(
