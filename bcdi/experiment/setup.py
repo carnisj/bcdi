@@ -181,7 +181,7 @@ class Setup:
         # initialize other attributes
         self.detector_position: Optional[Tuple[Real, Real, Real]] = None
         self.logfile = None
-        self.incident_angles = None
+        self.tilt_angles = None  # will store the array of tilt values
 
     @property
     def actuators(self):
@@ -801,7 +801,7 @@ class Setup:
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
 
-        self.incident_angles = tilt_angle
+        self.tilt_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
@@ -852,7 +852,7 @@ class Setup:
         if self.detector_position is None:
             raise ValueError("the detector position is not defined")
 
-        self.incident_angles = tilt_angle
+        self.tilt_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
