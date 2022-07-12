@@ -1392,7 +1392,10 @@ def show_rocking_curve(
     ].sum(axis=(1, 2))
 
     # Create mask to remove duplicate in tilt_values
-    mask = [False if r in np.delete(tilt_values.copy(), j) else True for (j, r) in enumerate(tilt_values)]
+    mask = [
+        False if r in np.delete(tilt_values.copy(), j) else True
+        for (j, r) in enumerate(tilt_values)
+    ]
 
     # Apply mask
     rocking_curve = rocking_curve[mask]

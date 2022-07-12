@@ -976,6 +976,7 @@ class Merlin(Detector):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         return 55e-06, 55e-06
 
+
 class MerlinSixS(Detector):
     """Implementation of the Merlin detector for SixS"""
 
@@ -1019,7 +1020,6 @@ class MerlinSixS(Detector):
     def unbinned_pixel_size(self):
         """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         return 55e-06, 55e-06
-
 
 
 class Dummy(Detector):
