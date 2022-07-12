@@ -629,7 +629,7 @@ def process_scan(
                 bu.show_rocking_curve(
                     data,
                     roi_center=roi_center,
-                    tilt_values=setup.incident_angles,
+                    tilt_values=setup.tilt_angles,
                     savedir=setup.detector.savedir,
                     logger=logger,
                 )
