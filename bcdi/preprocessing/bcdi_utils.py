@@ -680,19 +680,19 @@ def find_bragg(
         logger.info(f"Center of mass at: {position}, COM = {int(data[position])}")
     else:  # 'maxcom'
         valid.valid_ndarray(arrays=data, ndim=3)
-        position = list(np.unravel_index(abs(data).argmax(), data.shape))
-        position[1:] = center_of_mass(data[position[0], :, :])
-        position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
+        max_rc = data.sum(axis=(1, 2)).argmax()
+        com_in_max_frame = center_of_mass(data[max_rc])
+        position = [max_rc, int(com_in_max_frame[0]), int(com_in_max_frame[1])]
+        COM_value = data[position[0], position[1], position[2]]
+        logger.info(f"MaxCom at (z, y, x): {position}, COM = {COM_value}")
 
     # unbin
     if binning is not None:
-        position = [a * b for a, b in zip(position, binning)]
+        position[1:] = [a * b for a, b in zip(position[1:], binning[1:])]
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
     if roi is not None:
-        position = list(position)
         position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
 
@@ -1390,6 +1390,14 @@ def show_rocking_curve(
             roi_center[2] + integration_roi[1] // 2, 0, data.shape[2]
         ),
     ].sum(axis=(1, 2))
+
+    # Create mask to remove duplicate in tilt_values
+    mask = [False if r in np.delete(tilt_values.copy(), j) else True for (j, r) in enumerate(tilt_values)]
+
+    # Apply mask
+    rocking_curve = rocking_curve[mask]
+    tilt_values = tilt_values[mask]
+    nb_frames = np.sum(mask)
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
     interp_points = 5 * nb_frames

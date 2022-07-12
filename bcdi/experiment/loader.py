@@ -1975,6 +1975,8 @@ class LoaderSIXS(Loader):
             raise NotImplementedError("custom scan not implemented for NANOMAX")
         if setup.detector.name == "Merlin":
             tmp_data = file.merlin[:]
+        if setup.detector.name == "MerlinSixS":
+            tmp_data = file.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
                 tmp_data = file.mfilm[:]
