@@ -51,7 +51,7 @@ class TestRun(unittest.TestCase):
             self.args = self.parser.load_arguments()
             self.args["save_dir"] = (tmpdir,)
             run(self.args)
-            self.assertTrue(os.path.isfile(f"{tmpdir}/run0_S11.log"))
+            self.assertTrue(os.path.isfile(f"{tmpdir}/preprocessing_run0_S11.log"))
             with h5py.File(
                 f"{tmpdir}/S11_preprocessing_norm_256_256_256_1_2_2.h5",
                 "r",
