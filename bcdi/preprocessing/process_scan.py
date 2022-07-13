@@ -479,8 +479,6 @@ def process_scan(
                 logger=logger,
             )
 
-        if prm["bragg_peak"] is None:
-            raise ValueError("bragg_peak undefined")
         roi_center = (
             prm["bragg_peak"][0],
             (prm["bragg_peak"][1] - setup.detector.roi[0]) // setup.detector.binning[1],
