@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Use distinct names for the log files from preprocessing and postprocessing.
+
 * Move the calculation of corrected detector angles before the calculation of `q_lab`
   in `postprocessing.process_scan`. Previously it was using the values from the beamline
   log file, resulting in a small discrepancy.
