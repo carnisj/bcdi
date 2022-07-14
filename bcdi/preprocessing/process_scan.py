@@ -471,14 +471,15 @@ def process_scan(
         # corrected detector angles not provided
         if prm["bragg_peak"] is None:
             # Bragg peak position not provided, find it from the data
-            prm["bragg_peak"] = bu.find_bragg(
+            peaks = bu.find_bragg(
                 data=data,
-                peak_method="maxcom",
                 roi=setup.detector.roi,
                 binning=setup.detector.binning,
                 logger=logger,
             )
-
+            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
+            logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
+        assert prm["bragg_peak"] is not None  # needed by mypy
         roi_center = (
             prm["bragg_peak"][0],
             (prm["bragg_peak"][1] - setup.detector.roi[0]) // setup.detector.binning[1],
@@ -1296,8 +1297,10 @@ def process_scan(
             out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
             out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
             out.create_dataset("interp_curve", data=metadata["interp_rocking_curve"])
-            out.create_dataset("COM_rocking_curve", data=metadata["COM_rocking_curve"])
-            out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
+            out.create_dataset("COM_rocking_curve", data=metadata["tilt_value_at_peak"])
+            out.create_dataset(
+                "detector_data_COM", data=metadata["detector_data_at_peak"]
+            )
             out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
         try:
             out.create_dataset("bragg_peak", data=prm["bragg_peak"])
