@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
-from typing import List, Optional, Tuple, no_type_check
+from typing import Dict, List, Optional, Tuple, no_type_check
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,8 +49,9 @@ def center_fft(
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
      that it is used, 0 means not used, -1 means padded (added) frame.
-    :param centering: centering option, 'max' or 'com'. It will be overridden if the
-     kwarg 'fix_bragg' is provided.
+    :param centering: method used to determine the location of the Bragg peak: 'max',
+     'com' (center of mass), or 'max_com' (max along the first axis, center of mass in
+     the detector plane)
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
@@ -128,8 +129,10 @@ def center_fft(
             )
         else:
             logger.info(f"Center of mass at pixel (Z, Y, X): ({z0, y0, x0})")
-    else:
-        raise ValueError("Incorrect value for 'centering' parameter")
+    else:  # 'max_com'
+        position = list(np.unravel_index(abs(data).argmax(), data.shape))
+        position[1:] = center_of_mass(data[position[0], :, :])
+        z0, y0, x0 = tuple(map(lambda x: int(np.rint(x)), position))
 
     if fix_bragg:
         if len(fix_bragg) != 3:
@@ -618,20 +621,17 @@ def center_fft(
 @no_type_check  # https://github.com/python/mypy/issues/6697
 def find_bragg(
     data: np.ndarray,
-    peak_method: str,
     roi: Optional[Tuple[int, int, int, int]] = None,
     binning: Optional[Tuple[int, ...]] = None,
     **kwargs,
-) -> Tuple[int, ...]:
+) -> Dict[str, Tuple[int, ...]]:
     """
-    Find the Bragg peak position in data based on the centering method.
+    Find the Bragg peak position in data based on various peak finding methods.
 
     It compensates for a ROI in the detector and an eventual binning.
 
     :param data: 2D or 3D array. If complex, Bragg peak position is calculated for
      abs(array)
-    :param peak_method: 'max', 'com' or 'maxcom'. For 'maxcom', it uses method 'max'
-     for the first axis and 'com' for the other axes.
     :param roi: tuple of integers of length 4, region of interest used to generate data
      from the full sized detector.
     :param binning: tuple of integers of length data.ndim, binning applied to the data
@@ -640,7 +640,7 @@ def find_bragg(
 
      - 'logger': an optional logger
 
-    :return: the Bragg peak position in the unbinned, full size detector as a tuple of
+    :return: the Bragg peak positions in the unbinned, full size detector as a tuple of
      data.ndim elements
     """
     logger = kwargs.get("logger", module_logger)
@@ -662,10 +662,6 @@ def find_bragg(
         allow_none=True,
         name="binning",
     )
-    if peak_method not in {"max", "com", "max_com"}:
-        raise ValueError(
-            "peak_method should be 'max', 'com' or 'max_com', " f"got {peak_method}"
-        )
 
     logger.info(
         f"Finding Bragg peak position:"
@@ -673,33 +669,47 @@ def find_bragg(
         f"\n\tBinning: {binning}"
         f"\n\tRoi: {roi}"
     )
-    if peak_method == "max":
-        position = np.unravel_index(abs(data).argmax(), data.shape)
-        logger.info(f"Max at: {position}, value = {int(data[position])}")
-    elif peak_method == "com":
-        position = center_of_mass(data)
-        position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"Center of mass at: {position}, value = {int(data[position])}")
-    else:  # 'max_com'
-        valid.valid_ndarray(arrays=data, ndim=3)
-        position = list(np.unravel_index(abs(data).argmax(), data.shape))
-        position[1:] = center_of_mass(data[position[0], :, :])
-        position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"MaxCom at (z, y, x): {position}, value = {int(data[position])}")
+    position_max = np.unravel_index(abs(data).argmax(), data.shape)
+    logger.info(f"Max at: {position_max}, value = {int(data[position_max])}")
+
+    position_com = center_of_mass(data)
+    position_com = tuple(map(lambda x: int(np.rint(x)), position_com))
+    logger.info(f"Center of mass at: {position_com}, value = {int(data[position_com])}")
+
+    position_max_com = list(np.unravel_index(abs(data).argmax(), data.shape))
+    position_max_com[1:] = center_of_mass(data[position_max_com[0], :, :])
+    position_max_com = tuple(map(lambda x: int(np.rint(x)), position_max_com))
+    logger.info(
+        f"MaxCom at (z, y, x): {position_max_com}, "
+        f"value = {int(data[position_max_com])}"
+    )
 
     # unbin
     if binning is not None:
-        position = [a * b for a, b in zip(position, binning)]
+        position_max = [a * b for a, b in zip(position_max, binning)]
+        position_com = [a * b for a, b in zip(position_com, binning)]
+        position_max_com = [a * b for a, b in zip(position_max_com, binning)]
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
     if roi is not None:
-        position = list(position)
-        position[-1] = position[-1] + roi[2]
-        position[-2] = position[-2] + roi[0]
+        position_max = list(position_max)
+        position_max[-1] = position_max[-1] + roi[2]
+        position_max[-2] = position_max[-2] + roi[0]
 
-    logger.info(f"Bragg peak (full unbinned roi) at: {position}")
-    return tuple(position)
+        position_com = list(position_com)
+        position_com[-1] = position_com[-1] + roi[2]
+        position_com[-2] = position_com[-2] + roi[0]
+
+        position_max_com = list(position_max_com)
+        position_max_com[-1] = position_max_com[-1] + roi[2]
+        position_max_com[-2] = position_max_com[-2] + roi[0]
+
+    return {
+        "max": tuple(position_max),
+        "com": tuple(position_com),
+        "max_com": tuple(position_max_com),
+    }
 
 
 def grid_bcdi_labframe(

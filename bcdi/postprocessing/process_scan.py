@@ -612,18 +612,21 @@ def process_scan(
                     background=prm["background_file"],
                     normalize=prm["normalize_flux"],
                 )
-                bragg_peak = bu.find_bragg(
+                peaks = bu.find_bragg(
                     data=data,
-                    peak_method=prm["centering_method"]["reciprocal_space"],
                     roi=setup.detector.roi,
                     binning=None,
                     logger=logger,
                 )
+                logger.info(
+                    "Bragg peak (full unbinned roi) at: "
+                    f"{peaks[prm['centering_method']['reciprocal_space']]}"
+                )
                 roi_center = (
-                    bragg_peak[0],
-                    bragg_peak[1]
+                    peaks[prm["centering_method"]["reciprocal_space"]][0],
+                    peaks[prm["centering_method"]["reciprocal_space"]][1]
                     - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                    bragg_peak[2]
+                    peaks[prm["centering_method"]["reciprocal_space"]][2]
                     - setup.detector.roi[2],  # no binning as in bu.find_bragg
                 )
                 bu.show_rocking_curve(
@@ -633,7 +636,7 @@ def process_scan(
                     savedir=setup.detector.savedir,
                     logger=logger,
                 )
-                prm["bragg_peak"] = bragg_peak
+                prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
             setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
             prm["outofplane_angle"] = setup.outofplane_angle
             prm["inplane_angle"] = setup.inplane_angle
