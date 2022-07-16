@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
-from typing import Dict, List, Optional, Tuple, no_type_check
+from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1328,8 +1328,16 @@ def reload_bcdi_data(
 
 
 def show_rocking_curve(
-    data, roi_center, integration_roi=None, tilt_values=None, savedir=None, **kwargs
-):
+    data: np.ndarray,
+    peaks: Dict[str, Optional[Tuple[int, int, int]]],
+    peak_method: str,
+    detector_roi: Union[Tuple[int, int, int, int], List[int]],
+    binning: Union[Tuple[int, int, int], List[int]],
+    window_width: Optional[Union[Tuple[int, int], List[int]]] = None,
+    tilt_values: Optional[List[float], np.ndarray] = None,
+    savedir: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, Any]:
     """
     Calculate the integrated intensity along a rocking curve and plot it.
 
@@ -1337,9 +1345,13 @@ def show_rocking_curve(
     angle and axes 1 and 2 to the detector plane (vertical, horizontal).
 
     :param data: the stacked rocking curve data
-    :param roi_center: the position of the center of the region of interest. Most often
-     this will be the position of the Bragg peak.
-    :param integration_roi: the region of interest where to integrate the intensity
+    :param peaks: a dictionary containing the peak-finding method as key and the peak
+     position as value
+    :param peak_method: the user-defined peak method
+    :param detector_roi: roi used when loading the detector data
+    :param binning: binning factor used when loading the detector data
+    :param window_width: width in pixels of the window use to integrate the intensity
+     for the rocking curve line plot and to plot the detector slice at the peak position
     :param tilt_values: the angular values along the rocking curve
     :param savedir: path to the saving directory
     :param kwargs:
@@ -1349,27 +1361,26 @@ def show_rocking_curve(
     :return: a dictionary containing the output metadata
     """
     logger = kwargs.get("logger", module_logger)
+
     # check parameters
+    allowed_methods = {"max", "com", "max_com", "user", "skip"}
+    if peak_method not in allowed_methods:
+        raise ValueError(f"allowed peak methods {allowed_methods}, got {peak_method}")
+
     valid.valid_ndarray(data, ndim=3, name="data")
     nb_frames = data.shape[0]
+
     valid.valid_container(
-        roi_center,
-        container_types=(tuple, list, np.ndarray),
-        length=3,
-        item_types=Real,
-        name="roi_center",
-    )
-    valid.valid_container(
-        integration_roi,
-        container_types=(tuple, list, np.ndarray),
+        window_width,
+        container_types=(tuple, list),
         length=2,
         item_types=int,
         allow_none=True,
         name="integration_roi",
     )
-    if integration_roi is None:
+    if window_width is None:
         integration_roi = (data.shape[1], data.shape[2])
-    elif integration_roi[0] > data.shape[1] or integration_roi[1] > data.shape[2]:
+    elif window_width[0] > data.shape[1] or window_width[1] > data.shape[2]:
         logger.info(
             "integration_roi larger than the frame size, using the full frame" "instead"
         )
@@ -1393,13 +1404,19 @@ def show_rocking_curve(
     if savedir is not None:
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
 
+    roi_center = (
+        peaks[peak_method][0],
+        (peaks[peak_method][1] - detector_roi[0]) // binning[1],
+        (peaks[peak_method][2] - detector_roi[2]) // binning[2],
+    )
+
     rocking_curve = data[
         :,
-        np.clip(roi_center[1] - integration_roi[0] // 2, 0, data.shape[1]) : np.clip(
-            roi_center[1] + integration_roi[0] // 2, 0, data.shape[1]
+        np.clip(roi_center[1] - window_width[0] // 2, 0, data.shape[1]) : np.clip(
+            roi_center[1] + window_width[0] // 2, 0, data.shape[1]
         ),
-        np.clip(roi_center[2] - integration_roi[1] // 2, 0, data.shape[2]) : np.clip(
-            roi_center[2] + integration_roi[1] // 2, 0, data.shape[2]
+        np.clip(roi_center[2] - window_width[1] // 2, 0, data.shape[2]) : np.clip(
+            roi_center[2] + window_width[1] // 2, 0, data.shape[2]
         ),
     ].sum(axis=(1, 2))
 
@@ -1421,7 +1438,7 @@ def show_rocking_curve(
     ax0.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
     ax0.set_ylabel("Integrated intensity")
     ax0.legend(("data", "interpolation"))
-    ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
+    ax0.set_title(f"Rocking curve in a {window_width[0]}x{window_width[1]} roi")
     ax1.plot(tilt_values, np.log10(rocking_curve), ".")
     ax1.plot(interp_tilt, np.log10(interp_curve))
     ax1.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
@@ -1434,11 +1451,29 @@ def show_rocking_curve(
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
     plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
-    plt.scatter(
-        roi_center[2], roi_center[1], color="r", marker="1", alpha=0.7, linewidth=1
-    )
-    plt.title(f"Slice at frame {roi_center[0]}")
+    colors = ["r", "g", "b", "k"]
+    idx = 0
+    for key, peak in peaks.items():
+        if peak is not None:
+            detected_peak = (
+                peak[0],
+                (peak[1] - detector_roi[0]) // binning[1],
+                (peak[2] - detector_roi[2]) // binning[2],
+            )
+
+            plt.scatter(
+                detected_peak[2],
+                detected_peak[1],
+                color=colors[idx],
+                marker="1",
+                alpha=0.7,
+                linewidth=1,
+                label=key,
+            )
+            idx += 1
+    plt.title(f"Slice at frame {roi_center[0]}, user_defined method '{peak_method}'")
     plt.colorbar()
+    plt.legend()
     plt.pause(0.1)
     fig.savefig(savedir + "central_slice.png")
     plt.close(fig)

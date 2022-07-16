@@ -469,6 +469,7 @@ def process_scan(
     metadata = None
     if not prm["outofplane_angle"] and not prm["inplane_angle"]:
         # corrected detector angles not provided
+        bragg_peaks = {"user": prm["bragg_peak"]}
         if prm["bragg_peak"] is None:
             # Bragg peak position not provided, find it from the data
             peaks = bu.find_bragg(
@@ -477,18 +478,17 @@ def process_scan(
                 binning=setup.detector.binning,
                 logger=logger,
             )
+            bragg_peaks.update(peaks)
             prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
             logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
         assert prm["bragg_peak"] is not None  # needed by mypy
-        roi_center = (
-            prm["bragg_peak"][0],
-            (prm["bragg_peak"][1] - setup.detector.roi[0]) // setup.detector.binning[1],
-            (prm["bragg_peak"][2] - setup.detector.roi[2]) // setup.detector.binning[2],
-        )
 
         metadata = bu.show_rocking_curve(
             data,
-            roi_center=roi_center,
+            peaks=bragg_peaks,
+            peak_method=prm["centering_method"]["reciprocal_space"],
+            binning=setup.detector.binning,
+            detector_roi=setup.detector.roi,
             tilt_values=setup.tilt_angles,
             savedir=setup.detector.savedir,
             logger=logger,
