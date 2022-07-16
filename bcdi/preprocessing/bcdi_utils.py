@@ -1334,7 +1334,7 @@ def show_rocking_curve(
     detector_roi: Union[Tuple[int, int, int, int], List[int]],
     binning: Union[Tuple[int, int, int], List[int]],
     window_width: Optional[Union[Tuple[int, int], List[int]]] = None,
-    tilt_values: Optional[List[float], np.ndarray] = None,
+    tilt_values: Optional[Union[List[float], np.ndarray]] = None,
     savedir: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, Any]:
@@ -1379,12 +1379,13 @@ def show_rocking_curve(
         name="integration_roi",
     )
     if window_width is None:
-        integration_roi = (data.shape[1], data.shape[2])
+        window_width = (data.shape[1], data.shape[2])
     elif window_width[0] > data.shape[1] or window_width[1] > data.shape[2]:
         logger.info(
-            "integration_roi larger than the frame size, using the full frame" "instead"
+            f"window_width {window_width} larger than the frame size {data.shape[1:3]}, "
+            "using the full frame instead"
         )
-        integration_roi = (data.shape[1], data.shape[2])
+        window_width = (data.shape[1], data.shape[2])
 
     valid.valid_container(
         tilt_values,
