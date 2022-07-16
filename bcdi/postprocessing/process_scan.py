@@ -622,16 +622,12 @@ def process_scan(
                     "Bragg peak (full unbinned roi) at: "
                     f"{peaks[prm['centering_method']['reciprocal_space']]}"
                 )
-                roi_center = (
-                    peaks[prm["centering_method"]["reciprocal_space"]][0],
-                    peaks[prm["centering_method"]["reciprocal_space"]][1]
-                    - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                    peaks[prm["centering_method"]["reciprocal_space"]][2]
-                    - setup.detector.roi[2],  # no binning as in bu.find_bragg
-                )
+
                 bu.show_rocking_curve(
                     data,
-                    roi_center=roi_center,
+                    peak_method=prm["centering_method"]["reciprocal_space"],
+                    binning=setup.detector.binning,
+                    detector_roi=setup.detector.roi,
                     tilt_values=setup.tilt_angles,
                     savedir=setup.detector.savedir,
                     logger=logger,
