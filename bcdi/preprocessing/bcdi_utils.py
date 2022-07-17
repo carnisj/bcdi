@@ -624,7 +624,7 @@ def find_bragg(
     roi: Optional[Tuple[int, int, int, int]] = None,
     binning: Optional[Tuple[int, ...]] = None,
     **kwargs,
-) -> Dict[str, Tuple[int, ...]]:
+) -> Dict[str, Tuple[int, int, int]]:
     """
     Find the Bragg peak position in data based on various peak finding methods.
 
@@ -645,7 +645,7 @@ def find_bragg(
     """
     logger = kwargs.get("logger", module_logger)
     # check parameters
-    valid.valid_ndarray(arrays=data, ndim=(2, 3))
+    valid.valid_ndarray(arrays=data, ndim=3)
     valid.valid_container(
         roi,
         container_types=(tuple, list, np.ndarray),
@@ -1395,6 +1395,7 @@ def show_rocking_curve(
         allow_none=True,
         name="tilt_values",
     )
+    tilt_values = np.array(tilt_values)
     if tilt_values is None:
         tilt_values = np.arange(nb_frames)
         x_label = "Frame number"
@@ -1404,11 +1405,13 @@ def show_rocking_curve(
     valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
     if savedir is not None:
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
-
+    bragg_peak = peaks[peak_method]
+    if bragg_peak is None:
+        raise ValueError(f"Bragg peak not detected with method {peak_method}")
     roi_center = (
-        peaks[peak_method][0],
-        (peaks[peak_method][1] - detector_roi[0]) // binning[1],
-        (peaks[peak_method][2] - detector_roi[2]) // binning[2],
+        bragg_peak[0],
+        (bragg_peak[1] - detector_roi[0]) // binning[1],
+        (bragg_peak[2] - detector_roi[2]) // binning[2],
     )
 
     # calculate the offset indices due to the window_width (need to compensate the
@@ -1451,7 +1454,8 @@ def show_rocking_curve(
     ax1.set_ylabel("Log(integrated intensity)")
     ax0.legend(("data", "interpolation"))
     plt.pause(0.1)
-    fig.savefig(savedir + "rocking_curve.png")
+    if savedir is not None:
+        fig.savefig(savedir + "rocking_curve.png")
     plt.close(fig)
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
@@ -1492,7 +1496,8 @@ def show_rocking_curve(
     plt.colorbar()
     plt.legend()
     plt.pause(0.1)
-    fig.savefig(savedir + "central_slice.png")
+    if savedir is not None:
+        fig.savefig(savedir + "central_slice.png")
     plt.close(fig)
     plt.ioff()
 

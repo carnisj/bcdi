@@ -625,6 +625,7 @@ def process_scan(
 
                 bu.show_rocking_curve(
                     data,
+                    peaks=peaks,
                     peak_method=prm["centering_method"]["reciprocal_space"],
                     binning=setup.detector.binning,
                     detector_roi=setup.detector.roi,
