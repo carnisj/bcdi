@@ -1333,7 +1333,7 @@ def show_rocking_curve(
     peak_method: str,
     detector_roi: Union[Tuple[int, int, int, int], List[int]],
     binning: Union[Tuple[int, int, int], List[int]],
-    window_width: Optional[Union[Tuple[int, int], List[int]]] = None,
+    window_width: Optional[Union[Tuple[int, int], List[int]]] = (100, 100),
     tilt_values: Optional[Union[List[float], np.ndarray]] = None,
     savedir: Optional[str] = None,
     **kwargs,
@@ -1411,14 +1411,18 @@ def show_rocking_curve(
         (peaks[peak_method][2] - detector_roi[2]) // binning[2],
     )
 
+    # calculate the offset indices due to the window_width (need to compensate the
+    # peak positions for that offset in plots)
+    offset_indices = [
+        np.clip(roi_center[1] - window_width[0] // 2, 0, data.shape[1]),
+        np.clip(roi_center[1] + window_width[0] // 2, 0, data.shape[1]),
+        np.clip(roi_center[2] - window_width[1] // 2, 0, data.shape[2]),
+        np.clip(roi_center[2] + window_width[1] // 2, 0, data.shape[2]),
+    ]
     rocking_curve = data[
         :,
-        np.clip(roi_center[1] - window_width[0] // 2, 0, data.shape[1]) : np.clip(
-            roi_center[1] + window_width[0] // 2, 0, data.shape[1]
-        ),
-        np.clip(roi_center[2] - window_width[1] // 2, 0, data.shape[2]) : np.clip(
-            roi_center[2] + window_width[1] // 2, 0, data.shape[2]
-        ),
+        offset_indices[0] : offset_indices[1],
+        offset_indices[2] : offset_indices[3],
     ].sum(axis=(1, 2))
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
@@ -1451,15 +1455,27 @@ def show_rocking_curve(
     plt.close(fig)
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
-    plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
+    plt.imshow(
+        np.log10(
+            abs(
+                data[
+                    roi_center[0],
+                    offset_indices[0] : offset_indices[1],
+                    offset_indices[2] : offset_indices[3],
+                ]
+            )
+        ),
+        vmin=0,
+        vmax=5,
+    )
     colors = ["r", "g", "b", "k"]
     idx = 0
     for key, peak in peaks.items():
         if peak is not None:
             detected_peak = (
                 peak[0],
-                (peak[1] - detector_roi[0]) // binning[1],
-                (peak[2] - detector_roi[2]) // binning[2],
+                (peak[1] - detector_roi[0]) // binning[1] - offset_indices[0],
+                (peak[2] - detector_roi[2]) // binning[2] - offset_indices[2],
             )
 
             plt.scatter(
