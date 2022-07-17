@@ -1382,8 +1382,8 @@ def show_rocking_curve(
         window_width = (data.shape[1], data.shape[2])
     elif window_width[0] > data.shape[1] or window_width[1] > data.shape[2]:
         logger.info(
-            f"window_width {window_width} larger than the frame size {data.shape[1:3]}, "
-            "using the full frame instead"
+            f"window_width {window_width} larger than the frame size {data.shape[1:3]},"
+            " using the full frame instead"
         )
         window_width = (data.shape[1], data.shape[2])
 
