@@ -2729,7 +2729,7 @@ class Setup:
          - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
            downstream, qz is vertical up and qy is outboard.
          - a tuple of 2 floats: position of the direct beam after taking into accout the
-          region of interest and binning.
+           region of interest and binning.
 
         """
         #########################
