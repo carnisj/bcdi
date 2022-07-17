@@ -481,7 +481,8 @@ def process_scan(
             bragg_peaks.update(peaks)
             prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
             logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
-        assert prm["bragg_peak"] is not None  # needed by mypy
+        if prm["bragg_peak"] is None:
+            raise ValueError("The position of the Bragg peak is undefined.")
 
         metadata = bu.show_rocking_curve(
             data,

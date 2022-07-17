@@ -595,8 +595,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         elif isinstance(value, str):
             if value not in allowed_values:
                 raise ParameterError(key, value, allowed_values)
-            else:
-                value = {"direct_space": value, "reciprocal_space": value}
+            value = {"direct_space": value, "reciprocal_space": value}
         else:
             raise TypeError(
                 f"'{key}' should be a dictionary or a string, " f"got {type(value)}"
