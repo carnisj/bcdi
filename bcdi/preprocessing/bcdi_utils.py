@@ -1489,10 +1489,10 @@ def show_rocking_curve(
                 marker="1",
                 alpha=0.7,
                 linewidth=1,
-                label=key,
+                label=f"{key}={peak}",
             )
             idx += 1
-    plt.title(f"Slice at frame {roi_center[0]}, user_defined method '{peak_method}'")
+    plt.title(f"User_defined method '{peak_method}'")
     plt.colorbar()
     plt.legend()
     plt.pause(0.1)
