@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
-from typing import Any, Dict, List, no_type_check, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check
 
 import matplotlib.pyplot as plt
 import numpy as np
