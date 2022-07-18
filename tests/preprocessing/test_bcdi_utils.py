@@ -81,7 +81,7 @@ class TestFindBragg(unittest.TestCase):
             data=self.data, peak_method="max", roi=(3, 3, 4, 2), binning=(3, 3, 4)
         )
         print(peak)
-        self.assertTrue(peak == (3, 78, 96))
+        self.assertTrue(peak == (1, 78, 96))
 
 
 if __name__ == "__main__":
