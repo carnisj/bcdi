@@ -694,6 +694,7 @@ def find_bragg(
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
     position = list(position)
     if roi is not None:
+        position = list(position)
         position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
 
