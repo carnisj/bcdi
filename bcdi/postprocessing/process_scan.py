@@ -491,6 +491,7 @@ def process_scan(
     ##########################################################
     if not prm["outofplane_angle"] or not prm["inplane_angle"]:
         logger.info("Trying to correct detector angles using the direct beam")
+        # corrected detector angles not provided
         if prm["bragg_peak"] is None and setup.detector.template_imagefile is not None:
             # Bragg peak position not provided, find it from the data
             data, _, _, _ = setup.loader.load_check_dataset(
@@ -503,26 +504,28 @@ def process_scan(
                 background=prm["background_file"],
                 normalize=prm["normalize_flux"],
             )
-            bragg_peak = bu.find_bragg(
+            peaks = bu.find_bragg(
                 data=data,
-                peak_method="maxcom",
                 roi=setup.detector.roi,
                 binning=None,
                 logger=logger,
             )
-            roi_center = (
-                bragg_peak[0],
-                bragg_peak[1] - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                bragg_peak[2] - setup.detector.roi[2],  # no binning as in bu.find_bragg
+            logger.info(
+                "Bragg peak (full unbinned roi) at: "
+                f"{peaks[prm['centering_method']['reciprocal_space']]}"
             )
+
             bu.show_rocking_curve(
                 data,
-                roi_center=roi_center,
-                tilt_values=setup.incident_angles,
+                peaks=peaks,
+                peak_method=prm["centering_method"]["reciprocal_space"],
+                binning=setup.detector.binning,
+                detector_roi=setup.detector.roi,
+                tilt_values=setup.tilt_angles,
                 savedir=setup.detector.savedir,
                 logger=logger,
             )
-            prm["bragg_peak"] = bragg_peak
+            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle
@@ -593,50 +596,6 @@ def process_scan(
             )
             del phase
             gc.collect()
-
-        if not prm["outofplane_angle"] and not prm["inplane_angle"]:
-            logger.info("Trying to correct detector angles using the direct beam")
-            # corrected detector angles not provided
-            if (
-                prm["bragg_peak"] is None
-                and setup.detector.template_imagefile is not None
-            ):
-                # Bragg peak position not provided, find it from the data
-                data, _, _, _ = setup.loader.load_check_dataset(
-                    scan_number=scan_nb,
-                    setup=setup,
-                    frames_pattern=prm["frames_pattern"],
-                    bin_during_loading=False,
-                    flatfield=prm["flatfield_file"],
-                    hotpixels=prm["hotpixels_file"],
-                    background=prm["background_file"],
-                    normalize=prm["normalize_flux"],
-                )
-                peaks = bu.find_bragg(
-                    data=data,
-                    roi=setup.detector.roi,
-                    binning=None,
-                    logger=logger,
-                )
-                logger.info(
-                    "Bragg peak (full unbinned roi) at: "
-                    f"{peaks[prm['centering_method']['reciprocal_space']]}"
-                )
-
-                bu.show_rocking_curve(
-                    data,
-                    peaks=peaks,
-                    peak_method=prm["centering_method"]["reciprocal_space"],
-                    binning=setup.detector.binning,
-                    detector_roi=setup.detector.roi,
-                    tilt_values=setup.tilt_angles,
-                    savedir=setup.detector.savedir,
-                    logger=logger,
-                )
-                prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
-            setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
-            prm["outofplane_angle"] = setup.outofplane_angle
-            prm["inplane_angle"] = setup.inplane_angle
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,
