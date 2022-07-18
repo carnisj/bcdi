@@ -181,7 +181,7 @@ class Setup:
         # initialize other attributes
         self.detector_position: Optional[Tuple[Real, Real, Real]] = None
         self.logfile = None
-        self.incident_angles = None
+        self.tilt_angles = None  # will store the array of tilt values
 
     @property
     def actuators(self):
@@ -801,7 +801,7 @@ class Setup:
         if self.inplane_angle is None:
             raise ValueError("the detector in-plane angle is not defined")
 
-        self.incident_angles = tilt_angle
+        self.tilt_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
@@ -852,7 +852,7 @@ class Setup:
         if self.detector_position is None:
             raise ValueError("the detector position is not defined")
 
-        self.incident_angles = tilt_angle
+        self.tilt_angles = tilt_angle
         if tilt_angle is not None:
             tilt_angle = np.mean(
                 np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
@@ -1753,7 +1753,7 @@ class Setup:
     def ortho_directspace(
         self,
         arrays,
-        q_com,
+        q_bragg,
         initial_shape=None,
         voxel_size=None,
         fill_value=0,
@@ -1766,12 +1766,12 @@ class Setup:
         Geometrical transformation in direct space.
 
         Interpolate arrays (direct space output of the phase retrieval) in the
-        orthogonal reference frame where q_com is aligned onto the array axis
+        orthogonal reference frame where q_bragg is aligned onto the array axis
         reference_axis.
 
         :param arrays: tuple of 3D arrays of the same shape (output of the phase
          retrieval), in the detector frame
-        :param q_com: tuple of 3 vector components for the q values of the center
+        :param q_bragg: tuple of 3 vector components for the q values of the center
          of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param initial_shape: shape of the FFT used for phasing
         :param voxel_size: number or list of three user-defined voxel sizes for
@@ -1860,14 +1860,14 @@ class Setup:
         # check some parameters #
         #########################
         valid.valid_container(
-            q_com,
+            q_bragg,
             container_types=(tuple, list, np.ndarray),
             length=3,
             item_types=Real,
-            name="q_com",
+            name="q_bragg",
         )
-        if np.linalg.norm(q_com) == 0:
-            raise ValueError("q_com should be a non zero vector")
+        if np.linalg.norm(q_bragg) == 0:
+            raise ValueError("q_bragg should be a non zero vector")
 
         if isinstance(fill_value, Real):
             fill_value = (fill_value,) * nb_arrays
@@ -1887,14 +1887,7 @@ class Setup:
             item_types=bool,
             name="debugging",
         )
-        valid.valid_container(
-            q_com,
-            container_types=(tuple, list, np.ndarray),
-            length=3,
-            item_types=Real,
-            name="q_com",
-        )
-        q_com = np.array(q_com)
+        q_com = np.array(q_bragg)
         valid.valid_container(
             reference_axis,
             container_types=(tuple, list, np.ndarray),
@@ -2736,7 +2729,7 @@ class Setup:
          - a tuple of three 1D arrays for the q values (qx, qz, qy) where qx is
            downstream, qz is vertical up and qy is outboard.
          - a tuple of 2 floats: position of the direct beam after taking into accout the
-          region of interest and binning.
+           region of interest and binning.
 
         """
         #########################

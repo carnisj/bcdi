@@ -1,6 +1,11 @@
 Future:
 -------
 
+* Calculate the Bragg peak position for the three methods "max", "com" and "max_com"
+  and plot the results to compare their efficiency. The type of `centering_method` is
+  changed to `dict` in order to provide different methods for direct and reciprocal
+  space (e.g. `{"direct_space": "max_com", "reciprocal_space": "max"}`).
+
 * Use distinct names for the log files from preprocessing and postprocessing.
 
 * Move the calculation of corrected detector angles before the calculation of `q_lab`
@@ -8,7 +13,7 @@ Future:
   log file, resulting in a small discrepancy.
 
 * Add a placeholder "-f" command line parameter to host the automatically generated
- parameter in Jupyter notebooks (path of the kernel json file).
+  parameter in Jupyter notebooks (path of the kernel json file).
 
 * Add support for high-energy BCDI at ESRF ID27 beamline. Add an example configuration
   file to the package.

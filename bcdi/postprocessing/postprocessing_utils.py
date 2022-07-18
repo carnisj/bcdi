@@ -259,29 +259,22 @@ def bragg_temperature(
         reflection
     )  # go back to lattice constant
     print(
-        "Reference spacing at",
-        temperature_ref,
-        "K   =",
-        str("{:.4f}".format(spacing_ref)),
-        "angstroms",
+        f"Reference spacing at {temperature_ref} K = {spacing_ref:.4f} angstroms",
     )
-    print(
-        "Spacing =",
-        str("{:.4f}".format(spacing)),
-        "angstroms using reflection",
-        reflection,
-    )
+    print(f"Spacing = {spacing:.4f} angstroms using reflection {reflection}")
 
-    # fit the experimental spacing with non corrected platinum curve
+    # fit the experimental spacing with non-corrected platinum curve
     myfit = np.poly1d(np.polyfit(expansion_data[:, 2], expansion_data[:, 0], 3))
-    print("Temperature without offset correction=", int(myfit(spacing) - 273.15), "C")
+    print(
+        f"Temperature without offset correction = {int(myfit(spacing) - 273.15)} degC"
+    )
 
     # find offset for platinum reference curve
     myfit = np.poly1d(np.polyfit(expansion_data[:, 0], expansion_data[:, 2], 3))
     spacing_offset = (
         myfit(temperature_ref) - spacing_ref
     )  # T in K, spacing in angstroms
-    print("Spacing offset =", str("{:.4f}".format(spacing_offset)), "angstroms")
+    print(f"Spacing offset = {spacing_offset:.4f} angstroms")
 
     # correct the platinum reference curve for the offset
     platinum_offset = np.copy(expansion_data)
@@ -345,18 +338,18 @@ def calc_coordination(
     return mycoord
 
 
-def center_com(array, debugging=False, **kwargs):
+def center_com(array: np.ndarray, debugging: bool = False, **kwargs) -> np.ndarray:
     """
     Center array based on center_of_mass(abs(array)) using pixel shift.
 
-    :param array: 3D array to be centered based on the center of mass of abs(array)
+    :param array: 3D array to be centered using the center of mass of abs(array)
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle
+     - width_z: size of the area to plot in z (axis 0), centered in the middle
        of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle
+     - width_y: size of the area to plot in y (axis 1), centered in the middle
        of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle
+     - width_x: size of the area to plot in x (axis 2), centered in the middle
        of the initial array
 
     :return: array centered by pixel shift
@@ -412,22 +405,10 @@ def center_com(array, debugging=False, **kwargs):
         )
 
         print(
-            "center of mass at (z, y, x): (",
-            str("{:.2f}".format(piz)),
-            ",",
-            str("{:.2f}".format(piy)),
-            ",",
-            str("{:.2f}".format(pix)),
-            ")",
+            f"center of mass at (z, y, x): ({piz:.2f},{piy:.2f},{pix:.2f})",
         )
         print(
-            "center of mass offset: (",
-            offset_z,
-            ",",
-            offset_y,
-            ",",
-            offset_x,
-            ") pixels",
+            f"center of mass offset: ({offset_z},{offset_y},{offset_x}) pixels",
         )
 
     #####################
@@ -446,18 +427,18 @@ def center_com(array, debugging=False, **kwargs):
     return array
 
 
-def center_max(array, debugging=False, **kwargs):
+def center_max(array: np.ndarray, debugging: bool = False, **kwargs) -> np.ndarray:
     """
     Center array based on max(abs(array)) using pixel shift.
 
     :param array: 3D array to be centered based on max(abs(array))
     :param debugging: boolean, True to see plots
     :param kwargs:
-     - width_z: size of the area to plot in z (axis 0), centered on the middle
+     - width_z: size of the area to plot in z (axis 0), centered in the middle
        of the initial array
-     - width_y: size of the area to plot in y (axis 1), centered on the middle
+     - width_y: size of the area to plot in y (axis 1), centered in the middle
        of the initial array
-     - width_x: size of the area to plot in x (axis 2), centered on the middle
+     - width_x: size of the area to plot in x (axis 2), centered in the middle
        of the initial array
 
     :return: array centered by pixel shift
@@ -529,6 +510,27 @@ def center_max(array, debugging=False, **kwargs):
             title="After max centering",
         )
     return array
+
+
+def center_object(method: str, obj: np.ndarray) -> np.ndarray:
+    """
+    Center an object based on its modulus.
+
+    :param method: method used for centering. 'com' (center of mass), 'max', 'max_com'
+     (max then com), 'skip'.
+    :param obj: a 3D numpy array
+    :return: the centered array of the same shape as obj
+    """
+    valid.valid_ndarray(obj, ndim=3)
+    if method == "max":
+        return center_max(obj)
+        # shift based on max value, use this if the object spans across the edge of the
+        # window before using the center of mass
+    if method == "com":
+        return center_com(obj)
+    if method == "max_com":
+        return center_com(center_max(obj))
+    return obj
 
 
 def filter_3d(
@@ -688,12 +690,9 @@ def find_bulk(
             )  # % of voxels whose amplitude is larger than support_threshold
             mean_amp = np.mean(amp[np.nonzero(surface)].flatten()) / max_amp
             print(
-                "number of surface voxels =",
-                nb_voxels,
-                "  , % of surface voxels above threshold =",
-                str("{:.2f}".format(100 * voxels_counter)),
-                "%    , mean surface amplitude =",
-                mean_amp,
+                f"number of surface voxels = {nb_voxels}, "
+                f"% of surface voxels above threshold = {100 * voxels_counter:.2f} %, ",
+                f"mean surface amplitude = {mean_amp}",
             )
             if mean_amp < support_threshold:
                 outer[np.nonzero(surface)] = 1
@@ -1601,11 +1600,9 @@ def remove_offset(
                 int(np.rint(ycom)),
                 int(np.rint(xcom)),
             )
-            print("\nCOM at pixels (z, y, x): ", zcom, ycom, xcom)
+            print(f"\nCOM at pixels (z, y, x): {zcom, ycom, xcom}")
             print(
-                "Offset at COM(support) of:",
-                str("{:.2f}".format(array[zcom, ycom, xcom])),
-                "rad",
+                f"Offset at COM(support) of: {array[zcom, ycom, xcom]:.2f} rad",
             )
             array = array - array[zcom, ycom, xcom] + phase_offset
         elif offset_method == "mean":
@@ -1620,13 +1617,8 @@ def remove_offset(
             offset_origin[2],
         )
         print(
-            "Offset of ",
-            str(
-                "{:.2f}".format(
-                    array[offset_origin[0], offset_origin[1], offset_origin[2]]
-                )
-            ),
-            "rad",
+            "Offset of "
+            f"{array[offset_origin[0], offset_origin[1], offset_origin[2]]:.2f} rad",
         )
         array = (
             array
@@ -2012,12 +2004,7 @@ def remove_ramp_2d(
         myobj = util.crop_pad_2d(
             myobj, (nb_y, nb_x)
         )  # return to the initial shape of myamp
-        print(
-            "Upsampling: shift_y, shift_x: (",
-            str("{:.3f}".format(shifty)),
-            str("{:.3f}".format(shiftx)),
-            ") pixels",
-        )
+        print(f"Upsampling: (shift_y, shift_x) = ({shifty:.3f},{shiftx:.3f}) pixels")
         return abs(myobj) / abs(myobj).max(), np.angle(myobj)
 
     # method='gradient'
@@ -2080,12 +2067,7 @@ def remove_ramp_2d(
 
     myy, myx = np.meshgrid(np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij")
 
-    print(
-        "Gradient: Phase_ramp_z, Phase_ramp_y, Phase_ramp_x: (",
-        str("{:.3f}".format(myrampy)),
-        str("{:.3f}".format(myrampx)),
-        ") rad",
-    )
+    print(f"Gradient: (Phase_ramp_y, Phase_ramp_x) = ({myrampy:.3f},{myrampx:.3f}) rad")
     phase = phase - myy * myrampy - myx * myrampx
     return amp, phase, myrampy, myrampx
 

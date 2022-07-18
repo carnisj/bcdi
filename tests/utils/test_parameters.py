@@ -530,7 +530,7 @@ class TestParameters(unittest.TestCase):
 
     def test_centering_method(self):
         with self.assertRaises(ParameterError):
-            valid_param(key="centering_method", value="skip")
+            valid_param(key="centering_method", value="do_nothing")
 
     def test_root_folder(self):
         with self.assertRaises(ValueError):

@@ -32,56 +32,49 @@ class TestFindBragg(unittest.TestCase):
         data[:-1, -13:, 17:30] = gaussian_window(window_shape=(3, 13, 13))
         self.data = data
 
-    def test_no_method(self):
-        with self.assertRaises(ValueError):
-            find_bragg(data=self.data, peak_method="wrong")
-
     def test_max(self):
-        peak = find_bragg(data=self.data, peak_method="max")
-        self.assertTrue(peak == (1, 25, 23))
+        peaks = find_bragg(data=self.data)
+        self.assertTrue(peaks["max"] == (1, 25, 23))
 
     def test_com(self):
-        peak = find_bragg(data=self.data, peak_method="com")
-        self.assertTrue(peak == (1, 25, 23))
+        peaks = find_bragg(data=self.data)
+        self.assertTrue(peaks["com"] == (1, 25, 23))
 
     def test_maxcom(self):
-        peak = find_bragg(data=self.data, peak_method="maxcom")
-        self.assertTrue(peak == (1, 25, 23))
+        peaks = find_bragg(data=self.data)
+        self.assertTrue(peaks["max_com"] == (1, 25, 23))
 
     def test_binning_wrong_length(self):
         with self.assertRaises(ValueError):
-            find_bragg(data=self.data, peak_method="max", binning=(2, 2))
+            find_bragg(data=self.data, binning=(2, 2))
 
     def test_binning_wrong_type(self):
         with self.assertRaises(TypeError):
             find_bragg(data=self.data, peak_method="max", binning=(2, 2, 2.3))
 
     def test_binning(self):
-        peak = find_bragg(data=self.data, peak_method="max", binning=(2, 1, 1))
-        self.assertTrue(peak == (2, 25, 23))
+        peaks = find_bragg(data=self.data, binning=(2, 1, 1))
+        self.assertTrue(peaks["max"] == (2, 25, 23))
 
     def test_binning_2(self):
-        peak = find_bragg(data=self.data, peak_method="max", binning=(3, 3, 4))
-        self.assertTrue(peak == (3, 75, 92))
+        peaks = find_bragg(data=self.data, binning=(3, 3, 4))
+        self.assertTrue(peaks["max"] == (3, 75, 92))
 
     def test_roi_wrong_length(self):
         with self.assertRaises(ValueError):
-            find_bragg(data=self.data, peak_method="max", roi=(2, 1, 1))
+            find_bragg(data=self.data, roi=(2, 1, 1))
 
     def test_roi_wrong_type(self):
         with self.assertRaises(TypeError):
-            find_bragg(data=self.data, peak_method="max", roi=(2, 1, 1, 1.2))
+            find_bragg(data=self.data, roi=(2, 1, 1, 1.2))
 
     def test_roi(self):
-        peak = find_bragg(data=self.data, peak_method="max", roi=(3, 3, 4, 2))
-        self.assertTrue(peak == (1, 28, 27))
+        peaks = find_bragg(data=self.data, roi=(3, 3, 4, 2))
+        self.assertTrue(peaks["max"] == (1, 28, 27))
 
     def test_bin_roi(self):
-        peak = find_bragg(
-            data=self.data, peak_method="max", roi=(3, 3, 4, 2), binning=(3, 3, 4)
-        )
-        print(peak)
-        self.assertTrue(peak == (3, 78, 96))
+        peaks = find_bragg(data=self.data, roi=(3, 3, 4, 2), binning=(3, 3, 4))
+        self.assertTrue(peaks["max"] == (3, 78, 96))
 
 
 if __name__ == "__main__":

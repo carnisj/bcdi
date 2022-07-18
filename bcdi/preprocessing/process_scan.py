@@ -469,28 +469,28 @@ def process_scan(
     metadata = None
     if not prm["outofplane_angle"] and not prm["inplane_angle"]:
         # corrected detector angles not provided
+        bragg_peaks = {"user": prm["bragg_peak"]}
         if prm["bragg_peak"] is None:
             # Bragg peak position not provided, find it from the data
-            prm["bragg_peak"] = bu.find_bragg(
+            peaks = bu.find_bragg(
                 data=data,
-                peak_method="maxcom",
                 roi=setup.detector.roi,
                 binning=setup.detector.binning,
                 logger=logger,
             )
-
+            bragg_peaks.update(peaks)
+            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
+            logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
         if prm["bragg_peak"] is None:
-            raise ValueError("bragg_peak undefined")
-        roi_center = (
-            prm["bragg_peak"][0],
-            (prm["bragg_peak"][1] - setup.detector.roi[0]) // setup.detector.binning[1],
-            (prm["bragg_peak"][2] - setup.detector.roi[2]) // setup.detector.binning[2],
-        )
+            raise ValueError("The position of the Bragg peak is undefined.")
 
         metadata = bu.show_rocking_curve(
             data,
-            roi_center=roi_center,
-            tilt_values=setup.incident_angles,
+            peaks=bragg_peaks,
+            peak_method=prm["centering_method"]["reciprocal_space"],
+            binning=setup.detector.binning,
+            detector_roi=setup.detector.roi,
+            tilt_values=setup.tilt_angles,
             savedir=setup.detector.savedir,
             logger=logger,
         )
@@ -1298,8 +1298,10 @@ def process_scan(
             out.create_dataset("rocking_curve", data=metadata["rocking_curve"])
             out.create_dataset("interp_tilt", data=metadata["interp_tilt_values"])
             out.create_dataset("interp_curve", data=metadata["interp_rocking_curve"])
-            out.create_dataset("COM_rocking_curve", data=metadata["COM_rocking_curve"])
-            out.create_dataset("detector_data_COM", data=metadata["detector_data_COM"])
+            out.create_dataset("COM_rocking_curve", data=metadata["tilt_value_at_peak"])
+            out.create_dataset(
+                "detector_data_COM", data=metadata["detector_data_at_peak"]
+            )
             out.create_dataset("interp_fwhm", data=metadata["interp_fwhm"])
         try:
             out.create_dataset("bragg_peak", data=prm["bragg_peak"])

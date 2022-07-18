@@ -230,11 +230,8 @@ def process_scan(
         if prm["flip_reconstruction"]:
             obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"].cmap)
 
-        if extension == ".h5":
-            prm[
-                "centering_method"
-            ] = "do_nothing"  # do not center, data is already cropped
-            # just on support for mode decomposition
+        if extension == ".h5":  # data is already cropped by PyNX
+            prm["centering_method"]["direct_space"] = "skip"
             # correct a roll after the decomposition into modes in PyNX
             obj = np.roll(obj, prm["roll_modes"], axis=(0, 1, 2))
             fig, _, _ = gu.multislices_plot(
@@ -433,18 +430,12 @@ def process_scan(
     del amp, phase, gridz, gridy, gridx, rampz, rampy, rampx
     gc.collect()
 
-    ######################
-    # centering of array #
-    ######################
-    if prm["centering_method"] == "max":
-        avg_obj = pu.center_max(avg_obj)
-        # shift based on max value,
-        # required if it spans across the edge of the array before COM
-    elif prm["centering_method"] == "com":
-        avg_obj = pu.center_com(avg_obj)
-    elif prm["centering_method"] == "max_com":
-        avg_obj = pu.center_max(avg_obj)
-        avg_obj = pu.center_com(avg_obj)
+    #####################################
+    # centering the direct space object #
+    #####################################
+    avg_obj = pu.center_object(
+        method=prm["centering_method"]["direct_space"], obj=avg_obj
+    )
 
     #######################
     #  save support & vti #
@@ -500,6 +491,7 @@ def process_scan(
     ##########################################################
     if not prm["outofplane_angle"] or not prm["inplane_angle"]:
         logger.info("Trying to correct detector angles using the direct beam")
+        # corrected detector angles not provided
         if prm["bragg_peak"] is None and setup.detector.template_imagefile is not None:
             # Bragg peak position not provided, find it from the data
             data, _, _, _ = setup.loader.load_check_dataset(
@@ -512,26 +504,28 @@ def process_scan(
                 background=prm["background_file"],
                 normalize=prm["normalize_flux"],
             )
-            bragg_peak = bu.find_bragg(
+            peaks = bu.find_bragg(
                 data=data,
-                peak_method="maxcom",
                 roi=setup.detector.roi,
                 binning=None,
                 logger=logger,
             )
-            roi_center = (
-                bragg_peak[0],
-                bragg_peak[1] - setup.detector.roi[0],  # no binning as in bu.find_bragg
-                bragg_peak[2] - setup.detector.roi[2],  # no binning as in bu.find_bragg
+            logger.info(
+                "Bragg peak (full unbinned roi) at: "
+                f"{peaks[prm['centering_method']['reciprocal_space']]}"
             )
+
             bu.show_rocking_curve(
                 data,
-                roi_center=roi_center,
-                tilt_values=setup.incident_angles,
+                peaks=peaks,
+                peak_method=prm["centering_method"]["reciprocal_space"],
+                binning=setup.detector.binning,
+                detector_roi=setup.detector.roi,
+                tilt_values=setup.tilt_angles,
                 savedir=setup.detector.savedir,
                 logger=logger,
             )
-            prm["bragg_peak"] = bragg_peak
+            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle
@@ -605,7 +599,7 @@ def process_scan(
 
         obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
             arrays=avg_obj,
-            q_com=np.array([q_lab[2], q_lab[1], q_lab[0]]),
+            q_bragg=np.array([q_lab[2], q_lab[1], q_lab[0]]),
             initial_shape=original_size,
             voxel_size=prm["fix_voxel"],
             reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
@@ -903,7 +897,7 @@ def process_scan(
             (amp, phase, strain), q_final = setup.beamline.flatten_sample(
                 arrays=(amp, phase, strain),
                 voxel_size=voxel_size,
-                q_com=q_lab[::-1],  # q_com needs to be in xyz order
+                q_bragg=q_lab[::-1],  # q_bragg needs to be in xyz order
                 is_orthogonal=True,
                 reciprocal_space=False,
                 rocking_angle=setup.rocking_angle,
@@ -991,7 +985,7 @@ def process_scan(
             phase=phase,
             bulk=bulk,
             strain=strain,
-            q_com=q_final,
+            q_bragg=q_final,
             voxel_sizes=voxel_size,
             detector=setup.detector.params,
             setup=str(yaml.dump(setup.params)),
@@ -1010,7 +1004,7 @@ def process_scan(
             out.create_dataset("bulk", data=bulk)
             out.create_dataset("phase", data=phase)
             out.create_dataset("strain", data=strain)
-            out.create_dataset("q_com", data=q_final)
+            out.create_dataset("q_bragg", data=q_final)
             out.create_dataset("voxel_sizes", data=voxel_size)
             par.create_dataset("detector", data=str(setup.detector.params))
             par.create_dataset("setup", data=str(setup.params))

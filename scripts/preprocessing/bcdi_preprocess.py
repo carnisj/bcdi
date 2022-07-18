@@ -91,8 +91,9 @@ Usage:
     Parameters related to data cropping/padding/centering #
 
     :param centering_method: e.g. "max"
-     Bragg peak determination: 'max' or 'com', 'max' is better usually. It will be
-     overridden by 'bragg_peak' if not empty
+     Method used to determine the location of the Bragg peak. 'max', 'com'
+     (center of mass), or 'max_com' (max along the first axis, center of mass in the
+     detector plane). It will be overridden by 'fix_bragg' if the latter is not empty.
     :param fix_size: e.g. [0, 256, 10, 240, 50, 350]
      crop the array to that predefined size considering the full detector.
      [zstart, zstop, ystart, ystop, xstart, xstop], ROI will be defaulted to [] if

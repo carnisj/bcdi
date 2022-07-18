@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
-from typing import List, Optional, Tuple, no_type_check
+from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,8 +49,9 @@ def center_fft(
     :param frames_logical: array of initial length the number of measured frames.
      In case of padding the length changes. A frame whose index is set to 1 means
      that it is used, 0 means not used, -1 means padded (added) frame.
-    :param centering: centering option, 'max' or 'com'. It will be overridden if the
-     kwarg 'fix_bragg' is provided.
+    :param centering: method used to determine the location of the Bragg peak: 'max',
+     'com' (center of mass), or 'max_com' (max along the first axis, center of mass in
+     the detector plane)
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
@@ -128,8 +129,10 @@ def center_fft(
             )
         else:
             logger.info(f"Center of mass at pixel (Z, Y, X): ({z0, y0, x0})")
-    else:
-        raise ValueError("Incorrect value for 'centering' parameter")
+    else:  # 'max_com'
+        position = list(np.unravel_index(abs(data).argmax(), data.shape))
+        position[1:] = center_of_mass(data[position[0], :, :])
+        z0, y0, x0 = tuple(map(lambda x: int(np.rint(x)), position))
 
     if fix_bragg:
         if len(fix_bragg) != 3:
@@ -618,20 +621,17 @@ def center_fft(
 @no_type_check  # https://github.com/python/mypy/issues/6697
 def find_bragg(
     data: np.ndarray,
-    peak_method: str,
     roi: Optional[Tuple[int, int, int, int]] = None,
     binning: Optional[Tuple[int, ...]] = None,
     **kwargs,
-) -> Tuple[int, ...]:
+) -> Dict[str, Tuple[int, int, int]]:
     """
-    Find the Bragg peak position in data based on the centering method.
+    Find the Bragg peak position in data based on various peak finding methods.
 
     It compensates for a ROI in the detector and an eventual binning.
 
     :param data: 2D or 3D array. If complex, Bragg peak position is calculated for
      abs(array)
-    :param peak_method: 'max', 'com' or 'maxcom'. For 'maxcom', it uses method 'max'
-     for the first axis and 'com' for the other axes.
     :param roi: tuple of integers of length 4, region of interest used to generate data
      from the full sized detector.
     :param binning: tuple of integers of length data.ndim, binning applied to the data
@@ -640,12 +640,12 @@ def find_bragg(
 
      - 'logger': an optional logger
 
-    :return: the Bragg peak position in the unbinned, full size detector as a tuple of
+    :return: the Bragg peak positions in the unbinned, full size detector as a tuple of
      data.ndim elements
     """
     logger = kwargs.get("logger", module_logger)
     # check parameters
-    valid.valid_ndarray(arrays=data, ndim=(2, 3))
+    valid.valid_ndarray(arrays=data, ndim=3)
     valid.valid_container(
         roi,
         container_types=(tuple, list, np.ndarray),
@@ -662,8 +662,6 @@ def find_bragg(
         allow_none=True,
         name="binning",
     )
-    if peak_method not in {"max", "com", "maxcom"}:
-        raise ValueError("peak_method should be 'max', 'com' or 'maxcom'")
 
     logger.info(
         f"Finding Bragg peak position:"
@@ -671,33 +669,47 @@ def find_bragg(
         f"\n\tBinning: {binning}"
         f"\n\tRoi: {roi}"
     )
-    if peak_method == "max":
-        position = np.unravel_index(abs(data).argmax(), data.shape)
-        logger.info(f"Max at: {position}, Max = {int(data[position])}")
-    elif peak_method == "com":
-        position = center_of_mass(data)
-        position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"Center of mass at: {position}, COM = {int(data[position])}")
-    else:  # 'maxcom'
-        valid.valid_ndarray(arrays=data, ndim=3)
-        position = list(np.unravel_index(abs(data).argmax(), data.shape))
-        position[1:] = center_of_mass(data[position[0], :, :])
-        position = tuple(map(lambda x: int(np.rint(x)), position))
-        logger.info(f"MaxCom at (z, y, x): {position}, COM = {int(data[position])}")
+    position_max = np.unravel_index(abs(data).argmax(), data.shape)
+    logger.info(f"Max at: {position_max}, value = {int(data[position_max])}")
+
+    position_com = center_of_mass(data)
+    position_com = tuple(map(lambda x: int(np.rint(x)), position_com))
+    logger.info(f"Center of mass at: {position_com}, value = {int(data[position_com])}")
+
+    position_max_com = list(np.unravel_index(abs(data).argmax(), data.shape))
+    position_max_com[1:] = center_of_mass(data[position_max_com[0], :, :])
+    position_max_com = tuple(map(lambda x: int(np.rint(x)), position_max_com))
+    logger.info(
+        f"MaxCom at (z, y, x): {position_max_com}, "
+        f"value = {int(data[position_max_com])}"
+    )
 
     # unbin
     if binning is not None:
-        position = [a * b for a, b in zip(position, binning)]
+        position_max = [a * b for a, b in zip(position_max, binning)]
+        position_com = [a * b for a, b in zip(position_com, binning)]
+        position_max_com = [a * b for a, b in zip(position_max_com, binning)]
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
     if roi is not None:
-        position = list(position)
-        position[-1] = position[-1] + roi[2]
-        position[-2] = position[-2] + roi[0]
+        position_max = list(position_max)
+        position_max[-1] = position_max[-1] + roi[2]
+        position_max[-2] = position_max[-2] + roi[0]
 
-    logger.info(f"Bragg peak (full unbinned roi) at: {position}")
-    return tuple(position)
+        position_com = list(position_com)
+        position_com[-1] = position_com[-1] + roi[2]
+        position_com[-2] = position_com[-2] + roi[0]
+
+        position_max_com = list(position_max_com)
+        position_max_com[-1] = position_max_com[-1] + roi[2]
+        position_max_com[-2] = position_max_com[-2] + roi[0]
+
+    return {
+        "max": tuple(position_max),
+        "com": tuple(position_com),
+        "max_com": tuple(position_max_com),
+    }
 
 
 def grid_bcdi_labframe(
@@ -1316,8 +1328,16 @@ def reload_bcdi_data(
 
 
 def show_rocking_curve(
-    data, roi_center, integration_roi=None, tilt_values=None, savedir=None, **kwargs
-):
+    data: np.ndarray,
+    peaks: Dict[str, Optional[Tuple[int, int, int]]],
+    peak_method: str,
+    detector_roi: Union[Tuple[int, int, int, int], List[int]],
+    binning: Union[Tuple[int, int, int], List[int]],
+    window_width: Optional[Union[Tuple[int, int], List[int]]] = (100, 100),
+    tilt_values: Optional[Union[List[float], np.ndarray]] = None,
+    savedir: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, Any]:
     """
     Calculate the integrated intensity along a rocking curve and plot it.
 
@@ -1325,9 +1345,13 @@ def show_rocking_curve(
     angle and axes 1 and 2 to the detector plane (vertical, horizontal).
 
     :param data: the stacked rocking curve data
-    :param roi_center: the position of the center of the region of interest. Most often
-     this will be the position of the Bragg peak.
-    :param integration_roi: the region of interest where to integrate the intensity
+    :param peaks: a dictionary containing the peak-finding method as key and the peak
+     position as value
+    :param peak_method: the user-defined peak method
+    :param detector_roi: roi used when loading the detector data
+    :param binning: binning factor used when loading the detector data
+    :param window_width: width in pixels of the window use to integrate the intensity
+     for the rocking curve line plot and to plot the detector slice at the peak position
     :param tilt_values: the angular values along the rocking curve
     :param savedir: path to the saving directory
     :param kwargs:
@@ -1337,31 +1361,31 @@ def show_rocking_curve(
     :return: a dictionary containing the output metadata
     """
     logger = kwargs.get("logger", module_logger)
+
     # check parameters
+    allowed_methods = {"max", "com", "max_com", "user", "skip"}
+    if peak_method not in allowed_methods:
+        raise ValueError(f"allowed peak methods {allowed_methods}, got {peak_method}")
+
     valid.valid_ndarray(data, ndim=3, name="data")
     nb_frames = data.shape[0]
+
     valid.valid_container(
-        roi_center,
-        container_types=(tuple, list, np.ndarray),
-        length=3,
-        item_types=Real,
-        name="roi_center",
-    )
-    valid.valid_container(
-        integration_roi,
-        container_types=(tuple, list, np.ndarray),
+        window_width,
+        container_types=(tuple, list),
         length=2,
         item_types=int,
         allow_none=True,
         name="integration_roi",
     )
-    if integration_roi is None:
-        integration_roi = (data.shape[1], data.shape[2])
-    elif integration_roi[0] > data.shape[1] or integration_roi[1] > data.shape[2]:
+    if window_width is None:
+        window_width = (data.shape[1], data.shape[2])
+    elif window_width[0] > data.shape[1] or window_width[1] > data.shape[2]:
         logger.info(
-            "integration_roi larger than the frame size, using the full frame" "instead"
+            f"window_width {window_width} larger than the frame size {data.shape[1:3]},"
+            " using the full frame instead"
         )
-        integration_roi = (data.shape[1], data.shape[2])
+        window_width = (data.shape[1], data.shape[2])
 
     valid.valid_container(
         tilt_values,
@@ -1371,6 +1395,7 @@ def show_rocking_curve(
         allow_none=True,
         name="tilt_values",
     )
+    tilt_values = np.array(tilt_values)
     if tilt_values is None:
         tilt_values = np.arange(nb_frames)
         x_label = "Frame number"
@@ -1380,15 +1405,27 @@ def show_rocking_curve(
     valid.valid_container(savedir, container_types=str, allow_none=True, name="savedir")
     if savedir is not None:
         pathlib.Path(savedir).mkdir(parents=True, exist_ok=True)
+    bragg_peak = peaks[peak_method]
+    if bragg_peak is None:
+        raise ValueError(f"Bragg peak not detected with method {peak_method}")
+    roi_center = (
+        bragg_peak[0],
+        (bragg_peak[1] - detector_roi[0]) // binning[1],
+        (bragg_peak[2] - detector_roi[2]) // binning[2],
+    )
 
+    # calculate the offset indices due to the window_width (need to compensate the
+    # peak positions for that offset in plots)
+    offset_indices = [
+        np.clip(roi_center[1] - window_width[0] // 2, 0, data.shape[1]),
+        np.clip(roi_center[1] + window_width[0] // 2, 0, data.shape[1]),
+        np.clip(roi_center[2] - window_width[1] // 2, 0, data.shape[2]),
+        np.clip(roi_center[2] + window_width[1] // 2, 0, data.shape[2]),
+    ]
     rocking_curve = data[
         :,
-        np.clip(roi_center[1] - integration_roi[0] // 2, 0, data.shape[1]) : np.clip(
-            roi_center[1] + integration_roi[0] // 2, 0, data.shape[1]
-        ),
-        np.clip(roi_center[2] - integration_roi[1] // 2, 0, data.shape[2]) : np.clip(
-            roi_center[2] + integration_roi[1] // 2, 0, data.shape[2]
-        ),
+        offset_indices[0] : offset_indices[1],
+        offset_indices[2] : offset_indices[3],
     ].sum(axis=(1, 2))
 
     interpolation = interp1d(tilt_values, rocking_curve, kind="cubic")
@@ -1409,7 +1446,7 @@ def show_rocking_curve(
     ax0.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
     ax0.set_ylabel("Integrated intensity")
     ax0.legend(("data", "interpolation"))
-    ax0.set_title(f"Rocking curve in a {integration_roi[0]}x{integration_roi[1]} roi")
+    ax0.set_title(f"Rocking curve in a {window_width[0]}x{window_width[1]} roi")
     ax1.plot(tilt_values, np.log10(rocking_curve), ".")
     ax1.plot(interp_tilt, np.log10(interp_curve))
     ax1.axvline(tilt_values[roi_center[0]], color="r", alpha=0.7, linewidth=1)
@@ -1417,18 +1454,50 @@ def show_rocking_curve(
     ax1.set_ylabel("Log(integrated intensity)")
     ax0.legend(("data", "interpolation"))
     plt.pause(0.1)
-    fig.savefig(savedir + "rocking_curve.png")
+    if savedir is not None:
+        fig.savefig(savedir + "rocking_curve.png")
     plt.close(fig)
 
     fig, _ = plt.subplots(1, 1, figsize=(10, 5))
-    plt.imshow(np.log10(abs(data[roi_center[0], :, :])), vmin=0, vmax=5)
-    plt.scatter(
-        roi_center[2], roi_center[1], color="r", marker="1", alpha=0.7, linewidth=1
+    plt.imshow(
+        np.log10(
+            abs(
+                data[
+                    roi_center[0],
+                    offset_indices[0] : offset_indices[1],
+                    offset_indices[2] : offset_indices[3],
+                ]
+            )
+        ),
+        vmin=0,
+        vmax=5,
     )
-    plt.title(f"Slice at frame {roi_center[0]}")
+    colors = ["r", "g", "b", "k"]
+    idx = 0
+    for key, peak in peaks.items():
+        if peak is not None:
+            detected_peak = (
+                peak[0],
+                (peak[1] - detector_roi[0]) // binning[1] - offset_indices[0],
+                (peak[2] - detector_roi[2]) // binning[2] - offset_indices[2],
+            )
+
+            plt.scatter(
+                detected_peak[2],
+                detected_peak[1],
+                color=colors[idx],
+                marker="1",
+                alpha=0.7,
+                linewidth=1,
+                label=f"{key}={peak}",
+            )
+            idx += 1
+    plt.title(f"User_defined method '{peak_method}'")
     plt.colorbar()
+    plt.legend()
     plt.pause(0.1)
-    fig.savefig(savedir + "central_slice.png")
+    if savedir is not None:
+        fig.savefig(savedir + "central_slice.png")
     plt.close(fig)
     plt.ioff()
 
@@ -1438,8 +1507,8 @@ def show_rocking_curve(
         "interp_tilt_values": interp_tilt,
         "interp_rocking_curve": interp_curve,
         "interp_fwhm": interp_fwhm,
-        "COM_rocking_curve": tilt_values[roi_center[0]],
-        "detector_data_COM": data[roi_center[0], :, :],
+        "tilt_value_at_peak": tilt_values[roi_center[0]],
+        "detector_data_at_peak": data[roi_center[0], :, :],
     }
 
     return metadata
