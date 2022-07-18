@@ -46,8 +46,8 @@ class TestRun(unittest.TestCase):
             )
 
     def test_run(self):
-        expected_q_com = [0, 2.77555, 0]
-        expected_volume = 23217408
+        expected_q_com = [0, 2.770848, 0]
+        expected_volume = 23232528
         with tempfile.TemporaryDirectory() as tmpdir:
             self.args = self.parser.load_arguments()
             self.args["save_dir"] = (tmpdir,)
