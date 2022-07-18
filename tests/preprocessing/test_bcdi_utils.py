@@ -58,11 +58,11 @@ class TestFindBragg(unittest.TestCase):
 
     def test_binning(self):
         peak = find_bragg(data=self.data, peak_method="max", binning=(2, 1, 1))
-        self.assertTrue(peak == (2, 25, 23))
+        self.assertTrue(peak == (1, 25, 23))
 
     def test_binning_2(self):
         peak = find_bragg(data=self.data, peak_method="max", binning=(3, 3, 4))
-        self.assertTrue(peak == (3, 75, 92))
+        self.assertTrue(peak == (1, 75, 92))
 
     def test_roi_wrong_length(self):
         with self.assertRaises(ValueError):
@@ -80,7 +80,6 @@ class TestFindBragg(unittest.TestCase):
         peak = find_bragg(
             data=self.data, peak_method="max", roi=(3, 3, 4, 2), binning=(3, 3, 4)
         )
-        print(peak)
         self.assertTrue(peak == (1, 78, 96))
 
 
