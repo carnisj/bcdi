@@ -52,7 +52,7 @@ class TestRun(unittest.TestCase):
             self.args = self.parser.load_arguments()
             self.args["save_dir"] = (tmpdir,)
             run(self.args)
-            self.assertTrue(os.path.isfile(f"{tmpdir}/run0_S11.log"))
+            self.assertTrue(os.path.isfile(f"{tmpdir}/postprocessing_run0_S11.log"))
             with h5py.File(
                 f"{tmpdir}/S11_ampdispstrain_mode_crystalframe.h5",
                 "r",

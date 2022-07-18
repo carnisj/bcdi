@@ -229,7 +229,7 @@ def process_scan(
             if prm["save_dir"][scan_idx] is not None
             else prm["root_folder"]
         )
-        / f"run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
+        / f"preprocessing_run{scan_idx}_{prm['sample_name'][scan_idx]}{scan_nb}.log"
     )
     filehandler = logging.FileHandler(tmpfile, mode="w", encoding="utf-8")
     filehandler.setFormatter(FILE_FORMATTER)
