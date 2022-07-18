@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Move the calculation of corrected detector angles before the calculation of `q_lab`
+  in `postprocessing.process_scan`. Previously it was using the values from the beamline
+  log file, resulting in a small discrepancy.
+
 * Add a placeholder "-f" command line parameter to host the automatically generated
  parameter in Jupyter notebooks (path of the kernel json file).
 
