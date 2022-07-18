@@ -686,15 +686,15 @@ def find_bragg(
         COM_value = data[position[0], position[1], position[2]]
         logger.info(f"MaxCom at (z, y, x): {position}, COM = {COM_value}")
 
+    position = list(position)
+
     # unbin
     if binning is not None:
         position[1:] = [a * b for a, b in zip(position[1:], binning[1:])]
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
-    position = list(position)
     if roi is not None:
-        position = list(position)
         position[-1] = position[-1] + roi[2]
         position[-2] = position[-2] + roi[0]
 
