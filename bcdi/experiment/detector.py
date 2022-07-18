@@ -103,8 +103,8 @@ class Detector(ABC):
     """
     Class to handle the configuration of the detector used for data acquisition.
 
-    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin', 'MerlinSixS', 'Eiger2M',
-     'Eiger4M', 'Dummy'}
+    :param name: name of the detector in {'Maxipix', 'Timepix', 'Merlin',
+     'MerlinSixS', 'Eiger2M', 'Eiger4M', 'Dummy'}
     :param datadir: directory where the data files are located
     :param savedir: directory where to save the results
     :param template_imagefile: beamline-dependent template for the data files
