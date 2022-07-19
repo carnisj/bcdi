@@ -704,8 +704,7 @@ def process_scan(
                 del tmp_data
                 gc.collect()
     else:  # reload_orthogonal
-        if len(q_values):
-            # find the Bragg peak position from the interpolated data
+        if q_values:  # find the Bragg peak position from the interpolated data
             peaks = bu.find_bragg(
                 data=data,
                 roi=None,
