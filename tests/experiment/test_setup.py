@@ -81,11 +81,6 @@ class TestCheckSetup(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
 
-    def test_check_setup_energy_ndarray(self):
-        self.params["energy"] = np.array([10.005, 10.010, 10.015])
-        with self.assertRaises(TypeError):
-            self.setup.check_setup(**self.params)
-
     def test_check_setup_tilt_angle_predefined(self):
         self.setup.tilt_angle = 2
         self.setup.check_setup(**self.params)
@@ -112,13 +107,9 @@ class TestCheckSetup(unittest.TestCase):
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.outofplane_angle, self.params["outofplane_angle"])
 
-    def test_check_setup_outofplane_angle_ndarray(self):
-        self.params["outofplane_angle"] = np.arange(10)
-        with self.assertRaises(TypeError):
-            self.setup.check_setup(**self.params)
-
     def test_check_setup_outofplane_angle_undefined(self):
         self.params["outofplane_angle"] = None
+        self.setup.outofplane_angle = None
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
 
