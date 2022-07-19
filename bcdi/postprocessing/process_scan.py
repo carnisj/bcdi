@@ -768,6 +768,8 @@ def process_scan(
         gc.collect()
 
         if prm["correct_refraction"]:
+            if setup.wavelength is None:
+                raise ValueError("X-ray energy undefined")
             phase_correction = (
                 2 * np.pi / (1e9 * setup.wavelength) * prm["dispersion"] * optical_path
             )
@@ -789,6 +791,8 @@ def process_scan(
             )
         correct_absorption = False
         if correct_absorption:
+            if setup.wavelength is None:
+                raise ValueError("X-ray energy undefined")
             amp_correction = np.exp(
                 2 * np.pi / (1e9 * setup.wavelength) * prm["absorption"] * optical_path
             )

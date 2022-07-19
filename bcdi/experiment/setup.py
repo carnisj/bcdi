@@ -693,7 +693,7 @@ class Setup:
     def wavelength(self) -> Optional[float]:
         """Wavelength in meters."""
         if isinstance(self.energy, Real):
-            return 12.398 * 1e-7 / self.energy  # in m
+            return 12.398 * 1e-7 / float(self.energy)  # in m
         return None
 
     def __repr__(self):
