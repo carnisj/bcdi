@@ -533,11 +533,9 @@ def process_scan(
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
-    q_lab = (
-        setup.q_laboratory
-    )  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
-    qnorm = np.linalg.norm(q_lab)
-    q_lab = q_lab / qnorm
+    qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
+    q_lab = setup.q_laboratory / qnorm
+    # expressed in the laboratory frame z downstream, y vertical, x outboard
 
     angle = simu.angle_vectors(
         ref_vector=[q_lab[2], q_lab[1], q_lab[0]],
