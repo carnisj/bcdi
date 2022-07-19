@@ -502,23 +502,6 @@ def process_scan(
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle
 
-    ####################################
-    # wavevector transfer calculations #
-    ####################################
-    if prm["rocking_angle"] != "energy":
-        # kin and kout: in laboratory frame z downstream, y vertical, x outboard
-        kin = 2 * np.pi / setup.wavelength * np.asarray(setup.beam_direction)
-        kout = setup.exit_wavevector
-        q = (kout - kin) / 1e10  # convert from 1/m to 1/angstrom
-        qnorm = np.linalg.norm(q)
-        dist_plane = 2 * np.pi / qnorm
-        logger.info(f"Wavevector transfer of Bragg peak: {q}, Qnorm={qnorm:.4f}")
-        logger.info(f"Interplanar distance: {dist_plane:.6f} angstroms")
-    else:  # TODO: calculate  q values
-        q = 0
-        qnorm = 0
-        dist_plane = 0
-
     ##############################################################
     # optional interpolation of the data onto an orthogonal grid #
     ##############################################################
@@ -541,6 +524,8 @@ def process_scan(
 
         if prm["use_rawdata"]:
             q_values = []
+            qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
+            q_bragg = setup.q_laboratory / qnorm
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:
@@ -630,6 +615,19 @@ def process_scan(
                     cmap=prm["colormap"].cmap,
                     logger=logger,
                 )
+                # find the Bragg peak position from the interpolated data
+                peaks = bu.find_bragg(
+                    data=data,
+                    roi=None,
+                    binning=None,
+                    logger=logger,
+                )
+                q_bragg = [
+                    q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
+                    q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
+                    q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+                ]
+                qnorm = np.linalg.norm(q_bragg)
             else:  # 'linearization'
                 # for q values, the frame used is
                 # (qx downstream, qy outboard, qz vertical up)
@@ -648,13 +646,19 @@ def process_scan(
                     logger=logger,
                 )
                 prm["transformation_matrix"] = transfer_matrix
+
+                qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
+                q_bragg = setup.q_laboratory / qnorm
+
             nz, ny, nx = data.shape
             logger.info(
                 "Data size after interpolation into an orthonormal frame:"
                 f"{nz}, {ny}, {nx}"
             )
 
-            # plot normalization by incident monitor for the gridded data
+            ###############################################################
+            # plot normalization by incident monitor for the gridded data #
+            ###############################################################
             if prm["normalize_flux"]:
                 plt.ion()
                 tmp_data = np.copy(
@@ -699,6 +703,30 @@ def process_scan(
                 plt.ioff()
                 del tmp_data
                 gc.collect()
+    else:  # reload_orthogonal
+        if len(q_values):
+            # find the Bragg peak position from the interpolated data
+            peaks = bu.find_bragg(
+                data=data,
+                roi=None,
+                binning=None,
+                logger=logger,
+            )
+            q_bragg = [
+                q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
+                q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
+                q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+            ]
+            qnorm = np.linalg.norm(q_bragg)
+        else:
+            q_bragg = None
+            qnorm = None
+
+    if qnorm is not None:
+        planar_distance = 2 * np.pi / qnorm
+        # expressed in the laboratory frame z downstream, y vertical, x outboard
+        logger.info(f"Wavevector transfer of Bragg peak: {q_bragg}, Qnorm={qnorm:.4f}")
+        logger.info(f"Interplanar distance: {planar_distance:.6f} angstroms")
 
     ########################
     # crop/pad/center data #
@@ -1315,9 +1343,9 @@ def process_scan(
             out.create_dataset("bragg_peak", data=prm["bragg_peak"])
         except TypeError:
             logger.info("Bragg peak not computed.")
-        out.create_dataset("q", data=q)
+        out.create_dataset("q_bragg", data=q_bragg)
         out.create_dataset("qnorm", data=qnorm)
-        out.create_dataset("dist_plane", data=dist_plane)
+        out.create_dataset("planar_distance", data=planar_distance)
         if prm["rocking_angle"] != "energy":
             out.create_dataset("bragg_inplane", data=prm["inplane_angle"])
             out.create_dataset("bragg_outofplane", data=prm["outofplane_angle"])
