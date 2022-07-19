@@ -525,7 +525,7 @@ def process_scan(
         if prm["use_rawdata"]:
             q_values = []
             qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
-            q_bragg = setup.q_laboratory / qnorm
+            q_bragg = setup.q_laboratory
             # binning along axis 0 is done after masking
             data[np.nonzero(mask)] = 0
         else:
@@ -648,7 +648,7 @@ def process_scan(
                 prm["transformation_matrix"] = transfer_matrix
 
                 qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
-                q_bragg = setup.q_laboratory / qnorm
+                q_bragg = setup.q_laboratory
 
             nz, ny, nx = data.shape
             logger.info(
