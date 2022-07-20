@@ -726,6 +726,8 @@ def process_scan(
         # expressed in the laboratory frame z downstream, y vertical, x outboard
         logger.info(f"Wavevector transfer of Bragg peak: {q_bragg}, Qnorm={qnorm:.4f}")
         logger.info(f"Interplanar distance: {planar_distance:.6f} angstroms")
+    else:
+        planar_distance = None
 
     ########################
     # crop/pad/center data #
