@@ -1341,7 +1341,7 @@ def process_scan(
         try:
             out.create_dataset("bragg_peak", data=prm["bragg_peak"])
         except TypeError:
-            logger.info("Bragg peak not computed.")
+            logger.info("Bragg peak position not computed.")
         out.create_dataset("q_bragg", data=q_bragg)
         out.create_dataset("qnorm", data=qnorm)
         out.create_dataset("planar_distance", data=planar_distance)
