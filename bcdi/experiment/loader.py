@@ -3264,12 +3264,15 @@ class LoaderCRISTAL(Loader):
                     actuator_name="scan_data",
                     field_name=setup.actuators.get("delta", "actuator_1_2"),
                 )
-                energy = self.cristal_load_motor(
-                    setup=setup,
-                    root="/" + group_key,
-                    actuator_name="scan_data",
-                    field_name=setup.actuators.get("rocking_angle", "actuator_1_3"),
-                )
+                energy = (
+                    self.cristal_load_motor(
+                        setup=setup,
+                        root="/" + group_key,
+                        actuator_name="scan_data",
+                        field_name=setup.actuators.get("rocking_angle", "actuator_1_3"),
+                    )
+                    * 1000
+                )  # switch to eV
                 mgomega = self.cristal_load_motor(
                     setup=setup,
                     root="/" + group_key + "/CRISTAL/",
