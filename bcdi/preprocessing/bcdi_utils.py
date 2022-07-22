@@ -692,7 +692,6 @@ def find_bragg(
 
     # add the offset due to the region of interest
     # the roi is defined as [y_start, y_stop, x_start, x_stop]
-    position = list(position)
     if roi is not None:
         position_max = list(position_max)
         position_max[-1] = position_max[-1] + roi[2]
