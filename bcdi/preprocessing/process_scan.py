@@ -484,7 +484,6 @@ def process_scan(
         if prm["bragg_peak"] is None:
             raise ValueError("The position of the Bragg peak is undefined.")
 
-        logger.info("Plotting the rocking curve.")
         metadata = bu.show_rocking_curve(
             data,
             peaks=bragg_peaks,
