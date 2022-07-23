@@ -47,6 +47,7 @@ class DataSet:
         "alias_dict_2019.txt",
         "alias_dict_2020.txt",
         "alias_dict_2021.txt",
+        "alias_dict_2022.txt",
     ]
 
     # define a classe to enter .nxs fiel-related parameters

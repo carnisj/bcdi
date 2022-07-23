@@ -1972,8 +1972,10 @@ class LoaderSIXS(Loader):
 
         # load the data
         if setup.custom_scan:
-            raise NotImplementedError("custom scan not implemented for NANOMAX")
+            raise NotImplementedError("custom scan not implemented for SixS")
         if setup.detector.name == "Merlin":
+            tmp_data = file.merlin[:]
+        elif setup.detector.name == "MerlinSixS":
             tmp_data = file.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
@@ -2507,7 +2509,7 @@ class LoaderP10(Loader):
 
         """
         specfile = kwargs.get("specfile_name")
-        default_specfile = sample_name + "_{:05d}".format(scan_number)
+        default_specfile = f"{sample_name}_{scan_number:05d}"
         if specfile is None or not os.path.isfile(specfile):
             # default to the usual position of .fio at P10
             specfile = default_specfile
@@ -2568,7 +2570,7 @@ class LoaderP10(Loader):
                     idx = 0
                     nb_img = 0
                     while True:
-                        data_path = "data_" + str("{:06d}".format(idx + 1))
+                        data_path = f"data_{idx + 1:06d}"
                         try:
                             nb_img += len(h5file["entry"]["data"][data_path])
                             idx += 1
@@ -2604,16 +2606,16 @@ class LoaderP10(Loader):
                 ccdfiletmp = (
                     setup.detector.rootdir
                     + setup.detector.sample_name
-                    + "_{:05d}".format(i)
+                    + f"_{i:05d}"
                     + "/e4m/"
                     + setup.detector.sample_name
-                    + "_{:05d}".format(i)
+                    + f"_{i:05d}"
                     + setup.detector.template_file
                 )
                 data_path = "data_000001"
             else:
                 # normal scan, ccdfiletmp points to the master .h5 file
-                data_path = "data_" + str("{:06d}".format(point_idx + 1))
+                data_path = f"data_{point_idx + 1:06d}"
 
             with h5py.File(ccdfiletmp, "r") as h5file:
                 while True:
@@ -3367,7 +3369,7 @@ class LoaderNANOMAX(Loader):
          - template_imagefile: the template for data/image file names
 
         """
-        homedir = root_folder + sample_name + "{:06d}".format(scan_number) + "/"
+        homedir = root_folder + sample_name + f"{scan_number:06d}/"
         default_dirname = "data/"
         return homedir, default_dirname, None, template_imagefile
 
