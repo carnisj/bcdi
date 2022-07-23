@@ -533,11 +533,9 @@ def process_scan(
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
-    q_lab = (
-        setup.q_laboratory
-    )  # (1/A), in the laboratory frame z downstream, y vertical, x outboard
-    qnorm = np.linalg.norm(q_lab)
-    q_lab = q_lab / qnorm
+    qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
+    q_lab = setup.q_laboratory / qnorm
+    # expressed in the laboratory frame z downstream, y vertical, x outboard
 
     angle = simu.angle_vectors(
         ref_vector=[q_lab[2], q_lab[1], q_lab[0]],
@@ -770,6 +768,8 @@ def process_scan(
         gc.collect()
 
         if prm["correct_refraction"]:
+            if setup.wavelength is None:
+                raise ValueError("X-ray energy undefined")
             phase_correction = (
                 2 * np.pi / (1e9 * setup.wavelength) * prm["dispersion"] * optical_path
             )
@@ -791,6 +791,8 @@ def process_scan(
             )
         correct_absorption = False
         if correct_absorption:
+            if setup.wavelength is None:
+                raise ValueError("X-ray energy undefined")
             amp_correction = np.exp(
                 2 * np.pi / (1e9 * setup.wavelength) * prm["absorption"] * optical_path
             )

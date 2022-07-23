@@ -297,7 +297,7 @@ class Beamline(ABC):
         )
 
     @staticmethod
-    def process_tilt(array, nb_steps, nb_frames, angular_step):
+    def process_tilt(array, nb_steps, nb_frames, step_size):
         """
         Crop or pad array depending on how compare two numbers.
 
@@ -308,14 +308,14 @@ class Beamline(ABC):
         :param array: a 1D numpy array of motor values
         :param nb_steps: int, the number of motor positions
         :param nb_frames: int, the number of frames
-        :param angular_step: float, the angular tilt of the rocking curve
+        :param step_size: float, the angular tilt of the rocking curve
         :return: the cropped/padded array
         """
         # check parameters
         valid.valid_1d_array(array, length=nb_steps, allow_none=False, name="array")
         valid.valid_item(nb_steps, allowed_types=int, min_excluded=0, name="nb_steps")
         valid.valid_item(nb_frames, allowed_types=int, min_excluded=0, name="nb_frames")
-        valid.valid_item(angular_step, allowed_types=Real, name="angular_step")
+        valid.valid_item(step_size, allowed_types=Real, name="step_size")
 
         if nb_steps < nb_frames:
             # data has been padded, we suppose it is centered in z dimension
@@ -325,9 +325,9 @@ class Beamline(ABC):
             )
             array = np.concatenate(
                 (
-                    array[0] + np.arange(-pad_low, 0, 1) * angular_step,
+                    array[0] + np.arange(-pad_low, 0, 1) * step_size,
                     array,
-                    array[-1] + np.arange(1, pad_high + 1, 1) * angular_step,
+                    array[-1] + np.arange(1, pad_high + 1, 1) * step_size,
                 ),
                 axis=0,
             )

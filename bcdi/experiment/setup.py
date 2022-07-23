@@ -19,12 +19,13 @@ import multiprocessing as mp
 import time
 from collections.abc import Sequence
 from numbers import Integral, Real
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
 from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.beamline_factory import Beamline
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -592,8 +593,11 @@ class Setup:
 
     @outofplane_angle.setter
     def outofplane_angle(self, value):
-        if not isinstance(value, Real) and value is not None:
-            raise TypeError("outofplane_angle should be a number in degrees")
+        if not isinstance(value, (Real, np.ndarray)) and value is not None:
+            raise TypeError(
+                "outofplane_angle should be a number in degrees "
+                "or an array of numbers in degrees"
+            )
         self._outofplane_angle = value
 
     @property
@@ -686,10 +690,10 @@ class Setup:
         self._tilt_angle = value
 
     @property
-    def wavelength(self):
+    def wavelength(self) -> Optional[float]:
         """Wavelength in meters."""
-        if self.energy:
-            return 12.398 * 1e-7 / self.energy  # in m
+        if isinstance(self.energy, Real):
+            return 12.398 * 1e-7 / float(self.energy)  # in m
         return None
 
     def __repr__(self):
@@ -759,10 +763,10 @@ class Setup:
         self,
         grazing_angle: Optional[Tuple[Real, ...]],
         inplane_angle: Real,
-        outofplane_angle: Real,
+        outofplane_angle: Union[Real, np.ndarray],
         tilt_angle: np.ndarray,
         detector_distance: Real,
-        energy: Real,
+        energy: Union[Real, np.ndarray],
     ) -> None:
         """
         Check if the required parameters are correctly defined.
@@ -782,10 +786,9 @@ class Setup:
         self.grazing_angle = grazing_angle
 
         self.energy = self.energy or energy
+        # the user-defined energy overrides the logged energy
         if self.energy is None:
             raise ValueError("the X-ray energy is not defined")
-        if not isinstance(self.energy, Real):
-            raise TypeError("the X-ray energy should be fixed")
 
         self.distance = self.distance or detector_distance
         if self.distance is None:

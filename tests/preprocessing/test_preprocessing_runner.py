@@ -59,7 +59,7 @@ class TestRun(unittest.TestCase):
                 bragg_inplane = h5file["output/bragg_inplane"][()]
                 bragg_outofplane = h5file["output/bragg_outofplane"][()]
                 bragg_peak = h5file["output/bragg_peak"][()]
-                q = h5file["output/q"][()]
+                q = h5file["output/q_bragg"][()]
 
         self.assertAlmostEqual(bragg_inplane, expected_bragg_inplane)
         self.assertAlmostEqual(bragg_outofplane, expected_bragg_outofplane)
