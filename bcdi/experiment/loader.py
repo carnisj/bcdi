@@ -1972,8 +1972,10 @@ class LoaderSIXS(Loader):
 
         # load the data
         if setup.custom_scan:
-            raise NotImplementedError("custom scan not implemented for NANOMAX")
+            raise NotImplementedError("custom scan not implemented for SixS")
         if setup.detector.name == "Merlin":
+            tmp_data = file.merlin[:]
+        elif setup.detector.name == "MerlinSixS":
             tmp_data = file.merlin[:]
         else:  # Maxipix
             if setup.beamline == "SIXS_2018":
@@ -2507,7 +2509,7 @@ class LoaderP10(Loader):
 
         """
         specfile = kwargs.get("specfile_name")
-        default_specfile = sample_name + f"_{scan_number:05d}"
+        default_specfile = f"{sample_name}_{scan_number:05d}"
         if specfile is None or not os.path.isfile(specfile):
             # default to the usual position of .fio at P10
             specfile = default_specfile
