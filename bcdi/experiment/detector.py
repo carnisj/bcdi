@@ -978,7 +978,7 @@ class Merlin(Detector):
 
 
 class MerlinSixS(Detector):
-    """Implementation of the Merlin detector for SixS"""
+    """Implementation of the Merlin detector for SixS."""
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
