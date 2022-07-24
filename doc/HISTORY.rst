@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Bug: provide the correct binning factors to `bcdi_utils.find_bragg` by introducing a
+  new detector property `current_binning` and using it as input parameter.
+
 * Calculate the Bragg peak position for the three methods "max", "com" and "max_com"
   and plot the results to compare their efficiency. The type of `centering_method` is
   changed to `dict` in order to provide different methods for direct and reciprocal
