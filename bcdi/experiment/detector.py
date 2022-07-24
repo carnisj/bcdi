@@ -181,6 +181,11 @@ class Detector(ABC):
         # initialize the threshold for saturation, can be overriden in child classes
         self.saturation_threshold = None
 
+        # property used to track the binning factor throughout data processing
+        # the starting point is preprocessing_binning, which is the state of the data
+        # when loaded
+        self.current_binning = list(self.preprocessing_binning)
+
     @property
     def binning(self):
         """
@@ -214,6 +219,28 @@ class Detector(ABC):
         if not isinstance(beamline, str):
             raise TypeError("beamline should be a string")
         return self._counter_table.get(beamline)
+
+    @property
+    def current_binning(self):
+        """
+        Current binning factor of the dataset.
+
+        Tuple of three positive integers corresponding to the current binning of the
+        data in the processing pipeline.
+        """
+        return self._current_binning
+
+    @current_binning.setter
+    def current_binning(self, value):
+        valid.valid_container(
+            value,
+            container_types=list,
+            length=3,
+            item_types=int,
+            min_excluded=0,
+            name="Detector.current_binning",
+        )
+        self._current_binning = value
 
     @property
     def datadir(self):
@@ -978,7 +1005,7 @@ class Merlin(Detector):
 
 
 class MerlinSixS(Detector):
-    """Implementation of the Merlin detector for SixS"""
+    """Implementation of the Merlin detector for SixS."""
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)

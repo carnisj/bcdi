@@ -22,6 +22,7 @@ import logging
 import os
 import tkinter as tk
 from logging import Logger
+from operator import mul
 from pathlib import Path
 from tkinter import filedialog
 from typing import Any, Dict, List, Optional, Tuple
@@ -381,11 +382,7 @@ def process_scan(
             ] = []  # we assume that crop/pad/centering was already performed
 
             # bin data and mask if needed
-            if (
-                (setup.detector.binning[0] != 1)
-                or (setup.detector.binning[1] != 1)
-                or (setup.detector.binning[2] != 1)
-            ):
+            if any(val != 1 for val in setup.detector.binning):
                 logger.info(
                     f"Binning the reloaded orthogonal data by {setup.detector.binning}"
                 )
@@ -403,6 +400,10 @@ def process_scan(
                     cmap=prm["colormap"].cmap,
                     logger=logger,
                 )
+                setup.detector.current_binning = list(
+                    map(mul, setup.detector.current_binning, setup.detector.binning)
+                )
+
                 mask[np.nonzero(mask)] = 1
                 if len(q_values) != 0:
                     qx = q_values[0]
@@ -479,7 +480,7 @@ def process_scan(
             peaks = bu.find_bragg(
                 data=data,
                 roi=setup.detector.roi,
-                binning=setup.detector.binning,
+                binning=setup.detector.current_binning,
                 logger=logger,
             )
             bragg_peaks.update(peaks)
@@ -1004,9 +1005,9 @@ def process_scan(
         plt.disconnect(cid)
         plt.close(fig)
 
-        #############################################
-        # define mask
-        #############################################
+        ###############
+        # define mask #
+        ###############
         width = 0
         max_colorbar = 5
         flag_aliens = False
@@ -1225,6 +1226,13 @@ def process_scan(
             logger=logger,
         )
         mask[np.nonzero(mask)] = 1
+        setup.detector.current_binning = list(
+            map(
+                mul,
+                setup.detector.current_binning,
+                (setup.detector.binning[0], 1, 1),
+            )
+        )
         if not prm["use_rawdata"] and len(q_values) != 0:
             numz = len(qx)
             qx = qx[
@@ -1232,6 +1240,21 @@ def process_scan(
             ]  # along Z
             del numz
     logger.info(f"Data size after binning the stacking dimension: {data.shape}")
+    expected_binning = list(
+        map(
+            mul,
+            setup.detector.preprocessing_binning,
+            setup.detector.binning,
+        )
+    )
+    if any(
+        val1 != val2
+        for val1, val2 in zip(setup.detector.current_binning, expected_binning)
+    ):
+        raise ValueError(
+            f"Mismatch in binning, current_binning = {setup.detector.current_binning}, "
+            f"expected binning = {expected_binning}"
+        )
 
     ##################################################################
     # final check of the shape to comply with FFT shape requirements #
