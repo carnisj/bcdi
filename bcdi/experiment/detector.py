@@ -182,7 +182,9 @@ class Detector(ABC):
         self.saturation_threshold = None
 
         # property used to track the binning factor throughout data processing
-        self.current_binning = [1, 1, 1]
+        # the starting point is preprocessing_binning, which is the state of the data
+        # when loaded
+        self.current_binning = list(self.preprocessing_binning)
 
     @property
     def binning(self):

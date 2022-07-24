@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 import logging
 import pathlib
 from numbers import Real
+from operator import mul
 from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check
 
 import matplotlib.pyplot as plt
@@ -622,7 +623,7 @@ def center_fft(
 def find_bragg(
     data: np.ndarray,
     roi: Optional[Tuple[int, int, int, int]] = None,
-    binning: Optional[Tuple[int, ...]] = None,
+    binning: Optional[Union[Tuple[int, ...], List[int]]] = None,
     **kwargs,
 ) -> Dict[str, Tuple[int, int, int]]:
     """
@@ -1185,6 +1186,14 @@ def load_bcdi_data(
         )
         rawmask[np.nonzero(rawmask)] = 1
 
+    # update the current binning factor
+    setup.detector.current_binning = list(
+        map(
+            mul,
+            setup.detector.current_binning,
+            (1, setup.detector.binning[1], setup.detector.binning[2]),
+        )
+    )
     ################################################
     # pad the data to the shape defined by the ROI #
     ################################################
@@ -1323,6 +1332,13 @@ def reload_bcdi_data(
             debugging=debugging,
         )
         mask[np.nonzero(mask)] = 1
+        setup.detector.current_binning = list(
+            map(
+                mul,
+                setup.detector.current_binning,
+                (1, setup.detector.binning[1], setup.detector.binning[2]),
+            )
+        )
 
     return data, mask, frames_logical, monitor
 
