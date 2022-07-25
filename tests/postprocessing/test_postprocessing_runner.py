@@ -50,7 +50,7 @@ class TestRun(unittest.TestCase):
         expected_volume = 23232528
         with tempfile.TemporaryDirectory() as tmpdir:
             self.args = self.parser.load_arguments()
-            self.args["save_dir"] = (tmpdir,)
+            self.args["save_dir"] = [tmpdir]
             run(self.args)
             self.assertTrue(os.path.isfile(f"{tmpdir}/postprocessing_run0_S11.log"))
             with h5py.File(
