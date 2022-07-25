@@ -15,6 +15,7 @@ discarded.
 import copy
 import logging
 import os
+import pathlib
 from abc import ABC, abstractmethod
 from numbers import Number, Real
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -88,8 +89,20 @@ class ConfigChecker(ABC):
         self._check_mandatory_params()
         self._configure_params()
         self._check_backend()
+        self._create_dirs()
         self._create_colormap()
         return self._checked_params
+
+    def _create_dirs(self) -> None:
+        """Check if the directories exist and create them if needed."""
+        if not isinstance(self._checked_params.get("save_dir"), list):
+            raise TypeError(
+                "save_dir should be a list, got a "
+                f"{type(self._checked_params.get('save_dir'))}"
+            )
+        for _, val in enumerate(self._checked_params["save_dir"]):
+            if val is not None:
+                pathlib.Path(val).mkdir(parents=True, exist_ok=True)
 
     def _create_roi(self) -> Optional[List[int]]:
         """
