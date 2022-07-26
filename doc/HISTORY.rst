@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Bug: add the method `utils.parameters.ConfigChecker._create_dirs`, which creates the
+  saving directory when the folder does not exist yet.
+
 * Bug: provide the correct binning factors to `bcdi_utils.find_bragg` by introducing a
   new detector property `current_binning` and using it as input parameter.
 

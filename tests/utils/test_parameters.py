@@ -6,6 +6,8 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 import copy
+import pathlib
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -176,6 +178,12 @@ class TestConfigChecker(unittest.TestCase):
         self.checker._checked_params["grey_background"] = True
         self.checker._create_colormap()
         self.assertTrue(self.checker._checked_params["colormap"].bad_color == "0.7")
+
+    def test_create_dirs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.checker._checked_params["save_dir"] = [tmpdir]
+            self.checker._create_dirs()
+            self.assertTrue(pathlib.Path(tmpdir).is_dir())
 
     def test_check_config_scans_none(self):
         self.checker._checked_params["scans"] = None

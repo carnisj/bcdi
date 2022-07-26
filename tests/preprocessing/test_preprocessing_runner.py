@@ -49,7 +49,7 @@ class TestRun(unittest.TestCase):
         expected_q = [-0.84164063, 2.63974482, -0.03198209]
         with tempfile.TemporaryDirectory() as tmpdir:
             self.args = self.parser.load_arguments()
-            self.args["save_dir"] = (tmpdir,)
+            self.args["save_dir"] = [tmpdir]
             run(self.args)
             self.assertTrue(os.path.isfile(f"{tmpdir}/preprocessing_run0_S11.log"))
             with h5py.File(

@@ -223,7 +223,7 @@ class Detector(ABC):
     @property
     def current_binning(self):
         """
-        Current binning factor of the dataset.
+        Display the current binning factor of the dataset.
 
         Tuple of three positive integers corresponding to the current binning of the
         data in the processing pipeline.
