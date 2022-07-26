@@ -388,6 +388,8 @@ class PreprocessingChecker(ConfigChecker):
             or self._checked_params["reload_previous"]
         ):
             self._checked_params["multiprocessing"] = False
+        if self._checked_params["bragg_peak"] is not None:
+            self._checked_params["centering_method"]["reciprocal_space"] = "user"
 
 
 class PostprocessingChecker(ConfigChecker):
@@ -593,7 +595,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "centering_method":
         allowed_keys = {"direct_space", "reciprocal_space"}
-        allowed_values = {"com", "max", "max_com", "skip"}
+        allowed_values = {"com", "max", "max_com", "skip", "user"}
         if isinstance(value, dict):
             if any(
                 subkey not in allowed_keys or val not in allowed_values

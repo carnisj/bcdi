@@ -214,6 +214,18 @@ class TestPreprocessingChecker(unittest.TestCase):
                 reason=f"cannot load backend {self.checker._checked_params['backend']}"
             )
 
+    def test_bragg_peak_not_provided(self):
+        self.checker._checked_params["bragg_peak"] = None
+        out = self.checker.check_config()
+        self.assertEqual(
+            out["centering_method"], self.checker.initial_params["centering_method"]
+        )
+
+    def test_bragg_peak_provided(self):
+        self.checker._checked_params["bragg_peak"] = [100, 252, 321]
+        out = self.checker.check_config()
+        self.assertEqual(out["centering_method"]["reciprocal_space"], "user")
+
     def test_check_config(self):
         out = self.checker.check_config()
         self.assertEqual(out["scans"], (11,))
