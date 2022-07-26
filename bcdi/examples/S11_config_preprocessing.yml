@@ -31,8 +31,7 @@ background_plot: "0.5"  # in level of grey in [0,1], 0 being dark.
 #########################################################
 centering_method: "max_com"  # method used to determine the location of the Bragg peak.
 # 'max', 'com' (center of mass), or 'max_com' (max along the first axis, center of mass
-# in the detector plane). It will be overridden by 'fix_bragg' if the latter is not
-# empty.
+# in the detector plane). It will be overridden if 'bragg_peak' is provided.
 fix_size: None  # crop the array to predefined size considering the full detector,
 # leave None otherwise [zstart, zstop, ystart, ystop, xstart, xstop].
 # ROI will be defaulted to []
