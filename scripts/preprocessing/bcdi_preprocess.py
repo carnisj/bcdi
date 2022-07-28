@@ -93,7 +93,7 @@ Usage:
     :param centering_method: e.g. "max"
      Method used to determine the location of the Bragg peak. 'max', 'com'
      (center of mass), or 'max_com' (max along the first axis, center of mass in the
-     detector plane). It will be overridden by 'fix_bragg' if the latter is not empty.
+     detector plane). It will be overridden if 'bragg_peak' is provided.
     :param fix_size: e.g. [0, 256, 10, 240, 50, 350]
      crop the array to that predefined size considering the full detector.
      [zstart, zstop, ystart, ystop, xstart, xstop], ROI will be defaulted to [] if

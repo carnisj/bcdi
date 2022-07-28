@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Bug: override  `centering_method` in PreprocessingChecker when the Bragg peak position
+  is provided (the new setting becomes "user" for reciprocal space).
+
 * Bug: add the method `utils.parameters.ConfigChecker._create_dirs`, which creates the
   saving directory when the folder does not exist yet.
 
