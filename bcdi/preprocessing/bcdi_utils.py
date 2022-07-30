@@ -715,7 +715,7 @@ def find_bragg(
         "max_com": (position_max_com, "b"),
     }
     indices = {0: [2, 1], 1: [2, 0], 2: [1, 0]}
-    fig, axes, plots = gu.multislices_plot(
+    fig, axes, _ = gu.multislices_plot(
         data,
         sum_frames=True,
         scale="log",
