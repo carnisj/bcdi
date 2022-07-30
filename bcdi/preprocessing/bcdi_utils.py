@@ -738,7 +738,7 @@ def find_bragg(
         axes[ax].legend()
     plt.pause(0.1)
     if savedir is not None:
-        fig.savefig(savedir + "peaks.png")
+        fig.savefig(savedir + "centering_method.png")
     return {
         "max": tuple(position_max),
         "com": tuple(position_com),
