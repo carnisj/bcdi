@@ -624,7 +624,7 @@ def find_bragg(
     data: np.ndarray,
     roi: Optional[Tuple[int, int, int, int]] = None,
     binning: Optional[Union[Tuple[int, ...], List[int]]] = None,
-    debug: bool = False,
+    savedir: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, Tuple[int, int, int]]:
     """
@@ -638,7 +638,7 @@ def find_bragg(
      from the full sized detector.
     :param binning: tuple of integers of length data.ndim, binning applied to the data
      in each dimension.
-    :param debug: True to plot the detected peaks onto the projected data.
+    :param savedir: path to the saving directory
     :param kwargs:
 
      - 'logger': an optional logger
@@ -708,36 +708,37 @@ def find_bragg(
         position_max_com[-1] = position_max_com[-1] + roi[2]
         position_max_com[-2] = position_max_com[-2] + roi[0]
 
-    if debug:
-        plt.ion()
-        methods = {
-            "max": (position_max, "k"),
-            "com": (position_com, "g"),
-            "max_com": (position_max_com, "b"),
-        }
-        indices = {0: [2, 1], 1: [2, 0], 2: [1, 0]}
-        fig, axes, plots = gu.multislices_plot(
-            data,
-            sum_frames=True,
-            scale="log",
-            plot_colorbar=True,
-            vmin=0,
-            vmax=6,
-            title="data",
-        )
-        for ax, ind in indices.items():
-            for method, values in methods.items():
-                axes[ax].scatter(
-                    values[0][ind[0]],
-                    values[0][ind[1]],
-                    color=values[1],
-                    marker="1",
-                    alpha=0.7,
-                    linewidth=2,
-                    label=method,
-                )
-            axes[ax].legend()
-        plt.pause(0.1)
+    plt.ion()
+    methods = {
+        "max": (position_max, "k"),
+        "com": (position_com, "g"),
+        "max_com": (position_max_com, "b"),
+    }
+    indices = {0: [2, 1], 1: [2, 0], 2: [1, 0]}
+    fig, axes, plots = gu.multislices_plot(
+        data,
+        sum_frames=True,
+        scale="log",
+        plot_colorbar=True,
+        vmin=0,
+        vmax=6,
+        title="data",
+    )
+    for ax, ind in indices.items():
+        for method, values in methods.items():
+            axes[ax].scatter(
+                values[0][ind[0]],
+                values[0][ind[1]],
+                color=values[1],
+                marker="1",
+                alpha=0.7,
+                linewidth=2,
+                label=method,
+            )
+        axes[ax].legend()
+    plt.pause(0.1)
+    if savedir is not None:
+        fig.savefig(savedir + "peaks.png")
     return {
         "max": tuple(position_max),
         "com": tuple(position_com),
@@ -1536,7 +1537,7 @@ def show_rocking_curve(
                 color=colors[idx],
                 marker="1",
                 alpha=0.7,
-                linewidth=1,
+                linewidth=2,
                 label=f"{key}={peak}",
             )
             idx += 1
