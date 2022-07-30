@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Add plot in `bcdi_utils.find_bragg` to check qualitatively the configured centering
+  method. Save it automatically with the title 'centering_method.png'.
+
 * Refactor: move all methods related to linecuts in a dedicated module and class.
   Improve the robustness of linecuts fits in postprocessing, by allowing each fit to
   have a different length.
