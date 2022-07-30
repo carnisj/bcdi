@@ -509,6 +509,7 @@ def process_scan(
                 data=data,
                 roi=setup.detector.roi,
                 binning=None,
+                savedir=setup.detector.savedir,
                 logger=logger,
             )
             logger.info(
