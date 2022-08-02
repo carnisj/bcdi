@@ -438,6 +438,7 @@ class Detector(ABC):
         valid.valid_container(
             value,
             container_types=str,
+            allow_none=True,
             name="Detector.sample_name",
         )
         self._sample_name = value
