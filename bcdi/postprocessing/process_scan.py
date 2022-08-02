@@ -1052,6 +1052,7 @@ def process_scan(
         filename=setup.detector.savedir + "linecut_amp.png",
         voxel_sizes=voxel_size,
         label="modulus",
+        logger=logger,
     )
 
     ##############################
