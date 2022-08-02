@@ -1016,6 +1016,7 @@ def fit_linecut(
     voxel_sizes: Optional[List[float]] = None,
     filename: Optional[str] = None,
     label: str = "linecut",
+    **kwargs,
 ) -> Dict:
     """
     Perform a linecut on an array and optionally fit its gradient.
@@ -1031,8 +1032,13 @@ def fit_linecut(
     :param voxel_sizes: list of voxels sizes, in each dimension of the array
     :param filename: name for saving plots
     :param label: labels for the vertical axis of plots
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     :return: a dictionary containing linecuts, fits and fitted parameters
     """
+    logger = kwargs.get("logger", module_logger)
     # check parameters
     valid.valid_ndarray(array, fix_shape=True, name="array")
     shape = array.shape
@@ -1085,53 +1091,60 @@ def fit_linecut(
             )
             dcut = abs(np.gradient(cut))
 
-            # setup data and parameters for fitting
-            combined_xaxis = []
-            combined_data = []
-            fit_params = Parameters()
-            for peak_id, peak in enumerate(peaks):
-                cropped_xaxis = np.arange(peak - 10, peak + 10)
-                cropped_dcut = dcut[peak - 10 : peak + 10]
-                result[f"dimension_{idx}"][f"derivative_{peak_id}"] = np.vstack(
-                    (cropped_xaxis, cropped_dcut)
-                )
-                combined_xaxis.append(cropped_xaxis)
-                combined_data.append(cropped_dcut)
+            if len(peaks) != 0:
+                # setup data and parameters for fitting
+                combined_xaxis = []
+                combined_data = []
+                fit_params = Parameters()
+                for peak_id, peak in enumerate(peaks):
+                    index_start = max(0, peak - 10)
+                    index_stop = min(len(dcut), peak + 10)
+                    cropped_xaxis = np.arange(index_start, index_stop)
+                    cropped_dcut = dcut[index_start:index_stop]
+                    result[f"dimension_{idx}"][f"derivative_{peak_id}"] = np.vstack(
+                        (cropped_xaxis, cropped_dcut)
+                    )
+                    combined_xaxis.append(cropped_xaxis)
+                    combined_data.append(cropped_dcut)
 
-                cen = peak
-                fit_params.add("amp_%i" % peak_id, value=1, min=0.0, max=10)
-                fit_params.add("cen_%i" % peak_id, value=cen, min=cen - 1, max=cen + 1)
-                fit_params.add("sig_%i" % peak_id, value=2, min=0.1, max=10)
+                    cen = peak
+                    fit_params.add("amp_%i" % peak_id, value=1, min=0.0, max=10)
+                    fit_params.add(
+                        "cen_%i" % peak_id, value=cen, min=cen - 1, max=cen + 1
+                    )
+                    fit_params.add("sig_%i" % peak_id, value=2, min=0.1, max=10)
 
-            # fit the data
-            fit_result = minimize(
-                util.objective_lmfit,
-                fit_params,
-                args=(
-                    np.asarray(combined_xaxis),
-                    np.asarray(combined_data),
-                    "gaussian",
-                ),
-            )
+                # fit the data
+                fit_result = minimize(
+                    util.objective_lmfit,
+                    fit_params,
+                    args=(
+                        np.asarray(combined_xaxis),
+                        np.asarray(combined_data),
+                        "gaussian",
+                    ),
+                )
 
-            # generate fit curves
-            for peak_id, peak in enumerate(peaks):
-                interp_xaxis = util.upsample(combined_xaxis[peak_id], factor=4)
-                # interp_xaxis = combined_xaxis[peak_id]
-                y_fit = util.function_lmfit(
-                    params=fit_result.params,
-                    iterator=peak_id,
-                    x_axis=interp_xaxis,
-                    distribution="gaussian",
-                )
-                result[f"dimension_{idx}"][f"fit_{peak_id}"] = np.vstack(
-                    (interp_xaxis, y_fit)
-                )
-                result[f"dimension_{idx}"][f"param_{peak_id}"] = {
-                    "amp": fit_result.params[f"amp_{peak_id}"].value,
-                    "sig": fit_result.params[f"sig_{peak_id}"].value,
-                    "cen": fit_result.params[f"cen_{peak_id}"].value,
-                }
+                # generate fit curves
+                for peak_id, peak in enumerate(peaks):
+                    interp_xaxis = util.upsample(combined_xaxis[peak_id], factor=4)
+                    # interp_xaxis = combined_xaxis[peak_id]
+                    y_fit = util.function_lmfit(
+                        params=fit_result.params,
+                        iterator=peak_id,
+                        x_axis=interp_xaxis,
+                        distribution="gaussian",
+                    )
+                    result[f"dimension_{idx}"][f"fit_{peak_id}"] = np.vstack(
+                        (interp_xaxis, y_fit)
+                    )
+                    result[f"dimension_{idx}"][f"param_{peak_id}"] = {
+                        "amp": fit_result.params[f"amp_{peak_id}"].value,
+                        "sig": fit_result.params[f"sig_{peak_id}"].value,
+                        "cen": fit_result.params[f"cen_{peak_id}"].value,
+                    }
+            else:
+                logger.info(f"No peak detected in the linecut of axis {idx}")
 
     # plot the cut and optionally the fits
     plot_linecut(
