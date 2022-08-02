@@ -1558,19 +1558,21 @@ def objective_lmfit(params, x_axis, data, distribution):
     :param distribution: distribution to use for fitting
     :return: the residuals of the fit of data using the parameters
     """
-    if len(data.shape) == 1:  # single dataset
+    ndim = data.ndim
+    if ndim == 1 and not isinstance(data[0], np.ndarray):  # single dataset
         data = data[np.newaxis, :]
         x_axis = x_axis[np.newaxis, :]
-    if data.ndim != 2:
-        raise ValueError("Data should be a 2D stack of 1D datasets (1 per row)")
-    ndata, _ = data.shape
+    if ndim not in [1, 2]:
+        raise ValueError(f"data should be 1D or 2D, got {ndim}D")
+
+    ndata = data.shape[0]
     resid = 0.0 * data[:]
     # make residual per data set
     for idx in range(ndata):
-        resid[idx, :] = data[idx, :] - function_lmfit(
+        resid[idx] = data[idx] - function_lmfit(
             params=params,
             iterator=idx,
-            x_axis=x_axis[idx, :],
+            x_axis=x_axis[idx],
             distribution=distribution,
         )
     # now flatten this to a 1D array, as minimize() needs
