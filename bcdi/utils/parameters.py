@@ -935,10 +935,15 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             name=key,
         )
     elif key == "sample_name":
+        if value is None:
+            value = ""
         if isinstance(value, str):
             value = (value,)
         valid.valid_container(
-            value, container_types=(tuple, list), item_types=str, min_length=1, name=key
+            value,
+            container_types=(tuple, list),
+            item_types=str,
+            name=key,
         )
     elif key == "sample_offsets":
         valid.valid_container(
