@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Bug: allow `sample_name` to be an empty string, in order to match the data internal
+  path in ID01BLISS h5 files.
+
 * Bug: override  `centering_method` in PreprocessingChecker when the Bragg peak position
   is provided (the new setting becomes "user" for reciprocal space).
 

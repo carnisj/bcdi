@@ -261,8 +261,8 @@ class TestDetector(fake_filesystem_unittest.TestCase):
             Maxipix(name="Maxipix", sample_name=777)
 
     def test_sample_name_wrong_length(self):
-        with self.assertRaises(ValueError):
-            Maxipix(name="Maxipix", sample_name="")
+        det = Maxipix(name="Maxipix", sample_name="")
+        self.assertEqual(det.sample_name, "")
 
     def test_sample_name_None(self):
         det = Maxipix(name="Maxipix", sample_name=None)
