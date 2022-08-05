@@ -78,7 +78,7 @@ def create_detector(name, **kwargs):
     Create a Detector instance depending on the detector.
 
     :param name: str, name of the detector
-    :return:  the corresponding diffractometer instance
+    :return:  the corresponding detector instance
     """
     if name == "Maxipix":
         return Maxipix(name=name, **kwargs)
