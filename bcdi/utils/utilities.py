@@ -812,26 +812,26 @@ def function_lmfit(params, x_axis, distribution, iterator=0):
     :return: the gaussian function calculated at x_axis positions
     """
     if distribution == "gaussian":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
         return gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
     if distribution == "skewed_gaussian":
-        amp = params["amp_%i" % iterator].value
-        loc = params["loc_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
-        alpha = params["alpha_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        loc = params[f"loc_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
+        alpha = params[f"alpha_{iterator}"].value
         return skewed_gaussian(x_axis=x_axis, amp=amp, loc=loc, sig=sig, alpha=alpha)
     if distribution == "lorentzian":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
         return lorentzian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
     if distribution == "pseudovoigt":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
-        ratio = params["ratio_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
+        ratio = params[f"ratio_{iterator}"].value
         return pseudovoigt(x_axis, amp=amp, cen=cen, sig=sig, ratio=ratio)
     raise ValueError(distribution + " not implemented")
 

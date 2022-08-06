@@ -924,7 +924,7 @@ def contour_stereographic(
                 fontweight="bold",
             )
             indx = indx + 6
-            print(key + ": ", str("{:.2f}".format(value)))
+            print(f"{key}: {value:.2f}")
         print("\n")
     ax0.set_xlabel("u " + uv_labels[0])
     ax0.set_ylabel("v " + uv_labels[1])
