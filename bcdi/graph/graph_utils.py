@@ -1129,9 +1129,9 @@ def fit_linecut(
                         (interp_xaxis, y_fit)
                     )
                     result[f"dimension_{idx}"][f"param_{peak_id}"] = {
-                        "amp": fit_result.params[f"amp_0"].value,
-                        "sig": fit_result.params[f"sig_0"].value,
-                        "cen": fit_result.params[f"cen_0"].value,
+                        "amp": fit_result.params["amp_0"].value,
+                        "sig": fit_result.params["sig_0"].value,
+                        "cen": fit_result.params["cen_0"].value,
                     }
             else:
                 logger.info(f"No peak detected in the linecut of axis {idx}")
