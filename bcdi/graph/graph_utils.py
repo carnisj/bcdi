@@ -1955,6 +1955,7 @@ def plot_linecut(
     filename: Optional[str] = None,
     voxel_sizes: Optional[List[float]] = None,
     label: str = "linecut",
+    **kwargs,
 ) -> None:
     """
     Plot linecuts and optionally corresponding fits.
@@ -1979,7 +1980,12 @@ def plot_linecut(
     :param filename: str, the figure will be saved there
     :param voxel_sizes: tuple of voxel sizes for each linecut (1 per dimension)
     :param label: str, label for the vertical axis of the linecut plots
+    :param kwargs:
+
+     - 'logger': an optional logger
+
     """
+    logger = kwargs.get("logger", module_logger)
     if filename is not None and not isinstance(filename, str):
         raise TypeError(f"filename should be a string, got {type(filename)}")
     if not isinstance(linecuts, dict):
@@ -2064,7 +2070,7 @@ def plot_linecut(
             fig.savefig(base + "_fits.png")
 
     except IndexError:  # fits not successfull
-        print("Automatic fitting of linecuts failed.")
+        logger.warning("Automatic fitting of linecuts failed.")
         plt.close(fig)
 
 
