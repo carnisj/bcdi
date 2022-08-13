@@ -144,60 +144,58 @@ class LinecutGenerator:
         self._voxel_sizes = value
 
     def fit_boundaries(self) -> None:
-        if self._peaks is None:
-            self.logger.info("No peak detected")
-            return
-        if self._current_linecut is None:
-            self.logger.info("No defined linecut")
-            return
-        if len(self._peaks) != 0:
-            dcut = abs(np.gradient(self._current_linecut))
-
-            # setup data and parameters for fitting
-            for peak_id, peak in enumerate(self._peaks):
-                index_start = max(0, peak - 10)
-                index_stop = min(len(dcut), peak + 10)
-                cropped_xaxis = np.arange(index_start, index_stop)
-                cropped_dcut = dcut[index_start:index_stop]
-                self.result[f"dimension_{self._current_axis}"][
-                    f"derivative_{peak_id}"
-                ] = np.vstack((cropped_xaxis, cropped_dcut))
-
-                fit_params = Parameters()
-                fit_params.add("amp_0", value=1, min=0.0, max=10)
-                fit_params.add("cen_0", value=peak, min=peak - 1, max=peak + 1)
-                fit_params.add("sig_0", value=2, min=0.1, max=10)
-
-                # fit the data
-                fit_result = minimize(
-                    util.objective_lmfit,
-                    fit_params,
-                    args=(
-                        np.asarray(cropped_xaxis),
-                        np.asarray(cropped_dcut),
-                        "gaussian",
-                    ),
-                )
-
-                # generate fit curves
-                interp_xaxis = util.upsample(cropped_xaxis, factor=4)
-                y_fit = util.function_lmfit(
-                    params=fit_result.params,
-                    x_axis=interp_xaxis,
-                    distribution="gaussian",
-                )
-                self.result[f"dimension_{self._current_axis}"][
-                    f"fit_{peak_id}"
-                ] = np.vstack((interp_xaxis, y_fit))
-                self.result[f"dimension_{self._current_axis}"][f"param_{peak_id}"] = {
-                    "amp": fit_result.params["amp_0"].value,
-                    "sig": fit_result.params["sig_0"].value,
-                    "cen": fit_result.params["cen_0"].value,
-                }
-        else:
+        if self._peaks is None or len(self._peaks) == 0:
             self.logger.info(
                 f"No peak detected in the linecut of axis {self._current_axis}"
             )
+            return
+        if self._current_linecut is None:
+            self.logger.info(f"No defined linecut for axis {self._current_axis}")
+            return
+
+        dcut = abs(np.gradient(self._current_linecut))
+
+        # setup data and parameters for fitting
+        for peak_id, peak in enumerate(self._peaks):
+            index_start = max(0, peak - 10)
+            index_stop = min(len(dcut), peak + 10)
+            cropped_xaxis = np.arange(index_start, index_stop)
+            cropped_dcut = dcut[index_start:index_stop]
+            self.result[f"dimension_{self._current_axis}"][
+                f"derivative_{peak_id}"
+            ] = np.vstack((cropped_xaxis, cropped_dcut))
+
+            fit_params = Parameters()
+            fit_params.add("amp_0", value=1, min=0.0, max=10)
+            fit_params.add("cen_0", value=peak, min=peak - 1, max=peak + 1)
+            fit_params.add("sig_0", value=2, min=0.1, max=10)
+
+            # fit the data
+            fit_result = minimize(
+                util.objective_lmfit,
+                fit_params,
+                args=(
+                    np.asarray(cropped_xaxis),
+                    np.asarray(cropped_dcut),
+                    "gaussian",
+                ),
+            )
+
+            # generate fit curves
+            interp_xaxis = util.upsample(cropped_xaxis, factor=4)
+            y_fit = util.function_lmfit(
+                params=fit_result.params,
+                x_axis=interp_xaxis,
+                distribution="gaussian",
+            )
+            self.result[f"dimension_{self._current_axis}"][
+                f"fit_{peak_id}"
+            ] = np.vstack((interp_xaxis, y_fit))
+            self.result[f"dimension_{self._current_axis}"][f"param_{peak_id}"] = {
+                "amp": fit_result.params["amp_0"].value,
+                "sig": fit_result.params["sig_0"].value,
+                "cen": fit_result.params["cen_0"].value,
+            }
 
     def find_boundaries(self) -> None:
         if self.fit_derivative:
