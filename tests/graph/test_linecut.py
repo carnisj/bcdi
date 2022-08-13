@@ -6,14 +6,18 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import os
 import tempfile
 import unittest
 
+import matplotlib
 import numpy as np
 
 import bcdi.graph.linecut as lc
-import bcdi.utils.utilities as util
+from bcdi.postprocessing.postprocessing_utils import tukey_window
 from tests.config import run_tests
+
+matplotlib.use("Agg")
 
 
 class TestLinecut(unittest.TestCase):
@@ -98,11 +102,10 @@ class TestLinecutGenerator(unittest.TestCase):
     """Tests on graphs_utils.LinecutGenerator."""
 
     def setUp(self) -> None:
-        array = util.gaussian_window(window_shape=(20, 20, 20))
+        array = tukey_window(shape=(20, 20, 20), alpha=(0.8, 0.5, 0.25))
         self.linecut_generator = lc.LinecutGenerator(
             array=array,
             indices=None,
-            filename=f"{tempfile.TemporaryDirectory()}linecut_amp.png",
             fit_derivative=True,
             voxel_sizes=None,
             support_threshold=0.1,
@@ -129,6 +132,13 @@ class TestLinecutGenerator(unittest.TestCase):
             )
         )
         self.assertEqual(self.linecut_generator.unit, "pixels")
+
+    def test_plot_linecuts(self):
+        self.linecut_generator.generate_linecuts()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.linecut_generator.filename = f"{tmpdir}/linecut_amp.png"
+            self.linecut_generator.plot_linecuts()
+            self.assertTrue(os.path.isfile(f"{tmpdir}/linecut_amp.png"))
 
 
 if __name__ == "__main__":
