@@ -149,6 +149,45 @@ class TestLinecutGenerator(unittest.TestCase):
             self.linecut_generator.plot_fits()
             self.assertTrue(os.path.isfile(f"{tmpdir}/linecut_modulus_fits.png"))
 
+    def test_fit_boundaries(self):
+        expected = [
+            [
+                {
+                    "amp": 0.14704430853118566,
+                    "sig": 2.790988805946599,
+                    "cen": 6.999999999558211,
+                },
+                {"amp": 0.19575654101589068, "sig": 2.080391353842167, "cen": 21.0},
+            ],
+            [
+                {
+                    "amp": 0.20048506942012878,
+                    "sig": 2.0599789064845133,
+                    "cen": 5.999999999999737,
+                },
+                {"amp": 0.3051742945613928, "sig": 1.3305499607185045, "cen": 22.0},
+            ],
+            [
+                {
+                    "amp": 0.4763863222906689,
+                    "sig": 0.8577322453010738,
+                    "cen": 5.999999999999927,
+                },
+                {
+                    "amp": 0.4877979921287945,
+                    "sig": 0.83749284517319,
+                    "cen": 22.817276027361604,
+                },
+            ],
+        ]
+        self.linecut_generator.generate_linecuts()
+        result = self.linecut_generator.result
+        for idx, val in enumerate(expected):
+            for idy in range(2):
+                self.assertDictEqual(
+                    result[f"dimension_{idx}"][f"param_{idy}"], val[idy]
+                )
+
 
 if __name__ == "__main__":
     run_tests(TestLinecut)
