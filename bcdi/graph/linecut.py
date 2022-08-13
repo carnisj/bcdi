@@ -144,9 +144,12 @@ class LinecutGenerator:
         self._voxel_sizes = value
 
     def fit_boundaries(self) -> None:
-        if self._peaks is None or self._current_linecut is None:
+        if self._peaks is None:
+            self.logger.info("No peak detected")
             return
-
+        if self._current_linecut is None:
+            self.logger.info("No defined linecut")
+            return
         if len(self._peaks) != 0:
             dcut = abs(np.gradient(self._current_linecut))
 
