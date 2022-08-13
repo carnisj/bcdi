@@ -1038,11 +1038,6 @@ def fit_linecut(
 
     :return: a dictionary containing linecuts, fits and fitted parameters
     """
-    # check parameters
-    valid.valid_ndarray(array, fix_shape=True, name="array")
-    shape = array.shape
-    ndim = len(shape)
-
     # generate a linecut for each dimension of the array
     linecut_generator = LinecutGenerator(
         array=array,
@@ -1055,14 +1050,8 @@ def fit_linecut(
         **kwargs,
     )
 
-    for idx in range(ndim):
-        linecut_generator.set_current_axis(idx)
-        linecut_generator.generate_linecut()
-        linecut_generator.find_boundaries()
-        linecut_generator.fit_boundaries()
-
-    # plot the cut and the fits
-    linecut_generator.plot_linecut()
+    linecut_generator.generate_linecuts()
+    linecut_generator.plot_linecuts()
     linecut_generator.plot_fits()
     return linecut_generator.result
 
@@ -2076,6 +2065,14 @@ class LinecutGenerator:
             )
         )
 
+    def generate_linecuts(self):
+        """Generate a linecut for each dimension of the array."""
+        for axis in range(self.array.ndim):
+            self._current_axis = axis
+            self.generate_linecut()
+            self.find_boundaries()
+            self.fit_boundaries()
+
     def plot_fits(self) -> None:
         """
         Plot fits to the derivatives of the linecuts.
@@ -2142,9 +2139,9 @@ class LinecutGenerator:
             self.logger.warning("Plot of fitted linecuts failed.")
             plt.close(fig)
 
-    def plot_linecut(self) -> None:
+    def plot_linecuts(self) -> None:
         """
-        Plot linecuts.
+        Plot the generated linecuts and optionally save the figure.
 
         Expected structure for linecuts::
 
@@ -2179,16 +2176,6 @@ class LinecutGenerator:
         plt.ioff()
         if self.filename:
             fig.savefig(self.filename)
-
-    def set_current_axis(self, value):
-        valid.valid_item(
-            value,
-            allowed_types=int,
-            min_included=0,
-            max_excluded=self.array.ndim,
-            name="set_current_axis",
-        )
-        self._current_axis = value
 
 
 def plot_3dmesh(
