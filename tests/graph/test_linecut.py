@@ -110,8 +110,25 @@ class TestLinecutGenerator(unittest.TestCase):
         )
 
     def test_instantiation(self):
+        expected_indices = (
+            ((0, 19), (10, 10), (10, 10)),
+            ((10, 10), (0, 19), (10, 10)),
+            ((10, 10), (10, 10), (0, 19)),
+        )
         self.assertEqual(self.linecut_generator.support_threshold, 0.1)
         self.assertTrue(self.linecut_generator.fit_derivative)
+        self.assertTrue(self.linecut_generator.voxel_sizes is None)
+        self.assertEqual(self.linecut_generator.user_label, "modulus")
+        self.assertTrue(
+            len(self.linecut_generator.indices) == self.linecut_generator.array.ndim
+        )
+        self.assertTrue(
+            all(
+                tuple(self.linecut_generator.indices[idx]) == expected_indices[idx]
+                for idx in range(self.linecut_generator.array.ndim)
+            )
+        )
+        self.assertEqual(self.linecut_generator.unit, "pixels")
 
 
 if __name__ == "__main__":
