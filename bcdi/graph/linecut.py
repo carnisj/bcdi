@@ -144,6 +144,7 @@ class LinecutGenerator:
         self._voxel_sizes = value
 
     def fit_boundaries(self) -> None:
+        """Fit the array with gaussians at the location of the detected boundaries."""
         if self._peaks is None or len(self._peaks) == 0:
             self.logger.info(
                 f"No peak detected in the linecut of axis {self._current_axis}"
@@ -198,6 +199,12 @@ class LinecutGenerator:
             }
 
     def find_boundaries(self) -> None:
+        """
+        Localize coarsely the position of the jumps in the modulus of the array.
+
+        For a cristal reconstructed after phase retrieval, these position correspond to
+        the cristal boundaries.
+        """
         if self.fit_derivative:
             support = np.zeros(self.array.shape)
             support[self.array > self.support_threshold] = 1
