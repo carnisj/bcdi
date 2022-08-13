@@ -17,7 +17,7 @@ import bcdi.graph.linecut as lc
 from bcdi.postprocessing.postprocessing_utils import tukey_window
 from tests.config import run_tests
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 
 
 class TestLinecut(unittest.TestCase):
@@ -102,7 +102,9 @@ class TestLinecutGenerator(unittest.TestCase):
     """Tests on graphs_utils.LinecutGenerator."""
 
     def setUp(self) -> None:
-        array = tukey_window(shape=(20, 20, 20), alpha=(0.8, 0.5, 0.25))
+        window = tukey_window(shape=(20, 20, 20), alpha=(0.8, 0.5, 0.25))
+        array = np.zeros((30, 30, 30))
+        array[5:25, 5:25, 5:25] = window
         self.linecut_generator = lc.LinecutGenerator(
             array=array,
             indices=None,
@@ -139,6 +141,13 @@ class TestLinecutGenerator(unittest.TestCase):
             self.linecut_generator.filename = f"{tmpdir}/linecut_amp.png"
             self.linecut_generator.plot_linecuts()
             self.assertTrue(os.path.isfile(f"{tmpdir}/linecut_amp.png"))
+
+    def test_plot_fits(self):
+        self.linecut_generator.generate_linecuts()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.linecut_generator.filename = f"{tmpdir}/linecut_modulus.png"
+            self.linecut_generator.plot_fits()
+            self.assertTrue(os.path.isfile(f"{tmpdir}/linecut_modulus_fits.png"))
 
 
 if __name__ == "__main__":
