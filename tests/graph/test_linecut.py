@@ -198,13 +198,19 @@ class TestLinecutGenerator(unittest.TestCase):
         for idx, val in enumerate(expected):
             for idy in range(2):
                 self.assertAlmostEqual(
-                    result[f"dimension_{idx}"][f"param_{idy}"]["amp"], val[idy]["amp"]
+                    result[f"dimension_{idx}"][f"param_{idy}"]["amp"],
+                    val[idy]["amp"],
+                    places=6,
                 )
                 self.assertAlmostEqual(
-                    result[f"dimension_{idx}"][f"param_{idy}"]["sig"], val[idy]["sig"]
+                    result[f"dimension_{idx}"][f"param_{idy}"]["sig"],
+                    val[idy]["sig"],
+                    places=6,
                 )
                 self.assertAlmostEqual(
-                    result[f"dimension_{idx}"][f"param_{idy}"]["cen"], val[idy]["cen"]
+                    result[f"dimension_{idx}"][f"param_{idy}"]["cen"],
+                    val[idy]["cen"],
+                    places=6,
                 )
 
 
