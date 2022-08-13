@@ -17,7 +17,7 @@ import bcdi.graph.linecut as lc
 from bcdi.postprocessing.postprocessing_utils import tukey_window
 from tests.config import run_tests
 
-# matplotlib.use("Agg")
+matplotlib.use("Agg")
 
 
 class TestLinecut(unittest.TestCase):
@@ -115,10 +115,23 @@ class TestLinecutGenerator(unittest.TestCase):
         )
 
     def test_instantiation(self):
+        shape = self.linecut_generator.array.shape
         expected_indices = (
-            ((0, 19), (10, 10), (10, 10)),
-            ((10, 10), (0, 19), (10, 10)),
-            ((10, 10), (10, 10), (0, 19)),
+            (
+                (0, shape[0] - 1),
+                (shape[1] // 2, shape[1] // 2),
+                (shape[2] // 2, shape[2] // 2),
+            ),
+            (
+                (shape[0] // 2, shape[0] // 2),
+                (0, shape[1] - 1),
+                (shape[2] // 2, shape[2] // 2),
+            ),
+            (
+                (shape[0] // 2, shape[0] // 2),
+                (shape[1] // 2, shape[1] // 2),
+                (0, shape[2] - 1),
+            ),
         )
         self.assertEqual(self.linecut_generator.support_threshold, 0.1)
         self.assertTrue(self.linecut_generator.fit_derivative)
