@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Refactor: move all methods related to linecuts in a dedicated module and class.
+  Improve the robustness of linecuts fits in postprocessing, by allowing each fit to
+  have a different length.
+
 * Bug: allow `sample_name` to be an empty string, in order to match the data internal
   path in ID01BLISS h5 files.
 
