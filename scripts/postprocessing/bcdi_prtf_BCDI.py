@@ -24,6 +24,7 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.measurements import center_of_mass
 
 import bcdi.graph.graph_utils as gu
+import bcdi.graph.linecut as lc
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
@@ -179,7 +180,7 @@ def on_click(event):
         res_text.remove()
         res_text = fig_prtf.text(0.55, 0.25, "", size=10)
         print(f"endpoint = {endpoint}")
-        cut = gu.linecut(
+        cut = lc.linecut(
             linecut_prtf,
             indices=list(zip(starting_point, endpoint)),
             interp_order=1,
@@ -634,7 +635,7 @@ if flag_interact:
     max_colorbar = 5
     starting_point = [z0, y0, x0]
     endpoint = [0, 0, 0]
-    cut = gu.linecut(
+    cut = lc.linecut(
         prtf_matrix,
         indices=list(zip(starting_point, endpoint)),
         interp_order=1,

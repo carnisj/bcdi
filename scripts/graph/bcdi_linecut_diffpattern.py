@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage.measurements import center_of_mass
 
-import bcdi.graph.graph_utils as gu
+import bcdi.graph.linecut as lc
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 from bcdi.graph.colormap import ColormapFactory
@@ -124,7 +124,7 @@ def on_click(event):
         q_text.remove()
         q_text = fig_diff.text(0.55, 0.25, "", size=10)
         print(f"starting_point = {starting_point}, endpoint = {endpoint}")
-        cut = gu.linecut(
+        cut = lc.linecut(
             diff_pattern,
             indices=list(zip(starting_point, endpoint)),
             interp_order=1,
@@ -361,7 +361,7 @@ else:
 plt.ioff()
 starting_point = starting_point or [nz // 2, 0, nx // 2]
 endpoint = endpoint or [nz // 2, ny - 1, nx // 2]
-cut = gu.linecut(
+cut = lc.linecut(
     diff_pattern,
     indices=list(zip(starting_point, endpoint)),
     interp_order=1,

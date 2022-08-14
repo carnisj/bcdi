@@ -29,6 +29,7 @@ import yaml
 from matplotlib import pyplot as plt
 
 import bcdi.graph.graph_utils as gu
+import bcdi.graph.linecut as lc
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
@@ -1046,12 +1047,13 @@ def process_scan(
     ################################
     # plot linecuts of the results #
     ################################
-    gu.fit_linecut(
+    lc.fit_linecut(
         array=amp,
         fit_derivative=True,
         filename=setup.detector.savedir + "linecut_amp.png",
         voxel_sizes=voxel_size,
         label="modulus",
+        logger=logger,
     )
 
     ##############################

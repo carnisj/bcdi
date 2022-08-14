@@ -812,26 +812,26 @@ def function_lmfit(params, x_axis, distribution, iterator=0):
     :return: the gaussian function calculated at x_axis positions
     """
     if distribution == "gaussian":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
         return gaussian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
     if distribution == "skewed_gaussian":
-        amp = params["amp_%i" % iterator].value
-        loc = params["loc_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
-        alpha = params["alpha_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        loc = params[f"loc_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
+        alpha = params[f"alpha_{iterator}"].value
         return skewed_gaussian(x_axis=x_axis, amp=amp, loc=loc, sig=sig, alpha=alpha)
     if distribution == "lorentzian":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
         return lorentzian(x_axis=x_axis, amp=amp, cen=cen, sig=sig)
     if distribution == "pseudovoigt":
-        amp = params["amp_%i" % iterator].value
-        cen = params["cen_%i" % iterator].value
-        sig = params["sig_%i" % iterator].value
-        ratio = params["ratio_%i" % iterator].value
+        amp = params[f"amp_{iterator}"].value
+        cen = params[f"cen_{iterator}"].value
+        sig = params[f"sig_{iterator}"].value
+        ratio = params[f"ratio_{iterator}"].value
         return pseudovoigt(x_axis, amp=amp, cen=cen, sig=sig, ratio=ratio)
     raise ValueError(distribution + " not implemented")
 
@@ -1558,19 +1558,21 @@ def objective_lmfit(params, x_axis, data, distribution):
     :param distribution: distribution to use for fitting
     :return: the residuals of the fit of data using the parameters
     """
-    if len(data.shape) == 1:  # single dataset
+    ndim = data.ndim
+    if ndim == 1 and not isinstance(data[0], np.ndarray):  # single dataset
         data = data[np.newaxis, :]
         x_axis = x_axis[np.newaxis, :]
-    if data.ndim != 2:
-        raise ValueError("Data should be a 2D stack of 1D datasets (1 per row)")
-    ndata, _ = data.shape
+    if ndim not in [1, 2]:
+        raise ValueError(f"data should be 1D or 2D, got {ndim}D")
+
+    ndata = data.shape[0]
     resid = 0.0 * data[:]
     # make residual per data set
     for idx in range(ndata):
-        resid[idx, :] = data[idx, :] - function_lmfit(
+        resid[idx] = data[idx] - function_lmfit(
             params=params,
             iterator=idx,
-            x_axis=x_axis[idx, :],
+            x_axis=x_axis[idx],
             distribution=distribution,
         )
     # now flatten this to a 1D array, as minimize() needs
