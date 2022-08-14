@@ -481,6 +481,7 @@ def process_scan(
                 data=data,
                 roi=setup.detector.roi,
                 binning=setup.detector.current_binning,
+                savedir=setup.detector.savedir,
                 logger=logger,
             )
             bragg_peaks.update(peaks)
