@@ -167,8 +167,8 @@ class LinecutGenerator:
             ] = np.vstack((cropped_xaxis, cropped_dcut))
 
             fit_params = Parameters()
-            fit_params.add("amp_0", value=1, min=0.0, max=10)
-            fit_params.add("cen_0", value=peak, min=peak - 1, max=peak + 1)
+            fit_params.add("amp_0", value=1, min=0.1, max=10)
+            fit_params.add("cen_0", value=peak, min=peak - 3, max=peak + 3)
             fit_params.add("sig_0", value=2, min=0.1, max=10)
 
             # fit the data
