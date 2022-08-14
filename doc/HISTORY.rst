@@ -1,5 +1,5 @@
-Future:
--------
+Version 0.2.8:
+--------------
 
 * Add plot in `bcdi_utils.find_bragg` to check qualitatively the configured centering
   method. Save it automatically with the title 'centering_method.png'.

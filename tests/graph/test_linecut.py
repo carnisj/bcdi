@@ -17,7 +17,7 @@ import bcdi.graph.linecut as lc
 from bcdi.postprocessing.postprocessing_utils import tukey_window
 from tests.config import run_tests
 
-# matplotlib.use("Agg")
+matplotlib.use("Agg")
 
 
 class TestLinecut(unittest.TestCase):
