@@ -5,7 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""Class related to the generation of linecuts through an array."""
+"""Class and functions related to the generation of linecuts through an array."""
 
 import logging
 import os

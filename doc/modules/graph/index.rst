@@ -17,3 +17,16 @@ API Reference
 
 .. automodule:: bcdi.graph.graph_utils
    :members:
+
+linecut
+^^^^^^^
+
+This module provides a class and functions to generate linecuts through an array,
+perform some fitting on it (e.g. to estimate the resolution of a reconstruction) and
+plot it.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.graph.linecut
+   :members:
