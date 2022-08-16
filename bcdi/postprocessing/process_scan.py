@@ -1076,7 +1076,7 @@ def process_scan(
     phase[bulk == 0] = np.nan
 
     # plot the slice at the maximum phase
-    gu.combined_plots(
+    fig = gu.combined_plots(
         (phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]),
         tuple_sum_frames=False,
         tuple_sum_axis=0,
@@ -1095,6 +1095,17 @@ def process_scan(
         is_orthogonal=True,
         reciprocal_space=False,
     )
+    plt.pause(0.1)
+    if prm["save"]:
+        fig.savefig(
+            setup.detector.savedir
+            + "S"
+            + str(scan_nb)
+            + "_phase_at_max"
+            + comment
+            + ".png"
+        )
+    plt.close(fig)
 
     # bulk support
     fig, _, _ = gu.multislices_plot(
@@ -1119,6 +1130,7 @@ def process_scan(
         fig.savefig(
             setup.detector.savedir + "S" + str(scan_nb) + "_bulk" + comment + ".png"
         )
+    plt.close(fig)
 
     # amplitude
     fig, _, _ = gu.multislices_plot(
