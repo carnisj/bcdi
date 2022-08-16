@@ -230,7 +230,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # override the saving directory, we want to save results at the same place
     setup.detector.savedir = save_dir
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan_nb, root_folder=root_folder, filename=setup.detector.specfile
     )
 

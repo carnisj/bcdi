@@ -291,9 +291,7 @@ if savedir == "":
 setup.detector.savedir = savedir
 print("savedir: ", savedir)
 
-logfile = setup.create_logfile(
-    scan_number=scan, root_folder=root_folder, filename=specfile_name
-)
+setup.create_logfile(scan_number=scan, root_folder=root_folder, filename=specfile_name)
 
 #########################
 # check some parameters #

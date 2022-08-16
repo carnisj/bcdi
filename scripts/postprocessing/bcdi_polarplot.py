@@ -339,7 +339,7 @@ setup.detector.savedir = homedir
 if not reconstructed_data:  # load reciprocal space data
     flatfield = util.load_flatfield(flatfield_file)
     hotpix_array = util.load_hotpixels(hotpixels_file)
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan, root_folder=root_folder, filename=specfile_name
     )
 
