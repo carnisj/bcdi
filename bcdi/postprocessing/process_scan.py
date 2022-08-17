@@ -187,13 +187,10 @@ def process_scan(
     ###########################################################################
     # define range for orthogonalization and plotting - speed up calculations #
     ###########################################################################
-    zrange, yrange, xrange = pu.find_datarange(
+    numz, numy, numx = pu.find_datarange(
         array=obj, amplitude_threshold=0.05, keep_size=prm["keep_size"]
     )
 
-    numz = zrange * 2
-    numy = yrange * 2
-    numx = xrange * 2
     logger.info(
         "Data shape used for orthogonalization and plotting: "
         f"({numz}, {numy}, {numx})"
@@ -210,7 +207,7 @@ def process_scan(
         sorted_obj = pu.sort_reconstruction(
             file_path=file_path,
             amplitude_threshold=prm["isosurface_strain"],
-            data_range=(zrange, yrange, xrange),
+            data_range=(numz, numy, numx),
             sort_method=prm["sort_method"],
         )
     else:
@@ -245,8 +242,8 @@ def process_scan(
 
         # use the range of interest defined above
         obj = util.crop_pad(
-            obj,
-            [2 * zrange, 2 * yrange, 2 * xrange],
+            array=obj,
+            output_shape=(numz, numy, numx),
             debugging=False,
             cmap=prm["colormap"].cmap,
         )
@@ -301,9 +298,9 @@ def process_scan(
     if prm["debug"]:
         gu.multislices_plot(
             phase,
-            width_z=2 * zrange,
-            width_y=2 * yrange,
-            width_x=2 * xrange,
+            width_z=numz,
+            width_y=numy,
+            width_x=numx,
             plot_colorbar=True,
             title="Phase after unwrap + wrap",
             reciprocal_space=False,
@@ -330,9 +327,9 @@ def process_scan(
     if prm["debug"]:
         gu.multislices_plot(
             phase,
-            width_z=2 * zrange,
-            width_y=2 * yrange,
-            width_x=2 * xrange,
+            width_z=numz,
+            width_y=numy,
+            width_x=numx,
             plot_colorbar=True,
             title="Phase after ramp removal",
             reciprocal_space=False,
@@ -584,9 +581,9 @@ def process_scan(
             )
             gu.multislices_plot(
                 phase,
-                width_z=2 * zrange,
-                width_y=2 * yrange,
-                width_x=2 * xrange,
+                width_z=numz,
+                width_y=numy,
+                width_x=numx,
                 sum_frames=False,
                 plot_colorbar=True,
                 reciprocal_space=False,
@@ -779,9 +776,9 @@ def process_scan(
 
             gu.multislices_plot(
                 np.multiply(phase_correction, bulk),
-                width_z=2 * zrange,
-                width_y=2 * yrange,
-                width_x=2 * xrange,
+                width_z=numz,
+                width_y=numy,
+                width_x=numx,
                 sum_frames=False,
                 plot_colorbar=True,
                 vmin=0,
@@ -802,9 +799,9 @@ def process_scan(
 
             gu.multislices_plot(
                 np.multiply(amp_correction, bulk),
-                width_z=2 * zrange,
-                width_y=2 * yrange,
-                width_x=2 * xrange,
+                width_z=numz,
+                width_y=numy,
+                width_x=numx,
                 sum_frames=False,
                 plot_colorbar=True,
                 vmin=1,

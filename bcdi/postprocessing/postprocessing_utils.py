@@ -22,6 +22,7 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve
 from scipy.stats import multivariate_normal, norm
 from skimage.restoration import unwrap_phase
+from typing import List, Tuple, Union
 
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
@@ -766,33 +767,35 @@ def find_crop_center(array_shape, crop_shape, pivot):
     return crop_center
 
 
-def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
+def find_datarange(
+    array: np.ndarray,
+    plot_margin: Union[int, Tuple[int, int, int], List[int]] = 10,
+    amplitude_threshold: float = 0.1,
+    keep_size: bool = False,
+):
     """
     Find the range where data is larger than a threshold.
 
     It finds the meaningful range of the array where it is larger than the threshold, in
-    order to reduce the memory consumption in latter processing. The range can be
-    larger than the initial data size, which then will need to be padded.
+    order to later crop the array to that shape and reduce the memory consumption in
+    processing. The range can be larger than the initial data size, which then will need
+    to be padded.
 
     :param array: the complex 3D reconstruction
-    :param plot_margin: user-defined margin to add to the minimum range of the data
+    :param plot_margin: user-defined margin to add on each side of the thresholded array
     :param amplitude_threshold: threshold used to define a support from the amplitude
     :param keep_size: set to True in order to keep the dataset full size
     :return:
-     - zrange: half size of the data range to use in the first axis (Z)
-     - yrange: half size of the data range to use in the second axis (Y)
-     - xrange: half size of the data range to use in the third axis (X)
+     - zrange: size of the data range to use in the first axis (Z)
+     - yrange: size of the data range to use in the second axis (Y)
+     - xrange: size of the data range to use in the third axis (X)
 
     """
-    #########################
-    # check some parameters #
-    #########################
-    valid.valid_ndarray(arrays=array, ndim=3)
     if isinstance(plot_margin, Number):
         plot_margin = (plot_margin,) * 3
     valid.valid_container(
         plot_margin,
-        container_types=(tuple, list, np.ndarray),
+        container_types=(tuple, list),
         length=3,
         item_types=int,
         name="plot_margin",
@@ -809,7 +812,8 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     #########################################################
     nbz, nby, nbx = array.shape
     if keep_size:
-        return nbz // 2, nby // 2, nbx // 2
+        return nbz, nby, nbx
+
     support = np.zeros((nbz, nby, nbx))
     support[abs(array) > amplitude_threshold * abs(array).max()] = 1
 
@@ -825,16 +829,11 @@ def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=Fal
     x = x * support
     min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
 
-    zrange = nbz // 2 - min_z
-    yrange = nby // 2 - min_y
-    xrange = nbx // 2 - min_x
-
-    if plot_margin is not None:
-        zrange += plot_margin[0]
-        yrange += plot_margin[1]
-        xrange += plot_margin[2]
-
-    return zrange, yrange, xrange
+    return (
+        (nbz // 2 - min_z + plot_margin[0]) * 2,
+        (nby // 2 - min_y + plot_margin[1]) * 2,
+        (nbx // 2 - min_x + plot_margin[2]) * 2,
+    )
 
 
 def flip_reconstruction(obj, debugging=False, **kwargs):
