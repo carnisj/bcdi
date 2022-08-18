@@ -31,6 +31,10 @@ from ..utils import validation as valid
 module_logger = logging.getLogger(__name__)
 
 
+class ModulusBelowThreshold(Exception):
+    """Custom exception when there are no voxels above a threshold in an array."""
+
+
 def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     """
     Apodize the complex array based on the window of the same shape.
@@ -769,10 +773,10 @@ def find_crop_center(array_shape, crop_shape, pivot):
 
 def find_datarange(
     array: np.ndarray,
-    plot_margin: Union[int, Tuple[int, int, int], List[int]] = 10,
+    plot_margin: Union[int, Tuple[int, int, int]] = 10,
     amplitude_threshold: float = 0.1,
     keep_size: bool = False,
-):
+) -> Tuple[int, int, int]:
     """
     Find the range where data is larger than a threshold.
 
@@ -791,48 +795,38 @@ def find_datarange(
      - xrange: size of the data range to use in the third axis (X)
 
     """
-    if isinstance(plot_margin, Number):
+    if array.ndim != 3:
+        raise ValueError(f"array should be 3D, got {array.ndim}D")
+    if isinstance(plot_margin, int):
         plot_margin = (plot_margin,) * 3
-    valid.valid_container(
-        plot_margin,
-        container_types=(tuple, list),
-        length=3,
-        item_types=int,
-        name="plot_margin",
-    )
-    valid.valid_item(
-        amplitude_threshold,
-        allowed_types=Real,
-        min_included=0,
-        name="amplitude_threshold",
-    )
+    if not isinstance(plot_margin, Tuple):
+        raise TypeError(
+            f"Expected 'plot_margin' to be a tuple, got {type(plot_margin)} "
+        )
+    if len(plot_margin) != array.ndim:
+        raise ValueError(
+            f"'plot_margin' should be of lenght {array.ndim}, got {len(plot_margin)}"
+        )
 
-    #########################################################
-    # find the relevant range where the support is non-zero #
-    #########################################################
     nbz, nby, nbx = array.shape
     if keep_size:
-        return nbz, nby, nbx
+        return array.shape
 
-    support = np.zeros((nbz, nby, nbx))
+    support = np.zeros(array.shape)
     support[abs(array) > amplitude_threshold * abs(array).max()] = 1
-
-    z, y, x = np.meshgrid(
-        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
-    )
-    z = z * support
-    min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
-
-    y = y * support
-    min_y = min(int(np.min(y[np.nonzero(y)])), nby - int(np.max(y[np.nonzero(y)])))
-
-    x = x * support
-    min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
-
+    non_zero_indices = np.nonzero(support)
+    try:
+        min_z = min(min(non_zero_indices[0]), nbz - 1 - max(non_zero_indices[0]))
+        min_y = min(min(non_zero_indices[1]), nby - 1 - max(non_zero_indices[1]))
+        min_x = min(min(non_zero_indices[2]), nbx - 1 - max(non_zero_indices[2]))
+    except ValueError as e:
+        raise ModulusBelowThreshold(
+            f"No voxel above the provided threshold {amplitude_threshold}"
+        ) from e
     return (
-        (nbz // 2 - min_z + plot_margin[0]) * 2,
-        (nby // 2 - min_y + plot_margin[1]) * 2,
-        (nbx // 2 - min_x + plot_margin[2]) * 2,
+        (nbz // 2 - min_z + plot_margin[0]) * 2 + nbz % 2,
+        (nby // 2 - min_y + plot_margin[1]) * 2 + nby % 2,
+        (nbx // 2 - min_x + plot_margin[2]) * 2 + nbx % 2,
     )
 
 
