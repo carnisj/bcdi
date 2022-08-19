@@ -402,7 +402,7 @@ for fig_idx in range(nb_fig):
     for idx in range(min(49, len(scans) - scan_counter)):
         axis = plt.subplot(nb_rows, nb_columns, idx + 1)
         axis.imshow(np.log10(check_roi[scan_counter]))
-        axis.set_title("S{:d}".format(scans[scan_counter]))
+        axis.set_title(f"S{scans[scan_counter]}")
         scan_counter = scan_counter + 1
     plt.tight_layout()
     plt.pause(0.1)

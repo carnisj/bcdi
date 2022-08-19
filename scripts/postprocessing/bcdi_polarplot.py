@@ -477,16 +477,12 @@ else:  # load a reconstructed real space object
         obj = amp
         newvoxelsize = voxel_size[0]  # nm
     print(
-        "Original voxel sizes (nm):",
-        str("{:.2f}".format(voxel_size[0])),
-        str("{:.2f}".format(voxel_size[1])),
-        str("{:.2f}".format(voxel_size[2])),
+        "Original voxel sizes (nm): "
+        f"{voxel_size[0]:.2f}, {voxel_size[1]:.2f}, {voxel_size[2]:.2f}"
     )
     print(
-        "Output voxel sizes (nm):",
-        str("{:.2f}".format(newvoxelsize)),
-        str("{:.2f}".format(newvoxelsize)),
-        str("{:.2f}".format(newvoxelsize)),
+        "Output voxel sizes (nm): "
+        f"{newvoxelsize:.2f}, {newvoxelsize:.2f}, {newvoxelsize:.2f}"
     )
 
     ########################################################################
@@ -524,7 +520,7 @@ else:  # load a reconstructed real space object
             ).transpose()
         )
         obj = obj.reshape((nz, ny, nx)).astype(amp.dtype)
-        print("voxel size after upsampling (nm)", newvoxelsize / upsampling_ratio)
+        print(f"voxel size after upsampling (nm) {newvoxelsize / upsampling_ratio}")
 
         if debug:
             gu.multislices_plot(
@@ -578,14 +574,7 @@ else:  # load a reconstructed real space object
     dqx = 2 * np.pi / (newvoxelsize / upsampling_ratio * 10 * nz)  # qx downstream
     dqy = 2 * np.pi / (newvoxelsize / upsampling_ratio * 10 * nx)  # qy outboard
     dqz = 2 * np.pi / (newvoxelsize / upsampling_ratio * 10 * ny)  # qz vertical up
-    print(
-        "dqx",
-        str("{:.5f}".format(dqx)),
-        "dqy",
-        str("{:.5f}".format(dqy)),
-        "dqz",
-        str("{:.5f}".format(dqz)),
-    )
+    print(f"dqx {dqx:.5f}, dqy {dqy:.5f}, dqz {dqz:.5f}")
     qx = np.arange(-nz // 2, nz // 2) * dqx
     qy = np.arange(-nx // 2, nx // 2) * dqy
     qz = np.arange(-ny // 2, ny // 2) * dqz
@@ -617,13 +606,7 @@ else:
         0,
         0,
     )  # data is centered because it is the FFT of the object
-print(
-    "Center of mass [qx, qy, qz]: [",
-    str("{:.5f}".format(qxCOM)),
-    str("{:.5f}".format(qyCOM)),
-    str("{:.5f}".format(qzCOM)),
-    "]",
-)
+print(f"Center of mass [qx, qy, qz]: [{qxCOM:.5f}, {qyCOM:.5f}, {qzCOM:.5f}]")
 
 ###############################################################
 # create a 3D array of distances in q from the center of mass #

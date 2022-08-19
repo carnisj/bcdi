@@ -130,7 +130,7 @@ def onclick(click_event):
         motor_text = figure.text(
             0.70,
             0.75,
-            motor_name + " = {:.2f}".format(motor_positions[index_peak]),
+            motor_name + f" = {motor_positions[index_peak]:.2f}",
             size=10,
         )
         max_text.remove()
@@ -138,9 +138,7 @@ def onclick(click_event):
             0.70,
             0.70,
             "ROI max at line = "
-            + "{:.0f}".format(
-                data[index_peak, sum_roi[0] : sum_roi[1], sum_roi[2] : sum_roi[3]].max()
-            ),
+            f"{data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max():d}",
             size=10,
         )
         plt.draw()
@@ -199,12 +197,10 @@ def onselect(click, release):
         0.70,
         0.80,
         "unbinned ROI [y0 y1 x0 x1]\n"
-        "[{:d}, {:d}, {:d}, {:d}]".format(
-            sum_roi[0] * binning[0],
-            sum_roi[1] * binning[0],
-            sum_roi[2] * binning[1],
-            sum_roi[3] * binning[1],
-        ),
+        f"[{sum_roi[0] * binning[0]:d}, "
+        f"{sum_roi[1] * binning[0]:d}, "
+        f"{sum_roi[2] * binning[1]:d}, "
+        f"{sum_roi[3] * binning[1]:d}]",
         size=10,
     )
     max_text.remove()
@@ -212,9 +208,7 @@ def onselect(click, release):
         0.70,
         0.70,
         "ROI max at line = "
-        + "{:.0f}".format(
-            data[index_peak, sum_roi[0] : sum_roi[1], sum_roi[2] : sum_roi[3]].max()
-        ),
+        + f"{data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max():d}",
         size=10,
     )
     plt.draw()
@@ -262,7 +256,7 @@ setup = Setup(
 )
 
 if setup.beamline == "P10":
-    specfile_name = sample_name + "_{:05d}".format(scan)
+    specfile_name = sample_name + f"_{scan:05d}"
     homedir = root_folder + specfile_name + "/"
     setup.detector.datadir = homedir + "e4m/"
     template_imagefile = specfile_name + template_imagefile
@@ -390,15 +384,13 @@ roi_text = figure.text(
     size=10,
 )
 motor_text = figure.text(
-    0.70, 0.75, motor_name + " = {:.2f}".format(motor_positions[index_peak]), size=10
+    0.70, 0.75, f"{motor_name} = {motor_positions[index_peak]:.2f}", size=10
 )
 max_text = figure.text(
     0.70,
     0.70,
     "ROI max at line = "
-    + "{:.0f}".format(
-        data[index_peak, sum_roi[0] : sum_roi[1], sum_roi[2] : sum_roi[3]].max()
-    ),
+    + f"{data[index_peak, sum_roi[0]:sum_roi[1], sum_roi[2]:sum_roi[3]].max():d}",
     size=10,
 )
 plt.tight_layout()

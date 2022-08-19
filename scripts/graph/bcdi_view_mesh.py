@@ -111,20 +111,16 @@ def onclick(click_event):
             motor_text = figure.text(
                 0.40,
                 0.95,
-                fast_motor
-                + " = {:.2f}, ".format(click_event.xdata)
-                + slow_motor
-                + " = {:.2f}".format(click_event.ydata),
+                f"{fast_motor} = {click_event.xdata:.2f}, "
+                f"{slow_motor} = {click_event.ydata:.2f}",
                 size=12,
             )
         else:
             motor_text = figure.text(
                 0.40,
                 0.95,
-                fast_motor
-                + " = {:.2f}, ".format(click_event.ydata)
-                + slow_motor
-                + " = {:.2f}".format(click_event.xdata),
+                f"{fast_motor} = {click_event.ydata:.2f}, "
+                f"{slow_motor} = {click_event.xdata:.2f}",
                 size=12,
             )
         plt.draw()
@@ -273,7 +269,7 @@ crop_roi = crop_roi or (0, setup.detector.nb_pixel_y, 0, setup.detector.nb_pixel
 setup.detector.roi = crop_roi
 
 if setup.beamline == "P10":
-    specfile_name = sample_name + "_{:05d}".format(scan)
+    specfile_name = sample_name + f"_{scan:05d}"
     homedir = root_folder + specfile_name + "/"
     setup.detector.datadir = homedir + "e4m/"
     template_imagefile = specfile_name + template_imagefile

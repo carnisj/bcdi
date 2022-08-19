@@ -254,7 +254,7 @@ interp_fwhm = (
     * (tilt_values.max() - tilt_values.min())
     / (interp_points - 1)
 )
-print("FWHM by interpolation", str("{:.3f}".format(interp_fwhm)), "deg")
+print(f"FWHM by interpolation {interp_fwhm:.3f} deg")
 
 fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
 ax0.plot(tilt_values, rocking_curve, ".")
