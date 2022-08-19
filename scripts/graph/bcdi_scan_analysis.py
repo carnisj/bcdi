@@ -375,12 +375,10 @@ roi_text = figure.text(
     0.70,
     0.80,
     "unbinned ROI [y0 y1 x0 x1]\n"
-    "[{:d}, {:d}, {:d}, {:d}]".format(
-        sum_roi[0] * binning[0],
-        sum_roi[1] * binning[0],
-        sum_roi[2] * binning[1],
-        sum_roi[3] * binning[1],
-    ),
+    f"[{sum_roi[0] * binning[0]:d}, "
+    f"{sum_roi[1] * binning[0]:d}, "
+    f"{sum_roi[2] * binning[1]:d}, "
+    f"{sum_roi[3] * binning[1]:d}]",
     size=10,
 )
 motor_text = figure.text(
