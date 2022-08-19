@@ -1,3 +1,11 @@
+Future:
+-------
+
+* Add unit tests to postprocessing_utils.find_datarange and make it dimension-agnostic.
+
+* Fix a bug with data path formatting in ID01BLISS loader (missing parentheses when
+  creating the data path in the h5 file).
+
 Version 0.2.8:
 --------------
 
