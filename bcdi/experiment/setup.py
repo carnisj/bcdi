@@ -883,13 +883,13 @@ class Setup:
         # check parameters
         if self.direct_beam is None:
             self.logger.info(
-               f"'direct_beam' is {self.direct_beam}, can't correct detector angles"
+                f"'direct_beam' is {self.direct_beam}, can't correct detector angles."
             )
             return
         if self.dirbeam_detector_angles is None:
             self.logger.info(
                 f"'dirbeam_detector_angles' is {self.dirbeam_detector_angles}, "
-                "can't correct detector angles"
+                "can't correct detector angles."
             )
             return
         if any(
