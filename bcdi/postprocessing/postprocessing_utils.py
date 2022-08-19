@@ -11,6 +11,7 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +23,6 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.signal import convolve
 from scipy.stats import multivariate_normal, norm
 from skimage.restoration import unwrap_phase
-from typing import List, Tuple, Union
 
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
@@ -785,7 +785,7 @@ def find_datarange(
     processing. The range can be larger than the initial data size, which then will need
     to be padded.
 
-    :param array: a numpy array
+    :param array: a non-empty numpy array
     :param plot_margin: user-defined margin to add on each side of the thresholded array
     :param amplitude_threshold: threshold used to define a support from the amplitude
     :param keep_size: set to True in order to keep the dataset full size

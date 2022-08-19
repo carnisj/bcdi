@@ -86,7 +86,7 @@ class TestFindDataRange(unittest.TestCase):
         )
         self.assertTrue(output == expected)
 
-    def test_margin_2d(self):
+    def test_2d_array(self):
         array = generate_binary_array((10, 11), nonzero_slice=np.s_[3:5, 6:8:])
         expected = [8, 9]
         output = pu.find_datarange(
@@ -96,7 +96,7 @@ class TestFindDataRange(unittest.TestCase):
         )
         self.assertTrue(output == expected)
 
-    def test_margin_1d(self):
+    def test_1d_array(self):
         array = generate_binary_array((11,), nonzero_slice=np.s_[6:8:])
         expected = [9]
         output = pu.find_datarange(
@@ -106,7 +106,7 @@ class TestFindDataRange(unittest.TestCase):
         )
         self.assertTrue(output == expected)
 
-    def test_margin_0d(self):
+    def test_empty_array(self):
         with self.assertRaises(ValueError):
             pu.find_datarange(
                 np.empty(0),
