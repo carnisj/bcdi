@@ -881,12 +881,17 @@ class Setup:
         :param verbose: True to self.logger.info more comments
         """
         # check parameters
-        if self.direct_beam is None or self.dirbeam_detector_angles is None:
+        if self.direct_beam is None:
             self.logger.info(
-                "direct beam position not defined, can't correct detector angles"
+               f"'direct_beam' is {self.direct_beam}, can't correct detector angles"
             )
             return
-
+        if self.dirbeam_detector_angles is None:
+            self.logger.info(
+                f"'dirbeam_detector_angles' is {self.dirbeam_detector_angles}, "
+                "can't correct detector angles"
+            )
+            return
         if any(
             val is None
             for val in {self.inplane_angle, self.outofplane_angle, self.distance}
