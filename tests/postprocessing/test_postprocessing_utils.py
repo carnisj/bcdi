@@ -37,11 +37,11 @@ class TestFindDataRange(unittest.TestCase):
         output = pu.find_datarange(
             array, self.plot_margin, self.amplitude_threshold, keep_size=True
         )
-        self.assertTrue(output == array.shape)
+        self.assertTrue(output == list(array.shape))
 
     def test_no_margin_even_shape_full_array(self):
         array = generate_binary_array((10, 10, 8), nonzero_slice=np.s_[3:10, 1:10, 0:2])
-        expected = (10, 10, 8)
+        expected = [10, 10, 8]
         output = pu.find_datarange(
             array, plot_margin=0, amplitude_threshold=self.amplitude_threshold
         )
@@ -49,7 +49,7 @@ class TestFindDataRange(unittest.TestCase):
 
     def test_no_margin_even_shape(self):
         array = generate_binary_array((10, 10, 10), nonzero_slice=np.s_[3:9, 1:6, 0:2])
-        expected = (8, 8, 10)
+        expected = [8, 8, 10]
         output = pu.find_datarange(
             array, plot_margin=0, amplitude_threshold=self.amplitude_threshold
         )
@@ -57,7 +57,7 @@ class TestFindDataRange(unittest.TestCase):
 
     def test_no_margin_odd_shape_full_array(self):
         array = generate_binary_array((10, 11, 9), nonzero_slice=np.s_[3:10, 1:11, 0:2])
-        expected = (10, 11, 9)
+        expected = [10, 11, 9]
         output = pu.find_datarange(
             array, plot_margin=0, amplitude_threshold=self.amplitude_threshold
         )
@@ -65,7 +65,7 @@ class TestFindDataRange(unittest.TestCase):
 
     def test_no_margin_odd_shape(self):
         array = generate_binary_array((10, 11, 1), nonzero_slice=np.s_[3:5, 6:8, :])
-        expected = (4, 5, 1)
+        expected = [4, 5, 1]
         output = pu.find_datarange(
             array, plot_margin=0, amplitude_threshold=self.amplitude_threshold
         )
@@ -78,13 +78,41 @@ class TestFindDataRange(unittest.TestCase):
 
     def test_margin_odd_shape(self):
         array = generate_binary_array((10, 11, 1), nonzero_slice=np.s_[3:5, 6:8, :])
-        expected = (8, 9, 5)
+        expected = [8, 9, 5]
         output = pu.find_datarange(
             array,
             plot_margin=self.plot_margin,
             amplitude_threshold=self.amplitude_threshold,
         )
         self.assertTrue(output == expected)
+
+    def test_margin_2d(self):
+        array = generate_binary_array((10, 11), nonzero_slice=np.s_[3:5, 6:8:])
+        expected = [8, 9]
+        output = pu.find_datarange(
+            array,
+            plot_margin=self.plot_margin,
+            amplitude_threshold=self.amplitude_threshold,
+        )
+        self.assertTrue(output == expected)
+
+    def test_margin_1d(self):
+        array = generate_binary_array((11,), nonzero_slice=np.s_[6:8:])
+        expected = [9]
+        output = pu.find_datarange(
+            array,
+            plot_margin=self.plot_margin,
+            amplitude_threshold=self.amplitude_threshold,
+        )
+        self.assertTrue(output == expected)
+
+    def test_margin_0d(self):
+        with self.assertRaises(ValueError):
+            pu.find_datarange(
+                np.empty(0),
+                plot_margin=self.plot_margin,
+                amplitude_threshold=self.amplitude_threshold,
+            )
 
 
 if __name__ == "__main__":

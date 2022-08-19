@@ -773,10 +773,10 @@ def find_crop_center(array_shape, crop_shape, pivot):
 
 def find_datarange(
     array: np.ndarray,
-    plot_margin: Union[int, Tuple[int, int, int]] = 10,
+    plot_margin: Union[int, List[int]] = 10,
     amplitude_threshold: float = 0.1,
     keep_size: bool = False,
-) -> Tuple[int, int, int]:
+) -> List[int]:
     """
     Find the range where data is larger than a threshold.
 
@@ -785,49 +785,52 @@ def find_datarange(
     processing. The range can be larger than the initial data size, which then will need
     to be padded.
 
-    :param array: the complex 3D reconstruction
+    :param array: a numpy array
     :param plot_margin: user-defined margin to add on each side of the thresholded array
     :param amplitude_threshold: threshold used to define a support from the amplitude
     :param keep_size: set to True in order to keep the dataset full size
-    :return:
-     - zrange: size of the data range to use in the first axis (Z)
-     - yrange: size of the data range to use in the second axis (Y)
-     - xrange: size of the data range to use in the third axis (X)
-
+    :return: a list of the ranges (centered in the middle of the array) to use in each
+     dimension.
     """
-    if array.ndim != 3:
-        raise ValueError(f"array should be 3D, got {array.ndim}D")
+    if array.ndim == 0:
+        raise ValueError("Empty array provided.")
     if isinstance(plot_margin, int):
-        plot_margin = (plot_margin,) * 3
-    if not isinstance(plot_margin, Tuple):
+        plot_margin = [plot_margin] * array.ndim
+    if not isinstance(plot_margin, list):
         raise TypeError(
-            f"Expected 'plot_margin' to be a tuple, got {type(plot_margin)} "
+            f"Expected 'plot_margin' to be a list, got {type(plot_margin)} "
         )
     if len(plot_margin) != array.ndim:
         raise ValueError(
             f"'plot_margin' should be of lenght {array.ndim}, got {len(plot_margin)}"
         )
 
-    nbz, nby, nbx = array.shape
     if keep_size:
-        return array.shape
+        return [int(val) for val in array.shape]
 
     support = np.zeros(array.shape)
     support[abs(array) > amplitude_threshold * abs(array).max()] = 1
     non_zero_indices = np.nonzero(support)
+    min_half_width_per_axis: List[int] = []
     try:
-        min_z = min(min(non_zero_indices[0]), nbz - 1 - max(non_zero_indices[0]))
-        min_y = min(min(non_zero_indices[1]), nby - 1 - max(non_zero_indices[1]))
-        min_x = min(min(non_zero_indices[2]), nbx - 1 - max(non_zero_indices[2]))
+        for idx, nb_elements in enumerate(array.shape):
+            min_half_width_per_axis.append(
+                min(
+                    min(non_zero_indices[idx]),
+                    nb_elements - 1 - max(non_zero_indices[idx]),
+                )
+            )
     except ValueError as e:
         raise ModulusBelowThreshold(
             f"No voxel above the provided threshold {amplitude_threshold}"
         ) from e
-    return (
-        (nbz // 2 - min_z + plot_margin[0]) * 2 + nbz % 2,
-        (nby // 2 - min_y + plot_margin[1]) * 2 + nby % 2,
-        (nbx // 2 - min_x + plot_margin[2]) * 2 + nbx % 2,
-    )
+    return [
+        int(
+            (nb_elements // 2 - min_half_width_per_axis[idx] + plot_margin[idx]) * 2
+            + nb_elements % 2
+        )
+        for idx, nb_elements in enumerate(array.shape)
+    ]
 
 
 def flip_reconstruction(obj, debugging=False, **kwargs):
