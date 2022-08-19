@@ -1443,9 +1443,9 @@ class LoaderID01BLISS(Loader):
             raise ValueError("'sample_name' parameter required")
 
         key_path = (
-            f"{sample_name}_"
-            if sample_name
-            else "" + str(scan_number) + ".1/measurement/"
+            (f"{sample_name}_" if sample_name else "")
+            + str(scan_number)
+            + ".1/measurement/"
         )
         if setup.detector_name == "Maxipix":
             try:
@@ -1518,9 +1518,9 @@ class LoaderID01BLISS(Loader):
 
         # load positioners
         positioners = file[
-            f"{sample_name}_"
-            if sample_name
-            else "" + str(scan_number) + ".1/instrument/positioners"
+            (f"{sample_name}_" if sample_name else "")
+            + str(scan_number)
+            + ".1/instrument/positioners"
         ]
         if not setup.custom_scan:
             try:
@@ -1570,9 +1570,9 @@ class LoaderID01BLISS(Loader):
 
         # load positioners
         positioners = file[
-            f"{setup.detector.sample_name}_"
-            if setup.detector.sample_name
-            else "" + str(scan_number) + ".1/measurement"
+            (f"{setup.detector.sample_name}_" if setup.detector.sample_name else "")
+            + str(scan_number)
+            + ".1/measurement"
         ]
         try:
             device_values = util.cast(positioners[device_name][()], target_type=float)
