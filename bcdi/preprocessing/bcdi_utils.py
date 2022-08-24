@@ -32,6 +32,302 @@ from bcdi.utils import validation as valid
 module_logger = logging.getLogger(__name__)
 
 
+class PeakFinder:
+    """
+
+    The data is expected to be stacked into a 3D array, the first axis corresponding to
+    the rocking angle and axes 1 and 2 to the detector plane (vertical, horizontal).
+    """
+
+    PEAK_METHODS = {"max", "com", "max_com", "user", "skip"}
+
+    def __init__(
+        self,
+        array: np.ndarray,
+        region_of_interest: Optional[List[int]] = None,
+        binning: Optional[List[int]] = None,
+        peak_method: str = "max_com",
+        **kwargs,
+    ):
+        self.array = array
+        self.region_of_interest = region_of_interest
+        self.binning = binning
+        self.peak_method = peak_method
+        self.logger: logging.Logger = kwargs.get("logger", module_logger)
+
+        self._metadata = {}
+        self._peaks = self.find_peak()
+        self._metadata["detector_data_at_peak"] = self.array[self._roi_center[0], :, :]
+
+    @property
+    def binning(self) -> Optional[List[int]]:
+        """Binning factor of the array pixels, one number per array axis."""
+        return self._binning
+
+    @binning.setter
+    def binning(self, value: Optional[List[int]]) -> None:
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            item_types=int,
+            length=self.array.ndim,
+            allow_none=True,
+            name="binning",
+        )
+        self._binning = (1, 1, 1) if value is None else value
+
+    @property
+    def bragg_peak(self) -> Tuple[int, int, int]:
+        """Export the retrieved Bragg peak position."""
+        return self.peaks[self.peak_method]
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """Export the retrieved peaks and fitted rocking curve."""
+        return self._metadata
+
+    @property
+    def peak_method(self) -> str:
+        """Method to localize the peak."""
+        return self._peak_method
+
+    @peak_method.setter
+    def peak_method(self, value: str) -> None:
+        if value not in self.PEAK_METHODS:
+            raise ValueError(f"allowed peak methods {self.PEAK_METHODS}, got {value}")
+        self._peak_method = value
+
+    @property
+    def peaks(self) -> Dict[str, Tuple[int, int, int]]:
+        """Position of the detected peaks in the full, unbinned detector frame."""
+        return self._peaks
+
+    @property
+    def region_of_interest(self) -> Optional[List[int]]:
+        """
+        Region of interest used when loading the detector images.
+
+        [y_start, y_stop, x_start, x_stop]
+        """
+        return self._region_of_interest
+
+    @region_of_interest.setter
+    def region_of_interest(self, value: Optional[List[int]]) -> None:
+        valid.valid_container(
+            value,
+            container_types=(tuple, list, np.ndarray),
+            item_types=int,
+            length=4,
+            allow_none=True,
+            name="region_of_interest",
+        )
+        self._region_of_interest = (
+            [0, self.array.shape[1], 0, self.array.shape[2]] if value is None else value
+        )
+
+    def find_peak(self) -> Dict[str, Tuple[int, int, int]]:
+        position_max = np.unravel_index(abs(self.array).argmax(), self.array.shape)
+        self.logger.info(
+            f"Max at: {position_max}, value = {int(self.array[position_max])}"
+        )
+
+        position_com = center_of_mass(self.array)
+        position_com = tuple(map(lambda x: int(np.rint(x)), position_com))
+        self.logger.info(
+            f"Center of mass at: {position_com}, "
+            f"value = {int(self.array[position_com])}"
+        )
+
+        position_max_com = list(
+            np.unravel_index(abs(self.array).argmax(), self.array.shape)
+        )
+        position_max_com[1:] = center_of_mass(self.array[position_max_com[0], :, :])
+        position_max_com = tuple(map(lambda x: int(np.rint(x)), position_max_com))
+        self.logger.info(
+            f"MaxCom at (z, y, x): {position_max_com}, "
+            f"value = {int(self.array[position_max_com])}"
+        )
+
+        position_max = self._unbin(list(position_max))
+        position_com = self._unbin(list(position_com))
+        position_max_com = self._unbin(list(position_max_com))
+
+        position_max = self._offset(position_max)
+        position_com = self._offset(position_com)
+        position_max_com = self._offset(position_max_com)
+
+        return {
+            "max": position_max,
+            "com": position_com,
+            "max_com": position_max_com,
+        }
+
+    def fit_rocking_curve(self, tilt_values: Optional[np.ndarray] = None):
+        """
+        Calculate and plot the rocking curve, optionally save the figure.
+
+        :param tilt_values: values of the tilt angle during the rocking curve.
+        """
+        self._get_rocking_curve()
+        self._fit_rocking_curve(tilt_values=tilt_values)
+
+    def plot_peaks(self, savedir: Optional[str] = None) -> None:
+        """
+        Plot the detected peak position by several methods, optionally save the figure.
+
+        Peak-searching methods:
+         - "max": maximum of the modulus
+         - "com": center of mass of the modulus
+         - "max_com": "max" along the first axis, "com" along the other axes
+
+        :param savedir: folder where to save the figure
+        """
+        plt.ion()
+        methods = {
+            "max": (self.peaks["max"], "k"),
+            "com": (self.peaks["com"], "g"),
+            "max_com": (self.peaks["max_com"], "b"),
+        }
+        indices = {0: [2, 1], 1: [2, 0], 2: [1, 0]}
+        fig, axes, _ = gu.multislices_plot(
+            self.array,
+            sum_frames=True,
+            scale="log",
+            plot_colorbar=True,
+            vmin=0,
+            vmax=6,
+            title="data",
+        )
+        for ax, ind in indices.items():
+            for method, values in methods.items():
+                axes[ax].scatter(
+                    values[0][ind[0]],
+                    values[0][ind[1]],
+                    color=values[1],
+                    marker="1",
+                    alpha=0.7,
+                    linewidth=2,
+                    label=method,
+                )
+            axes[ax].legend()
+        plt.pause(0.1)
+        if savedir is not None:
+            path = pathlib.Path(savedir) / "centering_method.png"
+            fig.savefig(path)
+        plt.close(fig)
+        plt.ioff()
+
+    def plot_rocking_curve(self, savedir: Optional[str] = None) -> None:
+        """
+        Plot the rocking curve, optionally save the figure.
+
+        :param savedir: folder where to save the figure
+        """
+        rocking_curve = self._metadata.get("rocking_curve")
+        if rocking_curve is None:
+            self.logger.info("'rocking_curve' is None, nothing to plot")
+            return
+
+        tilt_values = self._metadata.get("tilt_values")
+        if tilt_values is None:
+            tilt_values = np.arange(self.array.shape[0])
+            x_label = "Frame number"
+        else:
+            x_label = "Rocking angle (deg)"
+
+        interp_tilt = self._metadata.get("interp_tilt_values")
+        interp_curve = self._metadata.get("interp_rocking_curve")
+
+        plt.ion()
+        fig, (ax0, ax1) = plt.subplots(2, 1, sharex="col", figsize=(10, 5))
+        ax0.plot(tilt_values, rocking_curve, ".")
+        if interp_tilt is not None and interp_curve is not None:
+            ax0.plot(interp_tilt, interp_curve)
+            legend = ["data", "interpolation"]
+        else:
+            legend = ["data"]
+        ax0.axvline(tilt_values[self._roi_center[0]], color="r", alpha=0.7, linewidth=1)
+        ax0.set_ylabel("Integrated intensity")
+        ax0.legend(legend)
+        ax0.set_title(f"Rocking curve")
+        ax1.plot(tilt_values, np.log10(rocking_curve), ".")
+        if interp_tilt is not None and interp_curve is not None:
+            ax1.plot(interp_tilt, np.log10(interp_curve))
+        ax1.axvline(tilt_values[self._roi_center[0]], color="r", alpha=0.7, linewidth=1)
+        ax1.set_xlabel(x_label)
+        ax1.set_ylabel("Log(integrated intensity)")
+        ax1.legend(legend)
+        plt.pause(0.1)
+        if savedir is not None:
+            path = pathlib.Path(savedir) / "rocking_curve.png"
+            fig.savefig(path)
+        plt.close(fig)
+
+    @property
+    def _roi_center(self) -> Tuple[int, int, int]:
+        """Position of the Bragg peak in the cropped and binned detector frame."""
+        bragg_peak = self.bragg_peak
+        return (
+            bragg_peak[0],
+            (bragg_peak[1] - self.region_of_interest[0]) // self.binning[1],
+            (bragg_peak[2] - self.region_of_interest[2]) // self.binning[2],
+        )
+
+    def _fit_rocking_curve(self, tilt_values) -> None:
+        rocking_curve = self._metadata.get("rocking_curve")
+        if rocking_curve is None:
+            self.logger.info("'rocking_curve' is None, nothing to fit")
+            return
+        x_axis = (
+            tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
+        )
+        interpolation = interp1d(x_axis, rocking_curve, kind="cubic")
+        interp_points = 5 * self.array.shape[0]
+        interp_tilt = np.linspace(x_axis.min(), x_axis.max(), interp_points)
+        interp_curve = interpolation(interp_tilt)
+        interp_fwhm = (
+            len(np.argwhere(interp_curve >= interp_curve.max() / 2))
+            * (x_axis.max() - x_axis.min())
+            / (interp_points - 1)
+        )
+        self.logger.info(f"FWHM by interpolation: {interp_fwhm:.3f} deg")
+        self._metadata.update(
+            {
+                "tilt_values": tilt_values,
+                "interp_tilt_values": interp_tilt,
+                "interp_rocking_curve": interp_curve,
+                "interp_fwhm": interp_fwhm,
+                "tilt_value_at_peak": tilt_values[self._roi_center[0]]
+                if tilt_values is not None
+                else None,
+            }
+        )
+
+    def _get_rocking_curve(
+        self,
+    ) -> None:
+        """
+        Calculate the intensity integrated in the detector plane during a rocking curve.
+        """
+        bragg_peak = self.peaks[self.peak_method]
+        if bragg_peak is None:
+            raise ValueError(f"Bragg peak not detected with method {self.peak_method}")
+
+        self._metadata["rocking_curve"] = self.array.sum(axis=(1, 2))
+
+    def _offset(self, peak: List[int]) -> Tuple[int, int, int]:
+        """Calculate the peak position in the full detector frame."""
+        return (
+            peak[0],
+            peak[1] + self.region_of_interest[0],
+            peak[2] + self.region_of_interest[2],
+        )
+
+    def _unbin(self, peak: List[int]) -> List[int]:
+        """Calculate the peak position in the unbinned detector frame."""
+        return [a * b for a, b in zip(peak, self.binning)]
+
+
 def center_fft(
     data,
     mask,
@@ -687,27 +983,6 @@ def find_bragg(
         f"value = {int(data[position_max_com])}"
     )
 
-    # unbin
-    if binning is not None:
-        position_max = [a * b for a, b in zip(position_max, binning)]
-        position_com = [a * b for a, b in zip(position_com, binning)]
-        position_max_com = [a * b for a, b in zip(position_max_com, binning)]
-
-    # add the offset due to the region of interest
-    # the roi is defined as [y_start, y_stop, x_start, x_stop]
-    if roi is not None:
-        position_max = list(position_max)
-        position_max[-1] = position_max[-1] + roi[2]
-        position_max[-2] = position_max[-2] + roi[0]
-
-        position_com = list(position_com)
-        position_com[-1] = position_com[-1] + roi[2]
-        position_com[-2] = position_com[-2] + roi[0]
-
-        position_max_com = list(position_max_com)
-        position_max_com[-1] = position_max_com[-1] + roi[2]
-        position_max_com[-2] = position_max_com[-2] + roi[0]
-
     plt.ion()
     methods = {
         "max": (position_max, "k"),
@@ -740,6 +1015,28 @@ def find_bragg(
     if savedir is not None:
         fig.savefig(savedir + "centering_method.png")
     plt.close(fig)
+
+    # unbin
+    if binning is not None:
+        position_max = [a * b for a, b in zip(position_max, binning)]
+        position_com = [a * b for a, b in zip(position_com, binning)]
+        position_max_com = [a * b for a, b in zip(position_max_com, binning)]
+
+    # add the offset due to the region of interest
+    # the roi is defined as [y_start, y_stop, x_start, x_stop]
+    if roi is not None:
+        position_max = list(position_max)
+        position_max[-1] = position_max[-1] + roi[2]
+        position_max[-2] = position_max[-2] + roi[0]
+
+        position_com = list(position_com)
+        position_com[-1] = position_com[-1] + roi[2]
+        position_com[-2] = position_com[-2] + roi[0]
+
+        position_max_com = list(position_max_com)
+        position_max_com[-1] = position_max_com[-1] + roi[2]
+        position_max_com[-2] = position_max_com[-2] + roi[0]
+
     return {
         "max": tuple(position_max),
         "com": tuple(position_com),
