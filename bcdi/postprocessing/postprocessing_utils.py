@@ -11,6 +11,7 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +29,10 @@ from ..utils import utilities as util
 from ..utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
+
+
+class ModulusBelowThreshold(Exception):
+    """Custom exception when there are no voxels above a threshold in an array."""
 
 
 def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
@@ -766,75 +771,66 @@ def find_crop_center(array_shape, crop_shape, pivot):
     return crop_center
 
 
-def find_datarange(array, plot_margin=10, amplitude_threshold=0.1, keep_size=False):
+def find_datarange(
+    array: np.ndarray,
+    plot_margin: Union[int, List[int]] = 10,
+    amplitude_threshold: float = 0.1,
+    keep_size: bool = False,
+) -> List[int]:
     """
     Find the range where data is larger than a threshold.
 
     It finds the meaningful range of the array where it is larger than the threshold, in
-    order to reduce the memory consumption in latter processing. The range can be
-    larger than the initial data size, which then will need to be padded.
+    order to later crop the array to that shape and reduce the memory consumption in
+    processing. The range can be larger than the initial data size, which then will need
+    to be padded.
 
-    :param array: the complex 3D reconstruction
-    :param plot_margin: user-defined margin to add to the minimum range of the data
+    :param array: a non-empty numpy array
+    :param plot_margin: user-defined margin to add on each side of the thresholded array
     :param amplitude_threshold: threshold used to define a support from the amplitude
     :param keep_size: set to True in order to keep the dataset full size
-    :return:
-     - zrange: half size of the data range to use in the first axis (Z)
-     - yrange: half size of the data range to use in the second axis (Y)
-     - xrange: half size of the data range to use in the third axis (X)
-
+    :return: a list of the ranges (centered in the middle of the array) to use in each
+     dimension.
     """
-    #########################
-    # check some parameters #
-    #########################
-    valid.valid_ndarray(arrays=array, ndim=3)
-    if isinstance(plot_margin, Number):
-        plot_margin = (plot_margin,) * 3
-    valid.valid_container(
-        plot_margin,
-        container_types=(tuple, list, np.ndarray),
-        length=3,
-        item_types=int,
-        name="plot_margin",
-    )
-    valid.valid_item(
-        amplitude_threshold,
-        allowed_types=Real,
-        min_included=0,
-        name="amplitude_threshold",
-    )
+    if array.ndim == 0:
+        raise ValueError("Empty array provided.")
+    if isinstance(plot_margin, int):
+        plot_margin = [plot_margin] * array.ndim
+    if not isinstance(plot_margin, list):
+        raise TypeError(
+            f"Expected 'plot_margin' to be a list, got {type(plot_margin)} "
+        )
+    if len(plot_margin) != array.ndim:
+        raise ValueError(
+            f"'plot_margin' should be of lenght {array.ndim}, got {len(plot_margin)}"
+        )
 
-    #########################################################
-    # find the relevant range where the support is non-zero #
-    #########################################################
-    nbz, nby, nbx = array.shape
     if keep_size:
-        return nbz // 2, nby // 2, nbx // 2
-    support = np.zeros((nbz, nby, nbx))
+        return [int(val) for val in array.shape]
+
+    support = np.zeros(array.shape)
     support[abs(array) > amplitude_threshold * abs(array).max()] = 1
-
-    z, y, x = np.meshgrid(
-        np.arange(0, nbz, 1), np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij"
-    )
-    z = z * support
-    min_z = min(int(np.min(z[np.nonzero(z)])), nbz - int(np.max(z[np.nonzero(z)])))
-
-    y = y * support
-    min_y = min(int(np.min(y[np.nonzero(y)])), nby - int(np.max(y[np.nonzero(y)])))
-
-    x = x * support
-    min_x = min(int(np.min(x[np.nonzero(x)])), nbx - int(np.max(x[np.nonzero(x)])))
-
-    zrange = nbz // 2 - min_z
-    yrange = nby // 2 - min_y
-    xrange = nbx // 2 - min_x
-
-    if plot_margin is not None:
-        zrange += plot_margin[0]
-        yrange += plot_margin[1]
-        xrange += plot_margin[2]
-
-    return zrange, yrange, xrange
+    non_zero_indices = np.nonzero(support)
+    min_half_width_per_axis: List[int] = []
+    try:
+        for idx, nb_elements in enumerate(array.shape):
+            min_half_width_per_axis.append(
+                min(
+                    min(non_zero_indices[idx]),
+                    nb_elements - 1 - max(non_zero_indices[idx]),
+                )
+            )
+    except ValueError as e:
+        raise ModulusBelowThreshold(
+            f"No voxel above the provided threshold {amplitude_threshold}"
+        ) from e
+    return [
+        int(
+            (nb_elements // 2 - min_half_width_per_axis[idx] + plot_margin[idx]) * 2
+            + nb_elements % 2
+        )
+        for idx, nb_elements in enumerate(array.shape)
+    ]
 
 
 def flip_reconstruction(obj, debugging=False, **kwargs):

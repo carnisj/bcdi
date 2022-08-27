@@ -739,6 +739,7 @@ def find_bragg(
     plt.pause(0.1)
     if savedir is not None:
         fig.savefig(savedir + "centering_method.png")
+    plt.close(fig)
     return {
         "max": tuple(position_max),
         "com": tuple(position_com),

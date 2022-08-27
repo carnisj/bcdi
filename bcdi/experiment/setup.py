@@ -881,12 +881,17 @@ class Setup:
         :param verbose: True to self.logger.info more comments
         """
         # check parameters
-        if self.direct_beam is None or self.dirbeam_detector_angles is None:
+        if self.direct_beam is None:
             self.logger.info(
-                "direct beam position not defined, can't correct detector angles"
+                f"'direct_beam' is {self.direct_beam}, can't correct detector angles."
             )
             return
-
+        if self.dirbeam_detector_angles is None:
+            self.logger.info(
+                f"'dirbeam_detector_angles' is {self.dirbeam_detector_angles}, "
+                "can't correct detector angles."
+            )
+            return
         if any(
             val is None
             for val in {self.inplane_angle, self.outofplane_angle, self.distance}
@@ -987,7 +992,7 @@ class Setup:
 
         return ver_direct, hor_direct
 
-    def create_logfile(self, scan_number, root_folder, filename):
+    def create_logfile(self, scan_number: int, root_folder: str, filename: str) -> None:
         """
         Create the logfile, which can be a log/spec file or the data itself.
 
@@ -998,12 +1003,11 @@ class Setup:
          specfile/.fio file
         :param filename: the file name to load, or the absolute path of
          'alias_dict.txt' for SIXS
-        :return: logfile
         """
-        if self.custom_scan:
-            logfile = None
-        else:
-            logfile = self.loader.create_logfile(
+        self.logfile = (
+            None
+            if self.custom_scan
+            else self.loader.create_logfile(
                 datadir=self.detector.datadir,
                 name=self.beamline.name,
                 scan_number=scan_number,
@@ -1011,9 +1015,7 @@ class Setup:
                 filename=filename,
                 template_imagefile=self.detector.template_imagefile,
             )
-        self.logfile = logfile
-
-        return logfile
+        )
 
     def detector_frame(
         self,

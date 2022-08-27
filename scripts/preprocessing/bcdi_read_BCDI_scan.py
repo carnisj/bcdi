@@ -177,7 +177,7 @@ setup.init_paths(
     data_dir=data_dir,
 )
 
-logfile = setup.create_logfile(
+setup.create_logfile(
     scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 

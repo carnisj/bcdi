@@ -179,7 +179,7 @@ setup.init_paths(
     template_imagefile=template_imagefile,
 )
 
-logfile = setup.create_logfile(
+setup.create_logfile(
     scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 

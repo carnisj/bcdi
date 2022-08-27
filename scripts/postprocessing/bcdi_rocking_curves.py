@@ -230,7 +230,7 @@ for scan_idx, scan_nb in enumerate(scans, start=1):
     # override the saving directory, we want to save results at the same place
     setup.detector.savedir = save_dir
 
-    logfile = setup.create_logfile(
+    setup.create_logfile(
         scan_number=scan_nb, root_folder=root_folder, filename=setup.detector.specfile
     )
 
@@ -402,7 +402,7 @@ for fig_idx in range(nb_fig):
     for idx in range(min(49, len(scans) - scan_counter)):
         axis = plt.subplot(nb_rows, nb_columns, idx + 1)
         axis.imshow(np.log10(check_roi[scan_counter]))
-        axis.set_title("S{:d}".format(scans[scan_counter]))
+        axis.set_title(f"S{scans[scan_counter]}")
         scan_counter = scan_counter + 1
     plt.tight_layout()
     plt.pause(0.1)

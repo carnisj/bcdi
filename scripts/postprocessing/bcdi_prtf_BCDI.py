@@ -281,7 +281,7 @@ if simulation:
         root_folder,
     ) * 3
 
-logfile = setup.create_logfile(
+setup.create_logfile(
     scan_number=scan, root_folder=root_folder, filename=setup.detector.specfile
 )
 
