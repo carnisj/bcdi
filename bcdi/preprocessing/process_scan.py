@@ -474,28 +474,12 @@ def process_scan(
         and prm["rocking_angle"] != "energy"
     ):
         # corrected detector angles not provided
-        bragg_peaks = {"user": prm["bragg_peak"]}
-        if prm["bragg_peak"] is None:
-            # Bragg peak position not provided, find it from the data
-            peaks = bu.find_bragg(
-                data=data,
-                roi=setup.detector.roi,
-                binning=setup.detector.current_binning,
-                savedir=setup.detector.savedir,
-                logger=logger,
-            )
-            bragg_peaks.update(peaks)
-            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
-            logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
-        if prm["bragg_peak"] is None:
-            raise ValueError("The position of the Bragg peak is undefined.")
-
-        metadata = bu.show_rocking_curve(
-            data,
-            peaks=bragg_peaks,
+        metadata = bu.find_bragg(
+            array=data,
+            params=prm,
+            binning=setup.detector.current_binning,
+            roi=setup.detector.roi,
             peak_method=prm["centering_method"]["reciprocal_space"],
-            binning=setup.detector.binning,
-            detector_roi=setup.detector.roi,
             tilt_values=setup.tilt_angles,
             savedir=setup.detector.savedir,
             logger=logger,

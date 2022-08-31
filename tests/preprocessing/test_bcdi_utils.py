@@ -13,7 +13,7 @@ import unittest
 import matplotlib
 import numpy as np
 
-from bcdi.preprocessing.bcdi_utils import PeakFinder
+from bcdi.preprocessing.bcdi_utils import PeakFinder, find_bragg
 from bcdi.utils.utilities import gaussian_window
 from tests.config import run_tests
 
@@ -55,16 +55,30 @@ class TestPeakFinder(unittest.TestCase):
         output = self.peakfinder._unbin(position)
         self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
 
-    def test_offset_no_region_of_interest(self):
+    def test_bin(self):
         position = [5, 6, 7]
-        output = self.peakfinder._offset(position)
+        self.peakfinder.binning = [1, 2, 2]
+        expected = [5, 3, 3]
+        output = self.peakfinder._bin(position)
+        self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
+
+    def test_offset_full_detector_no_region_of_interest(self):
+        position = [5, 6, 7]
+        output = self.peakfinder._offset(position, frame="full_detector")
         self.assertTrue(all(val[0] == val[1] for val in zip(position, output)))
 
-    def test_offset_region_of_interest(self):
+    def test_offset_full_detector_region_of_interest(self):
         position = [5, 6, 7]
         self.peakfinder.region_of_interest = [1, 32, 2, 30]
         expected = [5, 7, 9]
-        output = self.peakfinder._offset(position)
+        output = self.peakfinder._offset(position, frame="full_detector")
+        self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
+
+    def test_offset_in_region_of_interest(self):
+        position = [5, 6, 7]
+        self.peakfinder.region_of_interest = [1, 32, 2, 30]
+        expected = [5, 5, 5]
+        output = self.peakfinder._offset(position, frame="region_of_interest")
         self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
 
     def test_binning_wrong_length(self):
@@ -137,10 +151,13 @@ class TestPeakFinder(unittest.TestCase):
 
     def test_fit_rocking_curve_keys(self):
         expected_keys = {
+            "bragg_peak",
+            "peaks",
             "rocking_curve",
             "detector_data_at_peak",
             "tilt_values",
             "interp_tilt_values",
+            "interp_rocking_curve",
             "interp_fwhm",
             "tilt_value_at_peak",
         }
@@ -186,6 +203,26 @@ class TestPeakFinder(unittest.TestCase):
             self.peakfinder.plot_rocking_curve(savedir=tmpdir)
             path = pathlib.Path(tmpdir) / "rocking_curve.png"
             self.assertTrue(path.is_file())
+
+
+class TestFindBragg(unittest.TestCase):
+    def setUp(self) -> None:
+        self.data = np.zeros((4, 32, 32))
+        self.data[:-1, -13:, 17:30] = gaussian_window(window_shape=(3, 13, 13))
+
+    def test_check_return_type(self):
+        output = find_bragg(array=self.data, params={})
+        self.assertIsInstance(output, dict)
+
+    def test_check_return_keys(self):
+        output = find_bragg(array=self.data, params={})
+        self.assertTrue("detector_data_at_peak" in output.keys())
+
+    def test_check_params_mutated(self):
+        prm = {}
+        expected = (1, 25, 23)
+        find_bragg(array=self.data, params=prm)
+        self.assertTrue(prm["bragg_peak"] == expected)
 
 
 if __name__ == "__main__":
