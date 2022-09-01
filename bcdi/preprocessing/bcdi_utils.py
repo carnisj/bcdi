@@ -173,19 +173,21 @@ class PeakFinder:
             f"value = {int(self.array[position_max_com])}"
         )
 
-        position_max = self._unbin(list(position_max))
-        position_com = self._unbin(list(position_com))
-        position_max_com = self._unbin(list(position_max_com))
-
-        position_max = self._offset(position_max, frame="full_detector")
-        position_com = self._offset(position_com, frame="full_detector")
-        position_max_com = self._offset(position_max_com, frame="full_detector")
-
         return {
-            "max": position_max,
-            "com": position_com,
-            "max_com": position_max_com,
+            "max": self.get_indices_full_detector(list(position_max)),
+            "com": self.get_indices_full_detector(list(position_com)),
+            "max_com": self.get_indices_full_detector(list(position_max_com)),
         }
+
+    def get_indices_cropped_binned_detector(self, position: List[int]) -> List[int]:
+        """Calculate the position in the cropped, binned detector frame."""
+        cropped_position = self._offset(position, frame="region_of_interest")
+        return self._bin(list(cropped_position))
+
+    def get_indices_full_detector(self, position: List[int]) -> Tuple[int, int, int]:
+        """Calculate the position in the unbinned, full detector frame."""
+        unbinned_position = self._unbin(position)
+        return self._offset(unbinned_position, frame="full_detector")
 
     def fit_rocking_curve(self, tilt_values: Optional[np.ndarray] = None):
         """
@@ -211,20 +213,19 @@ class PeakFinder:
         """
         plt.ion()
 
-        position_max = self._offset(list(self.peaks["max"]), frame="region_of_interest")
-        position_com = self._offset(list(self.peaks["com"]), frame="region_of_interest")
-        position_max_com = self._offset(
-            list(self.peaks["max_com"]), frame="region_of_interest"
-        )
-
-        position_max = self._bin(list(position_max))
-        position_com = self._bin(list(position_com))
-        position_max_com = self._bin(list(position_max_com))
-
         methods = {
-            "max": (position_max, "k"),
-            "com": (position_com, "g"),
-            "max_com": (position_max_com, "b"),
+            "max": (
+                self.get_indices_cropped_binned_detector(list(self.peaks["max"])),
+                "k",
+            ),
+            "com": (
+                self.get_indices_cropped_binned_detector(list(self.peaks["com"])),
+                "g",
+            ),
+            "max_com": (
+                self.get_indices_cropped_binned_detector(list(self.peaks["max_com"])),
+                "b",
+            ),
         }
         indices = {0: [2, 1], 1: [2, 0], 2: [1, 0]}
         fig, axes, _ = gu.multislices_plot(

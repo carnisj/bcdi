@@ -81,6 +81,22 @@ class TestPeakFinder(unittest.TestCase):
         output = self.peakfinder._offset(position, frame="region_of_interest")
         self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
 
+    def test_get_indices_full_detector(self):
+        position = [5, 6, 7]
+        self.peakfinder.binning = [1, 2, 2]
+        self.peakfinder.region_of_interest = [1, 32, 2, 30]
+        expected = [5, 13, 16]
+        output = self.peakfinder.get_indices_full_detector(position)
+        self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
+
+    def test_get_indices_cropped_binned_detector(self):
+        position = [5, 13, 17]
+        self.peakfinder.region_of_interest = [3, 32, 2, 30]
+        self.peakfinder.binning = [1, 2, 2]
+        expected = [5, 5, 7]
+        output = self.peakfinder.get_indices_cropped_binned_detector(position)
+        self.assertTrue(all(val[0] == val[1] for val in zip(expected, output)))
+
     def test_binning_wrong_length(self):
         with self.assertRaises(ValueError):
             self.peakfinder.binning = (2, 2)
