@@ -981,6 +981,25 @@ def find_bragg(
     plot_fit: bool = False,
     **kwargs,
 ) -> Dict[str, Any]:
+    """
+    Find the Bragg peak position.
+
+    Optionally, fit the rocking curve and plot results.
+
+    :param array: the detector data
+    :param binning: the binning factor of array relative to the unbinned detector
+    :param region_of_interest: the region of interest applied to build array out of the
+     full detector
+    :param peak_method: peak searching method, among "max", "com", "max_com", "user"
+     (user-defined peak), "skip"
+    :param tilt_values: the angular values of the motor during the rocking curve
+    :param savedir: where to save the plots
+    :param plot_fit: if True, will plot results and fit the rocking curve
+    :param kwargs:
+     - "logger": an optional logger
+
+    :return: the metadata with the results of the peak search and the fit.
+    """
     logger: logging.Logger = kwargs.get("logger", module_logger)
     peakfinder = PeakFinder(
         array=array,
