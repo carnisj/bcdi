@@ -476,14 +476,15 @@ def process_scan(
         # corrected detector angles not provided
         metadata = bu.find_bragg(
             array=data,
-            params=prm,
             binning=setup.detector.current_binning,
             roi=setup.detector.roi,
             peak_method=prm["centering_method"]["reciprocal_space"],
             tilt_values=setup.tilt_angles,
             savedir=setup.detector.savedir,
             logger=logger,
+            plot_fit=True,
         )
+        prm["bragg_peak"] = metadata["bragg_peak"]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle
@@ -602,16 +603,19 @@ def process_scan(
                     logger=logger,
                 )
                 # find the Bragg peak position from the interpolated data
-                peaks = bu.find_bragg(
-                    data=data,
-                    roi=None,
+                interpolated_metadata = bu.find_bragg(
+                    array=data,
                     binning=None,
+                    roi=None,
+                    peak_method=prm["centering_method"]["reciprocal_space"],
+                    tilt_values=None,
                     logger=logger,
+                    plot_fit=False,
                 )
                 q_bragg = [
-                    q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
-                    q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
-                    q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+                    q_values[0][interpolated_metadata["bragg_peak"][0]],
+                    q_values[1][interpolated_metadata["bragg_peak"][1]],
+                    q_values[2][interpolated_metadata["bragg_peak"][2]],
                 ]
                 qnorm = np.linalg.norm(q_bragg)
             else:  # 'linearization'
@@ -691,16 +695,19 @@ def process_scan(
                 gc.collect()
     else:  # reload_orthogonal
         if q_values:  # find the Bragg peak position from the interpolated data
-            peaks = bu.find_bragg(
-                data=data,
-                roi=None,
+            interpolated_metadata = bu.find_bragg(
+                array=data,
                 binning=None,
+                roi=None,
+                peak_method=prm["centering_method"]["reciprocal_space"],
+                tilt_values=None,
                 logger=logger,
+                plot_fit=False,
             )
             q_bragg = [
-                q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
-                q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
-                q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+                q_values[0][interpolated_metadata["bragg_peak"][0]],
+                q_values[1][interpolated_metadata["bragg_peak"][1]],
+                q_values[2][interpolated_metadata["bragg_peak"][2]],
             ]
             qnorm = np.linalg.norm(q_bragg)
         else:

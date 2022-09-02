@@ -50,38 +50,42 @@ class PeakFinder:
         **kwargs,
     ):
         self.array = array
-        self.region_of_interest = region_of_interest
-        self.binning = binning
+        self.region_of_interest = (
+            [0, self.array.shape[1], 0, self.array.shape[2]]
+            if region_of_interest is None
+            else region_of_interest
+        )
+        self.binning = [1, 1, 1] if binning is None else binning
         self.peak_method = peak_method
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
         self._peaks = self.find_peak()
         self._rocking_curve: Optional[np.ndarray] = None
-        self._detector_data_at_peak: Optional[Union[float, int]] = self.array[
+        self._detector_data_at_peak: Optional[np.ndarray] = self.array[
             self._roi_center[0], :, :
         ]
         self._tilt_values: Optional[np.ndarray] = None
         self._interp_tilt_values: Optional[np.ndarray] = None
         self._interp_rocking_curve: Optional[np.ndarray] = None
-        self._interp_fwhm: Optional[np.float] = None
+        self._interp_fwhm: Optional[float] = None
         self._tilt_value_at_peak: Optional[float] = None
 
     @property
-    def binning(self) -> Optional[List[int]]:
+    def binning(self) -> List[int]:
         """Binning factor of the array pixels, one number per array axis."""
         return self._binning
 
     @binning.setter
-    def binning(self, value: Optional[List[int]]) -> None:
+    def binning(self, value: List[int]) -> None:
         valid.valid_container(
             value,
             container_types=(tuple, list, np.ndarray),
             item_types=int,
             length=self.array.ndim,
-            allow_none=True,
+            allow_none=False,
             name="binning",
         )
-        self._binning = (1, 1, 1) if value is None else value
+        self._binning = value
 
     @property
     def bragg_peak(self) -> Tuple[int, int, int]:
@@ -120,7 +124,7 @@ class PeakFinder:
         return self._peaks
 
     @property
-    def region_of_interest(self) -> Optional[List[int]]:
+    def region_of_interest(self) -> List[int]:
         """
         Region of interest used when loading the detector images.
 
@@ -129,7 +133,7 @@ class PeakFinder:
         return self._region_of_interest
 
     @region_of_interest.setter
-    def region_of_interest(self, value: Optional[List[int]]) -> None:
+    def region_of_interest(self, value: List[int]) -> None:
         valid.valid_container(
             value,
             container_types=(tuple, list, np.ndarray),
@@ -138,9 +142,7 @@ class PeakFinder:
             allow_none=True,
             name="region_of_interest",
         )
-        self._region_of_interest = (
-            [0, self.array.shape[1], 0, self.array.shape[2]] if value is None else value
-        )
+        self._region_of_interest = value
 
     def find_peak(self) -> Dict[str, Tuple[int, int, int]]:
         """
@@ -151,9 +153,10 @@ class PeakFinder:
          - "com": center of mass of the modulus
          - "max_com": "max" along the first axis, "com" along the other axes
         """
-        position_max = np.unravel_index(abs(self.array).argmax(), self.array.shape)
+        index_max = np.unravel_index(abs(self.array).argmax(), self.array.shape)
+        position_max = [int(val) for val in index_max]
         self.logger.info(
-            f"Max at: {position_max}, value = {int(self.array[position_max])}"
+            f"Max at: {position_max}, value = {int(self.array[index_max])}"
         )
 
         position_com = center_of_mass(self.array)
@@ -163,11 +166,11 @@ class PeakFinder:
             f"value = {int(self.array[position_com])}"
         )
 
-        position_max_com = list(
+        index_max_com = list(
             np.unravel_index(abs(self.array).argmax(), self.array.shape)
         )
-        position_max_com[1:] = center_of_mass(self.array[position_max_com[0], :, :])
-        position_max_com = tuple(map(lambda x: int(np.rint(x)), position_max_com))
+        index_max_com[1:] = center_of_mass(self.array[index_max_com[0], :, :])
+        position_max_com = tuple(map(lambda x: int(np.rint(x)), index_max_com))
         self.logger.info(
             f"MaxCom at (z, y, x): {position_max_com}, "
             f"value = {int(self.array[position_max_com])}"
@@ -970,12 +973,12 @@ def center_fft(
 
 def find_bragg(
     array: np.ndarray,
-    params: Dict[str, Any],
     binning: Optional[List[int]] = None,
     region_of_interest: Optional[List[int]] = None,
     peak_method: str = "max_com",
     tilt_values: Optional[np.ndarray] = None,
     savedir: Optional[str] = None,
+    plot_fit: bool = False,
     **kwargs,
 ) -> Dict[str, Any]:
     logger: logging.Logger = kwargs.get("logger", module_logger)
@@ -986,14 +989,17 @@ def find_bragg(
         peak_method=peak_method,
         logger=logger,
     )
-    params["bragg_peak"] = peakfinder.bragg_peak
-    if params["bragg_peak"] is None:
-        raise ValueError("The position of the Bragg peak is undefined.")
-    logger.info("Bragg peak (full unbinned roi) at: " f"{params['bragg_peak']}")
 
-    peakfinder.fit_rocking_curve(tilt_values=tilt_values)
-    peakfinder.plot_peaks(savedir=savedir)
-    peakfinder.plot_rocking_curve(savedir=savedir)
+    if peakfinder.metadata["bragg_peak"] is None:
+        raise ValueError("The position of the Bragg peak is undefined.")
+    logger.info(
+        "Bragg peak (full unbinned roi) at: " f"{peakfinder.metadata['bragg_peak']}"
+    )
+
+    if plot_fit:
+        peakfinder.fit_rocking_curve(tilt_values=tilt_values)
+        peakfinder.plot_peaks(savedir=savedir)
+        peakfinder.plot_rocking_curve(savedir=savedir)
     return peakfinder.metadata
 
 

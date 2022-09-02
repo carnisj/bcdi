@@ -504,16 +504,17 @@ def process_scan(
                 background=prm["background_file"],
                 normalize=prm["normalize_flux"],
             )
-            bu.find_bragg(
+            metadata = bu.find_bragg(
                 array=data,
-                params=prm,
                 binning=None,
                 roi=setup.detector.roi,
                 peak_method=prm["centering_method"]["reciprocal_space"],
                 tilt_values=setup.tilt_angles,
                 savedir=setup.detector.savedir,
                 logger=logger,
+                plot_fit=True,
             )
+            prm["bragg_peak"] = metadata["bragg_peak"]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle

@@ -227,18 +227,17 @@ class TestFindBragg(unittest.TestCase):
         self.data[:-1, -13:, 17:30] = gaussian_window(window_shape=(3, 13, 13))
 
     def test_check_return_type(self):
-        output = find_bragg(array=self.data, params={})
+        output = find_bragg(array=self.data)
         self.assertIsInstance(output, dict)
 
     def test_check_return_keys(self):
-        output = find_bragg(array=self.data, params={})
+        output = find_bragg(array=self.data)
         self.assertTrue("detector_data_at_peak" in output.keys())
 
-    def test_check_params_mutated(self):
-        prm = {}
+    def test_run_only_peak_finding(self):
         expected = (1, 25, 23)
-        find_bragg(array=self.data, params=prm)
-        self.assertTrue(prm["bragg_peak"] == expected)
+        metadata = find_bragg(array=self.data, plot_fit=False)
+        self.assertTrue(metadata["bragg_peak"] == expected)
 
 
 if __name__ == "__main__":
