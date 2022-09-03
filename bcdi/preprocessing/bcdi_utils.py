@@ -16,7 +16,7 @@ import logging
 import pathlib
 from numbers import Real
 from operator import mul
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,9 +34,19 @@ module_logger = logging.getLogger(__name__)
 
 class PeakFinder:
     """
+    Find the Bragg peak and optionally fit the rocking curve and plot results.
 
     The data is expected to be stacked into a 3D array, the first axis corresponding to
     the rocking angle and axes 1 and 2 to the detector plane (vertical, horizontal).
+
+    :param array: the detector data
+    :param binning: the binning factor of array relative to the unbinned detector
+    :param region_of_interest: the region of interest applied to build array out of the
+     full detector
+    :param peak_method: peak searching method, among "max", "com", "max_com".
+    :param kwargs:
+     - "logger": an optional logger
+
     """
 
     PEAK_METHODS = {"max", "com", "max_com", "user", "skip"}
@@ -109,7 +119,7 @@ class PeakFinder:
 
     @property
     def peak_method(self) -> str:
-        """Method to localize the peak."""
+        """Localize the peak using this method."""
         return self._peak_method
 
     @peak_method.setter
@@ -345,9 +355,7 @@ class PeakFinder:
     def _get_rocking_curve(
         self,
     ) -> None:
-        """
-        Calculate the intensity integrated in the detector plane during a rocking curve.
-        """
+        """Integrate the intensity in the detector plane during a rocking curve."""
         bragg_peak = self.peaks[self.peak_method]
         if bragg_peak is None:
             raise ValueError(f"Bragg peak not detected with method {self.peak_method}")
@@ -355,9 +363,11 @@ class PeakFinder:
         self._rocking_curve = self.array.sum(axis=(1, 2))
 
     def _offset(self, peak: List[int], frame: str) -> Tuple[int, int, int]:
-        """Calculate the peak position.
+        """
+        Calculate the peak position with an offset.
 
-        The position is calculated in the full detector frame or the cropped frame.
+        The offset is added or subtracted dependengin on the target detector frame (full
+        frame or frame cropped to a certain region of interest).
 
         :param peak: position of the peak
         :param frame: "full_detector" to provide the peak position in the full detector,
@@ -990,8 +1000,7 @@ def find_bragg(
     :param binning: the binning factor of array relative to the unbinned detector
     :param region_of_interest: the region of interest applied to build array out of the
      full detector
-    :param peak_method: peak searching method, among "max", "com", "max_com", "user"
-     (user-defined peak), "skip"
+    :param peak_method: peak searching method, among "max", "com", "max_com".
     :param tilt_values: the angular values of the motor during the rocking curve
     :param savedir: where to save the plots
     :param plot_fit: if True, will plot results and fit the rocking curve
