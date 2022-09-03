@@ -161,7 +161,7 @@ setup(
             "doit==0.34.2",
             "isort==5.10.1",
             "mypy==0.950",
-            "pycodestyle==2.8.0",
+            "pycodestyle==2.9.1",
             "pydocstyle==6.1.1",
             "pyfakefs==4.5.6",
             "twine==4.0.0",
