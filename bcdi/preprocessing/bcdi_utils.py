@@ -434,13 +434,11 @@ def center_fft(
      - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
        the Brag peak
-     - 'skip': keep the full dataset or crop it to the size defined by fix_size
+     - 'skip': keep the full dataset
 
     :param kwargs:
      - 'fix_bragg': user-defined position in pixels of the Bragg peak
        [z_bragg, y_bragg, x_bragg]
-     - 'fix_size': user defined output array size
-       [zstart, zstop, ystart, ystop, xstart, xstop]
      - 'pad_size': user defined output array size [nbz, nby, nbx]
      - 'q_values': [qx, qz, qy], each component being a 1D array
      - 'logger': an optional logger
@@ -458,11 +456,10 @@ def center_fft(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"fix_bragg", "fix_size", "logger", "pad_size", "q_values"},
+        allowed_kwargs={"fix_bragg", "logger", "pad_size", "q_values"},
         name="kwargs",
     )
     fix_bragg = kwargs.get("fix_bragg")
-    fix_size = kwargs.get("fix_size")
     pad_size = kwargs.get("pad_size", [])
     q_values = kwargs.get("q_values", [])
 
@@ -923,53 +920,8 @@ def center_fft(
             qz = qz0 + np.arange(ny1) * dqz
 
     elif fft_option == "skip":
-        # keep the full dataset or use 'fix_size' parameter
-        pad_width = np.zeros(
-            6, dtype=int
-        )  # do nothing or crop the data, starting_frame should be 0
-        if fix_size:
-            if len(fix_size) != 6:
-                raise ValueError("fix_bragg should be a list of 3 integers")
-
-            # take binning into account
-            fix_size[2] = int(fix_size[2] // detector.binning[1])
-            fix_size[3] = int(fix_size[3] // detector.binning[1])
-            fix_size[4] = int(fix_size[4] // detector.binning[2])
-            fix_size[5] = int(fix_size[5] // detector.binning[2])
-            # size of output array defined
-            nbz, nby, nbx = np.shape(data)
-            z_span = fix_size[1] - fix_size[0]
-            y_span = fix_size[3] - fix_size[2]
-            x_span = fix_size[5] - fix_size[4]
-            if (
-                z_span > nbz
-                or y_span > nby
-                or x_span > nbx
-                or fix_size[1] > nbz
-                or fix_size[3] > nby
-                or fix_size[5] > nbx
-            ):
-                raise ValueError("Predefined fix_size uncorrect")
-            data = data[
-                fix_size[0] : fix_size[1],
-                fix_size[2] : fix_size[3],
-                fix_size[4] : fix_size[5],
-            ]
-            mask = mask[
-                fix_size[0] : fix_size[1],
-                fix_size[2] : fix_size[3],
-                fix_size[4] : fix_size[5],
-            ]
-
-            if fix_size[0] > 0:  # if 0, the first frame is used
-                frames_logical[0 : fix_size[0]] = 0
-            if fix_size[1] < nbz:  # if nbz, the last frame is used
-                frames_logical[fix_size[1] :] = 0
-
-            if len(q_values) != 0:
-                qx = qx[fix_size[0] : fix_size[1]]
-                qy = qy[fix_size[4] : fix_size[5]]
-                qz = qz[fix_size[2] : fix_size[3]]
+        # keep the full dataset
+        pad_width = np.zeros(6, dtype=int)
     else:
         raise ValueError("Incorrect value for 'fft_option'")
 

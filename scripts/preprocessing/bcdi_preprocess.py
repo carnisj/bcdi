@@ -94,10 +94,6 @@ Usage:
      Method used to determine the location of the Bragg peak. 'max', 'com'
      (center of mass), or 'max_com' (max along the first axis, center of mass in the
      detector plane). It will be overridden if 'bragg_peak' is provided.
-    :param fix_size: e.g. [0, 256, 10, 240, 50, 350]
-     crop the array to that predefined size considering the full detector.
-     [zstart, zstop, ystart, ystop, xstart, xstop], ROI will be defaulted to [] if
-     fix_size is provided. Leave None otherwise
     :param center_fft: e.g. "skip"
      how to crop/pad/center the data, available options: 'crop_sym_ZYX','crop_asym_ZYX',
      'pad_asym_Z_crop_sym_YX', 'pad_sym_Z_crop_asym_YX', 'pad_sym_Z', 'pad_asym_Z',

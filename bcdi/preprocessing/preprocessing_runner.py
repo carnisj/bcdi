@@ -58,7 +58,6 @@ def run(prm: Dict[str, Any]) -> None:
                 "dirbeam_detector_angles": None,
                 "energy": None,
                 "fill_value_mask": 0,
-                "fix_size": None,
                 "flag_interact": True,
                 "flatfield_file": None,
                 "frames_pattern": None,
