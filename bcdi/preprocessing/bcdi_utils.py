@@ -301,7 +301,7 @@ class PeakFinder:
         ax0.axvline(tilt_values[self._roi_center[0]], color="r", alpha=0.7, linewidth=1)
         ax0.set_ylabel("Integrated intensity")
         ax0.legend(legend)
-        ax0.set_title(f"Rocking curve")
+        ax0.set_title("Rocking curve")
         ax1.plot(tilt_values, np.log10(rocking_curve), ".")
         if interp_tilt is not None and interp_curve is not None:
             ax1.plot(interp_tilt, np.log10(interp_curve))
