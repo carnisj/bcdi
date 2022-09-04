@@ -1,6 +1,10 @@
 Future:
 -------
 
+* Previously the functionalities regarding Bragg peak finding, rocking curve fitting and
+ plotting were located in tightly binded functions. A class PeakFinder is implemented to
+ gather these functionalities and manage its own state properly.
+
 * Add unit tests to postprocessing_utils.find_datarange and make it dimension-agnostic.
 
 * Fix a bug with data path formatting in ID01BLISS loader (missing parentheses when

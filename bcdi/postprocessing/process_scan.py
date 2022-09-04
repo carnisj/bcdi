@@ -487,7 +487,9 @@ def process_scan(
     ##########################################################
     # correct the detector angles for the direct beam offset #
     ##########################################################
-    if not prm["outofplane_angle"] or not prm["inplane_angle"]:
+    if prm["data_frame"] == "detector" and (
+        not prm["outofplane_angle"] or not prm["inplane_angle"]
+    ):
         logger.info("Trying to correct detector angles using the direct beam")
         # corrected detector angles not provided
         if prm["bragg_peak"] is None and setup.detector.template_imagefile is not None:
@@ -502,29 +504,17 @@ def process_scan(
                 background=prm["background_file"],
                 normalize=prm["normalize_flux"],
             )
-            peaks = bu.find_bragg(
-                data=data,
-                roi=setup.detector.roi,
+            metadata = bu.find_bragg(
+                array=data,
                 binning=None,
-                savedir=setup.detector.savedir,
-                logger=logger,
-            )
-            logger.info(
-                "Bragg peak (full unbinned roi) at: "
-                f"{peaks[prm['centering_method']['reciprocal_space']]}"
-            )
-
-            bu.show_rocking_curve(
-                data,
-                peaks=peaks,
+                roi=setup.detector.roi,
                 peak_method=prm["centering_method"]["reciprocal_space"],
-                binning=setup.detector.binning,
-                detector_roi=setup.detector.roi,
                 tilt_values=setup.tilt_angles,
                 savedir=setup.detector.savedir,
                 logger=logger,
+                plot_fit=True,
             )
-            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
+            prm["bragg_peak"] = metadata["bragg_peak"]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle

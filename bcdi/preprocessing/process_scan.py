@@ -474,32 +474,17 @@ def process_scan(
         and prm["rocking_angle"] != "energy"
     ):
         # corrected detector angles not provided
-        bragg_peaks = {"user": prm["bragg_peak"]}
-        if prm["bragg_peak"] is None:
-            # Bragg peak position not provided, find it from the data
-            peaks = bu.find_bragg(
-                data=data,
-                roi=setup.detector.roi,
-                binning=setup.detector.current_binning,
-                savedir=setup.detector.savedir,
-                logger=logger,
-            )
-            bragg_peaks.update(peaks)
-            prm["bragg_peak"] = peaks[prm["centering_method"]["reciprocal_space"]]
-            logger.info("Bragg peak (full unbinned roi) at: " f"{prm['bragg_peak']}")
-        if prm["bragg_peak"] is None:
-            raise ValueError("The position of the Bragg peak is undefined.")
-
-        metadata = bu.show_rocking_curve(
-            data,
-            peaks=bragg_peaks,
+        metadata = bu.find_bragg(
+            array=data,
+            binning=setup.detector.current_binning,
+            roi=setup.detector.roi,
             peak_method=prm["centering_method"]["reciprocal_space"],
-            binning=setup.detector.binning,
-            detector_roi=setup.detector.roi,
             tilt_values=setup.tilt_angles,
             savedir=setup.detector.savedir,
             logger=logger,
+            plot_fit=True,
         )
+        prm["bragg_peak"] = metadata["bragg_peak"]
         setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
         prm["outofplane_angle"] = setup.outofplane_angle
         prm["inplane_angle"] = setup.inplane_angle
@@ -618,16 +603,19 @@ def process_scan(
                     logger=logger,
                 )
                 # find the Bragg peak position from the interpolated data
-                peaks = bu.find_bragg(
-                    data=data,
-                    roi=None,
+                interpolated_metadata = bu.find_bragg(
+                    array=data,
                     binning=None,
+                    roi=None,
+                    peak_method=prm["centering_method"]["reciprocal_space"],
+                    tilt_values=None,
                     logger=logger,
+                    plot_fit=False,
                 )
                 q_bragg = [
-                    q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
-                    q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
-                    q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+                    q_values[0][interpolated_metadata["bragg_peak"][0]],
+                    q_values[1][interpolated_metadata["bragg_peak"][1]],
+                    q_values[2][interpolated_metadata["bragg_peak"][2]],
                 ]
                 qnorm = np.linalg.norm(q_bragg)
             else:  # 'linearization'
@@ -707,16 +695,19 @@ def process_scan(
                 gc.collect()
     else:  # reload_orthogonal
         if q_values:  # find the Bragg peak position from the interpolated data
-            peaks = bu.find_bragg(
-                data=data,
-                roi=None,
+            interpolated_metadata = bu.find_bragg(
+                array=data,
                 binning=None,
+                roi=None,
+                peak_method=prm["centering_method"]["reciprocal_space"],
+                tilt_values=None,
                 logger=logger,
+                plot_fit=False,
             )
             q_bragg = [
-                q_values[0][peaks[prm["centering_method"]["reciprocal_space"]][0]],
-                q_values[1][peaks[prm["centering_method"]["reciprocal_space"]][1]],
-                q_values[2][peaks[prm["centering_method"]["reciprocal_space"]][2]],
+                q_values[0][interpolated_metadata["bragg_peak"][0]],
+                q_values[1][interpolated_metadata["bragg_peak"][1]],
+                q_values[2][interpolated_metadata["bragg_peak"][2]],
             ]
             qnorm = np.linalg.norm(q_bragg)
         else:
