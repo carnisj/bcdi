@@ -239,14 +239,6 @@ class TestPreprocessingChecker(unittest.TestCase):
         out = self.checker.check_config()
         self.assertEqual(out["center_fft"], "skip")
 
-    def test_check_config_fix_size(self):
-        self.checker._checked_params["fix_size"] = [2, 127, 25, 326, 56, 95]
-        self.checker._checked_params["center_fft"] = "crop_sym_ZYX"
-        self.checker._checked_params["roi_detector"] = [2, 326, 5, 956]
-        out = self.checker.check_config()
-        self.assertEqual(out["center_fft"], "skip")
-        self.assertTrue(len(out["roi_detector"]) == 0)
-
     def test_check_config_photon_filter_loading(self):
         self.checker._checked_params["photon_filter"] = "loading"
         out = self.checker.check_config()

@@ -300,13 +300,6 @@ class PreprocessingChecker(ConfigChecker):
             self._checked_params["multiprocessing"] = False
 
         self._checked_params["roi_detector"] = self._create_roi()
-        if self._checked_params["fix_size"]:
-            logger.info('"fix_size" parameter provided, roi_detector will be set to []')
-            logger.info(
-                "'fix_size' parameter provided, defaulting 'center_fft' to 'skip'"
-            )
-            self._checked_params["roi_detector"] = []
-            self._checked_params["center_fft"] = "skip"
 
         if self._checked_params["photon_filter"] == "loading":
             self._checked_params["loading_threshold"] = self._checked_params[
@@ -730,15 +723,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         allowed = {0, 1}
         if value not in allowed:
             raise ParameterError(key, value, allowed)
-    elif key == "fix_size":
-        valid.valid_container(
-            value,
-            container_types=(tuple, list),
-            length=6,
-            item_types=int,
-            allow_none=True,
-            name=key,
-        )
     elif key == "fix_voxel":
         valid.valid_item(
             value, allowed_types=Real, min_excluded=0, allow_none=True, name=key

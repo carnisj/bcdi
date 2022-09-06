@@ -377,9 +377,6 @@ def process_scan(
             monitor = []  # we assume that normalization was already performed
             prm["center_fft"] = "skip"
             # we assume that crop/pad/centering was already performed
-            prm[
-                "fix_size"
-            ] = []  # we assume that crop/pad/centering was already performed
 
             # bin data and mask if needed
             if any(val != 1 for val in setup.detector.binning):
@@ -734,7 +731,6 @@ def process_scan(
         fft_option=prm["center_fft"],
         pad_size=prm["pad_size"],
         fix_bragg=prm["bragg_peak"],
-        fix_size=prm["fix_size"],
         q_values=q_values,
         logger=logger,
     )
