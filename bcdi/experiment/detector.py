@@ -88,6 +88,8 @@ def create_detector(name, **kwargs):
         return Eiger4M(name=name, **kwargs)
     if name == "Eiger9M":
         return Eiger9M(name=name, **kwargs)
+    if name == "Lambda":
+        return Lambda(name=name, **kwargs)
     if name == "Timepix":
         return Timepix(name=name, **kwargs)
     if name == "Merlin":
@@ -1103,4 +1105,26 @@ class Dummy(Detector):
         if self.custom_pixelsize is not None:
             return self.custom_pixelsize, self.custom_pixelsize
         self.logger.info(f"Defaulting the pixel size to {55e-06, 55e-06}")
+        return 55e-06, 55e-06
+
+
+class Lambda(Detector):
+    """Implementation of the Lambda detector."""
+
+    def __init__(self, name, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.saturation_threshold = None
+
+    @property
+    def unbinned_pixel_number(self):
+        """
+        Define the number of pixels of the unbinned detector.
+
+        Convention: (vertical, horizontal)
+        """
+        return 516, 516
+
+    @property
+    def unbinned_pixel_size(self):
+        """Pixel size (vertical, horizontal) of the unbinned detector in meters."""
         return 55e-06, 55e-06
