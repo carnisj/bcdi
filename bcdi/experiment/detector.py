@@ -1113,7 +1113,7 @@ class Lambda(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.saturation_threshold = None
+        self.saturation_threshold = 1.5e6
 
     @property
     def unbinned_pixel_number(self):

@@ -863,7 +863,7 @@ class TestLambda(unittest.TestCase):
 
     def setUp(self) -> None:
         self.det = Lambda("Lambda")
-        self.saturation_threshold = 1e6
+        self.saturation_threshold = 1.5e6
 
     def test_name(self):
         self.assertEqual(self.det.name, "Lambda")
