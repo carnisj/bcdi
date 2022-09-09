@@ -48,6 +48,9 @@ class TestCreateDetector(unittest.TestCase):
     def test_create_dummy(self):
         self.assertIsInstance(create_detector("Dummy"), Dummy)
 
+    def test_create_lambda(self):
+        self.assertIsInstance(create_detector("Lambda"), Lambda)
+
     def test_create_unknown_detector(self):
         with self.assertRaises(NotImplementedError):
             create_detector("unknown")
