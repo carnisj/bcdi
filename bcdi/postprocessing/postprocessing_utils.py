@@ -2070,7 +2070,7 @@ def remove_ramp_2d(
 
 def sort_reconstruction(
     file_path, data_range, amplitude_threshold, sort_method="variance/mean"
-):
+) -> List[int]:
     """
     Sort out reconstructions based on the metric 'sort_method'.
 
@@ -2161,7 +2161,7 @@ def sort_reconstruction(
     print(quality_array)
     print("sorted list", sorted_obj)
 
-    return sorted_obj
+    return [int(val) for val in sorted_obj]
 
 
 def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
@@ -2187,9 +2187,7 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(
-    obj, support_threshold, seed=0, skip_unwrap: bool = False, debugging=True, **kwargs
-):
+def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
     """
     Unwrap the phase of a complex object.
 
@@ -2200,8 +2198,6 @@ def unwrap(
     :param support_threshold: relative threshold used to define a support from abs(obj)
     :param seed: int, random seed. Use always the same value if you want a
      deterministic behavior.
-    :param skip_unwrap: True to apply only the support_threshold to the phase but skip
-     the unwrapping part.
     :param debugging: set to True to see plots
     :param kwargs:
 
@@ -2233,28 +2229,23 @@ def unwrap(
     # 0 is a valid entry for ma.masked_array
     phase_wrapped: np.ndarray = ma.masked_array(np.angle(obj), mask=unwrap_support)
 
-    plot_title = "applying support threshold\n" if skip_unwrap else "unwrapping"
     if debugging and ndim == 3:
         gu.multislices_plot(
             phase_wrapped.data,
             plot_colorbar=True,
-            title=f"Before {plot_title}",
+            title=f"Before unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),
         )
 
-    if skip_unwrap:
-        phase_unwrapped = phase_wrapped
-    else:
-        phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
-
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging and ndim == 3:
         gu.multislices_plot(
             phase_unwrapped,
             plot_colorbar=True,
-            title=f"After {plot_title}",
+            title=f"After unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),
