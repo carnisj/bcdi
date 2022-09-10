@@ -24,17 +24,10 @@ from bcdi.utils.parameters import PostprocessingChecker
 logger = logging.getLogger(__name__)
 
 
-def run(prm: Dict[str, Any]) -> None:
-    """
-    Run the postprocessing defined by the configuration parameters.
-
-    It assumes that the dictionary of parameters was validated via a ConfigChecker
-    instance.
-
-    :param prm: the parsed parameters
-    """
-    prm = PostprocessingChecker(
-        initial_params=prm,
+def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Configure and validate the existing dictionary of parameters."""
+    return PostprocessingChecker(
+        initial_params=parameters,
         default_values={
             "actuators": None,
             "align_axis": False,
@@ -131,6 +124,18 @@ def run(prm: Dict[str, Any]) -> None:
             "scans",
         ),
     ).check_config()
+
+
+def run(prm: Dict[str, Any]) -> None:
+    """
+    Run the postprocessing defined by the configuration parameters.
+
+    It assumes that the dictionary of parameters was validated via a ConfigChecker
+    instance.
+
+    :param prm: the parsed parameters
+    """
+    prm = initialize_parameters(prm)
 
     ############################
     # start looping over scans #
