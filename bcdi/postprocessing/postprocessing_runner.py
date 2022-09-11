@@ -114,6 +114,7 @@ def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
         required_params=(
             "beamline",
             "data_frame",
+            "interpolation_method",
             "detector",
             "isosurface_strain",
             "output_size",
