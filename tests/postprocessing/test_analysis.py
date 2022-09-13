@@ -208,6 +208,26 @@ class TestAnalysis(unittest.TestCase):
         self.assertAlmostEqual(self.process.setup.inplane_angle, expected_inplane)
         self.assertAlmostEqual(self.process.setup.outofplane_angle, expected_outofplane)
 
+    def test_get_interplanar_distance(self):
+        expected = 2.2637604819304933
+        self.assertAlmostEquals(self.process.get_interplanar_distance, expected)
+
+    def test_get_q_bragg_laboratory_frame(self):
+        expected = [-0.84449687, 2.64216636, -0.09732299]
+        self.assertTrue(
+            np.allclose(self.process.get_q_bragg_laboratory_frame, expected)
+        )
+
+    def test_get_normalized_q_bragg_laboratory_frame(self):
+        expected = [-0.30426266, 0.95194261, -0.03506437]
+        self.assertTrue(
+            np.allclose(self.process.get_normalized_q_bragg_laboratory_frame, expected)
+        )
+
+    def test_get_norm_q_bragg(self):
+        expected = 2.7755521652279227
+        self.assertAlmostEquals(self.process.get_norm_q_bragg, expected)
+
 
 class TestPhaseManipulator(unittest.TestCase):
     def setUp(self) -> None:

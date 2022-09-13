@@ -66,6 +66,22 @@ class Analysis(ABC):
         )
 
     @property
+    def get_interplanar_distance(self) -> float:
+        return 2 * np.pi / np.linalg.norm(self.setup.q_laboratory)
+
+    @property
+    def get_normalized_q_bragg_laboratory_frame(self) -> List[float]:
+        return self.setup.q_laboratory / np.linalg.norm(self.setup.q_laboratory)
+
+    @property
+    def get_norm_q_bragg(self) -> float:
+        return np.linalg.norm(self.setup.q_laboratory)
+
+    @property
+    def get_q_bragg_laboratory_frame(self) -> List[float]:
+        return self.setup.q_laboratory
+
+    @property
     def scan_index(self) -> int:
         return self._scan_index
 
