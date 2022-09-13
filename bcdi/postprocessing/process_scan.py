@@ -245,47 +245,24 @@ def process_scan(
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
-    qnorm = np.linalg.norm(setup.q_laboratory)  # (1/A)
-    q_lab = setup.q_laboratory / qnorm
-    # expressed in the laboratory frame z downstream, y vertical, x outboard
-
-    angle = simu.angle_vectors(
-        ref_vector=[q_lab[2], q_lab[1], q_lab[0]],
-        test_vector=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-    )
     logger.info(
-        f"Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
-        f"({q_lab[0]:.4f} 1/A, {q_lab[1]:.4f} 1/A, {q_lab[2]:.4f} 1/A)"
+        "Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
+        f"{[f'{val:.4f}' for _, val in enumerate(analysis.get_normalized_q_bragg_laboratory_frame)]} (1/A)"
     )
-
-    planar_dist = 2 * np.pi / qnorm  # qnorm should be in angstroms
-    logger.info(f"Wavevector transfer: {qnorm:.4f} 1/A")
-    logger.info(f"Atomic planar distance: {planar_dist:.4f} A")
-    logger.info(f"Angle between q_lab and {prm['ref_axis_q']} = {angle:.2f} deg")
-    if prm["debug"]:
-        logger.info(
-            "Angle with y in zy plane = "
-            f"{np.arctan(q_lab[0] / q_lab[1]) * 180 / np.pi:.2f} deg"
-        )
-        logger.info(
-            "Angle with y in xy plane = "
-            f"{np.arctan(-q_lab[2] / q_lab[1]) * 180 / np.pi:.2f} deg"
-        )
-        logger.info(
-            "Angle with z in xz plane = "
-            f"{180 + np.arctan(q_lab[2] / q_lab[0]) * 180 / np.pi:.2f} deg\n"
-        )
-
-    planar_dist = planar_dist / 10  # switch to nm
+    logger.info(f"Wavevector transfer: {analysis.get_norm_q_bragg:.4f} 1/A")
+    logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} A")
 
     #######################
     #  orthogonalize data #
     #######################
     # TODO remove below placeholder
+    planar_dist = analysis.get_interplanar_distance / 10  # switch to nm  # TODO
     original_size = analysis.original_shape
     numz, numy, numx = analysis.optimized_range
     avg_counter = analysis.nb_reconstructions
     avg_obj = analysis.data
+    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
+    qnorm = analysis.get_norm_q_bragg
     # TODO
 
     logger.info(f"Shape before orthogonalization {avg_obj.shape}\n")
