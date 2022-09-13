@@ -16,7 +16,6 @@ except ModuleNotFoundError:
     pass
 import logging
 import os
-import tkinter as tk
 from logging import Logger
 from pathlib import Path
 from tkinter import filedialog
@@ -31,6 +30,7 @@ from matplotlib import pyplot as plt
 import bcdi.graph.graph_utils as gu
 import bcdi.graph.linecut as lc
 import bcdi.postprocessing.postprocessing_utils as pu
+from bcdi.postprocessing.analysis import Analysis, PhaseManipulator
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.simulation.simulation_utils as simu
 import bcdi.utils.image_registration as reg
@@ -74,7 +74,6 @@ def process_scan(
         logger.propagate = True
 
     prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
-    comment = prm["comment"]  # re-initialize comment
     tmp_str = f"Scan {scan_idx + 1}/{len(prm['scans'])}: S{scan_nb}"
     from datetime import datetime
 
@@ -131,393 +130,117 @@ def process_scan(
     # of the transformation matrix
     setup.read_logfile(scan_number=scan_nb)
 
-    ###################
-    # print instances #
-    ###################
     logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
         "#################\nDetector instance\n#################\n"
         f"{setup.detector.params}"
     )
 
-    ################
-    # preload data #
-    ################
-    if prm["reconstruction_files"][scan_idx] is not None:
-        file_path = prm["reconstruction_files"][scan_idx]
-        if isinstance(file_path, str):
-            file_path = (file_path,)
-    else:
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilenames(
-            initialdir=setup.detector.scandir
-            if prm["data_dir"] is None
-            else setup.detector.datadir,
-            filetypes=[
-                ("HDF5", "*.h5"),
-                ("CXI", "*.cxi"),
-                ("NPZ", "*.npz"),
-                ("NPY", "*.npy"),
-            ],
-        )
-
-    nbfiles = len(file_path)
-    plt.ion()
-
-    obj, extension = util.load_file(file_path[0])
-    if extension == ".h5":
-        comment = comment + "_mode"
-
+    ######################
+    # start the analysis #
+    ######################
     logger.info("###############\nProcessing data\n###############")
-    nz, ny, nx = obj.shape
-    logger.info(f"Initial data size: ({nz}, {ny}, {nx})")
-    original_size = prm["original_size"] if prm["original_size"] else obj.shape
-    logger.info(f"FFT size before accounting for phasing_binning: {original_size}")
-    original_size = tuple(
-        original_size[index] // prm["phasing_binning"][index]
-        for index in range(len(prm["phasing_binning"]))
-    )
-    logger.info(f"Binning used during phasing: {setup.detector.binning}")
-    logger.info(f"Padding back to original FFT size: {original_size}")
-    obj = util.crop_pad(
-        array=obj, output_shape=original_size, cmap=prm["colormap"].cmap
-    )
 
-    ###########################################################################
-    # define range for orthogonalization and plotting - speed up calculations #
-    ###########################################################################
-    numz, numy, numx = pu.find_datarange(
-        array=obj, amplitude_threshold=0.05, keep_size=prm["keep_size"]
-    )
+    analysis = Analysis(scan_index=scan_idx, parameters=prm, setup=setup, logger=logger)
+    comment = analysis.comment
 
-    logger.info(
-        "Data shape used for orthogonalization and plotting: "
-        f"({numz}, {numy}, {numx})"
-    )
+    analysis.find_data_range(amplitude_threshold=0.05, plot_margin=10)
 
-    ######################################################################
-    # find the best reconstruction, based on mean amplitude and variance #
-    ######################################################################
-    if nbfiles > 1:
-        logger.info(
-            "Trying to find the best reconstruction\nSorting by "
-            f"{prm['sort_method']}"
-        )
-        sorted_obj = pu.sort_reconstruction(
-            file_path=file_path,
-            amplitude_threshold=prm["isosurface_strain"],
-            data_range=(numz, numy, numx),
-            sort_method=prm["sort_method"],
-        )
-    else:
-        sorted_obj = [0]
+    analysis.find_best_reconstruction()
 
-    #######################################
-    # load reconstructions and average it #
-    #######################################
-    avg_obj = np.zeros((numz, numy, numx))
-    ref_obj = np.zeros((numz, numy, numx))
-    avg_counter = 1
-    logger.info(f"Averaging using {nbfiles} candidate reconstructions")
-    for counter, value in enumerate(sorted_obj):
-        obj, extension = util.load_file(file_path[value])
-        logger.info(f"Opening {file_path[value]}")
-        prm[f"from_file_{counter}"] = file_path[value]
+    analysis.average_reconstructions()
 
-        if prm["flip_reconstruction"]:
-            obj = pu.flip_reconstruction(obj, debugging=True, cmap=prm["colormap"].cmap)
+    phase_manipulator = analysis.get_phase_manipulator()
 
-        if extension == ".h5":  # data is already cropped by PyNX
-            prm["centering_method"]["direct_space"] = "skip"
-            # correct a roll after the decomposition into modes in PyNX
-            obj = np.roll(obj, prm["roll_modes"], axis=(0, 1, 2))
-            fig, _, _ = gu.multislices_plot(
-                abs(obj),
-                sum_frames=True,
-                plot_colorbar=True,
-                title="1st mode after centering",
-                cmap=prm["colormap"].cmap,
+    if not prm["skip_unwrap"]:
+        phase_manipulator.unwrap_phase()
+        phase_manipulator.center_phase()
+        if prm["debug"]:
+            phase_manipulator.plot_phase(
+                plot_title="Phase after unwrap + wrap", save_plot=True
             )
 
-        # use the range of interest defined above
-        obj = util.crop_pad(
-            array=obj,
-            output_shape=(numz, numy, numx),
-            debugging=False,
-            cmap=prm["colormap"].cmap,
-        )
-
-        # align with average reconstruction
-        if counter == 0:  # the fist array loaded will serve as reference object
-            logger.info("This reconstruction will be used as reference.")
-            ref_obj = obj
-
-        avg_obj, flag_avg = reg.average_arrays(
-            avg_obj=avg_obj,
-            ref_obj=ref_obj,
-            obj=obj,
-            support_threshold=0.25,
-            correlation_threshold=prm["correlation_threshold"],
-            aligning_option="dft",
-            space=prm["averaging_space"],
-            reciprocal_space=False,
-            is_orthogonal=prm["is_orthogonal"],
-            debugging=prm["debug"],
-            cmap=prm["colormap"].cmap,
-        )
-        avg_counter = avg_counter + flag_avg
-
-    avg_obj = avg_obj / avg_counter
-    if avg_counter > 1:
-        logger.info(f"Average performed over {avg_counter} reconstructions\n")
-    del obj, ref_obj
-    gc.collect()
-
-    ################
-    # unwrap phase #
-    ################
-    phase, extent_phase = pu.unwrap(
-        avg_obj,
-        support_threshold=prm["threshold_unwrap_refraction"],
-        skip_unwrap=prm["skip_unwrap"],
-        debugging=prm["debug"],
-        reciprocal_space=False,
-        is_orthogonal=prm["is_orthogonal"],
-        cmap=prm["colormap"].cmap,
-    )
-
-    logger.info(
-        "Extent of the phase over an extended support (ceil(phase range)) ~ "
-        f"{int(extent_phase)} (rad)",
-    )
-    if not prm["skip_unwrap"]:
-        phase = util.wrap(
-            phase, start_angle=-extent_phase / 2, range_angle=extent_phase
-        )
+    phase_manipulator.remove_ramp()
     if prm["debug"]:
-        gu.multislices_plot(
-            phase,
-            width_z=numz,
-            width_y=numy,
-            width_x=numx,
-            plot_colorbar=True,
-            title="Phase after unwrap + wrap",
-            reciprocal_space=False,
-            is_orthogonal=prm["is_orthogonal"],
-            cmap=prm["colormap"].cmap,
+        phase_manipulator.plot_phase(
+            plot_title="Phase after ramp removal", save_plot=True
         )
 
-    #############################################
-    # phase ramp removal before phase filtering #
-    #############################################
-    amp, phase, rampz, rampy, rampx = pu.remove_ramp(
-        amp=abs(avg_obj),
-        phase=phase,
-        initial_shape=original_size,
-        method="gradient",
-        amplitude_threshold=prm["isosurface_strain"],
-        threshold_gradient=prm["threshold_gradient"],
-        cmap=prm["colormap"].cmap,
-        logger=logger,
-    )
-    del avg_obj
-    gc.collect()
+    phase_manipulator.remove_offset()
+    phase_manipulator.center_phase()
 
-    if prm["debug"]:
-        gu.multislices_plot(
-            phase,
-            width_z=numz,
-            width_y=numy,
-            width_x=numx,
-            plot_colorbar=True,
-            title="Phase after ramp removal",
-            reciprocal_space=False,
-            is_orthogonal=prm["is_orthogonal"],
-            cmap=prm["colormap"].cmap,
-        )
-
-    ########################
-    # phase offset removal #
-    ########################
-    support = np.zeros(amp.shape)
-    support[amp > prm["isosurface_strain"] * amp.max()] = 1
-    phase = pu.remove_offset(
-        array=phase,
-        support=support,
-        offset_method=prm["offset_method"],
-        phase_offset=prm["phase_offset"],
-        offset_origin=prm["phase_offset_origin"],
-        title="Phase",
-        debugging=prm["debug"],
-        cmap=prm["colormap"].cmap,
-    )
-    del support
-    gc.collect()
-
-    phase = util.wrap(
-        obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase
-    )
-
-    ##############################################################################
-    # average the phase over a window or apodize to reduce noise in strain plots #
-    ##############################################################################
+    #################################################################
+    # average the phase over a window to reduce noise in the strain #
+    #################################################################
     if prm["half_width_avg_phase"] != 0:
-        bulk = pu.find_bulk(
-            amp=amp,
-            support_threshold=prm["isosurface_strain"],
-            method="threshold",
-            cmap=prm["colormap"].cmap,
-        )
-        # the phase should be averaged only in the support defined by the isosurface
-        phase = pu.mean_filter(
-            array=phase,
-            support=bulk,
-            half_width=prm["half_width_avg_phase"],
-            cmap=prm["colormap"].cmap,
-        )
-        del bulk
-        gc.collect()
+        phase_manipulator.average_phase()
+        comment.concatenate("avg" + str(2 * prm["half_width_avg_phase"] + 1))
 
-    if prm["half_width_avg_phase"] != 0:
-        comment = comment + "_avg" + str(2 * prm["half_width_avg_phase"] + 1)
-
-    gridz, gridy, gridx = np.meshgrid(
-        np.arange(0, numz, 1),
-        np.arange(0, numy, 1),
-        np.arange(0, numx, 1),
-        indexing="ij",
-    )
-
-    phase = (
-        phase + gridz * rampz + gridy * rampy + gridx * rampx
-    )  # put back the phase ramp otherwise the diffraction
-    # pattern will be shifted and the prtf messed up
+    #############################################################
+    # put back the phase ramp otherwise the diffraction pattern #
+    # will be shifted and the prtf messed up                    #
+    #############################################################
+    phase_manipulator.add_ramp()
 
     if prm["apodize"]:
-        amp, phase = pu.apodize(
-            amp=amp,
-            phase=phase,
-            initial_shape=original_size,
-            window_type=prm["apodization_window"],
-            sigma=prm["apodization_sigma"],
-            mu=prm["apodization_mu"],
-            alpha=prm["apodization_alpha"],
-            is_orthogonal=prm["is_orthogonal"],
-            debugging=True,
-            cmap=prm["colormap"].cmap,
-        )
-        comment = comment + "_apodize_" + prm["apodization_window"]
+        phase_manipulator.apodize()
+        comment.concatenate("_apodize_" + prm["apodization_window"])
 
-    ################################################################
-    # save the phase with the ramp for PRTF calculations,          #
-    # otherwise the object will be misaligned with the measurement #
-    ################################################################
     np.savez_compressed(
-        setup.detector.savedir + "S" + str(scan_nb) + "_avg_obj_prtf" + comment,
-        obj=amp * np.exp(1j * phase),
+        setup.detector.savedir + "S" + str(scan_nb) + "_avg_obj_prtf" + comment.text,
+        obj=phase_manipulator.modulus * np.exp(1j * phase_manipulator.phase),
     )
 
     ####################################################
     # remove again phase ramp before orthogonalization #
     ####################################################
-    phase = phase - gridz * rampz - gridy * rampy - gridx * rampx
+    phase_manipulator.add_ramp(sign=-1)
 
-    avg_obj = amp * np.exp(1j * phase)  # here the phase is again wrapped in [-pi pi[
-
-    del amp, phase, gridz, gridy, gridx, rampz, rampy, rampx
-    gc.collect()
-
-    #####################################
-    # centering the direct space object #
-    #####################################
-    avg_obj = pu.center_object(
-        method=prm["centering_method"]["direct_space"], obj=avg_obj
+    analysis.update_data(
+        modulus=phase_manipulator.modulus, phase=phase_manipulator.phase
     )
+    analysis.extent_phase = phase_manipulator.extent_phase
+    del phase_manipulator
 
-    #######################
-    #  save support & vti #
-    #######################
+    analysis.center_object_based_on_modulus()
+
     if prm["save_support"]:
-        # to be used as starting support in phasing,
-        # hence still in the detector frame
-        support = np.zeros((numz, numy, numx))
-        support[abs(avg_obj) / abs(avg_obj).max() > 0.01] = 1
-        # low threshold because support will be cropped by shrinkwrap during phasing
-        np.savez_compressed(
-            setup.detector.savedir + "S" + str(scan_nb) + "_support" + comment,
-            obj=support,
+        # to be used as starting support in phasing (still in the detector frame)
+        # low threshold 0.1 because support will be cropped by shrinkwrap during phasing
+        analysis.save_support(
+            filename=setup.detector.savedir + f"S{scan_nb}_support{comment.text}.npz",
+            modulus_threshold=0.1,
         )
-        del support
-        gc.collect()
 
     if prm["save_rawdata"]:
-        np.savez_compressed(
-            setup.detector.savedir + "S" + str(scan_nb) + "_raw_amp-phase" + comment,
-            amp=abs(avg_obj),
-            phase=np.angle(avg_obj),
+        analysis.save_modulus_phase(
+            filename=setup.detector.savedir
+            + f"S{scan_nb}_raw_amp-phase{comment.text}.npz",
         )
-
-        # voxel sizes in the detector frame
-        voxel_z, voxel_y, voxel_x = setup.voxel_sizes_detector(
-            array_shape=original_size,
-            tilt_angle=(
-                prm["tilt_angle"]
-                * setup.detector.prm["preprocessing_binning"][0]
-                * setup.detector.binning[0]
-            ),
-            pixel_x=setup.detector.pixelsize_x,
-            pixel_y=setup.detector.pixelsize_y,
-            verbose=True,
-        )
-        # save raw amp & phase to VTK
-        # in VTK, x is downstream, y vertical, z inboard,
-        # thus need to flip the last axis
-        gu.save_to_vti(
+        analysis.save_to_vti(
             filename=os.path.join(
                 setup.detector.savedir,
-                "S" + str(scan_nb) + "_raw_amp-phase" + comment + ".vti",
-            ),
-            voxel_size=(voxel_z, voxel_y, voxel_x),
-            tuple_array=(abs(avg_obj), np.angle(avg_obj)),
-            tuple_fieldnames=("amp", "phase"),
-            amplitude_threshold=0.01,
+                "S" + str(scan_nb) + "_raw_amp-phase" + comment.text + ".vti",
+            )
         )
 
     ##########################################################
     # correct the detector angles for the direct beam offset #
     ##########################################################
-    if prm["data_frame"] == "detector" and (
-        not prm["outofplane_angle"] or not prm["inplane_angle"]
-    ):
+    if analysis.detector_angles_correction_needed:
         logger.info("Trying to correct detector angles using the direct beam")
-        # corrected detector angles not provided
-        if prm["bragg_peak"] is None and setup.detector.template_imagefile is not None:
-            # Bragg peak position not provided, find it from the data
-            data, _, _, _ = setup.loader.load_check_dataset(
-                scan_number=scan_nb,
-                setup=setup,
-                frames_pattern=prm["frames_pattern"],
-                bin_during_loading=False,
-                flatfield=prm["flatfield_file"],
-                hotpixels=prm["hotpixels_file"],
-                background=prm["background_file"],
-                normalize=prm["normalize_flux"],
-            )
-            metadata = bu.find_bragg(
-                array=data,
-                binning=None,
-                roi=setup.detector.roi,
-                peak_method=prm["centering_method"]["reciprocal_space"],
-                tilt_values=setup.tilt_angles,
-                savedir=setup.detector.savedir,
-                logger=logger,
-                plot_fit=True,
-            )
-            prm["bragg_peak"] = metadata["bragg_peak"]
-        setup.correct_detector_angles(bragg_peak_position=prm["bragg_peak"])
-        prm["outofplane_angle"] = setup.outofplane_angle
-        prm["inplane_angle"] = setup.inplane_angle
+
+        if analysis.undefined_bragg_peak_but_retrievable:
+            metadata = analysis.retrieve_bragg_peak()
+            analysis.update_parameters({"bragg_peak": metadata["bragg_peak"]})
+
+        analysis.update_detector_angles(bragg_peak_position=prm["bragg_peak"])
+        analysis.update_parameters(
+            {
+                "inplane_angle": setup.inplane_angle,
+                "outofplane_angle": setup.outofplane_angle,
+            }
+        )
 
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
@@ -558,6 +281,13 @@ def process_scan(
     #######################
     #  orthogonalize data #
     #######################
+    # TODO remove below placeholder
+    original_size = analysis.original_shape
+    numz, numy, numx = analysis.optimized_range
+    avg_counter = analysis.nb_reconstructions
+    avg_obj = analysis.data
+    # TODO
+
     logger.info(f"Shape before orthogonalization {avg_obj.shape}\n")
     if prm["data_frame"] == "detector":
         if prm["debug"] and not prm["skip_unwrap"]:
@@ -685,15 +415,15 @@ def process_scan(
         else "Phase unwrapping"
     )
     logger.info(log_text)
-    phase, extent_phase = pu.unwrap(
-        obj_ortho,
-        support_threshold=prm["threshold_unwrap_refraction"],
-        skip_unwrap=prm["skip_unwrap"],
-        debugging=True,
-        reciprocal_space=False,
-        is_orthogonal=True,
-        cmap=prm["colormap"].cmap,
-    )
+    if not prm["skip_unwrap"]:
+        phase, extent_phase = pu.unwrap(
+            obj_ortho,
+            support_threshold=prm["threshold_unwrap_refraction"],
+            debugging=True,
+            reciprocal_space=False,
+            is_orthogonal=True,
+            cmap=prm["colormap"].cmap,
+        )
     amp = abs(obj_ortho)
     del obj_ortho
     gc.collect()
@@ -866,7 +596,7 @@ def process_scan(
     # laboratory frame (for debugging purpose)     #
     ################################################
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
-        comment = comment + "_labframe"
+        comment.concatenate("labframe")
         logger.info("Rotating back the crystal in laboratory frame")
         amp, phase, strain = util.rotate_crystal(
             arrays=(amp, phase, strain),
@@ -883,7 +613,7 @@ def process_scan(
         q_final = q_lab
 
         if prm["save_frame"] == "lab_flat_sample":
-            comment = comment + "_flat"
+            comment.concatenate("flat")
             logger.info("Sending sample stage circles to 0")
             (amp, phase, strain), q_final = setup.beamline.flatten_sample(
                 arrays=(amp, phase, strain),
@@ -899,7 +629,7 @@ def process_scan(
     else:  # "save_frame" = "crystal"
         # rotate also q_lab to have it along ref_axis_q,
         # as a cross-checkm, vectors needs to be in xyz order
-        comment = comment + "_crystalframe"
+        comment.concatenate("crystalframe")
         q_final = util.rotate_vector(
             vectors=q_lab[::-1],
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
@@ -968,10 +698,10 @@ def process_scan(
         cmap=prm["colormap"].cmap,
     )
     if prm["save"]:
-        prm["comment"] = comment
+        prm["comment"] = comment.text
         np.savez_compressed(
             f"{setup.detector.savedir}S{scan_nb}_"
-            f"amp{prm['phase_fieldname']}strain{comment}",
+            f"amp{prm['phase_fieldname']}strain{comment.text}",
             amp=amp,
             phase=phase,
             bulk=bulk,
@@ -986,7 +716,7 @@ def process_scan(
         # save results in hdf5 file
         with h5py.File(
             f"{setup.detector.savedir}S{scan_nb}_"
-            f"amp{prm['phase_fieldname']}strain{comment}.h5",
+            f"amp{prm['phase_fieldname']}strain{comment.text}.h5",
             "w",
         ) as hf:
             out = hf.create_group("output")
@@ -1012,7 +742,7 @@ def process_scan(
                 + "_amp-"
                 + prm["phase_fieldname"]
                 + "-strain"
-                + comment
+                + comment.text
                 + ".vti",
             ),
             voxel_size=voxel_size,
@@ -1089,7 +819,7 @@ def process_scan(
             + "S"
             + str(scan_nb)
             + "_phase_at_max"
-            + comment
+            + comment.text
             + ".png"
         )
     plt.close(fig)
@@ -1115,7 +845,12 @@ def process_scan(
     plt.pause(0.1)
     if prm["save"]:
         fig.savefig(
-            setup.detector.savedir + "S" + str(scan_nb) + "_bulk" + comment + ".png"
+            setup.detector.savedir
+            + "S"
+            + str(scan_nb)
+            + "_bulk"
+            + comment.text
+            + ".png"
         )
     plt.close(fig)
 
@@ -1162,7 +897,7 @@ def process_scan(
         )
         fig.text(0.60, 0.05, f"Estimated T={temperature} C", size=20)
     if prm["save"]:
-        fig.savefig(setup.detector.savedir + f"S{scan_nb}_amp" + comment + ".png")
+        fig.savefig(setup.detector.savedir + f"S{scan_nb}_amp" + comment.text + ".png")
 
     # amplitude histogram
     fig, ax = plt.subplots(1, 1)
@@ -1179,7 +914,9 @@ def process_scan(
     ax.spines["left"].set_linewidth(1.5)
     ax.spines["top"].set_linewidth(1.5)
     ax.spines["bottom"].set_linewidth(1.5)
-    fig.savefig(setup.detector.savedir + f"S{scan_nb}_histo_amp" + comment + ".png")
+    fig.savefig(
+        setup.detector.savedir + f"S{scan_nb}_histo_amp" + comment.text + ".png"
+    )
 
     # phase
     fig, _, _ = gu.multislices_plot(
@@ -1218,7 +955,7 @@ def process_scan(
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if prm["save"]:
         fig.savefig(
-            setup.detector.savedir + f"S{scan_nb}_displacement" + comment + ".png"
+            setup.detector.savedir + f"S{scan_nb}_displacement" + comment.text + ".png"
         )
 
     # strain
@@ -1257,7 +994,9 @@ def process_scan(
     else:
         fig.text(0.60, 0.10, "No phase averaging", size=20)
     if prm["save"]:
-        fig.savefig(setup.detector.savedir + f"S{scan_nb}_strain" + comment + ".png")
+        fig.savefig(
+            setup.detector.savedir + f"S{scan_nb}_strain" + comment.text + ".png"
+        )
 
     if len(prm["scans"]) > 1:
         plt.close("all")
