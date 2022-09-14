@@ -493,6 +493,10 @@ class Setup:
 
         :return: kout vector
         """
+        if self.inplane_angle is None or self.outofplane_angle is None:
+            raise ValueError("detector angles are None")
+        if self.wavelength is None:
+            raise ValueError("wavelength is None")
         return self.beamline.exit_wavevector(
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
@@ -545,6 +549,8 @@ class Setup:
 
         :return: kin vector
         """
+        if self.wavelength is None:
+            raise ValueError("wavelength is None")
         return 2 * np.pi / self.wavelength * self.beam_direction
 
     @property
@@ -868,7 +874,7 @@ class Setup:
 
     def correct_detector_angles(
         self,
-        bragg_peak_position: Optional[Tuple[int, ...]],
+        bragg_peak_position: Optional[List[int]],
         verbose: bool = True,
     ) -> None:
         """
