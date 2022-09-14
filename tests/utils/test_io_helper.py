@@ -6,7 +6,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-import io
 import unittest
 from pathlib import Path
 
