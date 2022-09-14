@@ -30,10 +30,7 @@ from matplotlib import pyplot as plt
 import bcdi.graph.graph_utils as gu
 import bcdi.graph.linecut as lc
 import bcdi.postprocessing.postprocessing_utils as pu
-from bcdi.postprocessing.analysis import Analysis, PhaseManipulator
-import bcdi.preprocessing.bcdi_utils as bu
-import bcdi.simulation.simulation_utils as simu
-import bcdi.utils.image_registration as reg
+from bcdi.postprocessing.analysis import create_analysis
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
 from bcdi.utils.constants import AXIS_TO_ARRAY
@@ -141,7 +138,9 @@ def process_scan(
     ######################
     logger.info("###############\nProcessing data\n###############")
 
-    analysis = Analysis(scan_index=scan_idx, parameters=prm, setup=setup, logger=logger)
+    analysis = create_analysis(
+        scan_index=scan_idx, parameters=prm, setup=setup, logger=logger
+    )
     comment = analysis.comment
 
     analysis.find_data_range(amplitude_threshold=0.05, plot_margin=10)
@@ -255,165 +254,47 @@ def process_scan(
     #######################
     #  orthogonalize data #
     #######################
-    # TODO remove below placeholder
-    planar_dist = analysis.get_interplanar_distance / 10  # switch to nm  # TODO
-    original_size = analysis.original_shape
-    numz, numy, numx = analysis.optimized_range
-    avg_counter = analysis.nb_reconstructions
-    avg_obj = analysis.data
-    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
-    qnorm = analysis.get_norm_q_bragg
-    # TODO
-
-    logger.info(f"Shape before orthogonalization {avg_obj.shape}\n")
-    if prm["data_frame"] == "detector":
-        if prm["debug"] and not prm["skip_unwrap"]:
-            phase, _ = pu.unwrap(
-                avg_obj,
-                support_threshold=prm["threshold_unwrap_refraction"],
-                debugging=True,
-                reciprocal_space=False,
-                is_orthogonal=False,
-                cmap=prm["colormap"].cmap,
-            )
-            gu.multislices_plot(
-                phase,
-                width_z=numz,
-                width_y=numy,
-                width_x=numx,
-                sum_frames=False,
-                plot_colorbar=True,
-                reciprocal_space=False,
-                is_orthogonal=False,
-                title="unwrapped phase before orthogonalization",
-                cmap=prm["colormap"].cmap,
-            )
-            del phase
-            gc.collect()
-
-        obj_ortho, voxel_size, transfer_matrix = setup.ortho_directspace(
-            arrays=avg_obj,
-            q_bragg=np.array([q_lab[2], q_lab[1], q_lab[0]]),
-            initial_shape=original_size,
-            voxel_size=prm["fix_voxel"],
-            reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            fill_value=0,
-            debugging=True,
-            title="amplitude",
-            cmap=prm["colormap"].cmap,
-        )
-        prm["transformation_matrix"] = transfer_matrix
-    else:  # data already orthogonalized using xrayutilities
-        # or the linearized transformation matrix
-        obj_ortho = avg_obj
-        try:
-            logger.info("Select the file containing QxQzQy")
-            file_path = filedialog.askopenfilename(
-                title="Select the file containing QxQzQy",
-                initialdir=setup.detector.savedir,
-                filetypes=[("NPZ", "*.npz")],
-            )
-            npzfile = np.load(file_path)
-            qx = npzfile["qx"]
-            qy = npzfile["qy"]
-            qz = npzfile["qz"]
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                "q values not provided, the voxel size cannot be calculated"
-            )
-        dy_real = (
-            2 * np.pi / abs(qz.max() - qz.min()) / 10
-        )  # in nm qz=y in nexus convention
-        dx_real = (
-            2 * np.pi / abs(qy.max() - qy.min()) / 10
-        )  # in nm qy=x in nexus convention
-        dz_real = (
-            2 * np.pi / abs(qx.max() - qx.min()) / 10
-        )  # in nm qx=z in nexus convention
-        logger.info(
-            f"direct space voxel size from q values: ({dz_real:.2f} nm,"
-            f" {dy_real:.2f} nm, {dx_real:.2f} nm)"
-        )
-        if prm["fix_voxel"]:
-            voxel_size = prm["fix_voxel"]
-            logger.info(
-                f"Direct space pixel size for the interpolation: {voxel_size} (nm)"
-            )
-            logger.info("Interpolating...\n")
-            obj_ortho = pu.regrid(
-                array=obj_ortho,
-                old_voxelsize=(dz_real, dy_real, dx_real),
-                new_voxelsize=voxel_size,
-            )
-        else:
-            # no need to interpolate
-            voxel_size = dz_real, dy_real, dx_real  # in nm
-
-        if (
-            prm["data_frame"] == "laboratory"
-        ):  # the object must be rotated into the crystal frame
-            # before the strain calculation
-            logger.info(
-                "Rotating the object in the crystal frame " "for the strain calculation"
-            )
-
-            amp, phase = util.rotate_crystal(
-                arrays=(abs(obj_ortho), np.angle(obj_ortho)),
-                is_orthogonal=True,
-                reciprocal_space=False,
-                voxel_size=voxel_size,
-                debugging=(True, False),
-                axis_to_align=q_lab[::-1],
-                reference_axis=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-                title=("amp", "phase"),
-                cmap=prm["colormap"].cmap,
-            )
-
-            obj_ortho = amp * np.exp(
-                1j * phase
-            )  # here the phase is again wrapped in [-pi pi[
-            del amp, phase
-
-    del avg_obj
-    gc.collect()
+    logger.info(f"Shape before interpolation {analysis.data.shape}")
+    analysis.interpolate()
 
     ######################################################
     # center the object (centering based on the modulus) #
     ######################################################
     logger.info("Centering the crystal")
-    obj_ortho = pu.center_com(obj_ortho)
+    analysis.center_object_based_on_modulus()
 
     ####################
     # Phase unwrapping #
     ####################
-    log_text = (
-        "Applying support threshold to the phase"
-        if prm["skip_unwrap"]
-        else "Phase unwrapping"
-    )
-    logger.info(log_text)
+    phase_manipulator = analysis.get_phase_manipulator()
+
     if not prm["skip_unwrap"]:
-        phase, extent_phase = pu.unwrap(
-            obj_ortho,
-            support_threshold=prm["threshold_unwrap_refraction"],
-            debugging=True,
-            reciprocal_space=False,
-            is_orthogonal=True,
-            cmap=prm["colormap"].cmap,
-        )
-    amp = abs(obj_ortho)
-    del obj_ortho
-    gc.collect()
+        logger.info("Phase unwrapping")
+        phase_manipulator.unwrap_phase()
 
     #############################################
     # invert phase: -1*phase = displacement * q #
     #############################################
     if prm["invert_phase"]:
-        phase = -1 * phase
+        phase_manipulator.invert_phase()
 
     ########################################
     # refraction and absorption correction #
     ########################################
+    # TODO remove below placeholder
+    planar_dist = analysis.get_interplanar_distance / 10  # switch to nm  # TODO
+    original_size = analysis.original_shape
+    numz, numy, numx = analysis.optimized_range
+    avg_counter = analysis.nb_reconstructions
+    voxel_size = analysis.voxel_sizes
+    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
+    qnorm = analysis.get_norm_q_bragg
+    amp = phase_manipulator.modulus
+    phase = phase_manipulator.phase
+    extent_phase = analysis.extent_phase  # todo test if this is needed with skip_unwrap
+
+    # TODO
+
     if prm["correct_refraction"]:  # or correct_absorption:
         bulk = pu.find_bulk(
             amp=amp,

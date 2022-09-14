@@ -9,6 +9,7 @@ import os.path
 from copy import deepcopy
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from logging import Logger
 import matplotlib
@@ -28,6 +29,7 @@ matplotlib.use(parameters["backend"])
 
 
 class TestAnalysis(unittest.TestCase):
+    @patch("bcdi.postprocessing.analysis.Analysis.__abstractmethods__", set())
     def setUp(self) -> None:
         self.file_path = str(
             here.parents[1] / "bcdi/examples/S11_modes_252_420_392_prebinning_1_1_1.h5"
@@ -99,6 +101,7 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(self.process.comment.text, "_mode")
         self.assertIsNone(self.process.extent_phase)
 
+    @patch("bcdi.postprocessing.analysis.Analysis.__abstractmethods__", set())
     def test_negative_scan_index(self):
         with self.assertRaises(ValueError):
             analysis.Analysis(
@@ -117,6 +120,7 @@ class TestAnalysis(unittest.TestCase):
             )
         )
 
+    @patch("bcdi.postprocessing.analysis.Analysis.__abstractmethods__", set())
     def test_crop_pad_data(self):
         new_params = deepcopy(self.parameters)
         new_params.update({"original_size": [20, 30, 40]})
@@ -131,6 +135,7 @@ class TestAnalysis(unittest.TestCase):
             all(val1 == val2 for val1, val2 in zip(process.data.shape, expected))
         )
 
+    @patch("bcdi.postprocessing.analysis.Analysis.__abstractmethods__", set())
     def test_find_data_range(self):
         process = analysis.Analysis(
             scan_index=0,
@@ -202,15 +207,15 @@ class TestAnalysis(unittest.TestCase):
 
     def test_update_detector_angles(self):
         bragg_peak = [127, 214, 317]
-        expected_inplane = 1.5
-        expected_outofplane = 35.4
+        expected_inplane = 0.4864306733991417
+        expected_outofplane = 35.36269069963432
         self.process.update_detector_angles(bragg_peak)
         self.assertAlmostEqual(self.process.setup.inplane_angle, expected_inplane)
         self.assertAlmostEqual(self.process.setup.outofplane_angle, expected_outofplane)
 
     def test_get_interplanar_distance(self):
         expected = 2.2637604819304933
-        self.assertAlmostEquals(self.process.get_interplanar_distance, expected)
+        self.assertAlmostEqual(self.process.get_interplanar_distance, expected)
 
     def test_get_q_bragg_laboratory_frame(self):
         expected = [-0.84449687, 2.64216636, -0.09732299]
@@ -226,7 +231,7 @@ class TestAnalysis(unittest.TestCase):
 
     def test_get_norm_q_bragg(self):
         expected = 2.7755521652279227
-        self.assertAlmostEquals(self.process.get_norm_q_bragg, expected)
+        self.assertAlmostEqual(self.process.get_norm_q_bragg, expected)
 
 
 class TestPhaseManipulator(unittest.TestCase):
@@ -311,12 +316,23 @@ class TestCreateAnalysis(unittest.TestCase):
     def test_create_analysis_linearization(self):
         self.assertIsInstance(
             analysis.create_analysis(
-                name="linearization",
                 scan_index=0,
                 parameters=self.parameters,
                 setup=self.setup,
             ),
             analysis.DetectorFrameLinearization,
+        )
+
+    def test_create_analysis_already_orthogonal(self):
+        param_dict = deepcopy(self.parameters)
+        param_dict["data_frame"] = "crystal"
+        self.assertIsInstance(
+            analysis.create_analysis(
+                scan_index=0,
+                parameters=param_dict,
+                setup=self.setup,
+            ),
+            analysis.OrthogonalFrame,
         )
 
     def test_define_analysis_type(self):
@@ -354,6 +370,10 @@ class TestDetectorFrameLinearization(unittest.TestCase):
             parameters=self.parameters,
             setup=self.setup,
         )
+
+    def test_interpolate(self):
+        with self.assertRaises(ValueError):
+            self.analysis.interpolate()
 
 
 if __name__ == "__main__":

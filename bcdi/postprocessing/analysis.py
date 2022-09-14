@@ -17,9 +17,11 @@ import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.graph.graph_utils as gu
 from bcdi.experiment.setup import Setup
+from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 from bcdi.utils.text import Comment
+import bcdi.utils.validation as valid
 import logging
 
 module_logger = logging.getLogger(__name__)
@@ -44,6 +46,7 @@ class Analysis(ABC):
             self.parameters.get("original_size")
         )
         self.extent_phase: Optional[float] = None
+        self.voxel_sizes: Optional[List[float]] = None
         self.optimized_range = self.original_shape
         self.sorted_reconstructions_best_first = [0]
         self.nb_reconstructions = len(self.file_path)
@@ -244,6 +247,10 @@ class Analysis(ABC):
     def initialize_comment(self) -> Comment:
         return Comment(self.parameters.get("comment", ""))
 
+    @abstractmethod
+    def interpolate(self):
+        """"""
+
     def load_diffraction_data(self) -> Tuple[np.ndarray, ...]:
         return self.setup.loader.load_check_dataset(
             scan_number=self.parameters["scans"][self.scan_index],
@@ -311,9 +318,7 @@ class Analysis(ABC):
         self.data = modulus * np.exp(1j * phase)
 
     def update_detector_angles(self, bragg_peak_position: List[int]) -> None:
-        self.setup.correct_detector_angles(
-            bragg_peak_position=self.parameters["bragg_peak"]
-        )
+        self.setup.correct_detector_angles(bragg_peak_position=bragg_peak_position)
 
     def update_parameters(self, dictionary: Dict[str, Any]) -> None:
         self.parameters.update(dictionary)
@@ -321,6 +326,115 @@ class Analysis(ABC):
 
 class DetectorFrameLinearization(Analysis):
     """"""
+
+    def interpolate(self) -> None:
+        obj_ortho, voxel_sizes, transfer_matrix = self.setup.ortho_directspace(
+            arrays=self.data,
+            q_bragg=np.array(self.get_normalized_q_bragg_laboratory_frame[::-1]),
+            initial_shape=self.original_shape,
+            voxel_size=self.parameters["fix_voxel"],
+            reference_axis=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+            fill_value=0,
+            debugging=True,
+            title="modulus",
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.data = obj_ortho
+        self.voxel_sizes = voxel_sizes
+        self.update_parameters(
+            {"transformation_matrix": transfer_matrix, "is_orthogonal": True}
+        )
+
+
+class OrthogonalFrame(Analysis):
+    """"""
+
+    @property
+    def is_data_in_laboratory_frame(self):
+        return self.parameters["data_frame"] == "laboratory"
+
+    @property
+    def user_defined_voxel_size(self):
+        return self.parameters["fix_voxel"]
+
+    def calculate_voxel_sizes(self) -> List[float]:
+        file = self.load_q_values()
+        qx = file["qx"]
+        qy = file["qy"]
+        qz = file["qz"]
+        dy_real = (
+            2 * np.pi / abs(qz.max() - qz.min()) / 10
+        )  # in nm qz=y in nexus convention
+        dx_real = (
+            2 * np.pi / abs(qy.max() - qy.min()) / 10
+        )  # in nm qy=x in nexus convention
+        dz_real = (
+            2 * np.pi / abs(qx.max() - qx.min()) / 10
+        )  # in nm qx=z in nexus convention
+        self.logger.info(
+            f"direct space voxel size from q values: ({dz_real:.2f} nm,"
+            f" {dy_real:.2f} nm, {dx_real:.2f} nm)"
+        )
+        return [dz_real, dy_real, dx_real]
+
+    def interpolate(self) -> None:
+        self.update_parameters({"is_orthogonal": True})
+        self.voxel_sizes = self.calculate_voxel_sizes()
+        if self.user_defined_voxel_size:
+            self.regrid(self.user_defined_voxel_size)
+        if self.is_data_in_laboratory_frame:
+            self.rotate_into_crystal_frame()
+
+    def rotate_into_crystal_frame(self) -> None:
+        self.logger.info(
+            "Rotating the object in the crystal frame " "for the strain calculation"
+        )
+        amp, phase = util.rotate_crystal(
+            arrays=(abs(self.data), np.angle(self.data)),
+            is_orthogonal=True,
+            reciprocal_space=False,
+            voxel_size=self.voxel_sizes,
+            debugging=(True, False),
+            axis_to_align=self.get_normalized_q_bragg_laboratory_frame[::-1],
+            reference_axis=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+            title=("amp", "phase"),
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.data = amp * np.exp(1j * phase)
+
+    def load_q_values(self) -> Any:
+        try:
+            self.logger.info("Select the file containing QxQzQy")
+            file_path = filedialog.askopenfilename(
+                title="Select the file containing QxQzQy",
+                initialdir=self.setup.detector.savedir,
+                filetypes=[("NPZ", "*.npz")],
+            )
+            return np.load(file_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                "q values not provided, the voxel size cannot be calculated"
+            )
+
+    def regrid(self, new_voxelsizes: List[float]) -> None:
+        valid.valid_container(
+            new_voxelsizes,
+            container_types=(list, tuple),
+            item_types=(float, int),
+            min_excluded=0,
+            allow_none=False,
+            name="new_voxelsizes",
+        )
+        self.logger.info(
+            f"Direct space pixel size for the interpolation: {new_voxelsizes} (nm)"
+        )
+        self.logger.info("Interpolating...\n")
+        self.data = pu.regrid(
+            array=self.data,
+            old_voxelsize=self.voxel_sizes,
+            new_voxelsize=new_voxelsizes,
+        )
+        self.voxel_sizes = self.parameters["fix_voxel"]
 
 
 class PhaseManipulator:
@@ -426,6 +540,9 @@ class PhaseManipulator:
     def extract_phase_modulus(self) -> Tuple[np.ndarray, np.ndarray]:
         return np.angle(self.data), abs(self.data)
 
+    def invert_phase(self) -> None:
+        self._phase = -1 * self.phase
+
     def plot_phase(self, plot_title: str = "", save_plot: bool = False) -> None:
         fig, _, _ = gu.multislices_plot(
             self.phase,
@@ -485,6 +602,7 @@ class PhaseManipulator:
 def define_analysis_type(data_frame: str, interpolation_method: str) -> str:
     if data_frame == "detector":
         return interpolation_method
+    return "orthogonal"
 
 
 def create_analysis(
@@ -499,6 +617,13 @@ def create_analysis(
     )
     if name == "linearization":
         return DetectorFrameLinearization(
+            scan_index=scan_index,
+            parameters=parameters,
+            setup=setup,
+            **kwargs,
+        )
+    if name == "orthogonal":
+        return OrthogonalFrame(
             scan_index=scan_index,
             parameters=parameters,
             setup=setup,
