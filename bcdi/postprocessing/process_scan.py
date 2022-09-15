@@ -294,7 +294,9 @@ def process_scan(
     qnorm = analysis.get_norm_q_bragg
     amp = phase_manipulator.modulus
     phase = phase_manipulator.phase
-    extent_phase = analysis.extent_phase  # todo test if this is needed with skip_unwrap
+    extent_phase = analysis.extent_phase
+    if extent_phase is None:
+        raise NotImplementedError("extent_phase undefined")
 
     # TODO
 

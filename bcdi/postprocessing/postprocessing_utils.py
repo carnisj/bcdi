@@ -2239,7 +2239,7 @@ def unwrap(
         gu.multislices_plot(
             phase_wrapped.data,
             plot_colorbar=True,
-            title=f"Before unwrapping",
+            title="Before unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),
@@ -2251,7 +2251,7 @@ def unwrap(
         gu.multislices_plot(
             phase_unwrapped,
             plot_colorbar=True,
-            title=f"After unwrapping",
+            title="After unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),

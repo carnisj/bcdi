@@ -119,7 +119,7 @@ class Analysis(ABC):
                 self.parameters["centering_method"]["direct_space"] = "skip"
                 # correct a roll after the decomposition into modes in PyNX
                 obj = np.roll(obj, self.parameters["roll_modes"], axis=(0, 1, 2))
-                fig, _, _ = gu.multislices_plot(
+                gu.multislices_plot(
                     abs(obj),
                     sum_frames=True,
                     plot_colorbar=True,
@@ -486,8 +486,12 @@ class PhaseManipulator:
         self.logger = kwargs.get("logger", module_logger)
 
     @property
-    def extent_phase(self) -> Optional[float]:
-        return self._extent_phase
+    def extent_phase(self) -> float:
+        return (
+            self._extent_phase
+            if self._extent_phase is not None
+            else self.get_extent_phase()
+        )
 
     @property
     def modulus(self) -> np.ndarray:
@@ -562,8 +566,6 @@ class PhaseManipulator:
 
     def center_phase(self) -> None:
         """Wrap the phase around its mean."""
-        if self.extent_phase is None:
-            raise ValueError("'extent_phase' is None, can't center the phase")
         self._phase = util.wrap(
             self.phase,
             start_angle=-self.extent_phase / 2,
@@ -573,6 +575,16 @@ class PhaseManipulator:
     def extract_phase_modulus(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get the phase and the modulus out of the data."""
         return np.angle(self.data), abs(self.data)
+
+    def get_extent_phase(self) -> None:
+        _, self._extent_phase = pu.unwrap(
+            self.data,
+            support_threshold=self.parameters["threshold_unwrap_refraction"],
+            debugging=self.parameters["debug"],
+            reciprocal_space=False,
+            is_orthogonal=self.parameters["is_orthogonal"],
+            cmap=self.parameters["colormap"].cmap,
+        )
 
     def invert_phase(self) -> None:
         self._phase = -1 * self.phase
@@ -629,8 +641,6 @@ class PhaseManipulator:
             cmap=self.parameters["colormap"].cmap,
         )
 
-        if self.extent_phase is None:
-            raise ValueError("issue during unwrapping, 'extent_phase' is None")
         self.logger.info(
             "Extent of the phase over an extended support (ceil(phase range)) ~ "
             f"{int(self.extent_phase)} (rad)",
