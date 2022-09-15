@@ -244,9 +244,10 @@ def process_scan(
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
+    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
     logger.info(
         "Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
-        f"{[f'{val:.4f}' for _, val in enumerate(analysis.get_normalized_q_bragg_laboratory_frame)]} (1/A)"
+        f"{[f'{val:.4f}' for _, val in enumerate(q_lab)]} (1/A)"
     )
     logger.info(f"Wavevector transfer: {analysis.get_norm_q_bragg:.4f} 1/A")
     logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} A")

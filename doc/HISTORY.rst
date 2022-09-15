@@ -2,11 +2,11 @@ Future:
 -------
 
 * Remove the deprecated parameter 'fix_size'. THe same functionality can be obtained by
- using the set of parameters `roi_detector`, `center_roi_x` and `center_roi_y`.
+  using the set of parameters `roi_detector`, `center_roi_x` and `center_roi_y`.
 
 * Previously the functionalities regarding Bragg peak finding, rocking curve fitting and
- plotting were located in tightly binded functions. A class PeakFinder is implemented to
- gather these functionalities and manage its own state properly.
+  plotting were located in tightly binded functions. A class PeakFinder is implemented to
+  gather these functionalities and manage its own state properly.
 
 * Add unit tests to postprocessing_utils.find_datarange and make it dimension-agnostic.
 
