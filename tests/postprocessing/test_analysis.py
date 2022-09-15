@@ -242,6 +242,10 @@ class TestAnalysis(unittest.TestCase):
 
 class TestPhaseManipulator(unittest.TestCase):
     def setUp(self) -> None:
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
         self.shape = (6, 6, 6)
         self.phase_manipulator = analysis.PhaseManipulator(
             data=np.ones(self.shape),
