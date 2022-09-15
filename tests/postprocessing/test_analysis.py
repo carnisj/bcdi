@@ -25,9 +25,13 @@ from tests.config import run_tests
 here = Path(__file__).parent
 THIS_DIR = str(here)
 CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
-parameters = initialize_parameters(ConfigParser(CONFIG).load_arguments())
-parameters.update({"backend": "agg"})
-matplotlib.use(parameters["backend"])
+try:
+    parameters = initialize_parameters(ConfigParser(CONFIG).load_arguments())
+    parameters.update({"backend": "agg"})
+    matplotlib.use(parameters["backend"])
+    skip_tests = False
+except ValueError:
+    skip_tests = True
 
 
 class TestAnalysis(unittest.TestCase):
@@ -36,7 +40,7 @@ class TestAnalysis(unittest.TestCase):
         self.file_path = str(
             here.parents[1] / "bcdi/examples/S11_modes_252_420_392_prebinning_1_1_1.h5"
         )
-        if not Path(parameters["root_folder"]).is_dir():
+        if skip_tests:
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
@@ -297,6 +301,10 @@ class TestPhaseManipulator(unittest.TestCase):
 
 class TestCreateAnalysis(unittest.TestCase):
     def setUp(self) -> None:
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
         self.file_path = str(
             here.parents[1] / "bcdi/examples/S11_modes_252_420_392_prebinning_1_1_1.h5"
         )
@@ -349,6 +357,10 @@ class TestCreateAnalysis(unittest.TestCase):
 
 class TestDetectorFrameLinearization(unittest.TestCase):
     def setUp(self) -> None:
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
         self.file_path = str(
             here.parents[1] / "bcdi/examples/S11_modes_252_420_392_prebinning_1_1_1.h5"
         )
