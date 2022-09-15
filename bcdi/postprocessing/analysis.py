@@ -7,28 +7,31 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Implementation of the analysis classes."""
 
-from abc import ABC, abstractmethod
-import numpy as np
+import logging
 import os
 import tkinter as tk
+from abc import ABC, abstractmethod
 from tkinter import filedialog
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+
+import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
-import bcdi.graph.graph_utils as gu
-from bcdi.experiment.setup import Setup
-from bcdi.utils.constants import AXIS_TO_ARRAY
 import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
-from bcdi.utils.text import Comment
 import bcdi.utils.validation as valid
-import logging
+from bcdi.experiment.setup import Setup
+from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.utils.text import Comment
 
 module_logger = logging.getLogger(__name__)
 
 
 class Analysis(ABC):
     """Base class for the post-processing analysis workflow."""
+
     def __init__(
         self,
         scan_index: int,

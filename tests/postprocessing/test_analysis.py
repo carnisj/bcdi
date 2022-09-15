@@ -6,19 +6,21 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 import os.path
-from copy import deepcopy
 import tempfile
 import unittest
-from unittest.mock import patch
-from pathlib import Path
+from copy import deepcopy
 from logging import Logger
+from pathlib import Path
+from unittest.mock import patch
+
 import matplotlib
 import numpy as np
-from bcdi.experiment.setup import Setup
+
 import bcdi.postprocessing.analysis as analysis
-from tests.config import run_tests
+from bcdi.experiment.setup import Setup
 from bcdi.postprocessing.postprocessing_runner import initialize_parameters
 from bcdi.utils.parser import ConfigParser
+from tests.config import run_tests
 
 here = Path(__file__).parent
 THIS_DIR = str(here)
