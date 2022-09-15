@@ -371,9 +371,9 @@ class TestDetectorFrameLinearization(unittest.TestCase):
             setup=self.setup,
         )
 
-    def test_interpolate(self):
+    def test_interpolate_into_crystal_frame(self):
         with self.assertRaises(ValueError):
-            self.analysis.interpolate()
+            self.analysis.interpolate_into_crystal_frame()
 
 
 if __name__ == "__main__":

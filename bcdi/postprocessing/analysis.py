@@ -28,6 +28,7 @@ module_logger = logging.getLogger(__name__)
 
 
 class Analysis(ABC):
+    """Base class for the post-processing analysis workflow."""
     def __init__(
         self,
         scan_index: int,
@@ -248,8 +249,10 @@ class Analysis(ABC):
         return Comment(self.parameters.get("comment", ""))
 
     @abstractmethod
-    def interpolate(self):
-        """"""
+    def interpolate_into_crystal_frame(self):
+        """Interpolate the direct space object into the crystal frame.
+
+        The exact steps depend on which frame the data lies in."""
 
     def load_diffraction_data(self) -> Tuple[np.ndarray, ...]:
         return self.setup.loader.load_check_dataset(
@@ -325,9 +328,16 @@ class Analysis(ABC):
 
 
 class DetectorFrameLinearization(Analysis):
-    """"""
+    """Analysis workflow for interpolation based on the linearization matrix.
 
-    def interpolate(self) -> None:
+    The data before interpolation is in the detector frame
+    (axis 0 = rocking angle, axis 1 detector Y, axis 2 detector X).
+    The data after interpolation is in the pseudo-crystal frame (only 'ref_axis_q'is
+    an axis of the crystal frame, there is an unknown inplane rotation around it).
+    """
+
+    def interpolate_into_crystal_frame(self) -> None:
+        """Interpolate the data in the pseudo crystal frame."""
         obj_ortho, voxel_sizes, transfer_matrix = self.setup.ortho_directspace(
             arrays=self.data,
             q_bragg=np.array(self.get_normalized_q_bragg_laboratory_frame[::-1]),
@@ -347,7 +357,7 @@ class DetectorFrameLinearization(Analysis):
 
 
 class OrthogonalFrame(Analysis):
-    """"""
+    """Analysis workflow for data already in an orthogonal frame."""
 
     @property
     def is_data_in_laboratory_frame(self):
@@ -358,6 +368,7 @@ class OrthogonalFrame(Analysis):
         return self.parameters["fix_voxel"]
 
     def calculate_voxel_sizes(self) -> List[float]:
+        """Calculate the direct space voxel sizes based on loaded q values."""
         file = self.load_q_values()
         qx = file["qx"]
         qy = file["qy"]
@@ -377,7 +388,8 @@ class OrthogonalFrame(Analysis):
         )
         return [dz_real, dy_real, dx_real]
 
-    def interpolate(self) -> None:
+    def interpolate_into_crystal_frame(self) -> None:
+        """Regrid and rotate the data if necessary."""
         self.update_parameters({"is_orthogonal": True})
         self.voxel_sizes = self.calculate_voxel_sizes()
         if self.user_defined_voxel_size:
@@ -417,6 +429,7 @@ class OrthogonalFrame(Analysis):
             )
 
     def regrid(self, new_voxelsizes: List[float]) -> None:
+        """Regrid the data based on user-defined voxel sizes."""
         valid.valid_container(
             new_voxelsizes,
             container_types=(list, tuple),
@@ -438,6 +451,8 @@ class OrthogonalFrame(Analysis):
 
 
 class PhaseManipulator:
+    """Process the phase of the data."""
+
     def __init__(
         self,
         data: np.ndarray,
@@ -483,6 +498,7 @@ class PhaseManipulator:
         self._save_directory = val
 
     def add_ramp(self, sign: int = +1) -> None:
+        """Add a linear ramp to the phase."""
         if self.phase_ramp is None:
             raise ValueError("'phase_ramp' is None, can't add the phase ramp")
         gridz, gridy, gridx = np.meshgrid(
@@ -500,6 +516,7 @@ class PhaseManipulator:
         )
 
     def apodize(self) -> None:
+        """Apply a filtering window to the phase."""
         self._modulus, self._phase = pu.apodize(
             amp=self.modulus,
             phase=self.phase,
@@ -514,6 +531,7 @@ class PhaseManipulator:
         )
 
     def average_phase(self) -> None:
+        """Apply an averaging window to the phase."""
         bulk = pu.find_bulk(
             amp=self.modulus,
             support_threshold=self.parameters["isosurface_strain"],
@@ -529,6 +547,7 @@ class PhaseManipulator:
         )
 
     def center_phase(self) -> None:
+        """Wrap the phase around its mean."""
         if self.extent_phase is None:
             raise ValueError("'extent_phase' is None, can't center the phase")
         self._phase = util.wrap(
@@ -538,6 +557,7 @@ class PhaseManipulator:
         )
 
     def extract_phase_modulus(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Get the phase and the modulus out of the data."""
         return np.angle(self.data), abs(self.data)
 
     def invert_phase(self) -> None:
@@ -556,6 +576,7 @@ class PhaseManipulator:
             fig.savefig(self.save_directory + plot_title + ".png")
 
     def remove_offset(self) -> None:
+        """Remove a phase offset to the phase."""
         support = np.zeros(self.data.shape)
         support[
             self.modulus > self.parameters["isosurface_strain"] * self.modulus.max()
@@ -572,6 +593,7 @@ class PhaseManipulator:
         )
 
     def remove_ramp(self) -> None:
+        """Remove the linear trend in the phase based on a modulus support."""
         self._modulus, self._phase, *self._phase_ramp = pu.remove_ramp(
             amp=self.modulus,
             phase=self.phase,
@@ -600,6 +622,7 @@ class PhaseManipulator:
 
 
 def define_analysis_type(data_frame: str, interpolation_method: str) -> str:
+    """Define the correct analysis type depending on the parameters."""
     if data_frame == "detector":
         return interpolation_method
     return "orthogonal"
@@ -611,6 +634,7 @@ def create_analysis(
     setup: Setup,
     **kwargs,
 ) -> Analysis:
+    """Create the correct analysis class depending on the parameters."""
     name = define_analysis_type(
         data_frame=parameters["data_frame"],
         interpolation_method=parameters["interpolation_method"],
