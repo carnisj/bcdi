@@ -12,7 +12,7 @@ import os
 import tkinter as tk
 from abc import ABC, abstractmethod
 from tkinter import filedialog
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
@@ -74,18 +74,18 @@ class Analysis(ABC):
 
     @property
     def get_interplanar_distance(self) -> float:
-        return 2 * np.pi / np.linalg.norm(self.setup.q_laboratory)
+        return float(2 * np.pi / np.linalg.norm(self.setup.q_laboratory))
 
     @property
-    def get_normalized_q_bragg_laboratory_frame(self) -> List[float]:
-        return self.setup.q_laboratory / np.linalg.norm(self.setup.q_laboratory)
+    def get_normalized_q_bragg_laboratory_frame(self) -> np.ndarray:
+        return self.setup.q_laboratory / float(np.linalg.norm(self.setup.q_laboratory))
 
     @property
     def get_norm_q_bragg(self) -> float:
-        return np.linalg.norm(self.setup.q_laboratory)
+        return float(np.linalg.norm(self.setup.q_laboratory))
 
     @property
-    def get_q_bragg_laboratory_frame(self) -> List[float]:
+    def get_q_bragg_laboratory_frame(self) -> np.ndarray:
         return self.setup.q_laboratory
 
     @property
@@ -190,11 +190,13 @@ class Analysis(ABC):
     def find_data_range(
         self, amplitude_threshold: float = 0.1, plot_margin: Union[int, List[int]] = 10
     ) -> None:
-        self.optimized_range = pu.find_datarange(
-            array=self.data,
-            amplitude_threshold=amplitude_threshold,
-            plot_margin=plot_margin,
-            keep_size=self.parameters["keep_size"],
+        self.optimized_range = tuple(
+            pu.find_datarange(
+                array=self.data,
+                amplitude_threshold=amplitude_threshold,
+                plot_margin=plot_margin,
+                keep_size=self.parameters["keep_size"],
+            )
         )
 
         self.logger.info(
@@ -211,11 +213,13 @@ class Analysis(ABC):
             logger=self.logger,
         )
 
-    def get_reconstrutions_path(self) -> Tuple[str]:
+    def get_reconstrutions_path(self) -> Tuple[Any, ...]:
         if self.parameters["reconstruction_files"][self.scan_index] is not None:
             file_path = self.parameters["reconstruction_files"][self.scan_index]
             if isinstance(file_path, str):
                 file_path = (file_path,)
+            if isinstance(file_path, list):
+                file_path = tuple(file_path)
         else:
             root = tk.Tk()
             root.withdraw()
@@ -261,7 +265,9 @@ class Analysis(ABC):
         The exact steps depend on which frame the data lies in.
         """
 
-    def load_diffraction_data(self) -> Tuple[np.ndarray, ...]:
+    def load_diffraction_data(
+        self,
+    ):
         return self.setup.loader.load_check_dataset(
             scan_number=self.parameters["scans"][self.scan_index],
             setup=self.setup,
@@ -623,6 +629,8 @@ class PhaseManipulator:
             cmap=self.parameters["colormap"].cmap,
         )
 
+        if self.extent_phase is None:
+            raise ValueError("issue during unwrapping, 'extent_phase' is None")
         self.logger.info(
             "Extent of the phase over an extended support (ceil(phase range)) ~ "
             f"{int(self.extent_phase)} (rad)",

@@ -11,7 +11,7 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -2187,14 +2187,20 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
     return tukey3
 
 
-def unwrap(obj, support_threshold, seed=0, debugging=True, **kwargs):
+def unwrap(
+    obj: np.ndarray,
+    support_threshold: float,
+    seed: int = 0,
+    debugging: bool = True,
+    **kwargs,
+) -> Tuple[np.ndarray, float]:
     """
     Unwrap the phase of a complex object.
 
     It is based on skimage.restoration.unwrap_phase. A mask can be applied by
     thresholding the modulus of the object.
 
-    :param obj: number or array to be wrapped
+    :param obj: array to be unwrapped
     :param support_threshold: relative threshold used to define a support from abs(obj)
     :param seed: int, random seed. Use always the same value if you want a
      deterministic behavior.

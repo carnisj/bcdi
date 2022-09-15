@@ -255,7 +255,7 @@ def process_scan(
     #  orthogonalize data #
     #######################
     logger.info(f"Shape before interpolation {analysis.data.shape}")
-    analysis.interpolate()
+    analysis.interpolate_into_crystal_frame()
 
     ######################################################
     # center the object (centering based on the modulus) #
@@ -287,6 +287,8 @@ def process_scan(
     numz, numy, numx = analysis.optimized_range
     avg_counter = analysis.nb_reconstructions
     voxel_size = analysis.voxel_sizes
+    if voxel_size is None:
+        raise ValueError("voxel sizes undefined")
     q_lab = analysis.get_normalized_q_bragg_laboratory_frame
     qnorm = analysis.get_norm_q_bragg
     amp = phase_manipulator.modulus
@@ -430,9 +432,10 @@ def process_scan(
     del support
     gc.collect()
     # Wrap the phase around 0 (no more offset)
-    phase = util.wrap(
-        obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase
-    )
+    if extent_phase is not None:
+        phase = util.wrap(
+            obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase
+        )
 
     ################################################################
     # calculate the strain depending on which axis q is aligned on #
