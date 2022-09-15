@@ -99,6 +99,7 @@ class Analysis(ABC):
         self._scan_index = val
 
     def average_reconstructions(self) -> None:
+        """Create an average reconstruction out of many, after proper alignment."""
         average_array = np.zeros(self.optimized_range)
         average_counter = 1
         self.logger.info(
@@ -159,6 +160,7 @@ class Analysis(ABC):
             self.logger.info(f"Average performed over {average_counter} arrays")
 
     def center_object_based_on_modulus(self):
+        """Center the object based on one of the methods 'max', 'com' and 'max_com'."""
         self.data = pu.center_object(
             method=self.parameters["centering_method"]["direct_space"], obj=self.data
         )
@@ -253,9 +255,11 @@ class Analysis(ABC):
 
     @abstractmethod
     def interpolate_into_crystal_frame(self):
-        """Interpolate the direct space object into the crystal frame.
+        """
+        Interpolate the direct space object into the crystal frame.
 
-        The exact steps depend on which frame the data lies in."""
+        The exact steps depend on which frame the data lies in.
+        """
 
     def load_diffraction_data(self) -> Tuple[np.ndarray, ...]:
         return self.setup.loader.load_check_dataset(
@@ -331,7 +335,8 @@ class Analysis(ABC):
 
 
 class DetectorFrameLinearization(Analysis):
-    """Analysis workflow for interpolation based on the linearization matrix.
+    """
+    Analysis workflow for interpolation based on the linearization matrix.
 
     The data before interpolation is in the detector frame
     (axis 0 = rocking angle, axis 1 detector Y, axis 2 detector X).

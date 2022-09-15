@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Comment:
+    """Comment used in logging message during the analysis."""
+
     text: str
 
     def concatenate(self, val: str, separator: str = "_") -> None:
