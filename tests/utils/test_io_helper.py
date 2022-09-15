@@ -6,6 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
+import io
 import unittest
 from pathlib import Path
 
@@ -21,7 +22,7 @@ class TestContextFile(unittest.TestCase):
 
     def setUp(self):
         self.filename = CONFIG
-        self.open_func = open
+        self.open_func = io.open
 
     def test_instantiate_class(self):
         ctx = ContextFile(filename=self.filename, open_func=self.open_func)
