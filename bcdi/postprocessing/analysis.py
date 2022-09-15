@@ -576,8 +576,8 @@ class PhaseManipulator:
         """Get the phase and the modulus out of the data."""
         return np.angle(self.data), abs(self.data)
 
-    def get_extent_phase(self) -> None:
-        _, self._extent_phase = pu.unwrap(
+    def get_extent_phase(self) -> float:
+        _, extent_phase = pu.unwrap(
             self.data,
             support_threshold=self.parameters["threshold_unwrap_refraction"],
             debugging=self.parameters["debug"],
@@ -585,6 +585,7 @@ class PhaseManipulator:
             is_orthogonal=self.parameters["is_orthogonal"],
             cmap=self.parameters["colormap"].cmap,
         )
+        return extent_phase
 
     def invert_phase(self) -> None:
         self._phase = -1 * self.phase
