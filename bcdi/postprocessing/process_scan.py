@@ -18,19 +18,14 @@ import logging
 import os
 from logging import Logger
 from pathlib import Path
-from tkinter import filedialog
 from typing import Any, Dict, Optional, Tuple
 
-import h5py
 import matplotlib
 import numpy as np
-import yaml
 from matplotlib import pyplot as plt
 
 import bcdi.graph.graph_utils as gu
-import bcdi.graph.linecut as lc
 import bcdi.postprocessing.postprocessing_utils as pu
-import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
 from bcdi.postprocessing.analysis import create_analysis
 from bcdi.utils.constants import AXIS_TO_ARRAY
@@ -279,181 +274,29 @@ def process_scan(
     if prm["invert_phase"]:
         phase_manipulator.invert_phase()
 
-    ########################################
-    # refraction and absorption correction #
-    ########################################
-    # TODO remove below placeholder
-    planar_dist = analysis.get_interplanar_distance / 10  # switch to nm  # TODO
-    original_size = analysis.original_shape
-    numz, numy, numx = analysis.optimized_range
-    avg_counter = analysis.nb_reconstructions
-    voxel_size = analysis.voxel_sizes
-    if voxel_size is None:
-        raise ValueError("voxel sizes undefined")
-    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
-    qnorm = analysis.get_norm_q_bragg
-    amp = phase_manipulator.modulus
-    phase = phase_manipulator.phase
-    extent_phase = analysis.extent_phase
-    if extent_phase is None:
-        raise NotImplementedError("extent_phase undefined")
-
-    # TODO
-
-    if prm["correct_refraction"]:  # or correct_absorption:
-        bulk = pu.find_bulk(
-            amp=amp,
-            support_threshold=prm["threshold_unwrap_refraction"],
-            method=prm["optical_path_method"],
-            debugging=prm["debug"],
-            cmap=prm["colormap"].cmap,
-        )
-
-        kin = setup.incident_wavevector
-        kout = setup.exit_wavevector
-        # kin and kout were calculated in the laboratory frame,
-        # but after the geometric transformation of the crystal, this
-        # latter is always in the crystal frame (for simpler strain calculation).
-        # We need to transform kin and kout back
-        # into the crystal frame (also, xrayutilities output is in crystal frame)
-        kin = util.rotate_vector(
-            vectors=[kin[2], kin[1], kin[0]],
-            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
-        )
-        kout = util.rotate_vector(
-            vectors=[kout[2], kout[1], kout[0]],
-            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
-        )
-
-        # calculate the optical path of the incoming wavevector
-        path_in = pu.get_opticalpath(
-            support=bulk,
-            direction="in",
-            k=kin,
-            debugging=prm["debug"],
-            cmap=prm["colormap"].cmap,
-        )  # path_in already in nm
-
-        # calculate the optical path of the outgoing wavevector
-        path_out = pu.get_opticalpath(
-            support=bulk,
-            direction="out",
-            k=kout,
-            debugging=prm["debug"],
-            cmap=prm["colormap"].cmap,
-        )  # path_our already in nm
-
-        optical_path = path_in + path_out
-        del path_in, path_out
-        gc.collect()
-
-        if prm["correct_refraction"]:
-            if setup.wavelength is None:
-                raise ValueError("X-ray energy undefined")
-            phase_correction = (
-                2 * np.pi / (1e9 * setup.wavelength) * prm["dispersion"] * optical_path
-            )
-            phase = phase + phase_correction
-
-            gu.multislices_plot(
-                np.multiply(phase_correction, bulk),
-                width_z=numz,
-                width_y=numy,
-                width_x=numx,
-                sum_frames=False,
-                plot_colorbar=True,
-                vmin=0,
-                vmax=np.nan,
-                title="Refraction correction on the support",
-                is_orthogonal=True,
-                reciprocal_space=False,
-                cmap=prm["colormap"].cmap,
-            )
-        correct_absorption = False
-        if correct_absorption:
-            if setup.wavelength is None:
-                raise ValueError("X-ray energy undefined")
-            amp_correction = np.exp(
-                2 * np.pi / (1e9 * setup.wavelength) * prm["absorption"] * optical_path
-            )
-            amp = amp * amp_correction
-
-            gu.multislices_plot(
-                np.multiply(amp_correction, bulk),
-                width_z=numz,
-                width_y=numy,
-                width_x=numx,
-                sum_frames=False,
-                plot_colorbar=True,
-                vmin=1,
-                vmax=1.1,
-                title="Absorption correction on the support",
-                is_orthogonal=True,
-                reciprocal_space=False,
-                cmap=prm["colormap"].cmap,
-            )
-
-        del bulk, optical_path
-        gc.collect()
+    #########################
+    # refraction correction #
+    #########################
+    if prm["correct_refraction"]:
+        phase_manipulator.compensate_refraction(analysis.get_optical_path())
 
     ##############################################
     # phase ramp and offset removal (mean value) #
     ##############################################
-    logger.info("Phase ramp removal")
-    amp, phase, _, _, _ = pu.remove_ramp(
-        amp=amp,
-        phase=phase,
-        initial_shape=original_size,
-        method=prm["phase_ramp_removal"],
-        amplitude_threshold=prm["isosurface_strain"],
-        threshold_gradient=prm["threshold_gradient"],
-        debugging=prm["debug"],
-        cmap=prm["colormap"].cmap,
-        logger=logger,
-    )
+    phase_manipulator.remove_ramp()
+    phase_manipulator.remove_offset()
 
-    ########################
-    # phase offset removal #
-    ########################
-    logger.info("Phase offset removal")
-    support = np.zeros(amp.shape)
-    support[amp > prm["isosurface_strain"] * amp.max()] = 1
-    phase = pu.remove_offset(
-        array=phase,
-        support=support,
-        offset_method=prm["offset_method"],
-        phase_offset=prm["phase_offset"],
-        offset_origin=prm["phase_offset_origin"],
-        title="Orthogonal phase",
-        debugging=prm["debug"],
-        reciprocal_space=False,
-        is_orthogonal=True,
-        cmap=prm["colormap"].cmap,
-    )
-    del support
-    gc.collect()
     # Wrap the phase around 0 (no more offset)
-    if extent_phase is not None:
-        phase = util.wrap(
-            obj=phase, start_angle=-extent_phase / 2, range_angle=extent_phase
-        )
+    phase_manipulator.center_phase()
 
     ################################################################
     # calculate the strain depending on which axis q is aligned on #
     ################################################################
-    logger.info(f"Calculation of the strain along {prm['ref_axis_q']}")
-    strain = pu.get_strain(
-        phase=phase,
-        planar_distance=planar_dist,
-        voxel_size=voxel_size,
-        reference_axis=prm["ref_axis_q"],
-        extent_phase=extent_phase,
-        method=prm["strain_method"],
-        debugging=prm["debug"],
-        cmap=prm["colormap"].cmap,
+    strain_manipulator = phase_manipulator.calculate_strain(
+        planar_distance=analysis.get_interplanar_distance,
+        voxel_sizes=analysis.voxel_sizes,
     )
+    del phase_manipulator
 
     ################################################
     # optionally rotates back the crystal into the #
@@ -462,42 +305,26 @@ def process_scan(
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
         comment.concatenate("labframe")
         logger.info("Rotating back the crystal in laboratory frame")
-        amp, phase, strain = util.rotate_crystal(
-            arrays=(amp, phase, strain),
+        strain_manipulator.rotate_crystal(
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            voxel_size=voxel_size,
-            is_orthogonal=True,
-            reciprocal_space=False,
-            reference_axis=[q_lab[2], q_lab[1], q_lab[0]],
-            debugging=(True, False, False),
-            title=("amp", "phase", "strain"),
-            cmap=prm["colormap"].cmap,
+            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
         )
         # q_lab is already in the laboratory frame
-        q_final = q_lab
+        strain_manipulator.q_bragg_in_saving_frame = (
+            analysis.get_normalized_q_bragg_laboratory_frame[::-1]
+        )
 
         if prm["save_frame"] == "lab_flat_sample":
             comment.concatenate("flat")
-            logger.info("Sending sample stage circles to 0")
-            (amp, phase, strain), q_final = setup.beamline.flatten_sample(
-                arrays=(amp, phase, strain),
-                voxel_size=voxel_size,
-                q_bragg=q_lab[::-1],  # q_bragg needs to be in xyz order
-                is_orthogonal=True,
-                reciprocal_space=False,
-                rocking_angle=setup.rocking_angle,
-                debugging=(True, False, False),
-                title=("amp", "phase", "strain"),
-                cmap=prm["colormap"].cmap,
-            )
+            strain_manipulator.flatten_sample_circles(setup=setup)
     else:  # "save_frame" = "crystal"
         # rotate also q_lab to have it along ref_axis_q,
         # as a cross-checkm, vectors needs to be in xyz order
         comment.concatenate("crystalframe")
-        q_final = util.rotate_vector(
-            vectors=q_lab[::-1],
+        strain_manipulator.rotate_vector_to_saving_frame(
+            vector=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            reference_axis=q_lab[::-1],
+            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
         )
 
     ###############################################
@@ -508,26 +335,19 @@ def process_scan(
     # along which the strain was calculated
     if prm["align_axis"]:
         logger.info("Rotating arrays for visualization")
-        amp, phase, strain = util.rotate_crystal(
-            arrays=(amp, phase, strain),
-            reference_axis=AXIS_TO_ARRAY[prm["ref_axis"]],
+        strain_manipulator.rotate_crystal(
             axis_to_align=prm["axis_to_align"],
-            voxel_size=voxel_size,
-            debugging=(True, False, False),
-            is_orthogonal=True,
-            reciprocal_space=False,
-            title=("amp", "phase", "strain"),
-            cmap=prm["colormap"].cmap,
+            reference_axis=AXIS_TO_ARRAY[prm["ref_axis"]],
         )
         # rotate q accordingly, vectors needs to be in xyz order
-        if q_final is not None:
-            q_final = util.rotate_vector(
-                vectors=q_final[::-1],
-                axis_to_align=AXIS_TO_ARRAY[prm["ref_axis"]],
-                reference_axis=prm["axis_to_align"],
-            )
+        strain_manipulator.rotate_vector_to_saving_frame(
+            vector=strain_manipulator.q_bragg_in_saving_frame[::-1],
+            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis"]],
+            reference_axis=prm["axis_to_align"],
+        )
 
-    q_final = q_final * qnorm
+    strain_manipulator.rescale_q()
+    q_final = strain_manipulator.q_bragg_in_saving_frame
     logger.info(
         f"q_final = ({q_final[0]:.4f} 1/A,"
         f" {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)"
@@ -536,191 +356,79 @@ def process_scan(
     ##############################################
     # pad array to fit the output_size parameter #
     ##############################################
-    if prm["output_size"] is not None:
-        amp = util.crop_pad(
-            array=amp, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
-        )
-        phase = util.crop_pad(
-            array=phase, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
-        )
-        strain = util.crop_pad(
-            array=strain, output_shape=prm["output_size"], cmap=prm["colormap"].cmap
-        )
-    logger.info(f"Final data shape: {amp.shape}")
+    strain_manipulator.crop_pad_arrays()
+    logger.info(f"Final data shape: {strain_manipulator.strain.shape}")
 
     ######################
     # save result to vtk #
     ######################
-    logger.info(
-        f"Voxel size: ({voxel_size[0]:.2f} nm, {voxel_size[1]:.2f} nm,"
-        f" {voxel_size[2]:.2f} nm)"
+    voxel_sizes = analysis.voxel_sizes
+    if voxel_sizes is None:
+        raise ValueError("voxel sizes are undefined")
+    voxel_sizes_text = (
+        f"Voxel sizes: ({voxel_sizes[0]:.2f} nm, {voxel_sizes[1]:.2f} nm,"
+        f" {voxel_sizes[2]:.2f} nm)"
     )
-    bulk = pu.find_bulk(
-        amp=amp,
-        support_threshold=prm["isosurface_strain"],
-        method="threshold",
-        cmap=prm["colormap"].cmap,
-    )
+    logger.info(voxel_sizes_text)
+
     if prm["save"]:
-        prm["comment"] = comment.text
-        np.savez_compressed(
-            f"{setup.detector.savedir}S{scan_nb}_"
+        strain_manipulator.save_results_as_npz(
+            filename=f"{setup.detector.savedir}S{scan_nb}_"
             f"amp{prm['phase_fieldname']}strain{comment.text}",
-            amp=amp,
-            phase=phase,
-            bulk=bulk,
-            strain=strain,
-            q_bragg=q_final,
-            voxel_sizes=voxel_size,
-            detector=setup.detector.params,
-            setup=str(yaml.dump(setup.params)),
-            params=str(yaml.dump(prm)),
+            setup=setup,
         )
 
-        # save results in hdf5 file
-        with h5py.File(
-            f"{setup.detector.savedir}S{scan_nb}_"
+        strain_manipulator.save_results_as_h5(
+            filename=f"{setup.detector.savedir}S{scan_nb}_"
             f"amp{prm['phase_fieldname']}strain{comment.text}.h5",
-            "w",
-        ) as hf:
-            out = hf.create_group("output")
-            par = hf.create_group("params")
-            out.create_dataset("amp", data=amp)
-            out.create_dataset("bulk", data=bulk)
-            out.create_dataset("phase", data=phase)
-            out.create_dataset("strain", data=strain)
-            out.create_dataset("q_bragg", data=q_final)
-            out.create_dataset("voxel_sizes", data=voxel_size)
-            par.create_dataset("detector", data=str(setup.detector.params))
-            par.create_dataset("setup", data=str(setup.params))
-            par.create_dataset("parameters", data=str(prm))
+            setup=setup,
+        )
 
         # save amp & phase to VTK
         # in VTK, x is downstream, y vertical, z inboard,
         # thus need to flip the last axis
-        gu.save_to_vti(
-            filename=os.path.join(
-                setup.detector.savedir,
-                "S"
-                + str(scan_nb)
-                + "_amp-"
-                + prm["phase_fieldname"]
-                + "-strain"
-                + comment.text
-                + ".vti",
-            ),
-            voxel_size=voxel_size,
-            tuple_array=(amp, bulk, phase, strain),
-            tuple_fieldnames=("amp", "bulk", prm["phase_fieldname"], "strain"),
-            amplitude_threshold=0.01,
+        strain_manipulator.save_results_as_vti(
+            scan_index=scan_idx, setup=setup, comment=comment.text
         )
 
     ######################################
     # estimate the volume of the crystal #
     ######################################
-    amp = amp / amp.max()
-    temp_amp = np.copy(amp)
-    temp_amp[amp < prm["isosurface_strain"]] = 0
-    temp_amp[np.nonzero(temp_amp)] = 1
-    volume = temp_amp.sum() * reduce(lambda x, y: x * y, voxel_size)  # in nm3
-    del temp_amp
-    gc.collect()
+    strain_manipulator.estimate_crystal_volume()
 
     ################################
     # plot linecuts of the results #
     ################################
-    lc.fit_linecut(
-        array=amp,
-        fit_derivative=True,
-        filename=setup.detector.savedir + "linecut_amp.png",
-        voxel_sizes=voxel_size,
-        label="modulus",
-        logger=logger,
+    strain_manipulator.fit_linecuts_through_crystal_edges(
+        filename=setup.detector.savedir + "linecut_amp.png"
     )
+
+    #############################################
+    # prepare the phase and strain for plotting #
+    #############################################
+    pixel_spacing = [prm["tick_spacing"] / vox for vox in voxel_sizes]
+    logger.info(
+        "Phase extent with thresholding the modulus "
+        f"(threshold={prm['isosurface_strain']}): "
+        f"{strain_manipulator.find_phase_extent_within_crystal():.2f} rad"
+    )
+
+    strain_manipulator.find_max_phase(
+        filename=f"{setup.detector.savedir}S{scan_nb}"
+        f"_phase_at_max{comment.text}.png"
+    )
+    strain_manipulator.threshold_phase_strain()
 
     ##############################
     # plot slices of the results #
     ##############################
-    pixel_spacing = [prm["tick_spacing"] / vox for vox in voxel_size]
-    logger.info(
-        "Phase extent without / with thresholding the modulus "
-        f"(threshold={prm['isosurface_strain']}): "
-        f"{phase.max() - phase.min():.2f} rad, "
-        f"{phase[np.nonzero(bulk)].max() - phase[np.nonzero(bulk)].min():.2f} rad"
-    )
-    piz, piy, pix = np.unravel_index(phase.argmax(), phase.shape)
-    logger.info(
-        f"phase.max() = {phase[np.nonzero(bulk)].max():.2f} "
-        f"at voxel ({piz}, {piy}, {pix})"
-    )
-    strain[bulk == 0] = np.nan
-    phase[bulk == 0] = np.nan
-
-    # plot the slice at the maximum phase
-    fig = gu.combined_plots(
-        (phase[piz, :, :], phase[:, piy, :], phase[:, :, pix]),
-        tuple_sum_frames=False,
-        tuple_sum_axis=0,
-        tuple_width_v=None,
-        tuple_width_h=None,
-        tuple_colorbar=True,
-        tuple_vmin=np.nan,
-        tuple_vmax=np.nan,
-        tuple_title=(
-            "phase at max in xy",
-            "phase at max in xz",
-            "phase at max in yz",
-        ),
-        tuple_scale="linear",
-        cmap=prm["colormap"].cmap,
-        is_orthogonal=True,
-        reciprocal_space=False,
-    )
-    plt.pause(0.1)
-    if prm["save"]:
-        fig.savefig(
-            setup.detector.savedir
-            + "S"
-            + str(scan_nb)
-            + "_phase_at_max"
-            + comment.text
-            + ".png"
-        )
-    plt.close(fig)
-
-    # bulk support
-    fig, _, _ = gu.multislices_plot(
-        bulk,
-        sum_frames=False,
-        title="Orthogonal bulk",
-        vmin=0,
-        vmax=1,
-        is_orthogonal=True,
-        reciprocal_space=False,
-        cmap=prm["colormap"].cmap,
-    )
-    fig.text(0.60, 0.45, "Scan " + str(scan_nb), size=20)
-    fig.text(
-        0.60,
-        0.40,
-        f"Bulk - isosurface= {prm['isosurface_strain']:.2f}",
-        size=20,
-    )
-    plt.pause(0.1)
-    if prm["save"]:
-        fig.savefig(
-            setup.detector.savedir
-            + "S"
-            + str(scan_nb)
-            + "_bulk"
-            + comment.text
-            + ".png"
-        )
-    plt.close(fig)
-
+    volume = strain_manipulator.estimated_crystal_volume
+    planar_dist = strain_manipulator.planar_distance
+    nb_phasing = analysis.nb_reconstructions
+    modulus = strain_manipulator.modulus
     # amplitude
     fig, _, _ = gu.multislices_plot(
-        amp,
+        modulus,
         sum_frames=False,
         title="Normalized orthogonal amp",
         vmin=0,
@@ -735,20 +443,14 @@ def process_scan(
         cmap=prm["colormap"].cmap,
     )
     fig.text(0.60, 0.45, f"Scan {scan_nb}", size=20)
-    fig.text(
-        0.60,
-        0.40,
-        f"Voxel size=({voxel_size[0]:.1f}, {voxel_size[1]:.1f}, "
-        f"{voxel_size[2]:.1f}) (nm)",
-        size=20,
-    )
+    fig.text(0.60, 0.40, voxel_sizes_text, size=20)
     fig.text(0.60, 0.35, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
     fig.text(0.60, 0.30, f"Volume={int(volume)} nm3", size=20)
     fig.text(0.60, 0.25, "Sorted by " + prm["sort_method"], size=20)
     fig.text(
         0.60, 0.20, f"correlation threshold={prm['correlation_threshold']}", size=20
     )
-    fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
+    fig.text(0.60, 0.15, f"average over {nb_phasing} reconstruction(s)", size=20)
     fig.text(0.60, 0.10, f"Planar distance={planar_dist:.5f} nm", size=20)
     if prm["get_temperature"]:
         temperature = pu.bragg_temperature(
@@ -765,7 +467,7 @@ def process_scan(
 
     # amplitude histogram
     fig, ax = plt.subplots(1, 1)
-    ax.hist(amp[amp > 0.05 * amp.max()].flatten(), bins=250)
+    ax.hist(modulus[modulus > 0.05 * modulus.max()].flatten(), bins=250)
     ax.set_ylim(bottom=1)
     ax.tick_params(
         labelbottom=True,
@@ -784,7 +486,7 @@ def process_scan(
 
     # phase
     fig, _, _ = gu.multislices_plot(
-        phase,
+        strain_manipulator.phase,
         sum_frames=False,
         title="Orthogonal displacement",
         vmin=-prm["phase_range"],
@@ -802,12 +504,12 @@ def process_scan(
     fig.text(
         0.60,
         0.25,
-        f"Voxel size=({voxel_size[0]:.1f}, {voxel_size[1]:.1f}, "
-        f"{voxel_size[2]:.1f}) (nm)",
+        f"Voxel size=({voxel_sizes[0]:.1f}, {voxel_sizes[1]:.1f}, "
+        f"{voxel_sizes[2]:.1f}) (nm)",
         size=20,
     )
     fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
-    fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
+    fig.text(0.60, 0.15, f"average over {nb_phasing} reconstruction(s)", size=20)
     if prm["half_width_avg_phase"] > 0:
         fig.text(
             0.60,
@@ -824,7 +526,7 @@ def process_scan(
 
     # strain
     fig, _, _ = gu.multislices_plot(
-        strain,
+        strain_manipulator.strain,
         sum_frames=False,
         title="Orthogonal strain",
         vmin=-prm["strain_range"],
@@ -842,12 +544,12 @@ def process_scan(
     fig.text(
         0.60,
         0.25,
-        f"Voxel size=({voxel_size[0]:.1f}, "
-        f"{voxel_size[1]:.1f}, {voxel_size[2]:.1f}) (nm)",
+        f"Voxel size=({voxel_sizes[0]:.1f}, "
+        f"{voxel_sizes[1]:.1f}, {voxel_sizes[2]:.1f}) (nm)",
         size=20,
     )
     fig.text(0.60, 0.20, f"Ticks spacing={prm['tick_spacing']} nm", size=20)
-    fig.text(0.60, 0.15, f"average over {avg_counter} reconstruction(s)", size=20)
+    fig.text(0.60, 0.15, f"average over {nb_phasing} reconstruction(s)", size=20)
     if prm["half_width_avg_phase"] > 0:
         fig.text(
             0.60,

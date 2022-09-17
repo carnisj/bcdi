@@ -11,7 +11,7 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -581,15 +581,15 @@ def filter_3d(
 
 
 def find_bulk(
-    amp,
-    support_threshold,
-    method="threshold",
-    width_z=None,
-    width_y=None,
-    width_x=None,
-    debugging=False,
+    amp: np.ndarray,
+    support_threshold: float,
+    method: str = "threshold",
+    width_z: Optional[int] = None,
+    width_y: Optional[int] = None,
+    width_x: Optional[int] = None,
+    debugging: bool = False,
     **kwargs,
-):
+) -> np.ndarray:
     """
     Isolate the inner part of the crystal from the non-physical surface.
 
@@ -916,7 +916,14 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     return kernel
 
 
-def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
+def get_opticalpath(
+    support: np.ndarray,
+    direction: str,
+    k: np.ndarray,
+    voxel_size: Optional[Union[float, Tuple[float, float, float]]] = None,
+    debugging: bool = False,
+    **kwargs,
+) -> np.ndarray:
     """
     Calculate the optical path for refraction/absorption corrections in the crystal.
 
@@ -982,7 +989,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     valid.valid_ndarray(arrays=support, ndim=3)
 
     voxel_size = voxel_size or (1, 1, 1)
-    if isinstance(voxel_size, Number):
+    if isinstance(voxel_size, (float, int)):
         voxel_size = (voxel_size,) * 3
     valid.valid_container(
         voxel_size,
@@ -997,7 +1004,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # correct k for the different voxel size in each dimension #
     # (k is expressed in an orthonormal basis)                 #
     ############################################################
-    k = [k[i] * voxel_size[i] for i in range(3)]
+    rescaled_k = [k[i] * voxel_size[i] for i in range(3)]
 
     ###################################################################
     # find the extent of the object, to optimize the calculation time #
@@ -1016,9 +1023,11 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # normalize k, now it is in units of voxels #
     #############################################
     if direction == "in":
-        k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
+        k_norm = (
+            -1 / np.linalg.norm(rescaled_k) * np.asarray(rescaled_k)
+        )  # we will work with -k_in
     else:  # "out"
-        k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
+        k_norm = 1 / np.linalg.norm(rescaled_k) * np.asarray(rescaled_k)
 
     #############################################
     # calculate the optical path for each voxel #

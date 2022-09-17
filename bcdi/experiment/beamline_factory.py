@@ -141,7 +141,7 @@ class Beamline(ABC):
         """
         Send all sample circles to zero degrees.
 
-        Arrays are rotatedsuch that all circles of the sample stage are at their zero
+        Arrays are rotated such that all circles of the sample stage are at their zero
         position.
 
         :param arrays: tuple of 3D real arrays of the same shape.

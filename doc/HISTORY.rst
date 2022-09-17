@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Create classes Analysis, PhaseManipulator and StrainManipulator for postprocessing.
+  Refactor `postprocessing.process_scan` to use these classes.
+
 * Remove the deprecated parameter 'fix_size'. THe same functionality can be obtained by
   using the set of parameters `roi_detector`, `center_roi_x` and `center_roi_y`.
 

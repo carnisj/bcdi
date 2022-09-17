@@ -11,12 +11,17 @@ import logging
 import os
 import tkinter as tk
 from abc import ABC, abstractmethod
+from functools import reduce
 from tkinter import filedialog
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+import h5py
 import numpy as np
+import yaml
+from matplotlib import pyplot as plt
 
 import bcdi.graph.graph_utils as gu
+import bcdi.graph.linecut as linecut
 import bcdi.postprocessing.postprocessing_utils as pu
 import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.image_registration as reg
@@ -204,11 +209,60 @@ class Analysis(ABC):
             f"{self.optimized_range}"
         )
 
+    def get_optical_path(self) -> np.ndarray:
+        """Calculate the optical path through the crystal."""
+        bulk = pu.find_bulk(
+            amp=abs(self.data),
+            support_threshold=self.parameters["threshold_unwrap_refraction"],
+            method=self.parameters["optical_path_method"],
+            debugging=self.parameters["debug"],
+            cmap=self.parameters["colormap"].cmap,
+        )
+
+        kin = self.setup.incident_wavevector
+        kout = self.setup.exit_wavevector
+        # kin and kout were calculated in the laboratory frame,
+        # but after the geometric transformation of the crystal, this
+        # latter is always in the crystal frame (for simpler strain calculation).
+        # We need to transform kin and kout back
+        # into the crystal frame (also, xrayutilities output is in crystal frame)
+        kin = util.rotate_vector(
+            vectors=[kin[2], kin[1], kin[0]],
+            axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+            reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
+        )
+        kout = util.rotate_vector(
+            vectors=[kout[2], kout[1], kout[0]],
+            axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+            reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
+        )
+
+        # calculate the optical path of the incoming wavevector
+        path_in = pu.get_opticalpath(
+            support=bulk,
+            direction="in",
+            k=kin,
+            debugging=self.parameters["debug"],
+            cmap=self.parameters["colormap"].cmap,
+        )  # path_in already in nm
+
+        # calculate the optical path of the outgoing wavevector
+        path_out = pu.get_opticalpath(
+            support=bulk,
+            direction="out",
+            k=kout,
+            debugging=self.parameters["debug"],
+            cmap=self.parameters["colormap"].cmap,
+        )  # path_our already in nm
+
+        return np.asarray(path_in + path_out)
+
     def get_phase_manipulator(self):
         return PhaseManipulator(
             data=self.data,
             parameters=self.parameters,
             original_shape=self.original_shape,
+            wavelength=self.setup.wavelength,
             savedir=self.setup.detector.savedir,
             logger=self.logger,
         )
@@ -464,6 +518,231 @@ class OrthogonalFrame(Analysis):
         self.voxel_sizes = self.parameters["fix_voxel"]
 
 
+class StrainManipulator:
+    """Process the strain for visualization."""
+
+    def __init__(
+        self,
+        modulus: np.ndarray,
+        phase: np.ndarray,
+        strain: np.ndarray,
+        planar_distance: float,
+        parameters: Dict[str, Any],
+        voxel_sizes: List[float],
+        **kwargs,
+    ):
+        self.modulus = modulus
+        self.phase = phase
+        self.strain = strain
+        self.planar_distance = planar_distance
+        self.parameters = parameters
+        self.voxel_sizes = voxel_sizes
+        self.logger = kwargs.get("logger", module_logger)
+
+        self.q_bragg_in_saving_frame: Optional[np.ndarray] = None
+        self.estimated_crystal_volume: Optional[int] = None
+
+    @property
+    def norm_of_q(self) -> float:
+        return 2 * np.pi / self.planar_distance
+
+    def crop_pad_arrays(self):
+        output_size = self.parameters.get("output_size")
+        if output_size is not None:
+            cmap = self.parameters["colormap"].cmap
+            self.modulus, self.phase, self.strain = [
+                util.crop_pad(array=array, output_shape=output_size, cmap=cmap)
+                for array in [self.modulus, self.phase, self.strain]
+            ]
+
+    def estimate_crystal_volume(self) -> None:
+        support = np.copy(self.modulus / self.modulus.max())
+        support[self.modulus < self.parameters["isosurface_strain"]] = 0
+        support[np.nonzero(support)] = 1
+        self.estimated_crystal_volume = support.sum() * reduce(
+            lambda x, y: x * y, self.voxel_sizes
+        )  # in nm3
+
+    def find_phase_extent_within_crystal(self) -> float:
+        support = self.get_bulk()
+        return float(
+            self.phase[np.nonzero(support)].max()
+            - self.phase[np.nonzero(support)].min()
+        )
+
+    def find_max_phase(self, filename: str) -> None:
+        piz, piy, pix = np.unravel_index(self.phase.argmax(), self.phase.shape)
+        max_phase = self.phase[np.nonzero(self.get_bulk())].max()
+        self.logger.info(
+            f"phase.max() = {max_phase:.2f} " f"at voxel ({piz}, {piy}, {pix})"
+        )
+        # plot the slice at the maximum phase
+        fig = gu.combined_plots(
+            (self.phase[piz, :, :], self.phase[:, piy, :], self.phase[:, :, pix]),
+            tuple_sum_frames=False,
+            tuple_sum_axis=0,
+            tuple_width_v=None,
+            tuple_width_h=None,
+            tuple_colorbar=True,
+            tuple_vmin=np.nan,
+            tuple_vmax=np.nan,
+            tuple_title=(
+                "phase at max in xy",
+                "phase at max in xz",
+                "phase at max in yz",
+            ),
+            tuple_scale="linear",
+            cmap=self.parameters["colormap"].cmap,
+            is_orthogonal=self.parameters["is_orthogonal"],
+            reciprocal_space=False,
+        )
+        plt.pause(0.1)
+        if self.parameters["save"]:
+            fig.savefig(filename)
+        plt.close(fig)
+
+    def fit_linecuts_through_crystal_edges(self, filename: str) -> None:
+        linecut.fit_linecut(
+            array=self.modulus,
+            fit_derivative=True,
+            filename=filename,
+            voxel_sizes=self.voxel_sizes,
+            label="modulus",
+            logger=self.logger,
+        )
+
+    def flatten_sample_circles(self, setup: "Setup") -> None:
+        """
+        Send all sample circles to zero degrees.
+
+        Arrays are rotated such that all circles of the sample stage are at their zero
+        position.
+        """
+        self.logger.info("Sending sample stage circles to 0")
+        (
+            self.modulus,
+            self.phase,
+            self.strain,
+        ), self.q_bragg_in_saving_frame = setup.beamline.flatten_sample(
+            arrays=(self.modulus, self.phase, self.strain),
+            voxel_size=self.voxel_sizes,
+            q_bragg=setup.q_laboratory / float(np.linalg.norm(setup.q_laboratory)),
+            is_orthogonal=self.parameters["is_orthogonal"],
+            reciprocal_space=False,
+            rocking_angle=setup.rocking_angle,
+            debugging=(True, False, False),
+            title=("amp", "phase", "strain"),
+            cmap=self.parameters["colormap"].cmap,
+        )
+
+    def get_bulk(self, method: str = "threshold") -> np.ndarray:
+        """Calculate the support representing the crystal without the surface layer."""
+        return pu.find_bulk(
+            amp=self.modulus,
+            support_threshold=self.parameters["isosurface_strain"],
+            method=method,
+            cmap=self.parameters["colormap"].cmap,
+        )
+
+    def rescale_q(self) -> None:
+        """Multiply the normalized diffusion vector by its original norm."""
+        if self.q_bragg_in_saving_frame is not None:
+            self.q_bragg_in_saving_frame = self.q_bragg_in_saving_frame * self.norm_of_q
+
+    def rotate_crystal(
+        self, axis_to_align: List[float], reference_axis: np.ndarray
+    ) -> None:
+        """Rotate the modulus, phase and strain along the reference axis."""
+        self.modulus, self.phase, self.strain = util.rotate_crystal(
+            arrays=(self.modulus, self.phase, self.strain),
+            axis_to_align=axis_to_align,
+            voxel_size=self.voxel_sizes,
+            is_orthogonal=self.parameters["is_orthogonal"],
+            reciprocal_space=False,
+            reference_axis=reference_axis,
+            debugging=(True, False, False),
+            title=("modulus", "phase", "strain"),
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.q_bragg_in_saving_frame = reference_axis
+
+    def rotate_vector_to_saving_frame(
+        self,
+        vector: Union[np.ndarray, Tuple[Union[float, np.ndarray]]],
+        axis_to_align: List[float],
+        reference_axis: List[float],
+    ) -> None:
+        """Calculate the diffusion vector in the crystal frame."""
+        self.q_bragg_in_saving_frame = util.rotate_vector(
+            vectors=vector,
+            axis_to_align=axis_to_align,
+            reference_axis=reference_axis,
+        )
+
+    def save_results_as_npz(self, filename: str, setup: "Setup") -> None:
+        np.savez_compressed(
+            filename,
+            amp=self.modulus,
+            phase=self.phase,
+            bulk=self.get_bulk(),
+            strain=self.strain,
+            q_bragg=self.q_bragg_in_saving_frame
+            if self.q_bragg_in_saving_frame is not None
+            else np.nan,
+            voxel_sizes=self.voxel_sizes,
+            detector=str(yaml.dump(setup.detector.params)),
+            setup=str(yaml.dump(setup.params)),
+            params=str(yaml.dump(self.parameters)),
+        )
+
+    def save_results_as_h5(self, filename: str, setup: "Setup") -> None:
+        with h5py.File(
+            filename,
+            "w",
+        ) as hf:
+            out = hf.create_group("output")
+            par = hf.create_group("params")
+            out.create_dataset("amp", data=self.modulus)
+            out.create_dataset("bulk", data=self.get_bulk())
+            out.create_dataset("phase", data=self.phase)
+            out.create_dataset("strain", data=self.strain)
+            out.create_dataset("q_bragg", data=self.q_bragg_in_saving_frame)
+            out.create_dataset("voxel_sizes", data=self.voxel_sizes)
+            par.create_dataset("detector", data=str(setup.detector.params))
+            par.create_dataset("setup", data=str(setup.params))
+            par.create_dataset("parameters", data=str(self.parameters))
+
+    def save_results_as_vti(
+        self, scan_index: int, setup: "Setup", comment: str
+    ) -> None:
+        gu.save_to_vti(
+            filename=os.path.join(
+                setup.detector.savedir,
+                "S"
+                + str(self.parameters["scans"][scan_index])
+                + "_amp-"
+                + self.parameters["phase_fieldname"]
+                + "-strain"
+                + comment
+                + ".vti",
+            ),
+            voxel_size=self.voxel_sizes,
+            tuple_array=(self.modulus, self.get_bulk(), self.phase, self.strain),
+            tuple_fieldnames=(
+                "amp",
+                "bulk",
+                self.parameters["phase_fieldname"],
+                "strain",
+            ),
+            amplitude_threshold=0.01,
+        )
+
+    def threshold_phase_strain(self):
+        support = self.get_bulk()
+        self.strain[support == 0] = np.nan
+        self.phase[support == 0] = np.nan
+
+
 class PhaseManipulator:
     """Process the phase of the data."""
 
@@ -472,6 +751,7 @@ class PhaseManipulator:
         data: np.ndarray,
         parameters: Dict[str, Any],
         original_shape: Tuple[int, ...],
+        wavelength: float,
         save_directory: Optional[str] = None,
         **kwargs,
     ) -> None:
@@ -479,6 +759,7 @@ class PhaseManipulator:
         self._phase, self._modulus = self.extract_phase_modulus()
         self.parameters = parameters
         self.original_shape = original_shape
+        self.wavelength = wavelength
         self.save_directory = save_directory
 
         self._extent_phase: Optional[float] = None
@@ -564,12 +845,61 @@ class PhaseManipulator:
             cmap=self.parameters["colormap"].cmap,
         )
 
+    def calculate_strain(
+        self, planar_distance: float, voxel_sizes: List[float]
+    ) -> StrainManipulator:
+        self.logger.info(
+            f"Calculation of the strain along {self.parameters['ref_axis_q']}"
+        )
+        strain = pu.get_strain(
+            phase=self.phase,
+            planar_distance=planar_distance,
+            voxel_size=voxel_sizes,
+            reference_axis=self.parameters["ref_axis_q"],
+            extent_phase=self.extent_phase,
+            method=self.parameters["strain_method"],
+            debugging=self.parameters["debug"],
+            cmap=self.parameters["colormap"].cmap,
+        )
+        return StrainManipulator(
+            modulus=self.modulus,
+            phase=self.phase,
+            strain=strain,
+            planar_distance=planar_distance,
+            parameters=self.parameters,
+            voxel_sizes=voxel_sizes,
+            logger=self.logger,
+        )
+
     def center_phase(self) -> None:
         """Wrap the phase around its mean."""
         self._phase = util.wrap(
             self.phase,
             start_angle=-self.extent_phase / 2,
             range_angle=self.extent_phase,
+        )
+
+    def compensate_refraction(self, optical_path: np.ndarray) -> None:
+        """Compensate the phase shift due to refraction through the crystal medium."""
+        phase_correction = (
+            2
+            * np.pi
+            / (1e9 * self.wavelength)
+            * self.parameters["dispersion"]
+            * optical_path
+        )
+        self._phase = self.phase + phase_correction
+
+        gu.multislices_plot(
+            np.multiply(phase_correction, self.modulus),
+            sum_frames=False,
+            plot_colorbar=True,
+            vmin=0,
+            vmax=np.nan,
+            title="Refraction correction on the support",
+            is_orthogonal=True,
+            reciprocal_space=False,
+            cmap=self.parameters["colormap"].cmap,
         )
 
     def extract_phase_modulus(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -617,6 +947,8 @@ class PhaseManipulator:
             title="Phase",
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
+            reciprocal_space=False,
+            is_orthogonal=self.parameters["is_orthogonal"],
         )
 
     def remove_ramp(self) -> None:

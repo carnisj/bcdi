@@ -72,6 +72,19 @@ API Reference
 .. automodule:: bcdi.utils.snippets_logging
    :members:
 
+text
+^^^^
+
+This module provides the class used to define filename when saving data and figures
+during processing.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.utils.text
+   :members:
+
+
 validation
 ^^^^^^^^^^
 

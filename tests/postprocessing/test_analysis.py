@@ -251,10 +251,11 @@ class TestPhaseManipulator(unittest.TestCase):
             data=np.ones(self.shape),
             parameters=deepcopy(parameters),
             original_shape=parameters["original_size"],
+            wavelength=1.0,
         )
 
     def test_instantiation(self):
-        self.assertIsNone(self.phase_manipulator.extent_phase)
+        self.assertAlmostEqual(self.phase_manipulator.extent_phase, 0)
         self.assertIsNone(self.phase_manipulator.phase_ramp)
         self.assertIsInstance(self.phase_manipulator.modulus, np.ndarray)
         self.assertIsInstance(self.phase_manipulator.phase, np.ndarray)
@@ -273,8 +274,7 @@ class TestPhaseManipulator(unittest.TestCase):
             self.assertTrue(os.path.isfile(f"{tmpdir}/{plot_title}.png"))
 
     def test_center_phase_none(self):
-        with self.assertRaises(ValueError):
-            self.phase_manipulator.center_phase()
+        self.phase_manipulator.center_phase()
 
     def test_phase_offset_removel(self):
         self.phase_manipulator.remove_offset()
