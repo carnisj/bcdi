@@ -353,7 +353,6 @@ class TestCreateAnalysis(unittest.TestCase):
         self.assertEqual(
             analysis.define_analysis_type(
                 data_frame=parameters["data_frame"],
-                interpolation_method=parameters["interpolation_method"],
             ),
             "linearization",
         )

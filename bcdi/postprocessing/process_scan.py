@@ -388,7 +388,8 @@ def process_scan(
         # in VTK, x is downstream, y vertical, z inboard,
         # thus need to flip the last axis
         strain_manipulator.save_results_as_vti(
-            scan_index=scan_idx, setup=setup, comment=comment.text
+            filename=f"{setup.detector.savedir}S{scan_nb}_"
+            f"amp-{prm['phase_fieldname']}-strain{comment.text}.vti"
         )
 
     ######################################

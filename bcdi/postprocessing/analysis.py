@@ -712,20 +712,9 @@ class StrainManipulator:
             par.create_dataset("setup", data=str(setup.params))
             par.create_dataset("parameters", data=str(self.parameters))
 
-    def save_results_as_vti(
-        self, scan_index: int, setup: "Setup", comment: str
-    ) -> None:
+    def save_results_as_vti(self, filename: str) -> None:
         gu.save_to_vti(
-            filename=os.path.join(
-                setup.detector.savedir,
-                "S"
-                + str(self.parameters["scans"][scan_index])
-                + "_amp-"
-                + self.parameters["phase_fieldname"]
-                + "-strain"
-                + comment
-                + ".vti",
-            ),
+            filename=filename,
             voxel_size=self.voxel_sizes,
             tuple_array=(self.modulus, self.get_bulk(), self.phase, self.strain),
             tuple_fieldnames=(
@@ -982,10 +971,10 @@ class PhaseManipulator:
         )
 
 
-def define_analysis_type(data_frame: str, interpolation_method: str) -> str:
+def define_analysis_type(data_frame: str) -> str:
     """Define the correct analysis type depending on the parameters."""
     if data_frame == "detector":
-        return interpolation_method
+        return "linearization"
     return "orthogonal"
 
 
@@ -998,7 +987,6 @@ def create_analysis(
     """Create the correct analysis class depending on the parameters."""
     name = define_analysis_type(
         data_frame=parameters["data_frame"],
-        interpolation_method=parameters["interpolation_method"],
     )
     if name == "linearization":
         return DetectorFrameLinearization(
