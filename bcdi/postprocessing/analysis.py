@@ -873,6 +873,8 @@ class PhaseManipulator:
 
     def center_phase(self) -> None:
         """Wrap the phase around its mean."""
+        if self.extent_phase is None:
+            raise ValueError("extent_phase is None")
         self._phase = util.wrap(
             self.phase,
             start_angle=-self.extent_phase / 2,
