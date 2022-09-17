@@ -413,7 +413,6 @@ class PostprocessingChecker(ConfigChecker):
             self._checked_params["is_orthogonal"] = False
         else:
             self._checked_params["is_orthogonal"] = True
-            self._checked_params["is_orthogonal"] = True
 
         if (
             self._checked_params["data_frame"] == "crystal"
