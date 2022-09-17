@@ -64,7 +64,6 @@ data_frame: "detector"
 # 'laboratory' if the data was interpolated into the laboratory frame using
 # the transformation matrix (align_q: False)
 # 'detector' if the data is still in the detector frame
-interpolation_method: "linearization"  # 'xrayutilities' or 'linearization'
 ref_axis_q: "y"
 # axis along which q will be aligned (data_frame= 'detector' or 'laboratory')
 # or is already aligned (data_frame='crystal')
