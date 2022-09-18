@@ -79,7 +79,8 @@ class Analysis(ABC):
 
     @property
     def get_interplanar_distance(self) -> float:
-        return float(2 * np.pi / np.linalg.norm(self.setup.q_laboratory))
+        """Calculate the interplanar distance in nm."""
+        return float(2 * np.pi / (10 * np.linalg.norm(self.setup.q_laboratory)))
 
     @property
     def get_normalized_q_bragg_laboratory_frame(self) -> np.ndarray:
@@ -534,7 +535,7 @@ class StrainManipulator:
         self.modulus = modulus
         self.phase = phase
         self.strain = strain
-        self.planar_distance = planar_distance
+        self.planar_distance = planar_distance  # in nm
         self.parameters = parameters
         self.voxel_sizes = voxel_sizes
         self.logger = kwargs.get("logger", module_logger)
@@ -544,7 +545,8 @@ class StrainManipulator:
 
     @property
     def norm_of_q(self) -> float:
-        return 2 * np.pi / self.planar_distance
+        """Calculate the norm of q in 1/A (planar distance in nm)."""
+        return 2 * np.pi / (10 * self.planar_distance)
 
     def crop_pad_arrays(self):
         output_size = self.parameters.get("output_size")

@@ -7,9 +7,6 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Workflow for BCDI data postprocessing of a single scan, after phase retrieval."""
 
-import gc
-from functools import reduce
-
 try:
     import hdf5plugin  # for P10, should be imported before h5py or PyTables
 except ModuleNotFoundError:
@@ -245,7 +242,7 @@ def process_scan(
         f"{[f'{val:.4f}' for _, val in enumerate(q_lab)]} (1/A)"
     )
     logger.info(f"Wavevector transfer: {analysis.get_norm_q_bragg:.4f} 1/A")
-    logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} A")
+    logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} nm")
 
     #######################
     #  orthogonalize data #
