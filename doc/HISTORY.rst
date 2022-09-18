@@ -1,7 +1,7 @@
 Future:
 -------
 
-* Create classes Analysis, PhaseManipulator and StrainManipulator for postprocessing.
+* Create classes Analysis, PhaseManipulator and InterpolatedCrystal for postprocessing.
   Refactor `postprocessing.process_scan` to use these classes.
 
 * Remove the deprecated parameter 'fix_size'. THe same functionality can be obtained by

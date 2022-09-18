@@ -289,7 +289,7 @@ def process_scan(
     ################################################################
     # calculate the strain depending on which axis q is aligned on #
     ################################################################
-    strain_manipulator = phase_manipulator.calculate_strain(
+    interpolated_crystal = phase_manipulator.calculate_strain(
         planar_distance=analysis.get_interplanar_distance,
         voxel_sizes=analysis.voxel_sizes,
     )
@@ -302,23 +302,23 @@ def process_scan(
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
         comment.concatenate("labframe")
         logger.info("Rotating back the crystal in laboratory frame")
-        strain_manipulator.rotate_crystal(
+        interpolated_crystal.rotate_crystal(
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
             reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
         )
         # q_lab is already in the laboratory frame
-        strain_manipulator.q_bragg_in_saving_frame = (
+        interpolated_crystal.q_bragg_in_saving_frame = (
             analysis.get_normalized_q_bragg_laboratory_frame[::-1]
         )
 
         if prm["save_frame"] == "lab_flat_sample":
             comment.concatenate("flat")
-            strain_manipulator.flatten_sample_circles(setup=setup)
+            interpolated_crystal.flatten_sample_circles(setup=setup)
     else:  # "save_frame" = "crystal"
         # rotate also q_lab to have it along ref_axis_q,
         # as a cross-checkm, vectors needs to be in xyz order
         comment.concatenate("crystalframe")
-        strain_manipulator.rotate_vector_to_saving_frame(
+        interpolated_crystal.rotate_vector_to_saving_frame(
             vector=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
             reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
@@ -332,19 +332,19 @@ def process_scan(
     # along which the strain was calculated
     if prm["align_axis"]:
         logger.info("Rotating arrays for visualization")
-        strain_manipulator.rotate_crystal(
+        interpolated_crystal.rotate_crystal(
             axis_to_align=prm["axis_to_align"],
             reference_axis=AXIS_TO_ARRAY[prm["ref_axis"]],
         )
         # rotate q accordingly, vectors needs to be in xyz order
-        strain_manipulator.rotate_vector_to_saving_frame(
-            vector=strain_manipulator.q_bragg_in_saving_frame[::-1],
+        interpolated_crystal.rotate_vector_to_saving_frame(
+            vector=interpolated_crystal.q_bragg_in_saving_frame[::-1],
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis"]],
             reference_axis=prm["axis_to_align"],
         )
 
-    strain_manipulator.rescale_q()
-    q_final = strain_manipulator.q_bragg_in_saving_frame
+    interpolated_crystal.rescale_q()
+    q_final = interpolated_crystal.q_bragg_in_saving_frame
     logger.info(
         f"q_final = ({q_final[0]:.4f} 1/A,"
         f" {q_final[1]:.4f} 1/A, {q_final[2]:.4f} 1/A)"
@@ -353,8 +353,8 @@ def process_scan(
     ##############################################
     # pad array to fit the output_size parameter #
     ##############################################
-    strain_manipulator.crop_pad_arrays()
-    logger.info(f"Final data shape: {strain_manipulator.strain.shape}")
+    interpolated_crystal.crop_pad_arrays()
+    logger.info(f"Final data shape: {interpolated_crystal.strain.shape}")
 
     ######################
     # save result to vtk #
@@ -369,13 +369,13 @@ def process_scan(
     logger.info(voxel_sizes_text)
 
     if prm["save"]:
-        strain_manipulator.save_results_as_npz(
+        interpolated_crystal.save_results_as_npz(
             filename=f"{setup.detector.savedir}S{scan_nb}_"
             f"amp{prm['phase_fieldname']}strain{comment.text}",
             setup=setup,
         )
 
-        strain_manipulator.save_results_as_h5(
+        interpolated_crystal.save_results_as_h5(
             filename=f"{setup.detector.savedir}S{scan_nb}_"
             f"amp{prm['phase_fieldname']}strain{comment.text}.h5",
             setup=setup,
@@ -384,7 +384,7 @@ def process_scan(
         # save amp & phase to VTK
         # in VTK, x is downstream, y vertical, z inboard,
         # thus need to flip the last axis
-        strain_manipulator.save_results_as_vti(
+        interpolated_crystal.save_results_as_vti(
             filename=f"{setup.detector.savedir}S{scan_nb}_"
             f"amp-{prm['phase_fieldname']}-strain{comment.text}.vti"
         )
@@ -392,13 +392,13 @@ def process_scan(
     ######################################
     # estimate the volume of the crystal #
     ######################################
-    strain_manipulator.normalize_modulus()
-    strain_manipulator.estimate_crystal_volume()
+    interpolated_crystal.normalize_modulus()
+    interpolated_crystal.estimate_crystal_volume()
 
     ################################
     # plot linecuts of the results #
     ################################
-    strain_manipulator.fit_linecuts_through_crystal_edges(
+    interpolated_crystal.fit_linecuts_through_crystal_edges(
         filename=setup.detector.savedir + "linecut_amp.png"
     )
 
@@ -409,22 +409,22 @@ def process_scan(
     logger.info(
         "Phase extent with thresholding the modulus "
         f"(threshold={prm['isosurface_strain']}): "
-        f"{strain_manipulator.find_phase_extent_within_crystal():.2f} rad"
+        f"{interpolated_crystal.find_phase_extent_within_crystal():.2f} rad"
     )
 
-    strain_manipulator.find_max_phase(
+    interpolated_crystal.find_max_phase(
         filename=f"{setup.detector.savedir}S{scan_nb}"
         f"_phase_at_max{comment.text}.png"
     )
-    strain_manipulator.threshold_phase_strain()
+    interpolated_crystal.threshold_phase_strain()
 
     ##############################
     # plot slices of the results #
     ##############################
-    volume = strain_manipulator.estimated_crystal_volume
-    planar_dist = strain_manipulator.planar_distance
+    volume = interpolated_crystal.estimated_crystal_volume
+    planar_dist = interpolated_crystal.planar_distance
     nb_phasing = analysis.nb_reconstructions
-    modulus = strain_manipulator.modulus
+    modulus = interpolated_crystal.modulus
     # amplitude
     fig, _, _ = gu.multislices_plot(
         modulus,
@@ -485,7 +485,7 @@ def process_scan(
 
     # phase
     fig, _, _ = gu.multislices_plot(
-        strain_manipulator.phase,
+        interpolated_crystal.phase,
         sum_frames=False,
         title="Orthogonal displacement",
         vmin=-prm["phase_range"],
@@ -525,7 +525,7 @@ def process_scan(
 
     # strain
     fig, _, _ = gu.multislices_plot(
-        strain_manipulator.strain,
+        interpolated_crystal.strain,
         sum_frames=False,
         title="Orthogonal strain",
         vmin=-prm["strain_range"],

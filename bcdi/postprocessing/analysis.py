@@ -519,8 +519,8 @@ class OrthogonalFrame(Analysis):
         self.voxel_sizes = self.parameters["fix_voxel"]
 
 
-class StrainManipulator:
-    """Process the strain for visualization."""
+class InterpolatedCrystal:
+    """Process the strain, modulus and phase for visualization."""
 
     def __init__(
         self,
@@ -841,7 +841,7 @@ class PhaseManipulator:
 
     def calculate_strain(
         self, planar_distance: float, voxel_sizes: List[float]
-    ) -> StrainManipulator:
+    ) -> InterpolatedCrystal:
         self.logger.info(
             f"Calculation of the strain along {self.parameters['ref_axis_q']}"
         )
@@ -855,7 +855,7 @@ class PhaseManipulator:
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
         )
-        return StrainManipulator(
+        return InterpolatedCrystal(
             modulus=self.modulus,
             phase=self.phase,
             strain=strain,
