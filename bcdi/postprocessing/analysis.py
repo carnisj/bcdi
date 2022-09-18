@@ -559,7 +559,7 @@ class StrainManipulator:
 
     def estimate_crystal_volume(self) -> None:
         support = np.copy(self.modulus / self.modulus.max())
-        support[self.modulus < self.parameters["isosurface_strain"]] = 0
+        support[support < self.parameters["isosurface_strain"]] = 0
         support[np.nonzero(support)] = 1
         self.estimated_crystal_volume = support.sum() * reduce(
             lambda x, y: x * y, self.voxel_sizes
@@ -645,6 +645,9 @@ class StrainManipulator:
             method=method,
             cmap=self.parameters["colormap"].cmap,
         )
+
+    def normalize_modulus(self) -> None:
+        self.modulus = self.modulus / self.modulus.max()
 
     def rescale_q(self) -> None:
         """Multiply the normalized diffusion vector by its original norm."""

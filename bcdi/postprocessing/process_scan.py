@@ -392,6 +392,7 @@ def process_scan(
     ######################################
     # estimate the volume of the crystal #
     ######################################
+    strain_manipulator.normalize_modulus()
     strain_manipulator.estimate_crystal_volume()
 
     ################################
