@@ -220,7 +220,7 @@ class TestAnalysis(unittest.TestCase):
         self.assertAlmostEqual(self.process.setup.outofplane_angle, expected_outofplane)
 
     def test_get_interplanar_distance(self):
-        expected = 2.2637604819304933
+        expected = 0.22637604819304932
         self.assertAlmostEqual(self.process.get_interplanar_distance, expected)
 
     def test_get_q_bragg_laboratory_frame(self):
