@@ -1754,7 +1754,7 @@ def remove_ramp(
             plt.title("centered np.log10(abs(my_fft).sum(axis=0))")
             plt.pause(0.1)
 
-        logger(f"COM after subpixel shift: {center_of_mass(abs(my_fft) ** 4)}")
+        logger.info(f"COM after subpixel shift: {center_of_mass(abs(my_fft) ** 4)}")
         myobj = fftshift(ifftn(ifftshift(my_fft)))
         del my_fft
         gc.collect()
