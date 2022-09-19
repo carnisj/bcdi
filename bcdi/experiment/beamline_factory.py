@@ -52,6 +52,7 @@ API Reference
 import logging
 from abc import ABC, abstractmethod
 from numbers import Real
+from typing import Optional
 
 import numpy as np
 import xrayutilities as xu
@@ -140,7 +141,7 @@ class Beamline(ABC):
         """
         Send all sample circles to zero degrees.
 
-        Arrays are rotatedsuch that all circles of the sample stage are at their zero
+        Arrays are rotated such that all circles of the sample stage are at their zero
         position.
 
         :param arrays: tuple of 3D real arrays of the same shape.
@@ -389,7 +390,9 @@ class BeamlineGoniometer(Beamline):
         )
         self._detector_angles = value
 
-    def exit_wavevector(self, wavelength, inplane_angle, outofplane_angle):
+    def exit_wavevector(
+        self, wavelength: float, inplane_angle: float, outofplane_angle: float
+    ) -> np.ndarray:
         """
         Calculate the exit wavevector kout.
 
@@ -404,7 +407,9 @@ class BeamlineGoniometer(Beamline):
         # look for the index of the inplane detector circle
         index = self.find_inplane()
 
-        factor = self.orientation_lookup[self.diffractometer.detector_circles[index]]
+        factor: int = self.orientation_lookup[
+            self.diffractometer.detector_circles[index]
+        ]
 
         kout = (
             2
@@ -424,7 +429,7 @@ class BeamlineGoniometer(Beamline):
         )
         return kout
 
-    def find_inplane(self):
+    def find_inplane(self) -> int:
         """
         Find the index of the detector inplane circle.
 
@@ -438,6 +443,8 @@ class BeamlineGoniometer(Beamline):
         for idx, val in enumerate(self.diffractometer.detector_circles):
             if val.startswith("y"):
                 index = idx
+        if index is None:
+            raise ValueError("detector inplane circle not found")
         return index
 
     def find_outofplane(self):

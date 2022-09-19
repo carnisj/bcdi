@@ -19,6 +19,17 @@ API Reference
 .. automodule:: bcdi.postprocessing.facet_recognition
    :members:
 
+analysis
+^^^^^^^^
+
+This module provides the classes used in postprocessing strain analysis.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.postprocessing.analysis
+   :members:
+
 facet_analysis
 ^^^^^^^^^^^^^^
 

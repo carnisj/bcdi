@@ -205,7 +205,7 @@ class Setup:
         self._actuators = value
 
     @property
-    def beam_direction(self):
+    def beam_direction(self) -> np.ndarray:
         """
         Direction of the incident X-ray beam.
 
@@ -214,7 +214,7 @@ class Setup:
         return self._beam_direction
 
     @beam_direction.setter
-    def beam_direction(self, value):
+    def beam_direction(self, value: List[float]) -> None:
         valid.valid_container(
             value,
             container_types=(tuple, list, np.ndarray),
@@ -222,22 +222,22 @@ class Setup:
             item_types=Real,
             name="Setup.beam_direction",
         )
-        value = np.asarray(value)
-        if np.linalg.norm(value) == 0:
+        value_as_array = np.asarray(value)
+        if np.linalg.norm(value_as_array) == 0:
             raise ValueError(
                 "At least of component of beam_direction should be non null."
             )
-        self._beam_direction = value / np.linalg.norm(value)
+        self._beam_direction = value_as_array / float(np.linalg.norm(value_as_array))
 
     @property
-    def beam_direction_xrutils(self):
+    def beam_direction_xrutils(self) -> np.ndarray:
         """
         Direction of the incident X-ray beam in xrayutilities frame.
 
         xrayutilities frame convention: (x downstream, y outboard, z vertical up).
         """
         u, v, w = self._beam_direction  # (u downstream, v vertical up, w outboard)
-        return u, w, v
+        return np.array([u, w, v])
 
     @property
     def name(self):
@@ -484,7 +484,7 @@ class Setup:
             raise TypeError("energy should be a number or a list of numbers, in eV")
 
     @property
-    def exit_wavevector(self):
+    def exit_wavevector(self) -> np.ndarray:
         """
         Calculate the exit wavevector kout.
 
@@ -493,7 +493,11 @@ class Setup:
 
         :return: kout vector
         """
-        return self.beamline.exit_wavevector(
+        if self.inplane_angle is None or self.outofplane_angle is None:
+            raise ValueError("detector angles are None")
+        if self.wavelength is None:
+            raise ValueError("wavelength is None")
+        return self.beamline.exit_wavevector(  # type: ignore
             inplane_angle=self.inplane_angle,
             outofplane_angle=self.outofplane_angle,
             wavelength=self.wavelength,
@@ -536,7 +540,7 @@ class Setup:
         self._grazing_angle = value
 
     @property
-    def incident_wavevector(self):
+    def incident_wavevector(self) -> np.ndarray:
         """
         Calculate the incident wavevector kout.
 
@@ -545,6 +549,8 @@ class Setup:
 
         :return: kin vector
         """
+        if self.wavelength is None:
+            raise ValueError("wavelength is None")
         return 2 * np.pi / self.wavelength * self.beam_direction
 
     @property
@@ -645,7 +651,7 @@ class Setup:
         }
 
     @property
-    def q_laboratory(self):
+    def q_laboratory(self) -> np.ndarray:
         """
         Calculate the diffusion vector in the laboratory frame.
 
@@ -653,7 +659,10 @@ class Setup:
 
         :return: a tuple of three vectors components.
         """
-        return (self.exit_wavevector - self.incident_wavevector) * 1e-10
+        q_laboratory = (self.exit_wavevector - self.incident_wavevector) * 1e-10
+        if np.isclose(np.linalg.norm(q_laboratory), 0, atol=1e-15):
+            raise ValueError("q_laboratory is null")
+        return q_laboratory  # type: ignore
 
     @property
     def rocking_angle(self):
@@ -868,7 +877,7 @@ class Setup:
 
     def correct_detector_angles(
         self,
-        bragg_peak_position: Optional[Tuple[int, ...]],
+        bragg_peak_position: Optional[List[int]],
         verbose: bool = True,
     ) -> None:
         """

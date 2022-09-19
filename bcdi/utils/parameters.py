@@ -486,8 +486,6 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         "use_rawdata",
     }:
         valid.valid_item(value, allowed_types=bool, name=key)
-    elif key == "absorption":
-        valid.valid_item(value, allowed_types=Real, min_excluded=0, name=key)
     elif key == "actuators":
         valid.valid_container(value, container_types=dict, allow_none=True, name=key)
     elif key == "apodization_alpha":

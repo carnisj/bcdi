@@ -609,11 +609,13 @@ def process_scan(
                     logger=logger,
                     plot_fit=False,
                 )
-                q_bragg = [
-                    q_values[0][interpolated_metadata["bragg_peak"][0]],
-                    q_values[1][interpolated_metadata["bragg_peak"][1]],
-                    q_values[2][interpolated_metadata["bragg_peak"][2]],
-                ]
+                q_bragg = np.array(
+                    [
+                        q_values[0][interpolated_metadata["bragg_peak"][0]],
+                        q_values[1][interpolated_metadata["bragg_peak"][1]],
+                        q_values[2][interpolated_metadata["bragg_peak"][2]],
+                    ]
+                )
                 qnorm = np.linalg.norm(q_bragg)
             else:  # 'linearization'
                 # for q values, the frame used is
@@ -701,11 +703,13 @@ def process_scan(
                 logger=logger,
                 plot_fit=False,
             )
-            q_bragg = [
-                q_values[0][interpolated_metadata["bragg_peak"][0]],
-                q_values[1][interpolated_metadata["bragg_peak"][1]],
-                q_values[2][interpolated_metadata["bragg_peak"][2]],
-            ]
+            q_bragg = np.array(
+                [
+                    q_values[0][interpolated_metadata["bragg_peak"][0]],
+                    q_values[1][interpolated_metadata["bragg_peak"][1]],
+                    q_values[2][interpolated_metadata["bragg_peak"][2]],
+                ]
+            )
             qnorm = np.linalg.norm(q_bragg)
         else:
             q_bragg = None

@@ -185,9 +185,6 @@ dispersion: 4.1184E-05  # delta
 # Pt:  3.0761E-05 @ 10300eV, 5.0328E-05 @ 8170eV
 # 3.2880E-05 @ 9994eV, 4.1184E-05 @ 8994eV, 5.2647E-05 @ 7994eV,
 # 4.6353E-05 @ 8500eV / Ge 1.4718E-05 @ 8keV
-absorption: 3.4298E-06  # beta
-# Pt:  2.0982E-06 @ 10300eV, 4.8341E-06 @ 8170eV
-# 2.3486E-06 @ 9994eV, 3.4298E-06 @ 8994eV, 5.2245E-06 @ 7994eV, 4.1969E-06 @ 8500eV
 threshold_unwrap_refraction: 0.05  # threshold used to calculate the optical path
 # the threshold for refraction/absorption corrections should be low,
 # to correct for an object larger than the real one,

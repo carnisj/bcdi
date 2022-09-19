@@ -11,7 +11,7 @@ import gc
 import logging
 from math import pi
 from numbers import Number, Real
-from typing import List, Union
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -581,15 +581,15 @@ def filter_3d(
 
 
 def find_bulk(
-    amp,
-    support_threshold,
-    method="threshold",
-    width_z=None,
-    width_y=None,
-    width_x=None,
-    debugging=False,
+    amp: np.ndarray,
+    support_threshold: float,
+    method: str = "threshold",
+    width_z: Optional[int] = None,
+    width_y: Optional[int] = None,
+    width_x: Optional[int] = None,
+    debugging: bool = False,
     **kwargs,
-):
+) -> np.ndarray:
     """
     Isolate the inner part of the crystal from the non-physical surface.
 
@@ -916,7 +916,14 @@ def gaussian_kernel(ndim, kernel_length=21, sigma=3, debugging=False):
     return kernel
 
 
-def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **kwargs):
+def get_opticalpath(
+    support: np.ndarray,
+    direction: str,
+    k: np.ndarray,
+    voxel_size: Optional[Union[float, Tuple[float, float, float]]] = None,
+    debugging: bool = False,
+    **kwargs,
+) -> np.ndarray:
     """
     Calculate the optical path for refraction/absorption corrections in the crystal.
 
@@ -982,7 +989,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     valid.valid_ndarray(arrays=support, ndim=3)
 
     voxel_size = voxel_size or (1, 1, 1)
-    if isinstance(voxel_size, Number):
+    if isinstance(voxel_size, (float, int)):
         voxel_size = (voxel_size,) * 3
     valid.valid_container(
         voxel_size,
@@ -997,7 +1004,7 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # correct k for the different voxel size in each dimension #
     # (k is expressed in an orthonormal basis)                 #
     ############################################################
-    k = [k[i] * voxel_size[i] for i in range(3)]
+    rescaled_k = [k[i] * voxel_size[i] for i in range(3)]
 
     ###################################################################
     # find the extent of the object, to optimize the calculation time #
@@ -1016,9 +1023,11 @@ def get_opticalpath(support, direction, k, voxel_size=None, debugging=False, **k
     # normalize k, now it is in units of voxels #
     #############################################
     if direction == "in":
-        k_norm = -1 / np.linalg.norm(k) * np.asarray(k)  # we will work with -k_in
+        k_norm = (
+            -1 / np.linalg.norm(rescaled_k) * np.asarray(rescaled_k)
+        )  # we will work with -k_in
     else:  # "out"
-        k_norm = 1 / np.linalg.norm(k) * np.asarray(k)
+        k_norm = 1 / np.linalg.norm(rescaled_k) * np.asarray(rescaled_k)
 
     #############################################
     # calculate the optical path for each voxel #
@@ -2070,7 +2079,7 @@ def remove_ramp_2d(
 
 def sort_reconstruction(
     file_path, data_range, amplitude_threshold, sort_method="variance/mean"
-):
+) -> List[int]:
     """
     Sort out reconstructions based on the metric 'sort_method'.
 
@@ -2161,7 +2170,7 @@ def sort_reconstruction(
     print(quality_array)
     print("sorted list", sorted_obj)
 
-    return sorted_obj
+    return [int(val) for val in sorted_obj]
 
 
 def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
@@ -2188,20 +2197,22 @@ def tukey_window(shape, alpha=np.array([0.5, 0.5, 0.5])):
 
 
 def unwrap(
-    obj, support_threshold, seed=0, skip_unwrap: bool = False, debugging=True, **kwargs
-):
+    obj: np.ndarray,
+    support_threshold: float,
+    seed: int = 0,
+    debugging: bool = True,
+    **kwargs,
+) -> Tuple[np.ndarray, float]:
     """
     Unwrap the phase of a complex object.
 
     It is based on skimage.restoration.unwrap_phase. A mask can be applied by
     thresholding the modulus of the object.
 
-    :param obj: number or array to be wrapped
+    :param obj: array to be unwrapped
     :param support_threshold: relative threshold used to define a support from abs(obj)
     :param seed: int, random seed. Use always the same value if you want a
      deterministic behavior.
-    :param skip_unwrap: True to apply only the support_threshold to the phase but skip
-     the unwrapping part.
     :param debugging: set to True to see plots
     :param kwargs:
 
@@ -2233,28 +2244,23 @@ def unwrap(
     # 0 is a valid entry for ma.masked_array
     phase_wrapped: np.ndarray = ma.masked_array(np.angle(obj), mask=unwrap_support)
 
-    plot_title = "applying support threshold\n" if skip_unwrap else "unwrapping"
     if debugging and ndim == 3:
         gu.multislices_plot(
             phase_wrapped.data,
             plot_colorbar=True,
-            title=f"Before {plot_title}",
+            title="Before unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),
         )
 
-    if skip_unwrap:
-        phase_unwrapped = phase_wrapped
-    else:
-        phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
-
+    phase_unwrapped = unwrap_phase(phase_wrapped, wrap_around=False, seed=seed).data
     phase_unwrapped[np.nonzero(unwrap_support)] = 0
     if debugging and ndim == 3:
         gu.multislices_plot(
             phase_unwrapped,
             plot_colorbar=True,
-            title=f"After {plot_title}",
+            title="After unwrapping",
             reciprocal_space=reciprocal_space,
             is_orthogonal=is_orthogonal,
             cmap=kwargs.get("cmap", "turbo"),

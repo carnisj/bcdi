@@ -737,7 +737,8 @@ class Loader(ABC):
         :param debugging: set to True to see plots
         :return:
 
-         - the 3D data array in the detector frame and the 3D mask array
+         - the 3D data array in the detector frame
+         - the 3D mask array
          - the monitor values for normalization
          - frames_logical: 1D array of length equal to the number of measured frames.
            In case of cropping the length of the stack of frames changes. A frame whose
