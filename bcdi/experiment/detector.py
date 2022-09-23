@@ -1113,6 +1113,8 @@ class Lambda(Detector):
 
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
+        self._counter_table = {"BM02": "img"}
+        # useful if the same type of detector is used at several beamlines
         self.saturation_threshold = 1.5e6
 
     @property
