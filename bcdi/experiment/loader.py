@@ -1474,16 +1474,9 @@ class LoaderBM02(Loader):
             try:
                 ccdn = labels_data[labels.index(setup.detector.counter("BM02")), :]
             except ValueError:
-                try:
-                    self.logger.info(
-                        f"{setup.detector.counter('BM02')} not in the list, "
-                        "trying 'ccd_n'",
-                    )
-                    ccdn = labels_data[labels.index("ccd_n"), :]
-                except ValueError:
-                    raise ValueError(
-                        "ccd_n not in the list, the detector name may be wrong",
-                    )
+                raise ValueError(
+                    "img not in the list, the detector name may be wrong",
+                )
             nb_img = len(ccdn)
         else:
             ccdn = None  # not used for custom scans
@@ -1558,7 +1551,6 @@ class LoaderBM02(Loader):
                 "scan_number should be an integer, got " f"{type(scan_number)}"
             )
 
-        old_names = False
         if not setup.custom_scan:
             motor_names = file[str(scan_number) + ".1"].motor_names
             # positioners
@@ -1580,51 +1572,56 @@ class LoaderBM02(Loader):
             else:
                 mu = motor_values[motor_names.index("mu")]  # positioner
 
-            if "th" in labels:
-                th = labels_data[labels.index("th"), :]  # scanned
+            if "THETA" in labels:
+                th = labels_data[labels.index("THETA"), :]  # scanned
             else:
-                th = motor_values[motor_names.index("th")]  # positioner
+                th = motor_values[motor_names.index("THETA")]  # positioner
 
-            if "chi" in labels:
-                chi = labels_data[labels.index("chi"), :]  # scanned
+            if "CHI" in labels:
+                chi = labels_data[labels.index("CHI"), :]  # scanned
             else:
-                chi = motor_values[motor_names.index("chi")]  # positioner
+                chi = motor_values[motor_names.index("CHI")]  # positioner
 
-            if "phi" in labels:
-                phi = labels_data[labels.index("phi"), :]  # scanned
+            if "PHI" in labels:
+                phi = labels_data[labels.index("PHI"), :]  # scanned
             else:
-                phi = motor_values[motor_names.index("phi")]  # positioner
+                phi = motor_values[motor_names.index("PHI")]  # positioner
 
-            if "tth" in labels:
-                tth = labels_data[labels.index("tth"), :]  # scanned
+            if "2THETA" in labels:
+                tth = labels_data[labels.index("2THETA"), :]  # scanned
             else:  # positioner
-                tth = motor_values[motor_names.index("tth")]
+                tth = motor_values[motor_names.index("2THETA")]
 
             if "nu" in labels:
                 nu = labels_data[labels.index("nu"), :]  # scanned
             else:  # positioner
                 nu = motor_values[motor_names.index("nu")]
 
-            if "energy" in labels:
-                energy = labels_data[labels.index("energy"), :]
+            if "Emono" in labels:
+                energy = labels_data[labels.index("Emono"), :]
                 # energy scanned, override the user-defined energy
             else:  # positioner
-                energy = motor_values[motor_names.index("energy")]
+                energy = motor_values[motor_names.index("Emono")]
 
             energy = energy * 1000.0  # switch to eV
-            # remove user-defined sample offsets (sample: mu, eta, phi)
             mu = mu - self.sample_offsets[0]
             th = th - self.sample_offsets[1]
             chi = chi - self.sample_offsets[2]
             phi = phi - self.sample_offsets[3]
 
         else:  # manually defined custom scan
-            mu = setup.custom_motors["mu"]
-            th = setup.custom_motors["th"]
-            chi = setup.custom_motors["chi"]
-            phi = setup.custom_motors["phi"]
-            tth = setup.custom_motors["tth"]
-            nu = setup.custom_motors["nu"]
+            try:
+                mu = setup.custom_motors["mu"]
+                th = setup.custom_motors["th"]
+                chi = setup.custom_motors["chi"]
+                phi = setup.custom_motors["phi"]
+                tth = setup.custom_motors["tth"]
+                nu = setup.custom_motors["nu"]
+            except KeyError:
+                self.logger.error(
+                    "Expected keys: 'mu', 'th', 'chi', 'phi', 'tth', 'nu'"
+                )
+                raise
             energy = setup.energy
 
         return mu, th, chi, phi, nu, tth, energy, setup.distance
@@ -1672,9 +1669,9 @@ class LoaderBM02(Loader):
                 "scan_number should be an integer, got " f"{type(scan_number)}"
             )
         if setup.actuators is not None:
-            monitor_name = setup.actuators.get("monitor", "exp1")  # TODO chek
+            monitor_name = setup.actuators.get("monitor", "d0_cps")
         else:
-            monitor_name = "exp1"
+            monitor_name = "d0_cps"
         monitor: np.ndarray = self.read_device(
             setup=setup, scan_number=scan_number, device_name=monitor_name
         )
