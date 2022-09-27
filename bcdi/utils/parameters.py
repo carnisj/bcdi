@@ -838,6 +838,8 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
             raise ParameterError(key, value, allowed)
     elif key == "photon_threshold":
         valid.valid_item(value, allowed_types=Real, min_included=0, name=key)
+    elif key == "plot_margin":
+        valid.valid_item(value, allowed_types=int, min_included=0, name=key)
     elif key == "preprocessing_binning":
         valid.valid_container(
             value,
