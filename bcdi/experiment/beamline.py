@@ -715,7 +715,7 @@ class BeamlineBM02(BeamlineGoniometer):
         direction. The laboratory frame convention is (z downstream, y vertical,
         x outboard).
         """
-        return "x-"  # TODO check
+        return "x-"
 
     @property
     def detector_ver(self) -> str:
@@ -858,7 +858,7 @@ class BeamlineBM02(BeamlineGoniometer):
         tilt,
         rocking_angle,
         verbose=True,
-    ):  # TODO check
+    ):
         """
         Calculate the transformation matrix from detector frame to laboratory frame.
 
@@ -960,92 +960,6 @@ class BeamlineBM02(BeamlineGoniometer):
                 * distance
                 * (np.cos(inplane) * np.cos(outofplane) - 1)
             )
-
-        elif rocking_angle == "inplane":
-            if len(grazing_angle) != 3:
-                raise ValueError("grazing_angle should be of length 3")
-            if not isclose(grazing_angle[0], 0, rel_tol=1e-09, abs_tol=1e-09):
-                raise NotImplementedError(
-                    "Non-zero mu not implemented for inplane rocking curve at BM02"
-                )
-            if verbose:
-                self.logger.info(
-                    f"rocking angle is phi,"
-                    f" mu={grazing_angle[0] * 180 / np.pi:.3f} deg,"
-                    f" th={grazing_angle[1] * 180 / np.pi:.3f} deg,"
-                    f" chi={grazing_angle[2] * 180 / np.pi:.3f} deg"
-                )
-
-            # rocking phi angle clockwise around y,
-            # th and chi potentially non-zero (th below chi below phi)
-            mymatrix[:, 0] = (
-                2
-                * np.pi
-                / lambdaz
-                * pixel_x
-                * self.orientation_lookup[self.detector_hor]
-                * np.array([-np.cos(inplane), 0, np.sin(inplane)])
-            )
-            mymatrix[:, 1] = (
-                2
-                * np.pi
-                / lambdaz
-                * pixel_y
-                * self.orientation_lookup[self.detector_ver]
-                * np.array(
-                    [
-                        np.sin(inplane) * np.sin(outofplane),
-                        -np.cos(outofplane),
-                        np.cos(inplane) * np.sin(outofplane),
-                    ]
-                )
-            )
-            mymatrix[:, 2] = (
-                2
-                * np.pi
-                / lambdaz
-                * tilt
-                * distance
-                * np.array(
-                    [
-                        (
-                            np.sin(grazing_angle[1])
-                            * np.cos(grazing_angle[2])
-                            * np.sin(outofplane)
-                            + np.cos(grazing_angle[1])
-                            * np.cos(grazing_angle[2])
-                            * (np.cos(inplane) * np.cos(outofplane) - 1)
-                        ),
-                        (
-                            -np.sin(grazing_angle[1])
-                            * np.cos(grazing_angle[2])
-                            * np.sin(inplane)
-                            * np.cos(outofplane)
-                            + np.sin(grazing_angle[2])
-                            * (np.cos(inplane) * np.cos(outofplane) - 1)
-                        ),
-                        (
-                            -np.cos(grazing_angle[1])
-                            * np.cos(grazing_angle[2])
-                            * np.sin(inplane)
-                            * np.cos(outofplane)
-                            - np.sin(grazing_angle[2]) * np.sin(outofplane)
-                        ),
-                    ]
-                )
-            )
-            q_offset[0] = (
-                2 * np.pi / lambdaz * distance * np.cos(outofplane) * np.sin(inplane)
-            )
-            q_offset[1] = 2 * np.pi / lambdaz * distance * np.sin(outofplane)
-            q_offset[2] = (
-                2
-                * np.pi
-                / lambdaz
-                * distance
-                * (np.cos(inplane) * np.cos(outofplane) - 1)
-            )
-
         else:
             raise NotImplementedError(f"rocking_angle={rocking_angle} not implemented")
 
