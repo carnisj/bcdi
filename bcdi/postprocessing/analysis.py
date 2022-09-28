@@ -725,7 +725,7 @@ class InterpolatedCrystal:
             tuple_fieldnames=(
                 "amp",
                 "bulk",
-                self.parameters["phase_fieldname"],
+                "phase",
                 "strain",
             ),
             amplitude_threshold=0.01,
