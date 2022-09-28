@@ -154,7 +154,7 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
         ) = self.beamline.loader.init_paths(**params)
         self.assertEqual(
             homedir,
-            self.root_dir + self.sample_name + "{:06d}".format(self.scan_number) + "/",
+            f"{self.root_dir}{self.sample_name}_{self.scan_number:06d}/",
         )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, None)
@@ -179,12 +179,10 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
         ) = self.beamline.loader.init_paths(**params)
         self.assertEqual(
             homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
+            f"{self.root_dir}{self.sample_name}_{self.scan_number:05d}/",
         )
         self.assertEqual(default_dirname, "e4m/")
-        self.assertEqual(
-            specfile, self.sample_name + "_{:05d}".format(self.scan_number)
-        )
+        self.assertEqual(specfile, f"{self.sample_name}_{self.scan_number:05d}")
         self.assertEqual(template_imagefile, "S_00001_master.h5")
 
     def test_init_paths_specfile_P10_full_path(self):
@@ -212,7 +210,7 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
         ) = self.beamline.loader.init_paths(**params)
         self.assertEqual(
             homedir,
-            self.root_dir + self.sample_name + "_{:05d}".format(self.scan_number) + "/",
+            f"{self.root_dir}{self.sample_name}_{self.scan_number:05d}/",
         )
         self.assertEqual(default_dirname, "e4m/")
         self.assertEqual(specfile, params["specfile_name"])

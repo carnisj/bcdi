@@ -1565,7 +1565,6 @@ class LoaderBM02(Loader):
                 self.logger.info("'nu' not in the list, trying 'Nu'")
                 _ = motor_values[motor_names.index("Nu")]  # positioner
                 self.logger.info("Defaulting to old ID01 motor names")
-                old_names = True
 
             if "mu" in labels:
                 mu = labels_data[labels.index("mu"), :]  # scanned

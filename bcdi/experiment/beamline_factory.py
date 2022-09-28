@@ -52,7 +52,7 @@ API Reference
 import logging
 from abc import ABC, abstractmethod
 from numbers import Real
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 import numpy as np
 import xrayutilities as xu
@@ -100,7 +100,7 @@ class Beamline(ABC):
             sample_offsets=self.diffractometer.sample_offsets,
             **loader_kwargs,
         )
-        self.sample_angles = None
+        self.sample_angles: Optional[Tuple[Union[float, List, np.ndarray]]] = None
 
     @property
     @abstractmethod
@@ -380,7 +380,7 @@ class BeamlineGoniometer(Beamline):
 
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
-        self.detector_angles = None
+        self.detector_angles: Optional[Tuple[Union[float, List, np.ndarray]]] = None
 
     @property
     def detector_angles(self):

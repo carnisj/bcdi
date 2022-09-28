@@ -824,7 +824,7 @@ class BeamlineBM02(BeamlineGoniometer):
         if setup.rocking_angle == "outofplane":  # th rocking curve
             nb_steps = len(th)
             tilt_angle = (th[1:] - th[0:-1]).mean()
-            eta = self.process_tilt(
+            th = self.process_tilt(
                 th, nb_steps=nb_steps, nb_frames=nb_frames, step_size=tilt_angle
             )
         elif setup.rocking_angle == "inplane":  # phi rocking curve
