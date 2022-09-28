@@ -154,7 +154,7 @@ class TestInitPath(fake_filesystem_unittest.TestCase):
         ) = self.beamline.loader.init_paths(**params)
         self.assertEqual(
             homedir,
-            f"{self.root_dir}{self.sample_name}_{self.scan_number:06d}/",
+            f"{self.root_dir}{self.sample_name}{self.scan_number:06d}/",
         )
         self.assertEqual(default_dirname, "data/")
         self.assertEqual(specfile, None)
