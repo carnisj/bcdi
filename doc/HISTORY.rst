@@ -1,6 +1,8 @@
 Future:
 -------
 
+* Add support for ESRF BM02 beamline (th rocking curve).
+
 * Create classes Analysis, PhaseManipulator and InterpolatedCrystal for postprocessing.
   Refactor `postprocessing.process_scan` to use these classes.
 
