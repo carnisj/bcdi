@@ -17,7 +17,8 @@ API Reference
 import logging
 from math import isclose
 from numbers import Real
-from typing import Any, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+
 import numpy as np
 
 from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
@@ -762,6 +763,8 @@ class BeamlineBM02(BeamlineGoniometer):
             scan_number=scan_number,
         )
 
+        grazing: Optional[Tuple[Real, ...]] = None
+
         # define the circles of interest in BCDI
         if setup.rocking_angle == "outofplane":  # th rocking curve
             grazing = (mu,)
@@ -770,7 +773,6 @@ class BeamlineBM02(BeamlineGoniometer):
             grazing = (mu, th, chi)
             tilt_angle = phi
         else:  # energy scan
-            grazing = None
             tilt_angle = energy
 
         setup.check_setup(
@@ -794,7 +796,7 @@ class BeamlineBM02(BeamlineGoniometer):
         nb_frames: int,
         scan_number: int,
         frames_logical: Optional[np.ndarray] = None,
-    ) -> Tuple[Any, ...]:
+    ) -> List[Any]:
         """
         Load and crop/pad motor positions depending on the number of frames at BM02.
 
