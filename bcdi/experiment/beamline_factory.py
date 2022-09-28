@@ -52,7 +52,7 @@ API Reference
 import logging
 from abc import ABC, abstractmethod
 from numbers import Real
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import xrayutilities as xu
@@ -62,6 +62,9 @@ from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+if TYPE_CHECKING:
+    from bcdi.experiment.setup import Setup
 
 module_logger = logging.getLogger(__name__)
 
@@ -268,9 +271,14 @@ class Beamline(ABC):
          grazing incidence angles are the positions of circles below the rocking circle.
         """
 
-    @staticmethod
     @abstractmethod
-    def process_positions(setup, nb_frames, scan_number, frames_logical=None):
+    def process_positions(
+        self,
+        setup: "Setup",
+        nb_frames: int,
+        scan_number: int,
+        frames_logical: Optional[np.ndarray] = None,
+    ) -> Any:
         """
         Load and crop/pad motor positions depending on the current number of frames.
 

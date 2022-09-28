@@ -51,7 +51,10 @@ class CustomEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def apply_logical_array(arrays, frames_logical):
+def apply_logical_array(
+    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    frames_logical: Optional[np.ndarray],
+) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
     """
     Apply a logical array to a sequence of arrays.
 
@@ -64,11 +67,10 @@ def apply_logical_array(arrays, frames_logical):
      (added) frame
     :return: an array (if a single array was provided) or a tuple of cropped arrays
     """
-    if frames_logical is None:
-        return arrays
-
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)
+    if frames_logical is None:
+        return arrays
     valid.valid_1d_array(
         frames_logical,
         allowed_types=Integral,
@@ -93,8 +95,8 @@ def apply_logical_array(arrays, frames_logical):
             output.append(array[original_frames != 0])
 
     if len(arrays) == 1:
-        output = output[0]  # return the array instead of the tuple
-    return output
+        return np.asarray(output[0])  # return the array instead of the tuple
+    return tuple(output)
 
 
 def bin_data(array, binning, debugging=False, **kwargs):
@@ -176,7 +178,9 @@ def bin_data(array, binning, debugging=False, **kwargs):
     return newarray
 
 
-def bin_parameters(binning, nb_frames, params, debugging=True):
+def bin_parameters(
+    binning: int, nb_frames: int, params: List[Any], debugging: bool = True
+) -> List[Any]:
     """
     Bin some parameters.
 
