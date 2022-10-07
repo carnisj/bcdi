@@ -175,7 +175,7 @@ def process_scan(
 
     if prm["apodize"]:
         phase_manipulator.apodize()
-        comment.concatenate("_apodize_" + prm["apodization_window"])
+        comment.concatenate("apodize_" + prm["apodization_window"])
 
     np.savez_compressed(
         setup.detector.savedir + "S" + str(scan_nb) + "_avg_obj_prtf" + comment.text,
