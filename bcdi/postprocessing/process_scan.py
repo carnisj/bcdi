@@ -254,7 +254,7 @@ def process_scan(
     # center the object (centering based on the modulus) #
     ######################################################
     logger.info("Centering the crystal")
-    analysis.center_object_based_on_modulus()
+    analysis.center_object_based_on_modulus(centering_method="com")
 
     ####################
     # Phase unwrapping #
