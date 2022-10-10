@@ -175,7 +175,7 @@ def process_scan(
 
     if prm["apodize"]:
         phase_manipulator.apodize()
-        comment.concatenate("_apodize_" + prm["apodization_window"])
+        comment.concatenate("apodize_" + prm["apodization_window"])
 
     np.savez_compressed(
         setup.detector.savedir + "S" + str(scan_nb) + "_avg_obj_prtf" + comment.text,
@@ -254,7 +254,7 @@ def process_scan(
     # center the object (centering based on the modulus) #
     ######################################################
     logger.info("Centering the crystal")
-    analysis.center_object_based_on_modulus()
+    analysis.center_object_based_on_modulus(centering_method="com")
 
     ####################
     # Phase unwrapping #

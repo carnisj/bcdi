@@ -165,11 +165,20 @@ class Analysis(ABC):
         if average_counter > 1:
             self.logger.info(f"Average performed over {average_counter} arrays")
 
-    def center_object_based_on_modulus(self):
-        """Center the object based on one of the methods 'max', 'com' and 'max_com'."""
-        self.data = pu.center_object(
-            method=self.parameters["centering_method"]["direct_space"], obj=self.data
+    def center_object_based_on_modulus(self, **kwargs):
+        """
+        Center the object based on one of the methods 'max', 'com' and 'max_com'.
+
+        :param kwargs:
+
+         - 'centering_method': centering method name among 'max', 'com' and 'max_com'
+
+        """
+        method = (
+            kwargs.get("centering_method")
+            or self.parameters["centering_method"]["direct_space"]
         )
+        self.data = pu.center_object(method=method, obj=self.data)
 
     def crop_pad_data(self, value: Tuple[int, ...]) -> None:
         self.data = util.crop_pad(
