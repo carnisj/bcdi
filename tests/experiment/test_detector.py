@@ -18,6 +18,7 @@ from bcdi.experiment.detector import (
     Dummy,
     Eiger2M,
     Eiger4M,
+    Lambda,
     Maxipix,
     Merlin,
     Timepix,
@@ -46,6 +47,9 @@ class TestCreateDetector(unittest.TestCase):
 
     def test_create_dummy(self):
         self.assertIsInstance(create_detector("Dummy"), Dummy)
+
+    def test_create_lambda(self):
+        self.assertIsInstance(create_detector("Lambda"), Lambda)
 
     def test_create_unknown_detector(self):
         with self.assertRaises(NotImplementedError):
@@ -857,6 +861,26 @@ class TestDummy(unittest.TestCase):
         self.assertTrue(det.unbinned_pixel_size[0] == det.unbinned_pixel_size[1])
 
 
+class TestLambda(unittest.TestCase):
+    """Tests related to the Lambda detector."""
+
+    def setUp(self) -> None:
+        self.det = Lambda("Lambda")
+        self.saturation_threshold = 1.5e6
+
+    def test_name(self):
+        self.assertEqual(self.det.name, "Lambda")
+
+    def test_unbinned_pixel_size(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_size, (55e-06, 55e-06))
+
+    def test_unbinned_pixel_number(self):
+        self.assertTupleEqual(self.det.unbinned_pixel_number, (516, 516))
+
+    def test_saturation_threshold(self):
+        self.assertEqual(self.det.saturation_threshold, self.saturation_threshold)
+
+
 if __name__ == "__main__":
     run_tests(TestCreateDetector)
     run_tests(TestDetector)
@@ -866,3 +890,4 @@ if __name__ == "__main__":
     run_tests(TestTimepix)
     run_tests(TestMerlin)
     run_tests(TestDummy)
+    run_tests(TestLambda)

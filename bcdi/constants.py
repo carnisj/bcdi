@@ -8,6 +8,7 @@
 """Constants used throughout the package."""
 
 BEAMLINES_BCDI = [
+    "BM02",
     "ID01",
     "ID01BLISS",
     "SIXS_2018",

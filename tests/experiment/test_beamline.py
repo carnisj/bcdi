@@ -254,6 +254,116 @@ class TestBeamlineCRISTAL(unittest.TestCase):
             )
 
 
+class TestBeamlineBM02(unittest.TestCase):
+    """Tests related to BM02 beamline instantiation."""
+
+    def setUp(self):
+        self.conversion_table = labframe_to_xrayutil
+        self.root_dir = "D:/data/BM02/"
+        self.sample_name = "S"
+        self.scan_number = 1
+        self.template_imagefile = "sample_%04d.edf"
+        self.specfile_name = "test"
+        self.beamline = create_beamline("BM02")
+        self.beam_direction = np.array([1, 0, 0])
+        self.offset_inplane = 1
+        self.params = {
+            "wavelength": 1,
+            "distance": 1,
+            "pixel_x": 55000,
+            "pixel_y": 55000,
+            "inplane": 32,
+            "outofplane": 28,
+            "tilt": 0.003,
+            "verbose": False,
+        }
+
+    def test_detector_hor(self):
+        self.assertTrue(self.beamline.detector_hor == "x-")
+
+    def test_detector_ver(self):
+        self.assertTrue(self.beamline.detector_ver == "y-")
+
+    def test_exit_wavevector(self):
+        params = {
+            "inplane_angle": 0.0,
+            "outofplane_angle": 90.0,
+            "wavelength": 2 * np.pi,
+        }
+        self.assertTrue(
+            np.allclose(
+                self.beamline.exit_wavevector(**params),
+                np.array([0.0, 1.0, 0.0]),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+    def test_init_qconversion(self):
+        _, offsets = self.beamline.init_qconversion(
+            conversion_table=self.conversion_table,
+            beam_direction=self.beam_direction,
+            offset_inplane=self.offset_inplane,
+        )
+        nb_circles = len(self.beamline.diffractometer.sample_circles) + len(
+            self.beamline.diffractometer.detector_circles
+        )
+        self.assertEqual(len(offsets), nb_circles)
+        self.assertEqual(offsets, [0, 0, 0, 0, self.offset_inplane, 0])
+
+    def test_inplane_coeff(self):
+        self.assertEqual(self.beamline.inplane_coeff(), -1)
+
+    def test_outofplane_coeff(self):
+        self.assertEqual(self.beamline.outofplane_coeff(), 1)
+
+    def test_transformation_matrix_outofplane(self):
+        matrix, q_offset = self.beamline.transformation_matrix(
+            grazing_angle=(0,),
+            rocking_angle="outofplane",
+            **self.params,
+        )
+        self.assertTrue(
+            np.allclose(
+                matrix,
+                np.array(
+                    [
+                        [-2.88286898e05, 5.16236394e04, 0.00000000e00],
+                        [0.00000000e00, 3.32652707e05, 3.39862828e-02],
+                        [1.90559381e05, 7.80985893e04, 5.10645381e-03],
+                    ]
+                ),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                q_offset,
+                np.array([-3.33515597, 1.70215127, -11.32876093]),
+                rtol=1e-09,
+                atol=1e-09,
+            )
+        )
+
+    def test_transformation_matrix_inplane(self):
+        with self.assertRaises(NotImplementedError):
+            self.beamline.transformation_matrix(
+                grazing_angle=(
+                    0,
+                    4.5,
+                ),
+                rocking_angle="inplane",
+                **self.params,
+            )
+
+    def test_transformation_matrix_energy_scan(self):
+        with self.assertRaises(NotImplementedError):
+            self.beamline.transformation_matrix(
+                grazing_angle=0, rocking_angle="energy", **self.params
+            )
+
+
 class TestBeamlineID01(unittest.TestCase):
     """Tests related to ID01 beamline instantiation."""
 
@@ -1154,6 +1264,7 @@ class TestBeamline34ID(unittest.TestCase):
 if __name__ == "__main__":
     run_tests(TestBeamline)
     run_tests(TestBeamlineCRISTAL)
+    run_tests(TestBeamlineBM02)
     run_tests(TestBeamlineID01)
     run_tests(TestBeamlineNANOMAX)
     run_tests(TestBeamlineP10)

@@ -111,6 +111,9 @@ Usage:
      binning factors in each dimension used in preprocessing (not phase retrieval)
     :param output_size: e.g. [100, 100, 100]
      (z, y, x) Fix the size of the output array, leave None to use the object size
+    :plot_margin: e.g. 30
+     margin to add on each side of the smallest box around the crystal. Use this to
+     increase the box size in case the interpolated crystal is cropped.
     :param keep_size: e.g. False
      True to keep the initial array size for orthogonalization (slower), it will be
      cropped otherwise

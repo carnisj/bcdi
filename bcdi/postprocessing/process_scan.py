@@ -135,7 +135,7 @@ def process_scan(
     )
     comment = analysis.comment
 
-    analysis.find_data_range(amplitude_threshold=0.05, plot_margin=10)
+    analysis.find_data_range(amplitude_threshold=0.05, plot_margin=prm["plot_margin"])
 
     analysis.find_best_reconstruction()
 

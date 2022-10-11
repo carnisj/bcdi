@@ -125,6 +125,13 @@ def create_geometry(beamline, sample_offsets=None):
             default_offsets=(0, 0, 0),
             user_offsets=sample_offsets,
         )
+    if beamline == "BM02":
+        return Geometry(
+            sample_circles=["y+", "x-", "z+", "x-"],
+            detector_circles=["y+", "x-"],
+            default_offsets=(0, 0, 0, 0),
+            user_offsets=sample_offsets,
+        )
     if beamline == "ID27":
         return Geometry_SAXS(
             sample_circles=["y+"],

@@ -80,6 +80,7 @@ def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
             "phase_ramp_removal": "gradient",
             "phase_range": np.pi / 2,
             "phasing_binning": [1, 1, 1],
+            "plot_margin": 10,
             "preprocessing_binning": [1, 1, 1],
             "ref_axis_q": "y",
             "reference_spacing": None,
