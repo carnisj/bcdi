@@ -18,8 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
+from scipy.io import savemat
 import yaml
 from matplotlib import pyplot as plt
+import xrayutilities as xu
 
 import bcdi.graph.graph_utils as gu
 import bcdi.graph.linecut as linecut
@@ -58,20 +60,144 @@ class Analysis(ABC):
         self.comment = self.initialize_comment()
         if parameters["normalize_flux"]:
             self.comment.concatenate("norm")
+        self.q_bragg: Optional[np.ndarray] = None
+        self.interpolation_needed = False
+
+        (
+            self.data,
+            self.mask,
+            self.frames_logical,
+            self.monitor,
+        ) = self.data_loader.load_dataset()
+
+    @property
+    def detector_angles_correction_needed(self) -> bool:
+        return self.parameters["rocking_angle"] != "energy" and (
+            not self.parameters["outofplane_angle"]
+            or not self.parameters["inplane_angle"]
+        )
+
+    @property
+    def is_raw_data_available(self) -> bool:
+        return not self.parameters["reload_orthogonal"]
+
+    @property
+    def planar_distance(self) -> Optional[float]:
+        if self.q_norm is not None and self.q_norm != 0:
+            return 2 * np.pi / self.q_norm
+        return None
+
+    @property
+    def q_norm(self) -> Optional[float]:
+        if self.q_bragg is not None:
+            return np.linalg.norm(self.q_bragg)
+        return None
 
     @property
     def scan_nb(self) -> int:
         return self.parameters["scans"][self.scan_index]
 
+    @abstractmethod
+    def calculate_q_bragg(self, **kwargs) -> None:
+        raise NotImplementedError
+
+    def interpolate_data(self) -> None:
+        raise NotImplementedError
+
     def initialize_comment(self) -> Comment:
         return Comment(self.parameters.get("comment", ""))
+
+    def retrieve_bragg_peak(self) -> Dict[str, Any]:
+        return bu.find_bragg(
+            array=self.data,
+            binning=self.setup.detector.current_binning,
+            roi=self.setup.detector.roi,
+            peak_method=self.parameters["centering_method"]["reciprocal_space"],
+            tilt_values=self.setup.tilt_angles,
+            savedir=self.setup.detector.savedir,
+            logger=self.logger,
+            plot_fit=True,
+        )
+
+    def save_data(self, filename: str, save_to_mat: bool) -> None:
+        np.savez_compressed(filename, data=self.data)
+        if save_to_mat:
+            if self.data.ndim != 3:
+                raise ValueError(
+                    f"Only 3D ndarray supported, data is {self.data.ndim}D"
+                )
+            # save to .mat, the new order is x y z
+            # (outboard, vertical up, downstream)
+            savemat(
+                filename + ".mat",
+                {"data": np.moveaxis(self.data, [0, 1, 2], [-1, -2, -3])},
+            )
+
+    def show_data(self, filename: Optional[str]):
+        tmp_data = np.copy(self.data)
+        tmp_data[self.mask == 1] = 0
+        fig, _, _ = gu.multislices_plot(
+            tmp_data,
+            sum_frames=True,
+            scale="log",
+            plot_colorbar=True,
+            vmin=0,
+            title="Data before gridding\n",
+            is_orthogonal=False,
+            reciprocal_space=True,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        if filename is not None:
+            fig.savefig(filename)
+        plt.close(fig)
+
+    def update_detector_angles(self, bragg_peak_position: List[int]) -> None:
+        self.setup.correct_detector_angles(bragg_peak_position=bragg_peak_position)
+
+    def update_parameters(self, dictionary: Dict[str, Any]) -> None:
+        self.parameters.update(dictionary)
+
+    def _calculate_q_bragg_orthogonal(self) -> None:
+        if (
+            self.data_loader.q_values
+        ):  # find the Bragg peak position from the interpolated data
+            interpolated_metadata = bu.find_bragg(
+                array=self.data,
+                binning=None,
+                roi=None,
+                peak_method=self.parameters["centering_method"]["reciprocal_space"],
+                tilt_values=None,
+                logger=self.logger,
+                plot_fit=False,
+            )
+            self.q_bragg = np.array(
+                [
+                    self.data_loader.q_values[0][
+                        interpolated_metadata["bragg_peak"][0]
+                    ],
+                    self.data_loader.q_values[1][
+                        interpolated_metadata["bragg_peak"][1]
+                    ],
+                    self.data_loader.q_values[2][
+                        interpolated_metadata["bragg_peak"][2]
+                    ],
+                ]
+            )
 
 
 class DetectorFrameAnalysis(Analysis):
     """Analysis worklow in the detector frame."""
 
+    def calculate_q_bragg(self, **kwargs) -> None:
+        self.q_bragg = self.setup.q_laboratory
+
+    def interpolate_data(self) -> None:
+        super().interpolate_data()
+
 
 class LinearizationAnalysis(Analysis):
+    """Analysis worklow for data to be interpolated using the linerization matrix."""
+
     def __init__(
         self,
         scan_index: int,
@@ -86,9 +212,55 @@ class LinearizationAnalysis(Analysis):
         # of the transformation matrix
         self.setup.read_logfile(scan_number=self.scan_nb)
         self.comment.concatenate("ortho_lin")
+        self.interpolation_needed = True
+
+    def calculate_q_bragg(self, **kwargs) -> None:
+        self.q_bragg = self.setup.q_laboratory
+
+    def interpolate_data(self) -> None:
+        # for q values, the frame used is
+        # (qx downstream, qy outboard, qz vertical up)
+        # for reference_axis, the frame is z downstream, y vertical up,
+        # x outboard but the order must be x,y,z
+        (
+            self.data,
+            self.mask,
+            self.data_loader.q_values,
+            transfer_matrix,
+        ) = bu.grid_bcdi_labframe(
+            data=self.data,
+            mask=self.mask,
+            detector=self.setup.detector,
+            setup=self.setup,
+            align_q=self.parameters["align_q"],
+            reference_axis=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+            debugging=self.parameters["debug"],
+            fill_value=(0, self.parameters["fill_value_mask"]),
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
+        self.parameters["transformation_matrix"] = transfer_matrix
+
+        nz, ny, nx = self.data.shape
+        self.logger.info(
+            "Data size after interpolation into an orthonormal frame:"
+            f"{nz}, {ny}, {nx}"
+        )
+
+
+class OrthogonalFrameAnalysis(Analysis):
+    """Analysis worklow for reloaded data interpolated in an orthogonal frame."""
+
+    def calculate_q_bragg(self, **kwargs) -> None:
+        self._calculate_q_bragg_orthogonal()
+
+    def interpolate_data(self) -> None:
+        super().interpolate_data()
 
 
 class XrayUtilitiesAnalysis(Analysis):
+    """Analysis worklow for data to be interpolated using the xrayutilities."""
+
     def __init__(
         self,
         scan_index: int,
@@ -100,10 +272,92 @@ class XrayUtilitiesAnalysis(Analysis):
             scan_index=scan_index, parameters=parameters, setup=setup, **kwargs
         )
         self.comment.concatenate("ortho_xrutils")
+        self.interpolation_needed = True
+
+    def calculate_q_bragg(self, **kwargs) -> None:
+        self._calculate_q_bragg_orthogonal()
+
+    def interpolate_data(self) -> None:
+        qconv, offsets = self.setup.init_qconversion()
+        self.setup.detector.offsets = offsets
+        hxrd = xu.experiment.HXRD(
+            self.parameters["sample_inplane"],
+            self.parameters["sample_outofplane"],
+            en=self.setup.energy,
+            qconv=qconv,
+        )
+        # the first 2 arguments in HXRD are the inplane reference direction
+        # along the beam and surface normal of the sample
+
+        # Update the direct beam vertical position,
+        # take into account the roi and binning
+        cch1 = (self.parameters["cch1"] - self.setup.detector.roi[0]) / (
+            self.setup.detector.preprocessing_binning[1]
+            * self.setup.detector.binning[1]
+        )
+        # Update the direct beam horizontal position,
+        # take into account the roi and binning
+        cch2 = (self.parameters["cch2"] - self.setup.detector.roi[2]) / (
+            self.setup.detector.preprocessing_binning[2]
+            * self.setup.detector.binning[2]
+        )
+        # number of pixels after taking into account the roi and binning
+        nch1 = (self.setup.detector.roi[1] - self.setup.detector.roi[0]) // (
+            self.setup.detector.preprocessing_binning[1]
+            * self.setup.detector.binning[1]
+        ) + (self.setup.detector.roi[1] - self.setup.detector.roi[0]) % (
+            self.setup.detector.preprocessing_binning[1]
+            * self.setup.detector.binning[1]
+        )
+        nch2 = (self.setup.detector.roi[3] - self.setup.detector.roi[2]) // (
+            self.setup.detector.preprocessing_binning[2]
+            * self.setup.detector.binning[2]
+        ) + (self.setup.detector.roi[3] - self.setup.detector.roi[2]) % (
+            self.setup.detector.preprocessing_binning[2]
+            * self.setup.detector.binning[2]
+        )
+        # detector init_area method, pixel sizes are the binned ones
+        hxrd.Ang2Q.init_area(
+            self.setup.detector_ver_xrutil,
+            self.setup.detector_hor_xrutil,
+            cch1=cch1,
+            cch2=cch2,
+            Nch1=nch1,
+            Nch2=nch2,
+            pwidth1=self.setup.detector.pixelsize_y,
+            pwidth2=self.setup.detector.pixelsize_x,
+            distance=self.setup.distance,
+            detrot=self.parameters["detrot"],
+            tiltazimuth=self.parameters["tiltazimuth"],
+            tilt=self.parameters["tilt_detector"],
+        )
+        # the first two arguments in init_area are
+        # the direction of the detector
+
+        (
+            self.data,
+            self.mask,
+            self.data_loader.q_values,
+            self.frames_logical,
+        ) = bu.grid_bcdi_xrayutil(
+            data=self.data,
+            mask=self.mask,
+            scan_number=self.scan_nb,
+            setup=self.setup,
+            frames_logical=self.frames_logical,
+            hxrd=hxrd,
+            debugging=self.parameters["debug"],
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
 
 
-def define_analysis_type(use_rawdata: bool, interpolation_method: str) -> str:
+def define_analysis_type(
+    reload_orthogonal: bool, use_rawdata: bool, interpolation_method: str
+) -> str:
     """Define the correct analysis type depending on the parameters."""
+    if reload_orthogonal:
+        return "interpolated"
     if use_rawdata:
         return "detector_frame"
     return interpolation_method
@@ -117,6 +371,7 @@ def create_analysis(
 ) -> Analysis:
     """Create the correct analysis class depending on the parameters."""
     name = define_analysis_type(
+        reload_orthogonal=parameters["reload_orthogonal"],
         use_rawdata=parameters["use_rawdata"],
         interpolation_method=parameters["interpolation_method"],
     )
@@ -134,8 +389,15 @@ def create_analysis(
             setup=setup,
             **kwargs,
         )
-    if name == "orthogonal":
+    if name == "xrayutilities":
         return XrayUtilitiesAnalysis(
+            scan_index=scan_index,
+            parameters=parameters,
+            setup=setup,
+            **kwargs,
+        )
+    if name == "interpolated":
+        return OrthogonalFrameAnalysis(
             scan_index=scan_index,
             parameters=parameters,
             setup=setup,
@@ -229,7 +491,7 @@ class ReloadingDetectorFrame(PreprocessingLoader):
         )
 
 
-class ReloadingOrthogonal(PreprocessingLoader):
+class ReloadingOrthogonalFrame(PreprocessingLoader):
     """Reload a dataset already interpolated in an orthogonal frame."""
 
     def load_dataset(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -318,7 +580,7 @@ def create_data_loader(
 ) -> PreprocessingLoader:
     if parameters["reload_previous"]:
         if parameters["reload_orthogonal"]:
-            return ReloadingOrthogonal(
+            return ReloadingOrthogonalFrame(
                 scan_index=scan_index, parameters=parameters, setup=setup, **kwargs
             )
         return ReloadingDetectorFrame(
