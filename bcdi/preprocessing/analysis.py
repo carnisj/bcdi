@@ -19,6 +19,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 from scipy.io import savemat
+from scipy.ndimage.measurements import center_of_mass
+import scipy.signal  # for medfilt2d
 import yaml
 from matplotlib import pyplot as plt
 import xrayutilities as xu
@@ -62,7 +64,7 @@ class Analysis(ABC):
             self.comment.concatenate("norm")
         self.q_bragg: Optional[np.ndarray] = None
         self.interpolation_needed = False
-        self.starting_frame = [0, 0, 0]
+        self.pad_width = [0, 0, 0, 0, 0, 0]
         self.is_orthogonal = self.parameters["reload_orthogonal"]
         (
             self.data,
@@ -77,6 +79,22 @@ class Analysis(ABC):
             not self.parameters["outofplane_angle"]
             or not self.parameters["inplane_angle"]
         )
+
+    @property
+    def is_binning_rocking_axis_needed(self) -> bool:
+        # data was already binned for reload_orthogonal
+        return (
+            self.setup.detector.binning[0] != 1
+            and not self.parameters["reload_orthogonal"]
+        )
+
+    @property
+    def is_filtering_needed(self) -> bool:
+        return self.parameters.get("median_filter", "skip") in {
+            "mask_isolated",
+            "median",
+            "interp_isolated",
+        }
 
     @property
     def is_raw_data_available(self) -> bool:
@@ -98,6 +116,52 @@ class Analysis(ABC):
     def scan_nb(self) -> int:
         return self.parameters["scans"][self.scan_index]
 
+    @property
+    def starting_frame(self) -> List[int]:
+        return [self.pad_width[0], self.pad_width[2], self.pad_width[4]]
+
+    def apply_photon_threshold(self) -> None:
+        threshold = self.parameters["photon_threshold"]
+        if threshold != 0:
+            self.mask[self.data < threshold] = 1
+            self.data[self.data < threshold] = 0
+            self.logger.info(f"Applying photon threshold < {threshold}")
+
+    def bin_rocking_axis(self) -> None:
+        self.data = util.bin_data(
+            self.data,
+            (self.setup.detector.binning[0], 1, 1),
+            debugging=False,
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
+        self.mask = util.bin_data(
+            self.mask,
+            (self.setup.detector.binning[0], 1, 1),
+            debugging=False,
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
+        self.mask[np.nonzero(self.mask)] = 1
+        self.setup.detector.current_binning = list(
+            map(
+                mul,
+                self.setup.detector.current_binning,
+                (self.setup.detector.binning[0], 1, 1),
+            )
+        )
+        self.logger.info(
+            f"Data size after binning the stacking dimension: {self.data.shape}"
+        )
+        if self.is_orthogonal and self.data_loader.q_values is not None:
+            numz = len(self.data_loader.q_values[0])
+            self.data_loader.q_values[0] = self.data_loader.q_values[0][
+                : numz
+                - (numz % self.setup.detector.binning[0]) : self.setup.detector.binning[
+                    0
+                ]
+            ]
+
     @abstractmethod
     def calculate_q_bragg(self, **kwargs) -> None:
         raise NotImplementedError
@@ -106,7 +170,7 @@ class Analysis(ABC):
         (
             self.data,
             self.mask,
-            pad_width,
+            self.pad_width,
             self.data_loader.q_values,
             self.frames_logical,
         ) = bu.center_fft(
@@ -121,10 +185,83 @@ class Analysis(ABC):
             q_values=self.data_loader.q_values,
             logger=self.logger,
         )
-        self.starting_frame = [pad_width[0], pad_width[2], pad_width[4]]
         # no need to check padded frames during masking
-        self.logger.info(f"Pad width: {pad_width}")
+        self.logger.info(f"Pad width: {self.pad_width}")
         self.logger.info(f"Data size after cropping / padding: {self.data.shape}")
+
+    def check_binning(self) -> None:
+        expected_binning = list(
+            map(
+                mul,
+                self.setup.detector.preprocessing_binning,
+                self.setup.detector.binning,
+            )
+        )
+        if any(
+            val1 != val2
+            for val1, val2 in zip(self.setup.detector.current_binning, expected_binning)
+        ):
+            raise ValueError(
+                "Mismatch in binning, current_binning = "
+                f"{self.setup.detector.current_binning}, "
+                f"expected binning = {expected_binning}"
+            )
+
+    def crop_to_fft_compliant_shape(self) -> None:
+        final_shape = util.smaller_primes(
+            self.data.shape, maxprime=7, required_dividers=(2,)
+        )
+        com = tuple(map(lambda x: int(np.rint(x)), center_of_mass(self.data)))
+        crop_center = util.find_crop_center(
+            array_shape=self.data.shape, crop_shape=final_shape, pivot=com
+        )
+        self.data = util.crop_pad(
+            self.data,
+            output_shape=final_shape,
+            crop_center=crop_center,
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
+        self.mask = util.crop_pad(
+            self.mask,
+            output_shape=final_shape,
+            crop_center=crop_center,
+            cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
+        )
+        self.logger.info(
+            f"Data size after considering FFT shape requirements: {self.data.shape}"
+        )
+
+    def filter_data(self) -> None:
+        if self.parameters["median_filter"] in {"mask_isolated", "interp_isolated"}:
+            self.logger.info("Filtering isolated pixels")
+            nb_pix = 0
+            for idx in range(
+                self.pad_width[0], self.data.shape[0] - self.pad_width[1]
+            ):  # filter only frames whith data (not padded)
+                (
+                    self.data[idx, :, :],
+                    processed_pix,
+                    self.mask[idx, :, :],
+                ) = util.mean_filter(
+                    data=self.data[idx, :, :],
+                    nb_neighbours=self.parameters["median_filter_order"],
+                    mask=self.mask[idx, :, :],
+                    interpolate=self.parameters["median_filter"],
+                    min_count=3,
+                    debugging=self.parameters["debug"],
+                    cmap=self.parameters["colormap"].cmap,
+                )
+                nb_pix += processed_pix
+            self.logger.info(f"Total number of filtered pixels: {nb_pix}")
+        if self.parameters["median_filter"] == "median":  # apply median filter
+            self.logger.info("Applying median filtering")
+            for idx in range(self.pad_width[0], self.data.shape[0] - self.pad_width[1]):
+                # filter only frames whith data (not padded)
+                self.data[idx, :, :] = scipy.signal.medfilt2d(
+                    self.data[idx, :, :], [3, 3]
+                )
 
     def get_masked_data(self) -> np.ndarray:
         data = np.copy(self.data)
@@ -145,6 +282,10 @@ class Analysis(ABC):
         temp_mask = np.zeros((ny, nx))
         temp_mask[np.sum(self.data, axis=0) == 0] = 1
         self.mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
+
+    def remove_nan(self) -> None:
+        self.data, self.mask = util.remove_nan(data=self.data, mask=self.mask)
+        self.mask_data()
 
     def retrieve_bragg_peak(self) -> Dict[str, Any]:
         return bu.find_bragg(
