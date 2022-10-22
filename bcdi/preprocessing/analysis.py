@@ -62,7 +62,8 @@ class Analysis(ABC):
             self.comment.concatenate("norm")
         self.q_bragg: Optional[np.ndarray] = None
         self.interpolation_needed = False
-
+        self.starting_frame = [0, 0, 0]
+        self.is_orthogonal = self.parameters["reload_orthogonal"]
         (
             self.data,
             self.mask,
@@ -101,11 +102,49 @@ class Analysis(ABC):
     def calculate_q_bragg(self, **kwargs) -> None:
         raise NotImplementedError
 
+    def center_fft(self) -> None:
+        (
+            self.data,
+            self.mask,
+            pad_width,
+            self.data_loader.q_values,
+            self.frames_logical,
+        ) = bu.center_fft(
+            data=self.data,
+            mask=self.mask,
+            detector=self.setup.detector,
+            frames_logical=self.frames_logical,
+            centering=self.parameters["centering_method"],
+            fft_option=self.parameters["center_fft"],
+            pad_size=self.parameters["pad_size"],
+            fix_bragg=self.parameters["bragg_peak"],
+            q_values=self.data_loader.q_values,
+            logger=self.logger,
+        )
+        self.starting_frame = [pad_width[0], pad_width[2], pad_width[4]]
+        # no need to check padded frames during masking
+        self.logger.info(f"Pad width: {pad_width}")
+        self.logger.info(f"Data size after cropping / padding: {self.data.shape}")
+
+    def get_masked_data(self) -> np.ndarray:
+        data = np.copy(self.data)
+        data[self.mask == 1] = 0
+        return data
+
     def interpolate_data(self) -> None:
         raise NotImplementedError
 
     def initialize_comment(self) -> Comment:
         return Comment(self.parameters.get("comment", ""))
+
+    def mask_data(self) -> None:
+        self.data[np.nonzero(self.mask)] = 0
+
+    def mask_zero_events(self) -> None:
+        nz, ny, nx = self.data.shape
+        temp_mask = np.zeros((ny, nx))
+        temp_mask[np.sum(self.data, axis=0) == 0] = 1
+        self.mask[np.repeat(temp_mask[np.newaxis, :, :], repeats=nz, axis=0) == 1] = 1
 
     def retrieve_bragg_peak(self) -> Dict[str, Any]:
         return bu.find_bragg(
@@ -133,19 +172,67 @@ class Analysis(ABC):
                 {"data": np.moveaxis(self.data, [0, 1, 2], [-1, -2, -3])},
             )
 
-    def show_data(self, filename: Optional[str]):
-        tmp_data = np.copy(self.data)
-        tmp_data[self.mask == 1] = 0
+    def save_mask(self, filename: str) -> None:
+        np.savez_compressed(filename, hotpixels=self.mask.astype(int))
+
+    def save_to_vti(self, filename: Optional[str]) -> None:
+        qx, qz, qy = self.data_loader.q_values
+        # save diffraction pattern to vti
+
+        nqx, nqz, nqy = self.data.shape
+        # in nexus z downstream, y vertical / in q z vertical, x downstream
+        self.logger.info(
+            f"(dqx, dqy, dqz) = ({qx[1] - qx[0]:2f}, {qy[1] - qy[0]:2f}, "
+            f"{qz[1] - qz[0]:2f})"
+        )
+        # in nexus z downstream, y vertical / in q z vertical, x downstream
+        qx0 = qx.min()
+        dqx = (qx.max() - qx0) / nqx
+        qy0 = qy.min()
+        dqy = (qy.max() - qy0) / nqy
+        qz0 = qz.min()
+        dqz = (qz.max() - qz0) / nqz
+
+        gu.save_to_vti(
+            filename=filename,
+            voxel_size=(dqx, dqz, dqy),
+            tuple_array=self.data,
+            tuple_fieldnames="int",
+            origin=(qx0, qz0, qy0),
+            logger=self.logger,
+        )
+
+    def show_array(self, array: np.ndarray, title: str, **kwargs) -> Any:
         fig, _, _ = gu.multislices_plot(
-            tmp_data,
+            array,
             sum_frames=True,
             scale="log",
             plot_colorbar=True,
             vmin=0,
-            title="Data before gridding\n",
-            is_orthogonal=False,
+            title=title,
+            is_orthogonal=self.is_orthogonal,
             reciprocal_space=True,
             cmap=self.parameters["colormap"].cmap,
+            **kwargs,
+        )
+        return fig
+
+    def show_mask(self, title: str, filename: Optional[str]) -> None:
+        fig = self.show_array(array=self.mask, title=title)
+        if filename is not None:
+            fig.savefig(filename)
+        plt.close(fig)
+
+    def show_masked_data(self, title: str, filename: Optional[str]):
+        fig = self.show_array(array=self.get_masked_data(), title=title)
+        if filename is not None:
+            fig.savefig(filename)
+        plt.close(fig)
+
+    def show_masked_data_at_max(self, title: str, filename: Optional[str]):
+        data = self.get_masked_data()
+        fig = self.show_array(
+            array=data, title=title, slice=np.unravel_index(data.argmax(), data.shape)
         )
         if filename is not None:
             fig.savefig(filename)
@@ -153,6 +240,12 @@ class Analysis(ABC):
 
     def update_detector_angles(self, bragg_peak_position: List[int]) -> None:
         self.setup.correct_detector_angles(bragg_peak_position=bragg_peak_position)
+
+    def update_mask(self, mask_file: str) -> None:
+        config_mask, _ = util.load_file(mask_file)
+        valid.valid_ndarray(config_mask, shape=self.data.shape)
+        config_mask[np.nonzero(config_mask)] = 1
+        self.mask = np.multiply(self.mask, config_mask.astype(self.mask.dtype))
 
     def update_parameters(self, dictionary: Dict[str, Any]) -> None:
         self.parameters.update(dictionary)
@@ -246,6 +339,7 @@ class LinearizationAnalysis(Analysis):
             "Data size after interpolation into an orthonormal frame:"
             f"{nz}, {ny}, {nx}"
         )
+        self.is_orthogonal = True
 
 
 class OrthogonalFrameAnalysis(Analysis):
@@ -350,6 +444,7 @@ class XrayUtilitiesAnalysis(Analysis):
             cmap=self.parameters["colormap"].cmap,
             logger=self.logger,
         )
+        self.is_orthogonal = True
 
 
 def define_analysis_type(
