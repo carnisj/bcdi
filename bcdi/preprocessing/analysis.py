@@ -10,25 +10,20 @@
 import logging
 from operator import mul
 import os
-import tkinter as tk
 from abc import ABC, abstractmethod
-from functools import reduce
 from tkinter import filedialog
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
 from scipy.io import savemat
 from scipy.ndimage.measurements import center_of_mass
 import scipy.signal  # for medfilt2d
-import yaml
 from matplotlib import pyplot as plt
 import xrayutilities as xu
 
 import bcdi.graph.graph_utils as gu
-import bcdi.graph.linecut as linecut
 import bcdi.preprocessing.bcdi_utils as bu
-import bcdi.utils.image_registration as reg
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 from bcdi.experiment.setup import Setup
@@ -64,6 +59,7 @@ class Analysis(ABC):
             self.comment.concatenate("norm")
         self.q_bragg: Optional[np.ndarray] = None
         self.interpolation_needed = False
+        self.metadata: Optional[Dict[str, Any]] = None
         self.pad_width = [0, 0, 0, 0, 0, 0]
         self.is_orthogonal = self.parameters["reload_orthogonal"]
         (
@@ -166,6 +162,36 @@ class Analysis(ABC):
     def calculate_q_bragg(self, **kwargs) -> None:
         raise NotImplementedError
 
+    def calculate_q_bragg_orthogonal(self) -> None:
+        if (
+            self.data_loader.q_values
+        ):  # find the Bragg peak position from the interpolated data
+            interpolated_metadata = bu.find_bragg(
+                array=self.data,
+                binning=None,
+                roi=None,
+                peak_method=self.parameters["centering_method"]["reciprocal_space"],
+                tilt_values=None,
+                logger=self.logger,
+                plot_fit=False,
+            )
+            self.q_bragg = np.array(
+                [
+                    self.data_loader.q_values[0][
+                        interpolated_metadata["bragg_peak"][0]
+                    ],
+                    self.data_loader.q_values[1][
+                        interpolated_metadata["bragg_peak"][1]
+                    ],
+                    self.data_loader.q_values[2][
+                        interpolated_metadata["bragg_peak"][2]
+                    ],
+                ]
+            )
+
+    def cast_data_to_int(self):
+        self.data = self.data.astype(int)
+
     def center_fft(self) -> None:
         (
             self.data,
@@ -206,6 +232,25 @@ class Analysis(ABC):
                 f"{self.setup.detector.current_binning}, "
                 f"expected binning = {expected_binning}"
             )
+
+    def contour_data(self, title: str, filename: Optional[str]):
+        if self.data_loader.q_values is None:
+            raise ValueError("q_values not defined")
+        max_z = self.data.sum(axis=0).max()
+        fig, _, _ = gu.contour_slices(
+            self.data,
+            self.data_loader.q_values,
+            sum_frames=True,
+            title=title,
+            plot_colorbar=True,
+            scale="log",
+            is_orthogonal=True,
+            levels=np.linspace(0, np.ceil(np.log10(max_z)), 150, endpoint=False),
+            reciprocal_space=True,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        fig.savefig(filename)
+        plt.close(fig)
 
     def crop_to_fft_compliant_shape(self) -> None:
         final_shape = util.smaller_primes(
@@ -274,7 +319,7 @@ class Analysis(ABC):
     def initialize_comment(self) -> Comment:
         return Comment(self.parameters.get("comment", ""))
 
-    def mask_data(self) -> None:
+    def apply_mask_to_data(self) -> None:
         self.data[np.nonzero(self.mask)] = 0
 
     def mask_zero_events(self) -> None:
@@ -285,10 +330,10 @@ class Analysis(ABC):
 
     def remove_nan(self) -> None:
         self.data, self.mask = util.remove_nan(data=self.data, mask=self.mask)
-        self.mask_data()
+        self.apply_mask_to_data()
 
-    def retrieve_bragg_peak(self) -> Dict[str, Any]:
-        return bu.find_bragg(
+    def retrieve_bragg_peak(self) -> None:
+        self.metadata = bu.find_bragg(
             array=self.data,
             binning=self.setup.detector.current_binning,
             roi=self.setup.detector.roi,
@@ -298,10 +343,12 @@ class Analysis(ABC):
             logger=self.logger,
             plot_fit=True,
         )
+        self.update_parameters({"bragg_peak": self.metadata["bragg_peak"]})
 
-    def save_data(self, filename: str, save_to_mat: bool) -> None:
-        np.savez_compressed(filename, data=self.data)
-        if save_to_mat:
+    def save_data(self, filename: str) -> None:
+        if self.parameters["save_to_npz"]:
+            np.savez_compressed(filename, data=self.data)
+        if self.parameters["save_to_mat"]:
             if self.data.ndim != 3:
                 raise ValueError(
                     f"Only 3D ndarray supported, data is {self.data.ndim}D"
@@ -310,11 +357,98 @@ class Analysis(ABC):
             # (outboard, vertical up, downstream)
             savemat(
                 filename + ".mat",
-                {"data": np.moveaxis(self.data, [0, 1, 2], [-1, -2, -3])},
+                {
+                    "data": np.moveaxis(
+                        self.data.astype(
+                            int if self.parameters["save_as_int"] else np.float32
+                        ),
+                        [0, 1, 2],
+                        [-1, -2, -3],
+                    )
+                },
             )
 
-    def save_mask(self, filename: str) -> None:
+    def save_hotpixels(self, filename: str) -> None:
         np.savez_compressed(filename, hotpixels=self.mask.astype(int))
+
+    def save_mask(self, filename: str) -> None:
+        if self.parameters["save_to_npz"]:
+            np.savez_compressed(filename, mask=self.mask.astype(int))
+        if self.parameters["save_to_mat"]:
+            if self.data.ndim != 3:
+                raise ValueError(
+                    f"Only 3D ndarray supported, data is {self.data.ndim}D"
+                )
+            # save to .mat, the new order is x y z
+            # (outboard, vertical up, downstream)
+            savemat(
+                filename + ".mat",
+                {
+                    "mask": np.moveaxis(
+                        self.mask.astype(np.int8),
+                        [0, 1, 2],
+                        [-1, -2, -3],
+                    )
+                },
+            )
+
+    def save_results_as_h5(self, filename: str) -> None:
+        with h5py.File(filename, "w") as hf:
+            out = hf.create_group("output")
+            par = hf.create_group("params")
+            out.create_dataset("data", data=self.data)
+            out.create_dataset("mask", data=self.mask)
+
+            if self.metadata is not None:
+                out.create_dataset("tilt_values", data=self.metadata["tilt_values"])
+                out.create_dataset("rocking_curve", data=self.metadata["rocking_curve"])
+                out.create_dataset(
+                    "interp_tilt", data=self.metadata["interp_tilt_values"]
+                )
+                out.create_dataset(
+                    "interp_curve", data=self.metadata["interp_rocking_curve"]
+                )
+                out.create_dataset(
+                    "COM_rocking_curve", data=self.metadata["tilt_value_at_peak"]
+                )
+                out.create_dataset(
+                    "detector_data_COM", data=self.metadata["detector_data_at_peak"]
+                )
+                out.create_dataset("interp_fwhm", data=self.metadata["interp_fwhm"])
+            try:
+                out.create_dataset("bragg_peak", data=self.parameters["bragg_peak"])
+            except TypeError:
+                self.logger.info("Bragg peak position not computed.")
+            out.create_dataset("q_bragg", data=self.q_bragg)
+            out.create_dataset("qnorm", data=self.q_norm)
+            out.create_dataset("planar_distance", data=self.planar_distance)
+            if self.parameters["rocking_angle"] != "energy":
+                out.create_dataset(
+                    "bragg_inplane", data=self.parameters["inplane_angle"]
+                )
+                out.create_dataset(
+                    "bragg_outofplane", data=self.parameters["outofplane_angle"]
+                )
+
+            par.create_dataset("detector", data=str(self.setup.detector.params))
+            par.create_dataset("setup", data=str(self.setup.params))
+            par.create_dataset("parameters", data=str(self.parameters))
+
+    def save_q_values(self, filename: str) -> None:
+        if self.data_loader.q_values is None:
+            raise ValueError("q_values not defined")
+        qx, qz, qy = self.data_loader.q_values
+        if self.parameters["save_to_npz"]:
+            np.savez_compressed(
+                filename,
+                qx=qx,
+                qz=qz,
+                qy=qy,
+            )
+        if self.parameters["save_to_mat"]:
+            savemat(self.setup.detector.savedir + f"S{self.scan_nb}_qx.mat", {"qx": qx})
+            savemat(self.setup.detector.savedir + f"S{self.scan_nb}_qz.mat", {"qz": qz})
+            savemat(self.setup.detector.savedir + f"S{self.scan_nb}_qy.mat", {"qy": qy})
 
     def save_to_vti(self, filename: Optional[str]) -> None:
         qx, qz, qy = self.data_loader.q_values
@@ -343,11 +477,14 @@ class Analysis(ABC):
             logger=self.logger,
         )
 
+    def set_binary_mask(self):
+        self.mask[np.nonzero(self.mask)] = 1
+        self.mask = self.mask.astype(int)
+
     def show_array(self, array: np.ndarray, title: str, **kwargs) -> Any:
         fig, _, _ = gu.multislices_plot(
             array,
             sum_frames=True,
-            scale="log",
             plot_colorbar=True,
             vmin=0,
             title=title,
@@ -358,14 +495,24 @@ class Analysis(ABC):
         )
         return fig
 
-    def show_mask(self, title: str, filename: Optional[str]) -> None:
-        fig = self.show_array(array=self.mask, title=title)
+    def show_mask(self, title: str, filename: Optional[str], **kwargs) -> None:
+        fig = self.show_array(array=self.mask, title=title, scale="linear", **kwargs)
         if filename is not None:
             fig.savefig(filename)
         plt.close(fig)
 
     def show_masked_data(self, title: str, filename: Optional[str]):
-        fig = self.show_array(array=self.get_masked_data(), title=title)
+        fig = self.show_array(array=self.get_masked_data(), title=title, scale="log")
+        if filename is not None:
+            fig.savefig(filename)
+        plt.close(fig)
+
+    def show_masked_data_at_com(self, title: str, filename: Optional[str]):
+        data = self.get_masked_data()
+        z0, y0, x0 = center_of_mass(data)
+        fig = self.show_array(
+            array=data, title=title, slice=[int(z0), int(y0), int(x0)], scale="log"
+        )
         if filename is not None:
             fig.savefig(filename)
         plt.close(fig)
@@ -373,7 +520,10 @@ class Analysis(ABC):
     def show_masked_data_at_max(self, title: str, filename: Optional[str]):
         data = self.get_masked_data()
         fig = self.show_array(
-            array=data, title=title, slice=np.unravel_index(data.argmax(), data.shape)
+            array=data,
+            title=title,
+            slice=np.unravel_index(data.argmax(), data.shape),
+            scale="log",
         )
         if filename is not None:
             fig.savefig(filename)
@@ -390,33 +540,6 @@ class Analysis(ABC):
 
     def update_parameters(self, dictionary: Dict[str, Any]) -> None:
         self.parameters.update(dictionary)
-
-    def _calculate_q_bragg_orthogonal(self) -> None:
-        if (
-            self.data_loader.q_values
-        ):  # find the Bragg peak position from the interpolated data
-            interpolated_metadata = bu.find_bragg(
-                array=self.data,
-                binning=None,
-                roi=None,
-                peak_method=self.parameters["centering_method"]["reciprocal_space"],
-                tilt_values=None,
-                logger=self.logger,
-                plot_fit=False,
-            )
-            self.q_bragg = np.array(
-                [
-                    self.data_loader.q_values[0][
-                        interpolated_metadata["bragg_peak"][0]
-                    ],
-                    self.data_loader.q_values[1][
-                        interpolated_metadata["bragg_peak"][1]
-                    ],
-                    self.data_loader.q_values[2][
-                        interpolated_metadata["bragg_peak"][2]
-                    ],
-                ]
-            )
 
 
 class DetectorFrameAnalysis(Analysis):
@@ -487,7 +610,7 @@ class OrthogonalFrameAnalysis(Analysis):
     """Analysis worklow for reloaded data interpolated in an orthogonal frame."""
 
     def calculate_q_bragg(self, **kwargs) -> None:
-        self._calculate_q_bragg_orthogonal()
+        self.calculate_q_bragg_orthogonal()
 
     def interpolate_data(self) -> None:
         super().interpolate_data()
@@ -510,7 +633,7 @@ class XrayUtilitiesAnalysis(Analysis):
         self.interpolation_needed = True
 
     def calculate_q_bragg(self, **kwargs) -> None:
-        self._calculate_q_bragg_orthogonal()
+        self.calculate_q_bragg_orthogonal()
 
     def interpolate_data(self) -> None:
         qconv, offsets = self.setup.init_qconversion()
