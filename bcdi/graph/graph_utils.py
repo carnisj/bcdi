@@ -1501,6 +1501,9 @@ def multislices_plot(
     ):
         raise ValueError("vmin should be strictly smaller than vmax")
 
+    if slice_position is not None:
+        sum_frames = False
+
     if not sum_frames:
         slice_position = slice_position or (int(nbz // 2), int(nby // 2), int(nbx // 2))
         valid.valid_container(
