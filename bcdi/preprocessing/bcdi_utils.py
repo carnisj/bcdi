@@ -463,7 +463,7 @@ def center_fft(
     pad_size = kwargs.get("pad_size", [])
     q_values = kwargs.get("q_values", [])
 
-    if q_values:  # len(q_values) != 0
+    if q_values is not None:
         qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
         qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
         qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
@@ -550,7 +550,7 @@ def center_fft(
         if (iz0 + nz1 // 2) < nbz:  # if nbz, the last frame is used
             frames_logical[iz0 + nz1 // 2 :] = 0
 
-        if len(q_values) != 0:
+        if q_values is not None:
             qx = qx[iz0 - nz1 // 2 : iz0 + nz1 // 2]
             qy = qy[ix0 - nx1 // 2 : ix0 + nx1 // 2]
             qz = qz[iy0 - ny1 // 2 : iy0 + ny1 // 2]
@@ -620,7 +620,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -672,7 +672,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -710,7 +710,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -753,7 +753,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -792,7 +792,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -822,7 +822,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -870,7 +870,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             dqy = qy[1] - qy[0]
             dqz = qz[1] - qz[0]
@@ -908,7 +908,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             dqy = qy[1] - qy[0]
             dqz = qz[1] - qz[0]
@@ -925,7 +925,7 @@ def center_fft(
     else:
         raise ValueError("Incorrect value for 'fft_option'")
 
-    if len(q_values) != 0:
+    if q_values is not None:
         q_values = list(q_values)
         q_values[0] = qx
         q_values[1] = qz
