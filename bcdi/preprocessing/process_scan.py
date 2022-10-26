@@ -27,8 +27,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bcdi.preprocessing.analysis import create_analysis
 from bcdi.experiment.setup import Setup
+from bcdi.preprocessing.analysis import create_analysis
 from bcdi.utils.snippets_logging import FILE_FORMATTER
 
 logger = logging.getLogger(__name__)

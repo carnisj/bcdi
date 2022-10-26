@@ -8,19 +8,19 @@
 """Implementation of preprocessing analysis classes."""
 
 import logging
-from operator import mul
 import os
 from abc import ABC, abstractmethod
+from operator import mul
 from tkinter import filedialog
 from typing import Any, Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
+import scipy.signal  # for medfilt2d
+import xrayutilities as xu
+from matplotlib import pyplot as plt
 from scipy.io import savemat
 from scipy.ndimage.measurements import center_of_mass
-import scipy.signal  # for medfilt2d
-from matplotlib import pyplot as plt
-import xrayutilities as xu
 
 import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.bcdi_utils as bu
