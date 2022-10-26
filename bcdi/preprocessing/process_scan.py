@@ -400,7 +400,7 @@ def process_scan(
         filename=setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment.text
     )
     analysis.save_results_as_h5(
-        filename=f"{setup.detector.savedir}S{scan_nb}_preprocessing{comment}.h5"
+        filename=f"{setup.detector.savedir}S{scan_nb}_preprocessing{comment.text}.h5"
     )
 
     ############################
