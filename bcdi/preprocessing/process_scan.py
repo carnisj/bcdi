@@ -281,7 +281,7 @@ def process_scan(
         analysis.update_mask(mask_file)
 
     if prm["flag_interact"]:
-        interactive_mask = analysis.get_interactive_mask()
+        interactive_mask = analysis.get_interactive_masker()
         ##################
         # aliens removal #
         ##################
@@ -305,6 +305,8 @@ def process_scan(
         )
 
         interactive_mask.refine_mask()  # (remove remaining hotpixels, ...)
+        analysis.mask = np.copy(interactive_mask.mask)
+        del interactive_mask
 
     analysis.set_binary_mask()
     analysis.apply_mask_to_data()
@@ -334,19 +336,23 @@ def process_scan(
         title="Masked data\n",
         filename=setup.detector.savedir
         + f"middle_frame_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
-        f"{setup.detector.binning[1]}_{setup.detector.binning[2]}" + comment + ".png",
+        f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
+        + comment.text
+        + ".png",
     )
     analysis.show_masked_data(
         title="Masked data\n",
         filename=setup.detector.savedir
         + f"sum_S{scan_nb}_{nz}_{ny}_{nx}_{setup.detector.binning[0]}_"
-        f"{setup.detector.binning[1]}_{setup.detector.binning[2]}" + comment + ".png",
+        f"{setup.detector.binning[1]}_{setup.detector.binning[2]}"
+        + comment.text
+        + ".png",
     )
     analysis.show_mask(
         title="Mask\n",
         filename=setup.detector.savedir + f"mask_S{scan_nb}_{nz}_{ny}_{nx}_"
         f"{setup.detector.binning[0]}_{setup.detector.binning[1]}_"
-        f"{setup.detector.binning[2]}" + comment + ".png",
+        f"{setup.detector.binning[2]}" + comment.text + ".png",
         vmax=(nz, ny, nx),
     )
 
@@ -377,19 +383,21 @@ def process_scan(
 
     if analysis.is_orthogonal and analysis.data_loader.q_values is not None:
         analysis.save_q_values(
-            filename=setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment
+            filename=setup.detector.savedir + f"QxQzQy_S{scan_nb}" + comment.text
         )
         analysis.contour_data(
             title="Final data\n",
             filename=setup.detector.savedir
             + f"final_reciprocal_space_S{scan_nb}"
-            + comment
+            + comment.text
             + ".png",
         )
 
-    analysis.save_data(filename=setup.detector.savedir + f"S{scan_nb}_pynx" + comment)
+    analysis.save_data(
+        filename=setup.detector.savedir + f"S{scan_nb}_pynx" + comment.text
+    )
     analysis.save_mask(
-        filename=setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment
+        filename=setup.detector.savedir + f"S{scan_nb}_maskpynx" + comment.text
     )
     analysis.save_results_as_h5(
         filename=f"{setup.detector.savedir}S{scan_nb}_preprocessing{comment}.h5"
@@ -401,11 +409,17 @@ def process_scan(
     analysis.apply_mask_to_data()
     analysis.show_masked_data(
         title="Final data\n",
-        filename=setup.detector.savedir + f"finalsum_S{scan_nb}" + comment + ".png",
+        filename=setup.detector.savedir
+        + f"finalsum_S{scan_nb}"
+        + comment.text
+        + ".png",
     )
     analysis.show_mask(
         title="Final mask\n",
-        filename=setup.detector.savedir + f"finalmask_S{scan_nb}" + comment + ".png",
+        filename=setup.detector.savedir
+        + f"finalmask_S{scan_nb}"
+        + comment.text
+        + ".png",
         vmax=(nz, ny, nx),
     )
 
