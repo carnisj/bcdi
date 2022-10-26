@@ -33,6 +33,325 @@ from bcdi.utils.text import Comment
 module_logger = logging.getLogger(__name__)
 
 
+class InteractiveMasker:
+    def __init__(
+        self,
+        data: np.ndarray,
+        mask: np.ndarray,
+        parameters: Dict[str, Any],
+        starting_frame: List[int],
+    ) -> None:
+        self.original_data: Optional[np.ndarray] = data
+        self.original_mask: Optional[np.ndarray] = mask
+        self.parameters = parameters
+        self.starting_frame = starting_frame
+
+        self._data: Optional[np.ndarray] = None
+        self._mask: Optional[np.ndarray] = None
+        self._updated_mask: Optional[np.ndarray] = None
+        self.xy: List[List[int]] = []
+        self.flag_pause: bool = False
+        self.previous_axis: Optional[int] = None
+        self.width: int = 5
+        self.max_colorbar: int = 5
+        self.fig_mask = None
+        self.info_text = None
+        self.frame_index: Optional[List[int]] = None
+
+    @property
+    def mask(self) -> np.ndarray:
+        return self._mask
+
+    def on_click(self, event):
+        """
+        Interact with a plot, return the position of clicked pixel.
+
+        If flag_pause==1 or if the mouse is out of plot axes, it will not register
+        the click.
+
+        :param event: mouse click event
+        """
+
+        if not event.inaxes:
+            return
+        if not self.flag_pause:
+
+            if (self.previous_axis == event.inaxes) or (
+                self.previous_axis is None
+            ):  # collect points
+                _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
+                self.xy.append([_x, _y])
+                if self.previous_axis is None:
+                    self.previous_axis = event.inaxes
+            else:  # the click is not in the same subplot, restart collecting points
+                print(
+                    "Select mask polygon vertices within "
+                    "the same subplot: restart masking..."
+                )
+                self.xy = []
+                self.previous_axis = None
+
+    def press_key_aliens(self, event):
+        """
+        Interact with a plot for masking parasitic intensity or detector gaps.
+
+        :param event: button press event
+        """
+        try:
+            if event.inaxes == self.ax0:
+                dim = 0
+                inaxes = True
+            elif event.inaxes == self.ax1:
+                dim = 1
+                inaxes = True
+            elif event.inaxes == self.ax2:
+                dim = 2
+                inaxes = True
+            else:
+                dim = -1
+                inaxes = False
+
+            if inaxes:
+                (
+                    self._data,
+                    self._mask,
+                    self.width,
+                    self.max_colorbar,
+                    self.frame_index,
+                    stop_masking,
+                ) = gu.update_aliens_combined(
+                    key=event.key,
+                    pix=int(np.rint(event.xdata)),
+                    piy=int(np.rint(event.ydata)),
+                    original_data=self.original_data,
+                    original_mask=self.original_mask,
+                    updated_data=self._data,
+                    updated_mask=self._mask,
+                    axes=(self.ax0, self.ax1, self.ax2, self.ax3),
+                    width=self.width,
+                    dim=dim,
+                    frame_index=self.frame_index,
+                    vmin=0,
+                    vmax=self.max_colorbar,
+                    cmap=self.parameters["colormap"].cmap,
+                    invert_yaxis=not self.parameters["use_rawdata"],
+                )
+                if stop_masking:
+                    plt.close("all")
+
+        except AttributeError:  # mouse pointer out of axes
+            pass
+
+    def press_key_mask(self, event):
+        """
+        Interact with a plot for masking parasitic intensity or detector gaps.
+
+        :param event: button press event
+        """
+        nz, ny, nx = self.original_data.shape
+        try:
+            if event.inaxes == self.ax0:
+                dim = 0
+                inaxes = True
+            elif event.inaxes == self.ax1:
+                dim = 1
+                inaxes = True
+            elif event.inaxes == self.ax2:
+                dim = 2
+                inaxes = True
+            else:
+                dim = -1
+                inaxes = False
+
+            if inaxes:
+                if self.previous_axis == self.ax0:
+                    click_dim = 0
+                    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif self.previous_axis == self.ax1:
+                    click_dim = 1
+                    x, y = np.meshgrid(np.arange(nx), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                elif self.previous_axis == self.ax2:
+                    click_dim = 2
+                    x, y = np.meshgrid(np.arange(ny), np.arange(nz))
+                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
+                else:
+                    click_dim = None
+                    points = None
+
+                (
+                    self._data,
+                    self._updated_mask,
+                    self.flag_pause,
+                    self.xy,
+                    self.width,
+                    self.max_colorbar,
+                    click_dim,
+                    stop_masking,
+                    self.info_text,
+                ) = gu.update_mask_combined(
+                    key=event.key,
+                    pix=int(np.rint(event.xdata)),
+                    piy=int(np.rint(event.ydata)),
+                    original_data=self.original_data,
+                    original_mask=self._mask,
+                    updated_data=self._data,
+                    updated_mask=self._updated_mask,
+                    axes=(self.ax0, self.ax1, self.ax2, self.ax3),
+                    flag_pause=self.flag_pause,
+                    points=points,
+                    xy=self.xy,
+                    width=self.width,
+                    dim=dim,
+                    click_dim=click_dim,
+                    info_text=self.info_text,
+                    vmin=0,
+                    vmax=self.max_colorbar,
+                    cmap=self.parameters["colormap"].cmap,
+                    invert_yaxis=not self.parameters["use_rawdata"],
+                )
+                if click_dim is None:
+                    self.previous_axis = None
+
+                if stop_masking:
+                    plt.close("all")
+
+        except AttributeError:  # mouse pointer out of axes
+            pass
+
+    def interactive_masking_aliens(self):
+        plt.ioff()
+        self.width = 5
+        self.max_colorbar = 5
+        nz, ny, nx = self.original_data.shape
+
+        self.fig_mask, ((self.ax0, self.ax1), (self.ax2, self.ax3)) = plt.subplots(
+            nrows=2, ncols=2, figsize=(12, 6)
+        )
+        self.fig_mask.canvas.mpl_disconnect(
+            self.fig_mask.canvas.manager.key_press_handler_id
+        )
+        self._data = np.copy(self.original_data)
+        self._mask = np.copy(self.original_mask)
+        self.frame_index = self.starting_frame
+        self.ax0.imshow(
+            self._data[self.frame_index[0], :, :],
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax1.imshow(
+            self._data[:, self.frame_index[1], :],
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax2.imshow(
+            self._data[:, :, self.frame_index[2]],
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax3.set_visible(False)
+        self.ax0.axis("scaled")
+        self.ax1.axis("scaled")
+        self.ax2.axis("scaled")
+        if not self.parameters["use_rawdata"]:
+            self.ax0.invert_yaxis()  # detector Y is vertical down
+        self.ax0.set_title(f"XY - Frame {self.frame_index[0] + 1} / {nz}")
+        self.ax1.set_title(f"XZ - Frame {self.frame_index[1] + 1} / {ny}")
+        self.ax2.set_title(f"YZ - Frame {self.frame_index[2] + 1} / {nx}")
+        self.fig_mask.text(
+            0.60,
+            0.30,
+            "m mask ; b unmask ; u next frame ; d previous frame",
+            size=12,
+        )
+        self.fig_mask.text(
+            0.60,
+            0.25,
+            "up larger ; down smaller ; right darker ; left brighter",
+            size=12,
+        )
+        self.fig_mask.text(0.60, 0.20, "p plot full image ; q quit", size=12)
+        plt.tight_layout()
+        plt.connect("key_press_event", self.press_key_aliens)
+        self.fig_mask.set_facecolor(self.parameters["background_plot"])
+        plt.show()
+
+        self._mask[np.nonzero(self._mask)] = 1
+
+    def refine_mask(self):
+        plt.ioff()
+        self.width = 0
+        self.max_colorbar = 5
+        self.previous_axis = None
+        self.xy = []  # list of points for mask
+
+        self.fig_mask, ((self.ax0, self.ax1), (self.ax2, self.ax3)) = plt.subplots(
+            nrows=2, ncols=2, figsize=(12, 6)
+        )
+        self.fig_mask.canvas.mpl_disconnect(
+            self.fig_mask.canvas.manager.key_press_handler_id
+        )
+        self._data = np.copy(self.original_data)
+        self._updated_mask = np.zeros(self._data.shape)
+        self._data[self._mask == 1] = 0  # will appear as grey in the log plot (nan)
+        self.ax0.imshow(
+            np.log10(abs(self._data).sum(axis=0)),
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax1.imshow(
+            np.log10(abs(self._data).sum(axis=1)),
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax2.imshow(
+            np.log10(abs(self._data).sum(axis=2)),
+            vmin=0,
+            vmax=self.max_colorbar,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        self.ax3.set_visible(False)
+        self.ax0.axis("scaled")
+        self.ax1.axis("scaled")
+        self.ax2.axis("scaled")
+        if not self.parameters["use_rawdata"]:
+            self.ax0.invert_yaxis()  # detector Y is vertical down
+        self.ax0.set_title("XY")
+        self.ax1.set_title("XZ")
+        self.ax2.set_title("YZ")
+        self.fig_mask.text(
+            0.60, 0.45, "click to select the vertices of a polygon mask", size=12
+        )
+        self.fig_mask.text(
+            0.60, 0.40, "x to pause/resume polygon masking for pan/zoom", size=12
+        )
+        self.fig_mask.text(0.60, 0.35, "p plot mask ; r reset current points", size=12)
+        self.fig_mask.text(
+            0.60,
+            0.30,
+            "m square mask ; b unmask ; right darker ; left brighter",
+            size=12,
+        )
+        self.fig_mask.text(
+            0.60, 0.25, "up larger masking box ; down smaller masking box", size=12
+        )
+        self.fig_mask.text(0.60, 0.20, "a restart ; q quit", size=12)
+        self.info_text = self.fig_mask.text(0.60, 0.05, "masking enabled", size=16)
+        plt.tight_layout()
+        plt.connect("key_press_event", self.press_key_mask)
+        plt.connect("button_press_event", self.on_click)
+        self.fig_mask.set_facecolor(self.parameters["background_plot"])
+        plt.show()
+
+        self._mask[np.nonzero(self._updated_mask)] = 1
+
+
 class Analysis(ABC):
     """Base class for the pre-processing analysis workflow."""
 
@@ -308,6 +627,14 @@ class Analysis(ABC):
                     self.data[idx, :, :], [3, 3]
                 )
 
+    def get_interactive_masker(self) -> InteractiveMasker:
+        return InteractiveMasker(
+            data=self.data,
+            mask=self.mask,
+            parameters=self.parameters,
+            starting_frame=self.starting_frame,
+        )
+
     def get_masked_data(self) -> np.ndarray:
         data = np.copy(self.data)
         data[self.mask == 1] = 0
@@ -511,7 +838,10 @@ class Analysis(ABC):
         data = self.get_masked_data()
         z0, y0, x0 = center_of_mass(data)
         fig = self.show_array(
-            array=data, title=title, slice=[int(z0), int(y0), int(x0)], scale="log"
+            array=data,
+            title=title,
+            slice_position=[int(z0), int(y0), int(x0)],
+            scale="log",
         )
         if filename is not None:
             fig.savefig(filename)
@@ -522,7 +852,9 @@ class Analysis(ABC):
         fig = self.show_array(
             array=data,
             title=title,
-            slice=np.unravel_index(data.argmax(), data.shape),
+            slice_position=[
+                int(val) for val in np.unravel_index(data.argmax(), data.shape)
+            ],
             scale="log",
         )
         if filename is not None:
