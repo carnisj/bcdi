@@ -269,7 +269,7 @@ def process_scan(
         analysis.save_to_vti(
             filename=os.path.join(
                 setup.detector.savedir,
-                f"S{scan_nb}_ortho_int" + comment + ".vti",
+                f"S{scan_nb}_ortho_int" + comment.text + ".vti",
             )
         )
 
@@ -305,6 +305,8 @@ def process_scan(
         )
 
         interactive_mask.refine_mask()  # (remove remaining hotpixels, ...)
+        if interactive_mask.mask is None:
+            raise ValueError("mask is undefined")
         analysis.mask = np.copy(interactive_mask.mask)
         del interactive_mask
 

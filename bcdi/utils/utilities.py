@@ -1653,13 +1653,19 @@ def line(x_array, a, b):
     return a * x_array + b
 
 
-def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
+def pad_from_roi(
+    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    roi: List[int],
+    binning: Tuple[int, int],
+    pad_value: Union[float, Tuple[float, ...]] = 0.0,
+    **kwargs,
+) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
     """
     Pad a 3D stack of frames provided a region of interest.
 
     The stacking is assumed to be on the first axis.
 
-    :param arrays: a 3D array of a sequence of 3D arrays of the same shape
+    :param arrays: a 3D array or a sequence of 3D arrays of the same shape
     :param roi: the desired region of interest of the unbinned frame. For an array in
      arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
     :param binning: tuple of two integers (binning along Y, binning along X)
@@ -1670,7 +1676,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
     :return: an array (if a single array was provided) or a tuple of arrays interpolated
      on an orthogonal grid (same length as the number of input arrays)
     """
-    logger = kwargs.get("logger", module_logger)
+    logger: Logger = kwargs.get("logger", module_logger)
     ####################
     # check parameters #
     ####################
@@ -1690,7 +1696,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
         length=2,
         name="binning",
     )
-    if isinstance(pad_value, Real):
+    if isinstance(pad_value, float):
         pad_value = (pad_value,) * nb_arrays
     valid.valid_container(
         pad_value,
@@ -1738,8 +1744,8 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
             output_arrays.append(array)
 
         if nb_arrays == 1:
-            output_arrays = output_arrays[0]  # return the array instead of the tuple
-        return output_arrays
+            return np.asarray(output_arrays[0])  # return the array instead of the tuple
+        return tuple(output_arrays)
     return arrays
 
 

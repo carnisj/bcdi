@@ -18,6 +18,9 @@ import h5py
 import numpy as np
 import scipy.signal  # for medfilt2d
 import xrayutilities as xu
+from matplotlib.backend_bases import KeyEvent, MouseEvent
+from matplotlib.figure import Figure
+from matplotlib.text import Text
 from matplotlib import pyplot as plt
 from scipy.io import savemat
 from scipy.ndimage.measurements import center_of_mass
@@ -41,10 +44,10 @@ class InteractiveMasker:
         parameters: Dict[str, Any],
         starting_frame: List[int],
     ) -> None:
-        self.original_data: Optional[np.ndarray] = data
-        self.original_mask: Optional[np.ndarray] = mask
-        self.parameters = parameters
-        self.starting_frame = starting_frame
+        self.original_data: np.ndarray = data
+        self.original_mask: np.ndarray = mask
+        self.parameters: Dict[str, Any] = parameters
+        self.starting_frame: List[int] = starting_frame
 
         self._data: Optional[np.ndarray] = None
         self._mask: Optional[np.ndarray] = None
@@ -54,15 +57,15 @@ class InteractiveMasker:
         self.previous_axis: Optional[int] = None
         self.width: int = 5
         self.max_colorbar: int = 5
-        self.fig_mask = None
-        self.info_text = None
+        self.fig_mask: Optional[Figure] = None
+        self.info_text: Optional[Text] = None
         self.frame_index: Optional[List[int]] = None
 
     @property
-    def mask(self) -> np.ndarray:
+    def mask(self) -> Optional[np.ndarray]:
         return self._mask
 
-    def on_click(self, event):
+    def on_click(self, event: MouseEvent) -> None:
         """
         Interact with a plot, return the position of clicked pixel.
 
@@ -91,7 +94,7 @@ class InteractiveMasker:
                 self.xy = []
                 self.previous_axis = None
 
-    def press_key_aliens(self, event):
+    def press_key_aliens(self, event: KeyEvent) -> None:
         """
         Interact with a plot for masking parasitic intensity or detector gaps.
 
@@ -142,7 +145,7 @@ class InteractiveMasker:
         except AttributeError:  # mouse pointer out of axes
             pass
 
-    def press_key_mask(self, event):
+    def press_key_mask(self, event: KeyEvent) -> None:
         """
         Interact with a plot for masking parasitic intensity or detector gaps.
 
@@ -220,7 +223,7 @@ class InteractiveMasker:
         except AttributeError:  # mouse pointer out of axes
             pass
 
-    def interactive_masking_aliens(self):
+    def interactive_masking_aliens(self) -> None:
         plt.ioff()
         self.width = 5
         self.max_colorbar = 5
@@ -282,7 +285,9 @@ class InteractiveMasker:
 
         self._mask[np.nonzero(self._mask)] = 1
 
-    def refine_mask(self):
+    def refine_mask(self) -> None:
+        if self._mask is None:
+            self._mask = np.copy(self.original_mask)
         plt.ioff()
         self.width = 0
         self.max_colorbar = 5
@@ -424,12 +429,12 @@ class Analysis(ABC):
     @property
     def q_norm(self) -> Optional[float]:
         if self.q_bragg is not None:
-            return np.linalg.norm(self.q_bragg)
+            return float(np.linalg.norm(self.q_bragg))
         return None
 
     @property
     def scan_nb(self) -> int:
-        return self.parameters["scans"][self.scan_index]
+        return int(self.parameters["scans"][self.scan_index])
 
     @property
     def starting_frame(self) -> List[int]:
@@ -778,6 +783,8 @@ class Analysis(ABC):
             savemat(self.setup.detector.savedir + f"S{self.scan_nb}_qy.mat", {"qy": qy})
 
     def save_to_vti(self, filename: Optional[str]) -> None:
+        if self.data_loader.q_values is None:
+            raise ValueError("q_values are undefined.")
         qx, qz, qy = self.data_loader.q_values
         # save diffraction pattern to vti
 
@@ -1110,7 +1117,7 @@ class PreprocessingLoader(ABC):
 
     @property
     def scan_nb(self) -> int:
-        return self.parameters["scans"][self.scan_index]
+        return int(self.parameters["scans"][self.scan_index])
 
     @abstractmethod
     def load_dataset(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -1191,7 +1198,8 @@ class ReloadingOrthogonalFrame(PreprocessingLoader):
 
         self.parameters["normalize_flux"] = "skip"
         # we assume that normalization was already performed
-        monitor = []  # we assume that normalization was already performed
+        monitor = np.ones(data.shape[0])
+        # we assume that normalization was already performed
         self.parameters["center_fft"] = "skip"
         # we assume that crop/pad/centering was already performed
 

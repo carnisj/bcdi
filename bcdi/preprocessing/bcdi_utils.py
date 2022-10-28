@@ -16,7 +16,7 @@ import logging
 import pathlib
 from numbers import Real
 from operator import mul
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +28,9 @@ from bcdi.experiment import loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+if TYPE_CHECKING:
+    from bcdi.experiment.setup import Setup
 
 module_logger = logging.getLogger(__name__)
 
@@ -1354,16 +1357,16 @@ def grid_bcdi_xrayutil(
 
 
 def load_bcdi_data(
-    scan_number,
-    setup,
-    bin_during_loading=False,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    debugging=False,
+    scan_number: int,
+    setup: "Setup",
+    bin_during_loading: bool = False,
+    flatfield: Optional[np.ndarray] = None,
+    hotpixels: Optional[np.ndarray] = None,
+    background: Optional[np.ndarray] = None,
+    normalize: str = "skip",
+    debugging: bool = False,
     **kwargs,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
@@ -1478,14 +1481,14 @@ def load_bcdi_data(
 
 
 def reload_bcdi_data(
-    data,
-    mask,
-    scan_number,
-    setup,
-    normalize=False,
-    debugging=False,
+    data: np.ndarray,
+    mask: np.ndarray,
+    scan_number: int,
+    setup: "Setup",
+    normalize: bool = False,
+    debugging: bool = False,
     **kwargs,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reload BCDI data, apply optional threshold, normalization and binning.
 
@@ -1533,7 +1536,7 @@ def reload_bcdi_data(
     # normalize by the incident X-ray beam intensity
     if normalize == "skip":
         logger.info("Skip intensity normalization")
-        monitor = []
+        monitor = np.ones(nbz)
     else:  # use the default monitor of the beamline
         monitor = setup.loader.read_monitor(
             scan_number=scan_number,
