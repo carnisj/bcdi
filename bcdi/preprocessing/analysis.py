@@ -19,6 +19,7 @@ import numpy as np
 import scipy.signal  # for medfilt2d
 import xrayutilities as xu
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.backend_bases import KeyEvent, MouseEvent
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -60,6 +61,10 @@ class InteractiveMasker:
         self.width: int = 5
         self.max_colorbar: int = 5
         self.fig_mask: Optional[Figure] = None
+        self.ax0: Optional[Axes] = None
+        self.ax1: Optional[Axes] = None
+        self.ax2: Optional[Axes] = None
+        self.ax3: Optional[Axes] = None
         self.info_text: Optional[Text] = None
         self.frame_index: Optional[List[int]] = None
 
@@ -874,7 +879,7 @@ class DetectorFrameAnalysis(Analysis):
         self.q_bragg = self.setup.q_laboratory
 
     def interpolate_data(self) -> None:
-        super().interpolate_data()
+        self.logger("No interpolation performed for the analysis in detector frame")
 
 
 class LinearizationAnalysis(Analysis):
@@ -938,7 +943,7 @@ class OrthogonalFrameAnalysis(Analysis):
         self.calculate_q_bragg_orthogonal()
 
     def interpolate_data(self) -> None:
-        super().interpolate_data()
+        self.logger("Reloaded data is already interpolated in an orthogonal frame.")
 
 
 class XrayUtilitiesAnalysis(Analysis):
