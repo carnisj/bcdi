@@ -18,10 +18,10 @@ import h5py
 import numpy as np
 import scipy.signal  # for medfilt2d
 import xrayutilities as xu
+from matplotlib import pyplot as plt
 from matplotlib.backend_bases import KeyEvent, MouseEvent
 from matplotlib.figure import Figure
 from matplotlib.text import Text
-from matplotlib import pyplot as plt
 from scipy.io import savemat
 from scipy.ndimage.measurements import center_of_mass
 
