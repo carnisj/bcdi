@@ -37,6 +37,8 @@ module_logger = logging.getLogger(__name__)
 
 
 class InteractiveMasker:
+    """Mask interactively aliens (slice by slice) and hotpixels in a 3D CDI dataset."""
+
     def __init__(
         self,
         data: np.ndarray,
@@ -74,7 +76,6 @@ class InteractiveMasker:
 
         :param event: mouse click event
         """
-
         if not event.inaxes:
             return
         if not self.flag_pause:
@@ -100,50 +101,35 @@ class InteractiveMasker:
 
         :param event: button press event
         """
-        try:
-            if event.inaxes == self.ax0:
-                dim = 0
-                inaxes = True
-            elif event.inaxes == self.ax1:
-                dim = 1
-                inaxes = True
-            elif event.inaxes == self.ax2:
-                dim = 2
-                inaxes = True
-            else:
-                dim = -1
-                inaxes = False
+        dim = self._get_dim_from_click_position(event=event)
 
-            if inaxes:
-                (
-                    self._data,
-                    self._mask,
-                    self.width,
-                    self.max_colorbar,
-                    self.frame_index,
-                    stop_masking,
-                ) = gu.update_aliens_combined(
-                    key=event.key,
-                    pix=int(np.rint(event.xdata)),
-                    piy=int(np.rint(event.ydata)),
-                    original_data=self.original_data,
-                    original_mask=self.original_mask,
-                    updated_data=self._data,
-                    updated_mask=self._mask,
-                    axes=(self.ax0, self.ax1, self.ax2, self.ax3),
-                    width=self.width,
-                    dim=dim,
-                    frame_index=self.frame_index,
-                    vmin=0,
-                    vmax=self.max_colorbar,
-                    cmap=self.parameters["colormap"].cmap,
-                    invert_yaxis=not self.parameters["use_rawdata"],
-                )
-                if stop_masking:
-                    plt.close("all")
-
-        except AttributeError:  # mouse pointer out of axes
-            pass
+        if dim in {0, 1, 2}:
+            (
+                self._data,
+                self._mask,
+                self.width,
+                self.max_colorbar,
+                self.frame_index,
+                stop_masking,
+            ) = gu.update_aliens_combined(
+                key=event.key,
+                pix=int(np.rint(event.xdata)),
+                piy=int(np.rint(event.ydata)),
+                original_data=self.original_data,
+                original_mask=self.original_mask,
+                updated_data=self._data,
+                updated_mask=self._mask,
+                axes=(self.ax0, self.ax1, self.ax2, self.ax3),
+                width=self.width,
+                dim=dim,
+                frame_index=self.frame_index,
+                vmin=0,
+                vmax=self.max_colorbar,
+                cmap=self.parameters["colormap"].cmap,
+                invert_yaxis=not self.parameters["use_rawdata"],
+            )
+            if stop_masking:
+                plt.close("all")
 
     def press_key_mask(self, event: KeyEvent) -> None:
         """
@@ -152,76 +138,61 @@ class InteractiveMasker:
         :param event: button press event
         """
         nz, ny, nx = self.original_data.shape
-        try:
-            if event.inaxes == self.ax0:
-                dim = 0
-                inaxes = True
-            elif event.inaxes == self.ax1:
-                dim = 1
-                inaxes = True
-            elif event.inaxes == self.ax2:
-                dim = 2
-                inaxes = True
+        dim = self._get_dim_from_click_position(event=event)
+
+        if dim in {0, 1, 2}:
+            if self.previous_axis == self.ax0:
+                click_dim = 0
+                x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+                points = np.stack((x.flatten(), y.flatten()), axis=0).T
+            elif self.previous_axis == self.ax1:
+                click_dim = 1
+                x, y = np.meshgrid(np.arange(nx), np.arange(nz))
+                points = np.stack((x.flatten(), y.flatten()), axis=0).T
+            elif self.previous_axis == self.ax2:
+                click_dim = 2
+                x, y = np.meshgrid(np.arange(ny), np.arange(nz))
+                points = np.stack((x.flatten(), y.flatten()), axis=0).T
             else:
-                dim = -1
-                inaxes = False
+                click_dim = None
+                points = None
 
-            if inaxes:
-                if self.previous_axis == self.ax0:
-                    click_dim = 0
-                    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
-                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                elif self.previous_axis == self.ax1:
-                    click_dim = 1
-                    x, y = np.meshgrid(np.arange(nx), np.arange(nz))
-                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                elif self.previous_axis == self.ax2:
-                    click_dim = 2
-                    x, y = np.meshgrid(np.arange(ny), np.arange(nz))
-                    points = np.stack((x.flatten(), y.flatten()), axis=0).T
-                else:
-                    click_dim = None
-                    points = None
+            (
+                self._data,
+                self._updated_mask,
+                self.flag_pause,
+                self.xy,
+                self.width,
+                self.max_colorbar,
+                click_dim,
+                stop_masking,
+                self.info_text,
+            ) = gu.update_mask_combined(
+                key=event.key,
+                pix=int(np.rint(event.xdata)),
+                piy=int(np.rint(event.ydata)),
+                original_data=self.original_data,
+                original_mask=self._mask,
+                updated_data=self._data,
+                updated_mask=self._updated_mask,
+                axes=(self.ax0, self.ax1, self.ax2, self.ax3),
+                flag_pause=self.flag_pause,
+                points=points,
+                xy=self.xy,
+                width=self.width,
+                dim=dim,
+                click_dim=click_dim,
+                info_text=self.info_text,
+                vmin=0,
+                vmax=self.max_colorbar,
+                cmap=self.parameters["colormap"].cmap,
+                invert_yaxis=not self.parameters["use_rawdata"],
+            )
+            if click_dim is None:
+                self.previous_axis = None
 
-                (
-                    self._data,
-                    self._updated_mask,
-                    self.flag_pause,
-                    self.xy,
-                    self.width,
-                    self.max_colorbar,
-                    click_dim,
-                    stop_masking,
-                    self.info_text,
-                ) = gu.update_mask_combined(
-                    key=event.key,
-                    pix=int(np.rint(event.xdata)),
-                    piy=int(np.rint(event.ydata)),
-                    original_data=self.original_data,
-                    original_mask=self._mask,
-                    updated_data=self._data,
-                    updated_mask=self._updated_mask,
-                    axes=(self.ax0, self.ax1, self.ax2, self.ax3),
-                    flag_pause=self.flag_pause,
-                    points=points,
-                    xy=self.xy,
-                    width=self.width,
-                    dim=dim,
-                    click_dim=click_dim,
-                    info_text=self.info_text,
-                    vmin=0,
-                    vmax=self.max_colorbar,
-                    cmap=self.parameters["colormap"].cmap,
-                    invert_yaxis=not self.parameters["use_rawdata"],
-                )
-                if click_dim is None:
-                    self.previous_axis = None
-
-                if stop_masking:
-                    plt.close("all")
-
-        except AttributeError:  # mouse pointer out of axes
-            pass
+            if stop_masking:
+                plt.close("all")
 
     def interactive_masking_aliens(self) -> None:
         plt.ioff()
@@ -355,6 +326,21 @@ class InteractiveMasker:
         plt.show()
 
         self._mask[np.nonzero(self._updated_mask)] = 1
+
+    def _get_dim_from_click_position(self, event: KeyEvent) -> int:
+        """Convert the mouse click position into a slice dimention in the 3D array."""
+        try:
+            if event.inaxes == self.ax0:
+                dim = 0
+            elif event.inaxes == self.ax1:
+                dim = 1
+            elif event.inaxes == self.ax2:
+                dim = 2
+            else:
+                dim = -1
+        except AttributeError:  # mouse pointer out of axes
+            dim = -1
+        return dim
 
 
 class Analysis(ABC):
@@ -1105,6 +1091,8 @@ def create_analysis(
 
 
 class PreprocessingLoader(ABC):
+    """Base class for loading/reloading a dataset in preprocessing."""
+
     def __init__(
         self, scan_index: int, parameters: Dict[str, Any], setup: "Setup", **kwargs
     ) -> None:
@@ -1277,6 +1265,7 @@ class ReloadingOrthogonalFrame(PreprocessingLoader):
 def create_data_loader(
     scan_index: int, parameters: Dict[str, Any], setup: "Setup", **kwargs
 ) -> PreprocessingLoader:
+    """Instantiate a data loading class depending on analysis parameters."""
     if parameters["reload_previous"]:
         if parameters["reload_orthogonal"]:
             return ReloadingOrthogonalFrame(

@@ -48,7 +48,6 @@ def process_scan(
     :param scan_idx: index of the scan to be processed in prm["scans"]
     :param prm: the parsed parameters
     """
-
     ####################################################
     # Initialize parameters for the callback functions #
     ####################################################
