@@ -1022,20 +1022,7 @@ class XrayUtilitiesAnalysis(Analysis):
             * self.setup.detector.binning[2]
         )
         # number of pixels after taking into account the roi and binning
-        nch1 = (self.setup.detector.roi[1] - self.setup.detector.roi[0]) // (
-            self.setup.detector.preprocessing_binning[1]
-            * self.setup.detector.binning[1]
-        ) + (self.setup.detector.roi[1] - self.setup.detector.roi[0]) % (
-            self.setup.detector.preprocessing_binning[1]
-            * self.setup.detector.binning[1]
-        )
-        nch2 = (self.setup.detector.roi[3] - self.setup.detector.roi[2]) // (
-            self.setup.detector.preprocessing_binning[2]
-            * self.setup.detector.binning[2]
-        ) + (self.setup.detector.roi[3] - self.setup.detector.roi[2]) % (
-            self.setup.detector.preprocessing_binning[2]
-            * self.setup.detector.binning[2]
-        )
+        nch1, nch2 = self.data.shape[1:]
         # detector init_area method, pixel sizes are the binned ones
         hxrd.Ang2Q.init_area(
             self.setup.detector_ver_xrutil,
