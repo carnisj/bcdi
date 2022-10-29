@@ -48,7 +48,9 @@ class PeakFinder:
      full detector
     :param peak_method: peak searching method, among "max", "com", "max_com".
     :param kwargs:
-     - "logger": an optional logger
+     - 'logger': an optional logger
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     """
 
@@ -70,6 +72,7 @@ class PeakFinder:
         )
         self.binning = [1, 1, 1] if binning is None else binning
         self.peak_method = peak_method
+        self.frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
         self._peaks = self.find_peak()
@@ -341,6 +344,8 @@ class PeakFinder:
         x_axis = (
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
+        if self.frames_pattern is not None:
+            x_axis = x_axis[self.frames_pattern > 0]
         if len(x_axis) != len(rocking_curve):
             self.logger.warning(
                 "tilt_values and rocking curve don't have the same length (hint: did "
@@ -971,15 +976,19 @@ def find_bragg(
     :param plot_fit: if True, will plot results and fit the rocking curve
     :param kwargs:
      - "logger": an optional logger
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     :return: the metadata with the results of the peak search and the fit.
     """
     logger: logging.Logger = kwargs.get("logger", module_logger)
+    frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
     peakfinder = PeakFinder(
         array=array,
         region_of_interest=region_of_interest,
         binning=binning,
         peak_method=peak_method,
+        frames_pattern=frames_pattern,
         logger=logger,
     )
 
