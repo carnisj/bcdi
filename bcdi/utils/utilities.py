@@ -82,7 +82,7 @@ def apply_logical_array(
     # number of measured frames during the experiment
     # frames_logical[idx]=-1 means that a frame was added (padding) at index idx
     original_frames = frames_logical[frames_logical != -1]
-    nb_original = int(original_frames.sum())
+    nb_original = len(original_frames)
 
     output = []
     for array in arrays:

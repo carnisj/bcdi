@@ -284,7 +284,7 @@ class PeakFinder:
             return
 
         tilt_values = self.metadata.get("tilt_values")
-        if tilt_values is None:
+        if tilt_values is None or len(tilt_values) != len(rocking_curve):
             tilt_values = np.arange(self.array.shape[0])
             x_label = "Frame number"
         else:
@@ -330,6 +330,10 @@ class PeakFinder:
 
     def _fit_rocking_curve(self, tilt_values) -> None:
         """Fit the rocking curve and optionally tilt values by cubic interpolation."""
+        self._tilt_values = tilt_values
+        self._tilt_value_at_peak = (
+            tilt_values[self._roi_center[0]] if tilt_values is not None else None
+        )
         rocking_curve = self.metadata.get("rocking_curve")
         if rocking_curve is None:
             self.logger.info("'rocking_curve' is None, nothing to fit")
@@ -337,6 +341,12 @@ class PeakFinder:
         x_axis = (
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
+        if len(x_axis) != len(rocking_curve):
+            self.logger.warning(
+                "tilt_values and rocking curve don't have the same length (hint: did "
+                "you reload cropped data?)"
+            )
+            return
         interpolation = interp1d(x_axis, rocking_curve, kind="cubic")
         interp_points = 5 * self.array.shape[0]
         interp_tilt = np.linspace(x_axis.min(), x_axis.max(), interp_points)
@@ -347,13 +357,9 @@ class PeakFinder:
             / (interp_points - 1)
         )
         self.logger.info(f"FWHM by interpolation: {interp_fwhm:.3f} deg")
-        self._tilt_values = tilt_values
         self._interp_tilt_values = interp_tilt
         self._interp_rocking_curve = interp_curve
         self._interp_fwhm = interp_fwhm
-        self._tilt_value_at_peak = (
-            tilt_values[self._roi_center[0]] if tilt_values is not None else None
-        )
 
     def _get_rocking_curve(
         self,
@@ -505,8 +511,12 @@ def center_fft(
             "Peak intensity position defined by user on the full detector: "
             f"({z0, y0, x0})"
         )
-        y0 = (y0 - detector.roi[0]) / detector.binning[1]
-        x0 = (x0 - detector.roi[2]) / detector.binning[2]
+        y0 = (y0 - detector.roi[0]) / (
+            detector.preprocessing_binning[1] * detector.binning[1]
+        )
+        x0 = (x0 - detector.roi[2]) / (
+            detector.preprocessing_binning[2] * detector.binning[2]
+        )
         logger.info(
             "Peak intensity position with detector ROI and binning in detector plane: "
             f"({z0, y0, x0})"
@@ -1501,6 +1511,8 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
 
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
@@ -1510,11 +1522,12 @@ def reload_bcdi_data(
 
     """
     logger = kwargs.get("logger", module_logger)
+    frames_pattern = kwargs.get("frames_pattern")
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"logger", "photon_threshold"},
+        allowed_kwargs={"frames_pattern", "logger", "photon_threshold"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1526,7 +1539,9 @@ def reload_bcdi_data(
     )
 
     nbz, nby, nbx = data.shape
-    frames_logical = np.ones(nbz)
+    frames_logical = (
+        frames_pattern if frames_pattern is not None else np.ones(nbz, dtype=int)
+    )
 
     logger.info(f"{(data < 0).sum()} negative data points masked")
     # can happen when subtracting a background
@@ -1559,7 +1574,7 @@ def reload_bcdi_data(
         or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
         start = (np.nan, min(0, setup.detector.roi[0]), min(0, setup.detector.roi[2]))
-        logger.info("Paddind the data to the shape defined by the ROI")
+        logger.info("Padding the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,

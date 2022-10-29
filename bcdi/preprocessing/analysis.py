@@ -719,43 +719,51 @@ class Analysis(ABC):
         with h5py.File(filename, "w") as hf:
             out = hf.create_group("output")
             par = hf.create_group("params")
-            out.create_dataset("data", data=self.data)
-            out.create_dataset("mask", data=self.mask)
+            self._create_h5_dataset(out, "data", data=self.data)
+            self._create_h5_dataset(out, "mask", data=self.mask)
 
             if self.metadata is not None:
-                out.create_dataset("tilt_values", data=self.metadata["tilt_values"])
-                out.create_dataset("rocking_curve", data=self.metadata["rocking_curve"])
-                out.create_dataset(
-                    "interp_tilt", data=self.metadata["interp_tilt_values"]
+                self._create_h5_dataset(
+                    out, "tilt_values", data=self.metadata["tilt_values"]
                 )
-                out.create_dataset(
-                    "interp_curve", data=self.metadata["interp_rocking_curve"]
+                self._create_h5_dataset(
+                    out, "rocking_curve", data=self.metadata["rocking_curve"]
                 )
-                out.create_dataset(
-                    "COM_rocking_curve", data=self.metadata["tilt_value_at_peak"]
+                self._create_h5_dataset(
+                    out, "interp_tilt", data=self.metadata["interp_tilt_values"]
                 )
-                out.create_dataset(
-                    "detector_data_COM", data=self.metadata["detector_data_at_peak"]
+                self._create_h5_dataset(
+                    out, "interp_curve", data=self.metadata["interp_rocking_curve"]
                 )
-                out.create_dataset("interp_fwhm", data=self.metadata["interp_fwhm"])
-            try:
-                out.create_dataset("bragg_peak", data=self.parameters["bragg_peak"])
-            except TypeError:
-                self.logger.info("Bragg peak position not computed.")
-            out.create_dataset("q_bragg", data=self.q_bragg)
-            out.create_dataset("qnorm", data=self.q_norm)
-            out.create_dataset("planar_distance", data=self.planar_distance)
+                self._create_h5_dataset(
+                    out, "COM_rocking_curve", data=self.metadata["tilt_value_at_peak"]
+                )
+                self._create_h5_dataset(
+                    out,
+                    "detector_data_COM",
+                    data=self.metadata["detector_data_at_peak"],
+                )
+                self._create_h5_dataset(
+                    out, "interp_fwhm", data=self.metadata["interp_fwhm"]
+                )
+            self._create_h5_dataset(
+                out, "bragg_peak", data=self.parameters["bragg_peak"]
+            )
+            self._create_h5_dataset(out, "q_bragg", data=self.q_bragg)
+            self._create_h5_dataset(out, "qnorm", data=self.q_norm)
+            self._create_h5_dataset(out, "planar_distance", data=self.planar_distance)
             if self.parameters["rocking_angle"] != "energy":
-                out.create_dataset(
-                    "bragg_inplane", data=self.parameters["inplane_angle"]
+                self._create_h5_dataset(
+                    out, "bragg_inplane", data=self.parameters["inplane_angle"]
                 )
-                out.create_dataset(
-                    "bragg_outofplane", data=self.parameters["outofplane_angle"]
+                self._create_h5_dataset(
+                    out, "bragg_outofplane", data=self.parameters["outofplane_angle"]
                 )
-
-            par.create_dataset("detector", data=str(self.setup.detector.params))
-            par.create_dataset("setup", data=str(self.setup.params))
-            par.create_dataset("parameters", data=str(self.parameters))
+            self._create_h5_dataset(
+                par, "detector", data=str(self.setup.detector.params)
+            )
+            self._create_h5_dataset(par, "setup", data=str(self.setup.params))
+            self._create_h5_dataset(par, "parameters", data=str(self.parameters))
 
     def save_q_values(self, filename: str) -> None:
         if self.data_loader.q_values is None:
@@ -871,6 +879,14 @@ class Analysis(ABC):
     def update_parameters(self, dictionary: Dict[str, Any]) -> None:
         self.parameters.update(dictionary)
 
+    def _create_h5_dataset(self, group, dataset_name: str, data: Any) -> None:
+        try:
+            group.create_dataset(dataset_name, data=data)
+        except TypeError:
+            self.logger.warning(
+                f"Cannot create dataset '{dataset_name}', data not available"
+            )
+
 
 class DetectorFrameAnalysis(Analysis):
     """Analysis worklow in the detector frame."""
@@ -900,6 +916,14 @@ class LinearizationAnalysis(Analysis):
         self.setup.read_logfile(scan_number=self.scan_nb)
         self.comment.concatenate("ortho_lin")
         self.interpolation_needed = True
+        if (
+            self.parameters["reload_previous"]
+            and self.parameters.get("frames_pattern") is None
+        ):
+            raise ValueError(
+                "The parameters 'frames_pattern' is required to process "
+                "correctly the motor positions"
+            )
 
     def calculate_q_bragg(self, **kwargs) -> None:
         self.q_bragg = self.setup.q_laboratory
@@ -961,6 +985,14 @@ class XrayUtilitiesAnalysis(Analysis):
         )
         self.comment.concatenate("ortho_xrutils")
         self.interpolation_needed = True
+        if (
+            self.parameters["reload_previous"]
+            and self.parameters.get("frames_pattern") is None
+        ):
+            raise ValueError(
+                "The parameters 'frames_pattern' is required to process "
+                "correctly the motor positions"
+            )
 
     def calculate_q_bragg(self, **kwargs) -> None:
         self.calculate_q_bragg_orthogonal()
@@ -1168,6 +1200,14 @@ class FirstDataLoading(PreprocessingLoader):
 class ReloadingDetectorFrame(PreprocessingLoader):
     """Reload a dataset which is still in the detector frame."""
 
+    def __init__(
+        self, scan_index: int, parameters: Dict[str, Any], setup: "Setup", **kwargs
+    ) -> None:
+        super().__init__(
+            scan_index=scan_index, parameters=parameters, setup=setup, **kwargs
+        )
+        self.parameters["normalize_flux"] = "skip"
+
     def load_dataset(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         data, mask = self.reload()
         return bu.reload_bcdi_data(
@@ -1179,6 +1219,7 @@ class ReloadingDetectorFrame(PreprocessingLoader):
             debugging=self.parameters["debug"],
             photon_threshold=self.parameters["loading_threshold"],
             logger=self.logger,
+            frames_pattern=self.parameters.get("frames_pattern"),
         )
 
 
@@ -1192,7 +1233,7 @@ class ReloadingOrthogonalFrame(PreprocessingLoader):
         self.parameters["normalize_flux"] = "skip"
         # we assume that normalization was already performed
         monitor = np.ones(data.shape[0])
-        # we assume that normalization was already performed
+        frames_logical = np.ones(data.shape[0], dtype=int)
         self.parameters["center_fft"] = "skip"
         # we assume that crop/pad/centering was already performed
 
@@ -1248,7 +1289,7 @@ class ReloadingOrthogonalFrame(PreprocessingLoader):
                     ) : self.setup.detector.binning[2]
                 ]  # along x outboard
                 self.q_values = [qx, qz, qy]
-        return data, mask, np.ones(data.shape[0]), monitor
+        return data, mask, frames_logical, monitor
 
     def load_q_values(self) -> Optional[List[np.ndarray]]:
         try:

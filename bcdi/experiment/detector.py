@@ -400,7 +400,7 @@ class Detector(ABC):
     @roi.setter
     def roi(self, value):
         if not value:  # None or empty list/tuple
-            value = [0, self.nb_pixel_y, 0, self.nb_pixel_x]
+            value = [0, self.unbinned_pixel_number[0], 0, self.unbinned_pixel_number[1]]
         valid.valid_container(
             value,
             container_types=(tuple, list, np.ndarray),
