@@ -163,8 +163,10 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
 
     # update frames_logical
     if len(frames_logical) != len(is_intensity):
-        raise ValueError(f"len(frames_logical)={len(frames_logical)} "
-                         f"but len(is_intensity)={len(is_intensity)}")
+        raise ValueError(
+            f"len(frames_logical)={len(frames_logical)} "
+            f"but len(is_intensity)={len(is_intensity)}"
+        )
     frames_logical = np.multiply(frames_logical, is_intensity)
 
     # remove empty frames from the data and update the mask and the monitor

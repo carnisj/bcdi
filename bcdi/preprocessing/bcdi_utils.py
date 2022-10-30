@@ -345,7 +345,7 @@ class PeakFinder:
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
         if self.frames_pattern is not None:
-            x_axis = x_axis[self.frames_pattern > 0]
+            x_axis = x_axis[self.frames_pattern == 1]
         if len(x_axis) != len(rocking_curve):
             self.logger.warning(
                 "tilt_values and rocking curve don't have the same length (hint: did "
