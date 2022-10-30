@@ -146,7 +146,7 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
             raise ValueError("monitor be a 1D array of length data.shae[0]")
 
     if frames_logical is None:
-        frames_logical = np.ones(data.shape[0])
+        frames_logical = np.ones(data.shape[0], dtype=int)
     valid.valid_1d_array(
         frames_logical,
         allowed_types=Integral,
@@ -162,6 +162,9 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
         logger.info("Empty frame detected, cropping the data")
 
     # update frames_logical
+    if len(frames_logical) != len(is_intensity):
+        raise ValueError(f"len(frames_logical)={len(frames_logical)} "
+                         f"but len(is_intensity)={len(is_intensity)}")
     frames_logical = np.multiply(frames_logical, is_intensity)
 
     # remove empty frames from the data and update the mask and the monitor
