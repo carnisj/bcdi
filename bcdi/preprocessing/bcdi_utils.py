@@ -50,7 +50,7 @@ class PeakFinder:
     :param kwargs:
      - 'logger': an optional logger
      - 'frames_pattern' = list of int, of length the size of the original dataset along
-      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     """
 
@@ -977,7 +977,7 @@ def find_bragg(
     :param kwargs:
      - "logger": an optional logger
      - 'frames_pattern' = list of int, of length the size of the original dataset along
-      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     :return: the metadata with the results of the peak search and the fit.
     """
@@ -1521,7 +1521,7 @@ def reload_bcdi_data(
     :parama kwargs:
 
      - 'frames_pattern' = list of int, of length the size of the original dataset along
-      the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
