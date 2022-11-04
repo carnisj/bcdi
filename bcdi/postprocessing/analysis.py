@@ -5,7 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-"""Implementation of the analysis classes."""
+"""Implementation of postprocessing analysis classes."""
 
 import logging
 import os

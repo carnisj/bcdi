@@ -657,7 +657,7 @@ class Setup:
 
         Frame convention: (z downstream, y vertical up, x outboard). The unit is 1/A.
 
-        :return: a tuple of three vectors components.
+        :return: npdarray of three vectors components.
         """
         q_laboratory = (self.exit_wavevector - self.incident_wavevector) * 1e-10
         if np.isclose(np.linalg.norm(q_laboratory), 0, atol=1e-15):

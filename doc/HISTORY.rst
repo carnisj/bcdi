@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Create classes Analysis, PreprocessingLoader and InteractiveMasker for preprocessing.
+  Refactor `preprocessing.process_scan` to use these classes.
+
 * Add support for ESRF BM02 beamline (th rocking curve).
 
 * Create classes Analysis, PhaseManipulator and InterpolatedCrystal for postprocessing.

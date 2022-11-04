@@ -16,7 +16,7 @@ import logging
 import pathlib
 from numbers import Real
 from operator import mul
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +28,9 @@ from bcdi.experiment import loader
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+
+if TYPE_CHECKING:
+    from bcdi.experiment.setup import Setup
 
 module_logger = logging.getLogger(__name__)
 
@@ -45,7 +48,9 @@ class PeakFinder:
      full detector
     :param peak_method: peak searching method, among "max", "com", "max_com".
     :param kwargs:
-     - "logger": an optional logger
+     - 'logger': an optional logger
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     """
 
@@ -67,6 +72,7 @@ class PeakFinder:
         )
         self.binning = [1, 1, 1] if binning is None else binning
         self.peak_method = peak_method
+        self.frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
         self._peaks = self.find_peak()
@@ -281,7 +287,7 @@ class PeakFinder:
             return
 
         tilt_values = self.metadata.get("tilt_values")
-        if tilt_values is None:
+        if tilt_values is None or len(tilt_values) != len(rocking_curve):
             tilt_values = np.arange(self.array.shape[0])
             x_label = "Frame number"
         else:
@@ -327,6 +333,10 @@ class PeakFinder:
 
     def _fit_rocking_curve(self, tilt_values) -> None:
         """Fit the rocking curve and optionally tilt values by cubic interpolation."""
+        self._tilt_values = tilt_values
+        self._tilt_value_at_peak = (
+            tilt_values[self._roi_center[0]] if tilt_values is not None else None
+        )
         rocking_curve = self.metadata.get("rocking_curve")
         if rocking_curve is None:
             self.logger.info("'rocking_curve' is None, nothing to fit")
@@ -334,6 +344,14 @@ class PeakFinder:
         x_axis = (
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
+        if self.frames_pattern is not None:
+            x_axis = x_axis[self.frames_pattern == 1]
+        if len(x_axis) != len(rocking_curve):
+            self.logger.warning(
+                "tilt_values and rocking curve don't have the same length (hint: did "
+                "you reload cropped data?)"
+            )
+            return
         interpolation = interp1d(x_axis, rocking_curve, kind="cubic")
         interp_points = 5 * self.array.shape[0]
         interp_tilt = np.linspace(x_axis.min(), x_axis.max(), interp_points)
@@ -344,13 +362,9 @@ class PeakFinder:
             / (interp_points - 1)
         )
         self.logger.info(f"FWHM by interpolation: {interp_fwhm:.3f} deg")
-        self._tilt_values = tilt_values
         self._interp_tilt_values = interp_tilt
         self._interp_rocking_curve = interp_curve
         self._interp_fwhm = interp_fwhm
-        self._tilt_value_at_peak = (
-            tilt_values[self._roi_center[0]] if tilt_values is not None else None
-        )
 
     def _get_rocking_curve(
         self,
@@ -463,7 +477,7 @@ def center_fft(
     pad_size = kwargs.get("pad_size", [])
     q_values = kwargs.get("q_values", [])
 
-    if q_values:  # len(q_values) != 0
+    if q_values is not None:
         qx = q_values[0]  # axis=0, z downstream, qx in reciprocal space
         qz = q_values[1]  # axis=1, y vertical, qz in reciprocal space
         qy = q_values[2]  # axis=2, x outboard, qy in reciprocal space
@@ -502,8 +516,12 @@ def center_fft(
             "Peak intensity position defined by user on the full detector: "
             f"({z0, y0, x0})"
         )
-        y0 = (y0 - detector.roi[0]) / detector.binning[1]
-        x0 = (x0 - detector.roi[2]) / detector.binning[2]
+        y0 = (y0 - detector.roi[0]) / (
+            detector.preprocessing_binning[1] * detector.binning[1]
+        )
+        x0 = (x0 - detector.roi[2]) / (
+            detector.preprocessing_binning[2] * detector.binning[2]
+        )
         logger.info(
             "Peak intensity position with detector ROI and binning in detector plane: "
             f"({z0, y0, x0})"
@@ -550,7 +568,7 @@ def center_fft(
         if (iz0 + nz1 // 2) < nbz:  # if nbz, the last frame is used
             frames_logical[iz0 + nz1 // 2 :] = 0
 
-        if len(q_values) != 0:
+        if q_values is not None:
             qx = qx[iz0 - nz1 // 2 : iz0 + nz1 // 2]
             qy = qy[ix0 - nx1 // 2 : ix0 + nx1 // 2]
             qz = qz[iy0 - ny1 // 2 : iy0 + ny1 // 2]
@@ -620,7 +638,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -672,7 +690,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -710,7 +728,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -753,7 +771,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -792,7 +810,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(pad_size[0]) * dqx
@@ -822,7 +840,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             qx0 = qx[0] - pad_width[0] * dqx
             qx = qx0 + np.arange(nz1) * dqx
@@ -870,7 +888,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             dqy = qy[1] - qy[0]
             dqz = qz[1] - qz[0]
@@ -908,7 +926,7 @@ def center_fft(
         temp_frames[pad_width[0] : pad_width[0] + nbz] = frames_logical
         frames_logical = temp_frames
 
-        if len(q_values) != 0:
+        if q_values is not None:
             dqx = qx[1] - qx[0]
             dqy = qy[1] - qy[0]
             dqz = qz[1] - qz[0]
@@ -925,7 +943,7 @@ def center_fft(
     else:
         raise ValueError("Incorrect value for 'fft_option'")
 
-    if len(q_values) != 0:
+    if q_values is not None:
         q_values = list(q_values)
         q_values[0] = qx
         q_values[1] = qz
@@ -958,15 +976,19 @@ def find_bragg(
     :param plot_fit: if True, will plot results and fit the rocking curve
     :param kwargs:
      - "logger": an optional logger
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     :return: the metadata with the results of the peak search and the fit.
     """
     logger: logging.Logger = kwargs.get("logger", module_logger)
+    frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
     peakfinder = PeakFinder(
         array=array,
         region_of_interest=region_of_interest,
         binning=binning,
         peak_method=peak_method,
+        frames_pattern=frames_pattern,
         logger=logger,
     )
 
@@ -1354,16 +1376,16 @@ def grid_bcdi_xrayutil(
 
 
 def load_bcdi_data(
-    scan_number,
-    setup,
-    bin_during_loading=False,
-    flatfield=None,
-    hotpixels=None,
-    background=None,
-    normalize="skip",
-    debugging=False,
+    scan_number: int,
+    setup: "Setup",
+    bin_during_loading: bool = False,
+    flatfield: Optional[np.ndarray] = None,
+    hotpixels: Optional[np.ndarray] = None,
+    background: Optional[np.ndarray] = None,
+    normalize: str = "skip",
+    debugging: bool = False,
     **kwargs,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load Bragg CDI data, apply optional threshold, normalization and binning.
 
@@ -1478,14 +1500,14 @@ def load_bcdi_data(
 
 
 def reload_bcdi_data(
-    data,
-    mask,
-    scan_number,
-    setup,
-    normalize=False,
-    debugging=False,
+    data: np.ndarray,
+    mask: np.ndarray,
+    scan_number: int,
+    setup: "Setup",
+    normalize: bool = False,
+    debugging: bool = False,
     **kwargs,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reload BCDI data, apply optional threshold, normalization and binning.
 
@@ -1498,6 +1520,8 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
 
+     - 'frames_pattern' = list of int, of length the size of the original dataset along
+       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
@@ -1507,11 +1531,12 @@ def reload_bcdi_data(
 
     """
     logger = kwargs.get("logger", module_logger)
+    frames_pattern = kwargs.get("frames_pattern")
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"logger", "photon_threshold"},
+        allowed_kwargs={"frames_pattern", "logger", "photon_threshold"},
         name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
@@ -1523,7 +1548,9 @@ def reload_bcdi_data(
     )
 
     nbz, nby, nbx = data.shape
-    frames_logical = np.ones(nbz)
+    frames_logical = (
+        frames_pattern if frames_pattern is not None else np.ones(nbz, dtype=int)
+    )
 
     logger.info(f"{(data < 0).sum()} negative data points masked")
     # can happen when subtracting a background
@@ -1533,7 +1560,7 @@ def reload_bcdi_data(
     # normalize by the incident X-ray beam intensity
     if normalize == "skip":
         logger.info("Skip intensity normalization")
-        monitor = []
+        monitor = np.ones(nbz)
     else:  # use the default monitor of the beamline
         monitor = setup.loader.read_monitor(
             scan_number=scan_number,
@@ -1556,7 +1583,7 @@ def reload_bcdi_data(
         or setup.detector.roi[3] - setup.detector.roi[2] > nbx
     ):
         start = (np.nan, min(0, setup.detector.roi[0]), min(0, setup.detector.roi[2]))
-        logger.info("Paddind the data to the shape defined by the ROI")
+        logger.info("Padding the data to the shape defined by the ROI")
         data = util.crop_pad(
             array=data,
             pad_start=start,

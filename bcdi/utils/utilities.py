@@ -82,7 +82,7 @@ def apply_logical_array(
     # number of measured frames during the experiment
     # frames_logical[idx]=-1 means that a frame was added (padding) at index idx
     original_frames = frames_logical[frames_logical != -1]
-    nb_original = int(original_frames.sum())
+    nb_original = len(original_frames)
 
     output = []
     for array in arrays:
@@ -571,6 +571,64 @@ def dos2unix(input_file: str, savedir: str) -> None:
     with open(os.path.join(savedir, f"{filename}_unix.txt"), "wb") as output:
         for row in content.splitlines():
             output.write(row + str.encode("\n"))
+
+
+def find_crop_center(array_shape, crop_shape, pivot):
+    """
+    Find the position of the center of the cropping window.
+
+    It finds the closest voxel to pivot which allows to crop an array of array_shape to
+    crop_shape.
+
+    :param array_shape: initial shape of the array
+    :type array_shape: tuple
+    :param crop_shape: final shape of the array
+    :type crop_shape: tuple
+    :param pivot: position on which the final region of interest dhould be centered
+     (center of mass of the Bragg peak)
+    :type pivot: tuple
+    :return: the voxel position closest to pivot which allows cropping to the defined
+     shape.
+    """
+    valid.valid_container(
+        array_shape,
+        container_types=(tuple, list, np.ndarray),
+        min_length=1,
+        item_types=int,
+        name="array_shape",
+    )
+    ndim = len(array_shape)
+    valid.valid_container(
+        crop_shape,
+        container_types=(tuple, list, np.ndarray),
+        length=ndim,
+        item_types=int,
+        name="crop_shape",
+    )
+    valid.valid_container(
+        pivot,
+        container_types=(tuple, list, np.ndarray),
+        length=ndim,
+        item_types=int,
+        name="pivot",
+    )
+    crop_center = np.empty(ndim)
+    for idx, _ in enumerate(range(ndim)):
+        if max(0, pivot[idx] - crop_shape[idx] // 2) == 0:
+            # not enough range on this side of the com
+            crop_center[idx] = crop_shape[idx] // 2
+        else:
+            if (
+                min(array_shape[idx], pivot[idx] + crop_shape[idx] // 2)
+                == array_shape[idx]
+            ):
+                # not enough range on this side of the com
+                crop_center[idx] = array_shape[idx] - crop_shape[idx] // 2
+            else:
+                crop_center[idx] = pivot[idx]
+
+    crop_center = list(map(int, crop_center))
+    return crop_center
 
 
 def find_file(filename: Optional[str], default_folder: str, **kwargs) -> str:
@@ -1595,13 +1653,19 @@ def line(x_array, a, b):
     return a * x_array + b
 
 
-def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
+def pad_from_roi(
+    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    roi: List[int],
+    binning: Tuple[int, int],
+    pad_value: Union[float, Tuple[float, ...]] = 0.0,
+    **kwargs,
+) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
     """
     Pad a 3D stack of frames provided a region of interest.
 
     The stacking is assumed to be on the first axis.
 
-    :param arrays: a 3D array of a sequence of 3D arrays of the same shape
+    :param arrays: a 3D array or a sequence of 3D arrays of the same shape
     :param roi: the desired region of interest of the unbinned frame. For an array in
      arrays, the shape is (nz, ny, nx), and roi corresponds to [y0, y1, x0, x1]
     :param binning: tuple of two integers (binning along Y, binning along X)
@@ -1612,7 +1676,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
     :return: an array (if a single array was provided) or a tuple of arrays interpolated
      on an orthogonal grid (same length as the number of input arrays)
     """
-    logger = kwargs.get("logger", module_logger)
+    logger: Logger = kwargs.get("logger", module_logger)
     ####################
     # check parameters #
     ####################
@@ -1632,7 +1696,7 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
         length=2,
         name="binning",
     )
-    if isinstance(pad_value, Real):
+    if isinstance(pad_value, float):
         pad_value = (pad_value,) * nb_arrays
     valid.valid_container(
         pad_value,
@@ -1680,8 +1744,8 @@ def pad_from_roi(arrays, roi, binning, pad_value=0, **kwargs):
             output_arrays.append(array)
 
         if nb_arrays == 1:
-            output_arrays = output_arrays[0]  # return the array instead of the tuple
-        return output_arrays
+            return np.asarray(output_arrays[0])  # return the array instead of the tuple
+        return tuple(output_arrays)
     return arrays
 
 

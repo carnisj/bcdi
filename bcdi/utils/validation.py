@@ -8,6 +8,7 @@
 """Functions related to the validation of input parameters."""
 
 from numbers import Number, Real
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -433,8 +434,13 @@ def valid_1d_array(
 
 
 def valid_ndarray(
-    arrays, ndim=None, shape=None, fix_ndim=True, fix_shape=True, name=None
-):
+    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    ndim: Optional[Union[int, Tuple[int, ...]]] = None,
+    shape: Optional[Tuple[int, ...]] = None,
+    fix_ndim: bool = True,
+    fix_shape: bool = True,
+    name: Optional[str] = None,
+) -> bool:
     """
     Check that arrays have the same shape and the correct number of dimensions.
 
@@ -447,7 +453,7 @@ def valid_ndarray(
     :return: True if checks pass, raise some error otherwise
     """
     # check the validity of the requirements
-    if isinstance(ndim, Number):
+    if isinstance(ndim, int):
         ndim = (ndim,)
     valid_container(
         ndim,
