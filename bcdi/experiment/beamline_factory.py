@@ -74,6 +74,10 @@ class Beamline(ABC):
     Base class for defining a beamline.
 
     :param name: name of the beamline
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
     :param kwargs:
 
      - optional beamline-dependent parameters
@@ -88,17 +92,16 @@ class Beamline(ABC):
     # "x-" detector horizontal axis inboard, as it should be in the CXI convention
     # "y-" detector vertical axis down, as it should be in the CXI convention
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, sample_offsets=None, **kwargs):
         self.logger = kwargs.get("logger", module_logger)
         self.name = name
         self.diffractometer = DiffractometerFactory().create_diffractometer(
-            name=name, **kwargs
+            name=name, sample_offsets=sample_offsets, **kwargs
         )
-        loader_kwargs = {"logger": self.logger} if kwargs.get("logger") else {}
         self.loader = create_loader(
             name=name,
             sample_offsets=self.diffractometer.sample_offsets,
-            **loader_kwargs,
+            **kwargs,
         )
         self.sample_angles: Optional[Tuple[Union[float, List, np.ndarray]]] = None
 

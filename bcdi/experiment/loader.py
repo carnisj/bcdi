@@ -1083,7 +1083,8 @@ class LoaderID01(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1183,7 +1184,8 @@ class LoaderID01(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1257,7 +1259,16 @@ class LoaderID01(Loader):
             nu = setup.custom_motors["nu"]
             energy = setup.energy
 
-        detector_distance = self.retrieve_distance(setup=setup) or setup.distance
+        detector_distance = (
+            self.retrieve_distance(
+                util.find_file(
+                    filename=setup.detector.specfile,
+                    default_folder=setup.detector.rootdir,
+                    logger=self.logger,
+                )
+            )
+            or setup.distance
+        )
         return mu, eta, phi, nu, delta, energy, detector_distance
 
     @safeload
@@ -1272,7 +1283,8 @@ class LoaderID01(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1297,6 +1309,8 @@ class LoaderID01(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1311,22 +1325,16 @@ class LoaderID01(Loader):
         )
         return monitor
 
-    def retrieve_distance(self, setup: "Setup") -> Optional[float]:
+    def retrieve_distance(self, filename: str) -> Optional[float]:
         """
         Load the spec file and retrieve the detector distance if it has been calibrated.
 
-        :param setup: an instance of the class Setup
+        :param filename: full path to the spec or log file
         :return: the detector distance in meters or None
         """
-        path = util.find_file(
-            filename=setup.detector.specfile,
-            default_folder=setup.detector.rootdir,
-            logger=self.logger,
-        )
-
         distance = None
         found_distance = 0
-        with open(path, "r") as file:
+        with open(filename, "r") as file:
             lines = file.readlines()
             for line in lines:
                 if line.startswith("#UDETCALIB"):
@@ -1458,7 +1466,8 @@ class LoaderBM02(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1549,7 +1558,8 @@ class LoaderBM02(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1642,7 +1652,8 @@ class LoaderBM02(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1667,6 +1678,8 @@ class LoaderBM02(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if not isinstance(scan_number, int):
             raise TypeError(
@@ -1779,7 +1792,8 @@ class LoaderID01BLISS(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -1853,7 +1867,8 @@ class LoaderID01BLISS(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -1909,7 +1924,8 @@ class LoaderID01BLISS(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -1934,6 +1950,8 @@ class LoaderID01BLISS(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -2044,7 +2062,8 @@ class LoaderID27(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -2100,7 +2119,8 @@ class LoaderID27(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -2142,7 +2162,8 @@ class LoaderID27(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -2163,6 +2184,8 @@ class LoaderID27(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         monitor_name: Optional[str] = None
         if scan_number is None:
@@ -2332,7 +2355,7 @@ class LoaderSIXS(Loader):
         elif setup.detector.name == "MerlinSixS":
             tmp_data = file.merlin[:]
         else:  # Maxipix
-            if setup.beamline == "SIXS_2018":
+            if setup.beamline == "SIXS_2018":  # type: ignore
                 tmp_data = file.mfilm[:]
             else:
                 try:
@@ -2441,9 +2464,7 @@ class LoaderSIXS(Loader):
         :param setup: an instance of the class Setup
         :return: the default monitor values
         """
-        if setup.beamline is None:
-            raise ValueError("'beamline' parameter required")
-        if setup.beamline == "SIXS_2018":
+        if setup.beamline == "SIXS_2018":  # type: ignore
             monitor: np.ndarray = self.read_device(setup=setup, device_name="imon1")
         else:  # "SIXS_2019"
             monitor = self.read_device(setup=setup, device_name="imon0")
@@ -2565,7 +2586,8 @@ class Loader34ID(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -2665,7 +2687,8 @@ class Loader34ID(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
 
         if not setup.custom_scan:
@@ -2741,7 +2764,8 @@ class Loader34ID(Loader):
         file = kwargs.get("file")  # this kwarg is provided by @safeload_static
         if file is None:
             raise ValueError("file should be the opened file, not None")
-
+        if setup.logfile is None:
+            raise ValueError("logfile undefined")
         scan_number = setup.logfile.scan_number
         if scan_number is None:
             raise ValueError("'scan_number' parameter required")
@@ -3554,6 +3578,8 @@ class LoaderCRISTAL(Loader):
         :return: (mgomega, mgphi, gamma, delta, energy) values
         """
         if not setup.custom_scan:
+            if setup.logfile is None:
+                raise ValueError("logfile undefined")
             with setup.logfile as file:
                 group_key = list(file.keys())[0]
 

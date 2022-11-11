@@ -93,61 +93,11 @@ def process_scan(
     # define the experimental setup #
     #################################
     setup = Setup(
-        beamline_name=prm["beamline"],
-        energy=prm["energy"],
-        rocking_angle=prm["rocking_angle"],
-        distance=prm["detector_distance"],
-        beam_direction=prm["beam_direction"],
-        sample_inplane=prm["sample_inplane"],
-        sample_outofplane=prm["sample_outofplane"],
-        offset_inplane=prm["offset_inplane"],
-        custom_scan=prm["custom_scan"],
-        custom_images=prm["custom_images"],
-        sample_offsets=prm["sample_offsets"],
-        custom_monitor=prm["custom_monitor"],
-        custom_motors=prm["custom_motors"],
-        actuators=prm["actuators"],
-        is_series=prm["is_series"],
-        outofplane_angle=prm["outofplane_angle"],
-        inplane_angle=prm["inplane_angle"],
-        dirbeam_detector_angles=prm["dirbeam_detector_angles"],
-        direct_beam=prm["direct_beam"],
-        detector_name=prm["detector"],
-        template_imagefile=prm["template_imagefile"][scan_idx],
-        roi=prm["roi_detector"],
-        binning=prm["phasing_binning"],
-        preprocessing_binning=prm["preprocessing_binning"],
-        linearity_func=prm["linearity_func"],
+        parameters=prm,
+        scan_index=scan_idx,
         logger=logger,
     )
 
-    ########################################
-    # Initialize the paths and the logfile #
-    ########################################
-    setup.init_paths(
-        sample_name=prm["sample_name"][scan_idx],
-        scan_number=scan_nb,
-        data_dir=prm["data_dir"][scan_idx],
-        root_folder=prm["root_folder"],
-        save_dir=prm["save_dir"][scan_idx],
-        save_dirname=prm["save_dirname"],
-        specfile_name=prm["specfile_name"][scan_idx],
-        template_imagefile=prm["template_imagefile"][scan_idx],
-    )
-
-    setup.create_logfile(
-        scan_number=scan_nb,
-        root_folder=prm["root_folder"],
-        filename=setup.detector.specfile,
-    )
-
-    # load the goniometer positions needed for the calculation of the corrected
-    # detector angles
-    setup.read_logfile(scan_number=scan_nb)
-
-    ###################
-    # print instances #
-    ###################
     logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
         "#################\nDetector instance\n#################\n"
