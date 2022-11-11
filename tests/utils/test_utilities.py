@@ -16,7 +16,9 @@ import bcdi.utils.utilities as util
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.experiment.setup import Setup
 from bcdi.utils.io_helper import ContextFile
-from tests.config import run_tests
+from tests.config import load_config, run_tests
+
+parameters, skip_tests = load_config("preprocessing")
 
 
 class TestConvertStrTarget(unittest.TestCase):
@@ -197,7 +199,32 @@ class TestFindFile(fake_filesystem_unittest.TestCase):
             util.find_file(filename="dum.spec", default_folder=self.valid_path)
 
 
-class TestCreateRepr(fake_filesystem_unittest.TestCase):
+class TestCreateRepr(unittest.TestCase):
+    """
+    Tests on the function utilities.create_repr.
+
+    def create_repr(obj: type) -> str
+    """
+
+    def test_repr_setup(self):
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
+        setup = Setup(parameters=parameters)
+        valid = (
+            "Setup(parameters={'scans': (11,), "
+            "'root_folder': 'C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/', "
+            "'save_dir': ['C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/test/'], "
+            "'data_dir': ('C:/Users/Jerome/Documents/data/CXIDB-I182/CH4760/S11/',), "
+            "'sample_name': ('S',), 'comment': ''"
+            ""
+        )
+        out = util.create_repr(obj=setup, cls=Setup)
+        self.assertTrue(out.startswith(valid))
+
+
+class TestCreateReprFake(fake_filesystem_unittest.TestCase):
     """
     Tests on the function utilities.create_repr.
 
@@ -227,22 +254,12 @@ class TestCreateRepr(fake_filesystem_unittest.TestCase):
         det = create_detector(name="Maxipix")
         valid = (
             'Maxipix(name="Maxipix", rootdir=None, datadir=None, savedir=None, '
-            "template_file=None, template_imagefile=None, specfile=None, "
-            "sample_name=None, roi=[0, 516, 0, 516], sum_roi=[0, 516, 0, 516], "
-            "binning=(1, 1, 1), )"
+            "template_imagefile=None, specfile=None, sample_name=None, "
+            "roi=[0, 516, 0, 516], sum_roi=[0, 516, 0, 516], binning=(1, 1, 1), "
+            "preprocessing_binning=(1, 1, 1), offsets=None, linearity_func=None, )"
         )
         out = util.create_repr(obj=det, cls=Detector)
-        self.assertEqual(out, valid)
-
-    def test_setup(self):
-        setup = Setup(beamline_name="34ID", detector_name="Timepix")
-        valid = (
-            'Setup(beamline_name="34ID", detector_name="Timepix", '
-            "beam_direction=[1.0, 0.0, 0.0], energy=None, distance=None, "
-            "outofplane_angle=None, inplane_angle=None, tilt_angle=None, "
-            "rocking_angle=None, grazing_angle=None, )"
-        )
-        out = util.create_repr(obj=setup, cls=Setup)
+        print(out)
         self.assertEqual(out, valid)
 
     def test_not_a_class(self):
@@ -264,32 +281,28 @@ class TestFormatRepr(unittest.TestCase):
     """
     Tests on the function utilities.format_repr.
 
-    def format_repr(field: str, value: Optional[Any]) -> str
+    def format_repr(value: Optional[Any], quote_mark: bool = True) -> str:
     """
 
-    def test_field_undefined(self):
-        with self.assertRaises(TypeError):
-            util.format_repr(None, "test")
-
     def test_str(self):
-        out = util.format_repr("field", "test")
-        self.assertEqual(out, 'field="test", ')
+        out = util.format_repr("test")
+        self.assertEqual(out, '"test", ')
 
     def test_str_quote_mark_false(self):
-        out = util.format_repr("field", "test", quote_mark=False)
-        self.assertEqual(out, "field=test, ")
+        out = util.format_repr("test", quote_mark=False)
+        self.assertEqual(out, "test, ")
 
     def test_float(self):
-        out = util.format_repr("field", 0.4)
-        self.assertEqual(out, "field=0.4, ")
+        out = util.format_repr(0.4)
+        self.assertEqual(out, "0.4, ")
 
     def test_none(self):
-        out = util.format_repr("field", None)
-        self.assertEqual(out, "field=None, ")
+        out = util.format_repr(None)
+        self.assertEqual(out, "None, ")
 
     def test_tuple(self):
-        out = util.format_repr("field", (1.0, 2.0))
-        self.assertEqual(out, "field=(1.0, 2.0), ")
+        out = util.format_repr((1.0, 2.0))
+        self.assertEqual(out, "(1.0, 2.0), ")
 
 
 class TestInRange(unittest.TestCase):

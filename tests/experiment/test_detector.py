@@ -201,8 +201,8 @@ class TestDetector(fake_filesystem_unittest.TestCase):
             Maxipix(name="Maxipix", preprocessing_binning=[2, 2, None])
 
     def test_preprocessing_binning_none_default(self):
-        det = Maxipix(name="Maxipix", preprocessing_binning=None)
-        self.assertEqual(det.preprocessing_binning, (1, 1, 1))
+        with self.assertRaises(ValueError):
+            Maxipix(name="Maxipix", preprocessing_binning=None)
 
     def test_preprocessing_binning_correct(self):
         det = Maxipix(name="Maxipix", preprocessing_binning=(2, 2, 1))
@@ -322,18 +322,6 @@ class TestDetector(fake_filesystem_unittest.TestCase):
         det = Maxipix(name="Maxipix", sum_roi=(), roi=(2, 252, 1, 35))
         self.assertEqual(det.sum_roi, det.roi)
         self.assertEqual(det.sum_roi, (2, 252, 1, 35))
-
-    def test_template_file_wrong_type(self):
-        with self.assertRaises(TypeError):
-            Maxipix(name="Maxipix", template_file=777)
-
-    def test_template_file_None(self):
-        det = Maxipix(name="Maxipix", template_file=None)
-        self.assertEqual(det.template_file, None)
-
-    def test_template_file_correct(self):
-        det = Maxipix(name="Maxipix", template_file="S")
-        self.assertEqual(det.template_file, "S")
 
     def test_template_imagefile_wrong_type(self):
         with self.assertRaises(TypeError):

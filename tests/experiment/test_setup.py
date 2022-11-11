@@ -5,13 +5,16 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-
+import copy
 import unittest
 
 import numpy as np
 
 from bcdi.experiment.setup import Setup
-from tests.config import run_tests
+from bcdi.graph.colormap import ColormapFactory
+from tests.config import load_config, run_tests
+
+parameters, skip_tests = load_config("preprocessing")
 
 
 class Test(unittest.TestCase):
@@ -38,7 +41,10 @@ class TestCheckSetup(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.setup = Setup(beamline_name="ID01")
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
         self.params = {
             "grazing_angle": (1, 2),
             "inplane_angle": 1.23,
@@ -48,16 +54,20 @@ class TestCheckSetup(unittest.TestCase):
             "energy": 9000,
         }
 
+        self.setup = Setup(parameters=parameters)
+
     def test_check_setup_distance_predefined(self):
         self.setup.distance = 1.5
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.distance, 1.5)
 
     def test_check_setup_distance_none(self):
+        self.setup.distance = None
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.distance, self.params["detector_distance"])
 
     def test_check_setup_distance_undefined(self):
+        self.setup.distance = None
         self.params["detector_distance"] = None
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
@@ -77,6 +87,7 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.energy, self.params["energy"])
 
     def test_check_setup_energy_undefined(self):
+        self.setup.energy = None
         self.params["energy"] = None
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
@@ -87,6 +98,7 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.tilt_angle, 2)
 
     def test_check_setup_tilt_angle_none(self):
+        self.setup.tilt_angle = None
         self.setup.check_setup(**self.params)
         correct = np.mean(
             self.params["tilt_angle"][1:] - self.params["tilt_angle"][:-1]
@@ -94,6 +106,7 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.tilt_angle, correct)
 
     def test_check_setup_tilt_angle_undefined(self):
+        self.setup.tilt_angle = None
         self.params["tilt_angle"] = None
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
@@ -104,6 +117,7 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.outofplane_angle, 2)
 
     def test_check_setup_outofplane_angle_none(self):
+        self.setup.outofplane_angle = None
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.outofplane_angle, self.params["outofplane_angle"])
 
@@ -119,15 +133,18 @@ class TestCheckSetup(unittest.TestCase):
         self.assertEqual(self.setup.inplane_angle, 2)
 
     def test_check_setup_inplane_angle_none(self):
+        self.setup.inplane_angle = None
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.inplane_angle, self.params["inplane_angle"])
 
     def test_check_setup_inplane_angle_ndarray(self):
+        self.setup.inplane_angle = None
         self.params["inplane_angle"] = np.arange(10)
         with self.assertRaises(TypeError):
             self.setup.check_setup(**self.params)
 
     def test_check_setup_inplane_angle_undefined(self):
+        self.setup.inplane_angle = None
         self.params["inplane_angle"] = None
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
@@ -154,12 +171,20 @@ class TestCorrectDirectBeam(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.setup = Setup(
-            beamline_name="ID01",
-            direct_beam=[12, 324],
-            dirbeam_detector_angles=[-1, 1],
-            distance=1.23,
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
+        self.params = copy.deepcopy(parameters)
+        self.params.update(
+            {
+                "beamline": "ID01",
+                "direct_beam": [12, 324],
+                "dirbeam_detector_angles": [-1, 1],
+                "detector_distance": 1.23,
+            }
         )
+        self.setup = Setup(parameters=self.params)
 
     def test_direct_beam_none(self):
         self.setup.direct_beam = None
@@ -190,14 +215,22 @@ class TestCorrectDetectorAngles(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.setup = Setup(
-            beamline_name="ID01",
-            direct_beam=[12, 324],
-            dirbeam_detector_angles=[0.5, 1],
-            distance=1.23,
-            inplane_angle=12.2,
-            outofplane_angle=34.5,
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
+        self.params = copy.deepcopy(parameters)
+        self.params.update(
+            {
+                "beamline": "ID01",
+                "direct_beam": [12, 324],
+                "dirbeam_detector_angles": [0.5, 1],
+                "detector_distance": 1.23,
+                "inplane_angle": 12.2,
+                "outofplane_angle": 34.5,
+            }
         )
+        self.setup = Setup(parameters=self.params)
 
     def test_direct_beam_none(self):
         self.setup.direct_beam = None
@@ -253,7 +286,7 @@ class TestRepr(unittest.TestCase):
     """Tests related to __repr__."""
 
     def setUp(self) -> None:
-        self.setup = Setup(beamline_name="ID01")
+        self.setup = Setup(parameters=parameters)
 
     def test_return_type(self):
         self.assertIsInstance(eval(repr(self.setup)), Setup)
