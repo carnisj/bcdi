@@ -1261,11 +1261,7 @@ class LoaderID01(Loader):
 
         detector_distance = (
             self.retrieve_distance(
-                util.find_file(
-                    filename=setup.detector.specfile,
-                    default_folder=setup.detector.rootdir,
-                    logger=self.logger,
-                )
+                filename=setup.detector.specfile, default_folder=setup.detector.rootdir
             )
             or setup.distance
         )
@@ -1325,16 +1321,26 @@ class LoaderID01(Loader):
         )
         return monitor
 
-    def retrieve_distance(self, filename: str) -> Optional[float]:
+    def retrieve_distance(self, filename: str, default_folder: str) -> Optional[float]:
         """
         Load the spec file and retrieve the detector distance if it has been calibrated.
 
-        :param filename: full path to the spec or log file
+        :param filename: name of the spec file
+        :param default_folder: folder where the spec file is expected
         :return: the detector distance in meters or None
         """
         distance = None
         found_distance = 0
-        with open(filename, "r") as file:
+        if not filename.endswith(".spec"):
+            raise ValueError(f"Expecting a spec file, got {filename}")
+        with open(
+            util.find_file(
+                filename=filename,
+                default_folder=default_folder,
+                logger=self.logger,
+            ),
+            "r",
+        ) as file:
             lines = file.readlines()
             for line in lines:
                 if line.startswith("#UDETCALIB"):

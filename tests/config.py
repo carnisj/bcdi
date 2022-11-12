@@ -26,11 +26,12 @@ def has_backend(backend: str) -> bool:
     return True
 
 
-def get_config(worklow) -> Tuple[str, Callable]:
-    if worklow == "preprocessing":
+def get_config(workflow) -> Tuple[str, Callable]:
+    if workflow == "preprocessing":
         return "bcdi/examples/S11_config_preprocessing.yml", initialize_parameters_bcdi
-    if worklow == "postprocessing":
+    if workflow == "postprocessing":
         return "bcdi/examples/S11_config_postprocessing.yml", initialize_parameters
+    raise NotImplementedError(f"workflow {workflow} not implemented")
 
 
 def load_config(workflow: str) -> Tuple[Dict[str, Any], bool]:
