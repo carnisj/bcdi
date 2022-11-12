@@ -19,7 +19,7 @@ import numpy.ma as ma
 import scipy
 from numpy.fft import fftn, fftshift, ifftn, ifftshift
 from scipy.interpolate import RegularGridInterpolator
-from scipy.ndimage.measurements import center_of_mass
+from scipy.ndimage import center_of_mass
 from scipy.signal import convolve
 from scipy.stats import multivariate_normal, norm
 from skimage.restoration import unwrap_phase

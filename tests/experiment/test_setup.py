@@ -286,6 +286,10 @@ class TestRepr(unittest.TestCase):
     """Tests related to __repr__."""
 
     def setUp(self) -> None:
+        if skip_tests:
+            self.skipTest(
+                reason="This test can only run locally with the example dataset"
+            )
         self.setup = Setup(parameters=parameters)
 
     def test_return_type(self):
