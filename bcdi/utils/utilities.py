@@ -831,36 +831,48 @@ def create_repr(obj: Any, cls: type) -> str:
     for _, param in enumerate(
         signature(cls.__init__).parameters.keys()  # type: ignore
     ):
-        quote_mark = True
         if param not in ["self", "args", "kwargs"]:
-            value = getattr(obj, param)
-            if isinstance(value, np.ndarray):
-                value = ndarray_to_list(value)
-            if callable(value):
-                value = value.__module__ + "." + value.__name__
-                # it's a string but we don't want to put it in quote mark in order to
-                # be able to call it directly
-                quote_mark = False
-            output += format_repr(param, value, quote_mark=quote_mark)
+            out, quote_mark = format_value(getattr(obj, param))
+            output += f"{param}=" + format_repr(out, quote_mark)
 
     output += ")"
     return str(output)
 
 
-def format_repr(field: str, value: Optional[Any], quote_mark: bool = True) -> str:
-    """
-    Format a string for the __repr__ method depending on its value.
+def format_value(value: Any) -> Tuple[Any, bool]:
+    """Format the value for a proper representation."""
+    quote_mark = True
+    if isinstance(value, np.ndarray):
+        out = ndarray_to_list(value)
+        quote_mark = True
+    elif callable(value):
+        out = value.__module__ + "." + value.__name__
+        # it's a string, but we don't want to put it in quote mark in order to
+        # be able to call it directly
+        quote_mark = False
+    elif isinstance(value, dict):
+        out = {}  # type: ignore
+        for key, val in value.items():
+            if not isinstance(key, str):
+                raise NotImplementedError(f"key {key} should be a string")
+            out[key] = format_value(val)[0]  # type: ignore
+        quote_mark = False
+    else:
+        out = value
+    return out, quote_mark
 
-    :param field: str, the value of the field in __repr__
+
+def format_repr(value: Optional[Any], quote_mark: bool = True) -> str:
+    """
+    Format strings for the __repr__ method.
+
     :param value: string or None
     :param quote_mark: True to put quote marks around strings
     :return: a string
     """
-    if not isinstance(field, str):
-        raise TypeError(f"'field should be a string, got {type(field)}'")
     if isinstance(value, str) and quote_mark:
-        return f'{field}="{value}", '.replace("\\", "/")
-    return f"{field}={value}, ".replace("\\", "/")
+        return f'"{value}", '.replace("\\", "/")
+    return f"{value}, ".replace("\\", "/")
 
 
 def function_lmfit(params, x_axis, distribution, iterator=0):

@@ -126,14 +126,13 @@ class Detector(ABC):
      integrated intensity
     :param binning: binning factor of the 3D dataset
      (stacking dimension, detector vertical axis, detector horizontal axis)
-    :param kwargs:
-
-     - 'preprocessing_binning': tuple of the three binning factors used in a previous
+    :param preprocessing_binning: tuple of the three binning factors used in a previous
        preprocessing step
-     - 'offsets': tuple or list, sample and detector offsets corresponding to the
+    :param offsets: tuple or list, sample and detector offsets corresponding to the
        parameter delta in xrayutilities hxrd.Ang2Q.area method
-     - 'linearity_func': function to apply to each pixel of the detector in order to
+    :param linearity_func: function to apply to each pixel of the detector in order to
        compensate the deviation of the detector linearity for large intensities.
+    :param kwargs:
      - 'logger': an optional logger
 
     """
@@ -144,24 +143,26 @@ class Detector(ABC):
         rootdir=None,
         datadir=None,
         savedir=None,
-        template_file=None,
         template_imagefile=None,
         specfile=None,
         sample_name=None,
         roi=None,
         sum_roi=None,
         binning=(1, 1, 1),
+        preprocessing_binning=(1, 1, 1),
+        offsets=None,
+        linearity_func=None,
         **kwargs,
     ):
         # the detector name should be initialized first,
-        # other properties are depending on it
+        # other properties depend on it
         self._name = name
 
         # load the kwargs
         self.logger = kwargs.get("logger", module_logger)
-        self.preprocessing_binning = kwargs.get("preprocessing_binning") or (1, 1, 1)
-        self.offsets = kwargs.get("offsets")  # delegate the test to xrayutilities
-        self.linearity_func = kwargs.get("linearity_func")
+        self.preprocessing_binning = preprocessing_binning
+        self.offsets = offsets  # delegate the test to xrayutilities
+        self.linearity_func = linearity_func
 
         # load other positional arguments
         self.binning = binning
@@ -172,7 +173,6 @@ class Detector(ABC):
         self.datadir = datadir
         self.savedir = savedir
         self.sample_name = sample_name
-        self.template_file = template_file
         self.template_imagefile = template_imagefile
         self.specfile = specfile
 
@@ -342,7 +342,6 @@ class Detector(ABC):
             "scandir": self.scandir,
             "savedir": self.savedir,
             "sample_name": self.sample_name,
-            "template_file": self.template_file,
             "template_imagefile": self.template_imagefile,
             "specfile": self.specfile,
         }
@@ -494,22 +493,6 @@ class Detector(ABC):
         if value[1] <= value[0] or value[3] <= value[2]:
             raise ValueError("roi coordinates should be increasing in x and y")
         self._sum_roi = value
-
-    @property
-    def template_file(self):
-        """Template that can be used to generate template_imagefile."""
-        return self._template_file
-
-    @template_file.setter
-    def template_file(self, value):
-        valid.valid_container(
-            value,
-            container_types=str,
-            min_length=0,
-            allow_none=True,
-            name="Detector.template_file",
-        )
-        self._template_file = value
 
     @property
     def template_imagefile(self):

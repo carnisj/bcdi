@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import numpy as np
 
-from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
+from bcdi.experiment.beamline_factory import Beamline, BeamlineGoniometer, BeamlineSaxs
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
@@ -31,32 +31,39 @@ if TYPE_CHECKING:
 module_logger = logging.getLogger(__name__)
 
 
-def create_beamline(name, **kwargs):
+def create_beamline(name, sample_offsets=None, **kwargs) -> Beamline:
     """
     Create the instance of the beamline.
 
     :param name: str, name of the beamline
-    :param kwargs: optional beamline-dependent parameters
+    :param sample_offsets: list or tuple of angles in degrees, corresponding to
+     the offsets of each of the sample circles (the offset for the most outer circle
+     should be at index 0). The number of circles is beamline dependent. Convention:
+     the sample offsets will be subtracted to measurement the motor values.
+    :param kwargs:
+     - optional beamline-dependent parameters
+     - 'logger': an optional logger
+
     :return: the corresponding beamline instance
     """
     if name in {"ID01", "ID01BLISS"}:
-        return BeamlineID01(name=name, **kwargs)
+        return BeamlineID01(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "BM02":
-        return BeamlineBM02(name=name, **kwargs)
+        return BeamlineBM02(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "ID27":
-        return BeamlineID27(name=name, **kwargs)
+        return BeamlineID27(name=name, sample_offsets=sample_offsets, **kwargs)
     if name in {"SIXS_2018", "SIXS_2019"}:
-        return BeamlineSIXS(name=name, **kwargs)
+        return BeamlineSIXS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "34ID":
-        return Beamline34ID(name=name, **kwargs)
+        return Beamline34ID(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "P10":
-        return BeamlineP10(name=name, **kwargs)
+        return BeamlineP10(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "P10_SAXS":
-        return BeamlineP10SAXS(name=name, **kwargs)
+        return BeamlineP10SAXS(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "CRISTAL":
-        return BeamlineCRISTAL(name=name, **kwargs)
+        return BeamlineCRISTAL(name=name, sample_offsets=sample_offsets, **kwargs)
     if name == "NANOMAX":
-        return BeamlineNANOMAX(name=name, **kwargs)
+        return BeamlineNANOMAX(name=name, sample_offsets=sample_offsets, **kwargs)
     raise ValueError(f"Beamline {name} not supported")
 
 

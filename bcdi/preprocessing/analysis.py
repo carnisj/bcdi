@@ -24,7 +24,7 @@ from matplotlib.backend_bases import KeyEvent, MouseEvent
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 from scipy.io import savemat
-from scipy.ndimage.measurements import center_of_mass
+from scipy.ndimage import center_of_mass
 
 import bcdi.graph.graph_utils as gu
 import bcdi.preprocessing.bcdi_utils as bu

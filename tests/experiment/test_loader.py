@@ -5,7 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
-
+import copy
 import os
 import unittest
 
@@ -15,7 +15,9 @@ from pyfakefs import fake_filesystem_unittest
 from bcdi.experiment.beamline import create_beamline
 from bcdi.experiment.loader import LoaderID01, create_loader
 from bcdi.experiment.setup import Setup
-from tests.config import run_tests
+from tests.config import load_config, run_tests
+
+parameters, skip_tests = load_config("preprocessing")
 
 
 class TestInitPath(fake_filesystem_unittest.TestCase):
@@ -276,6 +278,9 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
         self.valid_path = "/gpfs/bcdi/data/"
         os.makedirs(self.valid_path)
+        self.beamline = create_beamline("ID01")
+
+    def test_distance_defined(self):
         with open(self.valid_path + "defined.spec", "w") as f:
             f.write(
                 "test\n#UDETCALIB cen_pix_x=11.195,cen_pix_y=281.115,"
@@ -283,24 +288,24 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
                 "det_distance_CC=1.434,det_distance_COM=1.193,"
                 "timestamp=2021-02-28T13:01:16.615422"
             )
-
-        with open(self.valid_path + "undefined.spec", "w") as f:
-            f.write("test\n#this,is,bad")
-        self.setup = Setup(beamline_name="ID01", detector_name="Maxipix")
-        self.setup.detector.rootdir = self.valid_path
-        self.beamline = create_beamline(name="ID01")
-
-    def test_distance_defined(self):
-        self.setup.detector.specfile = "defined.spec"
-
-        distance = self.beamline.loader.retrieve_distance(self.setup)
+        distance = self.beamline.loader.retrieve_distance(
+            filename="defined.spec", default_folder=self.valid_path
+        )
         self.assertTrue(np.isclose(distance, 1.193))
 
     def test_distance_undefined(self):
-        self.setup.detector.specfile = "undefined.spec"
-
-        distance = self.beamline.loader.retrieve_distance(self.setup)
+        with open(self.valid_path + "undefined.spec", "w") as f:
+            f.write("test\n#this,is,bad")
+        distance = self.beamline.loader.retrieve_distance(
+            filename="undefined.spec", default_folder=self.valid_path
+        )
         self.assertTrue(distance is None)
+
+    def test_distance_not_a_spec_file(self):
+        with self.assertRaises(ValueError):
+            self.beamline.loader.retrieve_distance(
+                filename="undefined.txt", default_folder=self.valid_path
+            )
 
 
 class TestRepr(unittest.TestCase):

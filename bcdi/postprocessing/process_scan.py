@@ -73,51 +73,10 @@ def process_scan(
     # define the experimental setup #
     #################################
     setup = Setup(
-        beamline_name=prm["beamline"],
-        energy=prm["energy"],
-        outofplane_angle=prm["outofplane_angle"],
-        inplane_angle=prm["inplane_angle"],
-        tilt_angle=prm["tilt_angle"],
-        rocking_angle=prm["rocking_angle"],
-        distance=prm["detector_distance"],
-        sample_offsets=prm["sample_offsets"],
-        actuators=prm["actuators"],
-        custom_scan=prm["custom_scan"],
-        custom_motors=prm["custom_motors"],
-        dirbeam_detector_angles=prm["dirbeam_detector_angles"],
-        direct_beam=prm["direct_beam"],
-        is_series=prm["is_series"],
-        detector_name=prm["detector"],
-        template_imagefile=prm["template_imagefile"][scan_idx],
-        roi=prm["roi_detector"],
-        binning=prm["phasing_binning"],
-        preprocessing_binning=prm["preprocessing_binning"],
-        custom_pixelsize=prm["custom_pixelsize"],
+        parameters=prm,
+        scan_index=scan_idx,
         logger=logger,
     )
-
-    ########################################
-    # Initialize the paths and the logfile #
-    ########################################
-    setup.init_paths(
-        sample_name=prm["sample_name"][scan_idx],
-        scan_number=scan_nb,
-        root_folder=prm["root_folder"],
-        data_dir=prm["data_dir"][scan_idx],
-        save_dir=prm["save_dir"][scan_idx],
-        specfile_name=prm["specfile_name"][scan_idx],
-        template_imagefile=prm["template_imagefile"][scan_idx],
-    )
-
-    setup.create_logfile(
-        scan_number=scan_nb,
-        root_folder=prm["root_folder"],
-        filename=setup.detector.specfile,
-    )
-
-    # load the goniometer positions needed in the calculation
-    # of the transformation matrix
-    setup.read_logfile(scan_number=scan_nb)
 
     logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(

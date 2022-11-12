@@ -7,25 +7,11 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import unittest
-from pathlib import Path
-
-import matplotlib
 
 import bcdi.preprocessing.analysis as analysis
-from bcdi.preprocessing.preprocessing_runner import initialize_parameters_bcdi
-from bcdi.utils.parser import ConfigParser
-from tests.config import run_tests
+from tests.config import load_config, run_tests
 
-here = Path(__file__).parent
-THIS_DIR = str(here)
-CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_preprocessing.yml")
-try:
-    parameters = initialize_parameters_bcdi(ConfigParser(CONFIG).load_arguments())
-    parameters.update({"backend": "agg"})
-    matplotlib.use(parameters["backend"])
-    skip_tests = False
-except ValueError:
-    skip_tests = True
+parameters, skip_tests = load_config("preprocessing")
 
 
 class TestDefineAnalysisType(unittest.TestCase):

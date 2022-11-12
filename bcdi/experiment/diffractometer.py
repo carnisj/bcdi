@@ -53,7 +53,7 @@ from abc import ABC
 from collections import namedtuple
 from functools import reduce
 from numbers import Number, Real
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -214,11 +214,9 @@ class Diffractometer(ABC):
     }  # + counter-clockwise, - clockwise
     valid_names = {"sample": "sample_circles"}
 
-    def __init__(self, name: str, **kwargs) -> None:
+    def __init__(self, name: str, sample_offsets=None, **kwargs) -> None:
         self.logger = kwargs.get("logger", module_logger)
-        self._geometry = create_geometry(
-            beamline=name, sample_offsets=kwargs.get("sample_offsets")
-        )
+        self._geometry = create_geometry(beamline=name, sample_offsets=sample_offsets)
         self.name = name
         self.sample_circles = self._geometry.sample_circles
         self.sample_offsets = (
@@ -564,16 +562,27 @@ class DiffractometerFactory:
 
     @staticmethod
     def create_diffractometer(
-        name: str, **kwargs
+        name: str, sample_offsets: Optional[Tuple[float, ...]] = None, **kwargs
     ) -> Union[FullDiffractometer, DiffractometerSAXS]:
         """
         Create a diffractometer instance of the corresponding class.
 
         :param name: name of the beamline
+        :param sample_offsets: list or tuple of angles in degrees, corresponding to
+         the offsets of each of the sample circles (the offset for the most outer circle
+         should be at index 0). The number of circles is beamline dependent. Convention:
+         the sample offsets will be subtracted to measurement the motor values.
+        :param kwargs:
+         - 'logger': an optional logger
+
         :return: an instance of the corresponding class
         """
         if name in BEAMLINES_BCDI:
-            return FullDiffractometer(name=name, **kwargs)
+            return FullDiffractometer(
+                name=name, sample_offsets=sample_offsets, **kwargs
+            )
         if name in BEAMLINES_SAXS:
-            return DiffractometerSAXS(name=name, **kwargs)
+            return DiffractometerSAXS(
+                name=name, sample_offsets=sample_offsets, **kwargs
+            )
         raise NotImplementedError(f"Beamline {name} not supported")

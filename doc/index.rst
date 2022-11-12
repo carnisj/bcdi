@@ -62,6 +62,32 @@ virtual environment named ``myenv``):
 
 .. include:: EXAMPLE_POSTPROCESSING.rst
 
+Running unit tests
+==================
+
+Some of the preprocessing unit tests require to have the example dataset on your local
+machine. To run them, download the dataset ID182 from the following website:
+https://www.cxidb.org/id-182.html
+
+Extract the files, you should get the following::
+
+    CXIDB-182/
+        Readme ID 182.txt
+        CH4760/
+            l5.spec
+            S11/
+            ...
+        HS4670/
+            ...
+
+
+Unittests use the scan ``S11`` from the experiment ``CH4760``.
+The spec file for this scan is ``l5.spec``. You will need to update the paths
+``root_folder`` , ``save_dir`` and ``data_dir`` in the configuration file
+``bcdi/examples/S11_config_preprocessing.yml``.
+
+If the dataset is not available, corresponding unit tests are skipped.
+
 Changelog
 =========
 

@@ -90,6 +90,7 @@ def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
             "sample_offsets": None,
             "sample_outofplane": [0, 0, 1],
             "save": True,
+            "save_dirname": "result",
             "save_rawdata": False,
             "save_support": False,
             "skip_unwrap": False,

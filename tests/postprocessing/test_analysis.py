@@ -13,25 +13,14 @@ from logging import Logger
 from pathlib import Path
 from unittest.mock import patch
 
-import matplotlib
 import numpy as np
 
 import bcdi.postprocessing.analysis as analysis
 from bcdi.experiment.setup import Setup
-from bcdi.postprocessing.postprocessing_runner import initialize_parameters
-from bcdi.utils.parser import ConfigParser
-from tests.config import run_tests
+from tests.config import load_config, run_tests
 
+parameters, skip_tests = load_config("postprocessing")
 here = Path(__file__).parent
-THIS_DIR = str(here)
-CONFIG = str(here.parents[1] / "bcdi/examples/S11_config_postprocessing.yml")
-try:
-    parameters = initialize_parameters(ConfigParser(CONFIG).load_arguments())
-    parameters.update({"backend": "agg"})
-    matplotlib.use(parameters["backend"])
-    skip_tests = False
-except ValueError:
-    skip_tests = True
 
 
 class TestAnalysis(unittest.TestCase):
@@ -44,7 +33,6 @@ class TestAnalysis(unittest.TestCase):
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
-        scan_index = 0
         self.parameters = parameters
         self.parameters.update(
             {
@@ -52,44 +40,9 @@ class TestAnalysis(unittest.TestCase):
                 "reconstruction_files": [self.file_path],
             }
         )
-        self.setup = Setup(
-            beamline_name=self.parameters["beamline"],
-            energy=self.parameters["energy"],
-            outofplane_angle=self.parameters["outofplane_angle"],
-            inplane_angle=self.parameters["inplane_angle"],
-            tilt_angle=self.parameters["tilt_angle"],
-            rocking_angle=self.parameters["rocking_angle"],
-            distance=self.parameters["detector_distance"],
-            sample_offsets=self.parameters["sample_offsets"],
-            actuators=self.parameters["actuators"],
-            custom_scan=self.parameters["custom_scan"],
-            custom_motors=self.parameters["custom_motors"],
-            dirbeam_detector_angles=self.parameters["dirbeam_detector_angles"],
-            direct_beam=self.parameters["direct_beam"],
-            is_series=self.parameters["is_series"],
-            detector_name=self.parameters["detector"],
-            template_imagefile=self.parameters["template_imagefile"][scan_index],
-            roi=self.parameters["roi_detector"],
-            binning=self.parameters["phasing_binning"],
-            preprocessing_binning=self.parameters["preprocessing_binning"],
-            custom_pixelsize=self.parameters["custom_pixelsize"],
-        )
+        self.setup = Setup(parameters=self.parameters, scan_index=0)
+        self.setup.initialize_analysis()
 
-        self.setup.init_paths(
-            sample_name=self.parameters["sample_name"][scan_index],
-            scan_number=self.parameters["scans"][scan_index],
-            root_folder=self.parameters["root_folder"],
-            data_dir=self.parameters["data_dir"][scan_index],
-            save_dir=self.parameters["save_dir"][scan_index],
-            specfile_name=self.parameters["specfile_name"][scan_index],
-            template_imagefile=self.parameters["template_imagefile"][scan_index],
-        )
-        self.setup.create_logfile(
-            scan_number=self.parameters["scans"][scan_index],
-            root_folder=self.parameters["root_folder"],
-            filename=self.setup.detector.specfile,
-        )
-        self.setup.read_logfile(scan_number=self.parameters["scans"][scan_index])
         self.process = analysis.Analysis(
             scan_index=0,
             parameters=self.parameters,
@@ -322,10 +275,7 @@ class TestCreateAnalysis(unittest.TestCase):
                 "reconstruction_files": [self.file_path],
             }
         )
-        self.setup = Setup(
-            beamline_name=self.parameters["beamline"],
-            binning=self.parameters["phasing_binning"],
-        )
+        self.setup = Setup(parameters=self.parameters, scan_index=0)
 
     def test_create_analysis_linearization(self):
         self.assertIsInstance(
@@ -377,10 +327,7 @@ class TestDetectorFrameLinearization(unittest.TestCase):
                 "reconstruction_files": [self.file_path],
             }
         )
-        self.setup = Setup(
-            beamline_name=self.parameters["beamline"],
-            binning=self.parameters["phasing_binning"],
-        )
+        self.setup = Setup(parameters=self.parameters, scan_index=0)
         self.analysis = analysis.create_analysis(
             name="linearization",
             scan_index=0,
@@ -389,8 +336,19 @@ class TestDetectorFrameLinearization(unittest.TestCase):
         )
 
     def test_interpolate_into_crystal_frame(self):
-        with self.assertRaises(ValueError):
-            self.analysis.interpolate_into_crystal_frame()
+        self.analysis.interpolate_into_crystal_frame()
+        self.assertTrue(
+            np.allclose(
+                self.analysis.parameters["transformation_matrix"],
+                np.array(
+                    [
+                        [3.23487379e00, -1.36481117e-01, -2.90975281e-02],
+                        [-1.65079856e-01, -3.16884651e00, 1.61978387e00],
+                        [-1.76920706e-02, 7.46438258e-04, 5.07114999e00],
+                    ]
+                ),
+            )
+        )
 
 
 if __name__ == "__main__":

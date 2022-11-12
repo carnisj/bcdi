@@ -19,17 +19,17 @@ import multiprocessing as mp
 import time
 from collections.abc import Sequence
 from numbers import Integral, Real
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
 from bcdi.experiment.beamline import create_beamline
-from bcdi.experiment.beamline_factory import Beamline
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
+from bcdi.utils.io_helper import ContextFile
 
 module_logger = logging.getLogger(__name__)
 
@@ -38,50 +38,9 @@ class Setup:
     """
     Class for defining the experimental geometry.
 
-    :param beamline: str, name of the beamline
-    :param detector_name: str, name of the detector
-    :param beam_direction: direction of the incident X-ray beam in the frame
-     (z downstream,y vertical up,x outboard)
-    :param energy: energy setting of the beamline, in eV.
-    :param distance: sample to detector distance, in m.
-    :param outofplane_angle: vertical detector angle, in degrees.
-    :param inplane_angle: horizontal detector angle, in degrees.
-    :param tilt_angle: angular step of the rocking curve, in degrees.
-    :param rocking_angle: angle which is tilted during the rocking curve in
-     {'outofplane', 'inplane', 'energy'}
-    :param grazing_angle: tuple of motor positions for the goniometer circles below the
-     rocking angle. Leave None if there is no such circle.
+    :param parameters: dictionary of parameters
+    :param scan_index: index of the scan to analyze
     :param kwargs:
-
-     - 'direct_beam': [vertical, horizontal] list of two real numbers indicating the
-       position of the direct beam in pixels in the unbinned, full detector
-     - 'dirbeam_detector_angles': [outofplane, inplane] detector angles in degrees
-       for the direct beam measurement.
-     - 'filtered_data': boolean, True if the data and the mask to be loaded were
-       already preprocessed.
-     - 'custom_scan': boolean, True is the scan does not follow the beamline's usual
-       directory format.
-     - 'custom_images': list of images numbers when the scan does no follow
-       the beamline's usual directory format.
-     - 'custom_monitor': list of monitor values when the scan does no follow
-       the beamline's usual directory format. The number of values should be equal
-       to the number of elements in custom_images.
-     - 'custom_motors': list of motor values when the scan does no follow
-       the beamline's usual directory format.
-     - 'sample_inplane': sample inplane reference direction along the beam at
-       0 angles in xrayutilities frame (x is downstream, y outboard, and z vertical
-       up at zero incident angle).
-     - 'sample_outofplane': surface normal of the sample at 0 angles in xrayutilities
-       frame (x is downstream, y outboard, and z vertical up at zero incident angle).
-     - 'sample_offsets': list or tuple of three angles in degrees, corresponding to
-       the offsets of each of the sample circles (the offset for the most outer
-       circle should be at index 0). Convention: the sample offsets will be
-       subtracted to measurement the motor values.
-     - 'offset_inplane': inplane offset of the detector defined as the outer angle
-       in xrayutilities area detector calibration.
-     - 'actuators': optional dictionary that can be used to define the entries
-       corresponding to actuators in data files (useful at CRISTAL where the location
-       of data keeps changing)
      - 'logger': an optional logger
 
     """
@@ -99,90 +58,94 @@ class Setup:
 
     def __init__(
         self,
-        beamline_name,
-        detector_name="Dummy",
-        beam_direction=(1, 0, 0),
-        energy=None,
-        distance=None,
-        outofplane_angle=None,
-        inplane_angle=None,
-        tilt_angle=None,
-        rocking_angle=None,
-        grazing_angle=None,
+        parameters: Dict[str, Any],
+        scan_index: int = 0,
         **kwargs,
     ):
-
-        valid.valid_kwargs(
-            kwargs=kwargs,
-            allowed_kwargs={
-                "direct_beam",
-                "dirbeam_detector_angles",
-                "dirbeam_detector_position",
-                "filtered_data",
-                "custom_scan",
-                "custom_images",
-                "custom_monitor",
-                "custom_motors",
-                "sample_inplane",
-                "sample_outofplane",
-                "sample_offsets",
-                "offset_inplane",
-                "actuators",
-                "is_series",
-                "template_imagefile",
-                "roi",
-                "binning",
-                "preprocessing_binning",
-                "custom_pixelsize",
-                "linearity_func",
-                "logger",
-            },
-            name="Setup.__init__",
-        )
-        # kwarg for logging
         self.logger = kwargs.get("logger", module_logger)
-
-        # kwargs for loading and preprocessing data
-        self.dirbeam_detector_angles = kwargs.get("dirbeam_detector_angles")
-        self.dirbeam_detector_position = kwargs.get("dirbeam_detector_position")
-        self.direct_beam = kwargs.get("direct_beam")
-        self.filtered_data = kwargs.get("filtered_data", False)  # boolean
-        self.custom_scan = kwargs.get("custom_scan", False)  # boolean
-        self.custom_images = kwargs.get("custom_images")  # list or tuple
-        self.custom_monitor = kwargs.get("custom_monitor")  # list or tuple
-        self.custom_motors = kwargs.get("custom_motors")  # dictionnary
-        self.actuators = kwargs.get("actuators", {})  # list or tuple
-
-        # kwargs for xrayutilities, delegate the test on their values to xrayutilities
-        self.sample_inplane = kwargs.get("sample_inplane", (1, 0, 0))
-        self.sample_outofplane = kwargs.get("sample_outofplane", (0, 0, 1))
-        self.offset_inplane = kwargs.get("offset_inplane", 0)
-
-        # kwargs for series (several frames per point) at P10
-        self.is_series = kwargs.get("is_series", False)  # boolean
+        self.parameters = parameters
+        self.scan_index = scan_index
 
         # create the detector instance
-        self.detector_name = detector_name
-        self.detector = create_detector(name=detector_name, **kwargs)
+        self.detector_name = self.parameters.get("detector", "Dummy")
+        self.detector = create_detector(
+            name=self.detector_name,
+            roi=self.parameters.get("roi_detector"),
+            sum_roi=self.parameters.get("sum_roi"),
+            binning=self.parameters.get("phasing_binning", (1, 1, 1)),
+            preprocessing_binning=self.parameters.get(
+                "preprocessing_binning", (1, 1, 1)
+            ),
+            offsets=self.parameters.get("sample_offsets"),
+            linearity_func=self.parameters.get("linearity_func"),
+            logger=self.logger,
+        )
 
         # create the beamline instance
-        self.beamline_name = beamline_name
-        self.beamline = create_beamline(name=beamline_name, **kwargs)
+        self.beamline_name = self.parameters["beamline"]
+        self.beamline = create_beamline(
+            name=self.beamline_name,
+            sample_offsets=self.parameters.get("sample_offsets"),
+            logger=self.logger,
+        )
 
         # load positional arguments corresponding to instance properties
-        self.beam_direction = beam_direction
-        self.energy = energy
-        self.distance = distance
-        self.outofplane_angle = outofplane_angle
-        self.inplane_angle = inplane_angle
-        self.tilt_angle = tilt_angle
-        self.rocking_angle = rocking_angle
-        self.grazing_angle = grazing_angle
+        self.beam_direction = self.parameters.get("beam_direction", (1, 0, 0))
+        self.energy = self.parameters.get("energy")
+        self.distance = self.parameters.get("detector_distance")
+        self.outofplane_angle = self.parameters.get("outofplane_angle")
+        self.inplane_angle = self.parameters.get("inplane_angle")
+        self.tilt_angle = self.parameters.get("tilt_angle")
+        self.rocking_angle = self.parameters.get("rocking_angle")
+        self.grazing_angle = self.parameters.get("grazing_angle")
+
+        # parameters for  loading and preprocessing data
+        self.dirbeam_detector_angles = self.parameters.get("dirbeam_detector_angles")
+        self.dirbeam_detector_position = self.parameters.get(
+            "dirbeam_detector_position"
+        )
+        self.direct_beam = self.parameters.get("direct_beam")
+        self.filtered_data = self.parameters.get("filtered_data", False)  # boolean
+        self.custom_scan = self.parameters.get("custom_scan", False)  # boolean
+        self.custom_images = self.parameters.get("custom_images")  # list or tuple
+        self.custom_monitor = self.parameters.get("custom_monitor")  # list or tuple
+        self.custom_motors = self.parameters.get("custom_motors")  # dictionnary
+        self.actuators = self.parameters.get("actuators", {})  # list or tuple
+
+        # parameters for xrayutilities
+        self.sample_inplane = self.parameters.get("sample_inplane", (1, 0, 0))
+        self.sample_outofplane = self.parameters.get("sample_outofplane", (0, 0, 1))
+        self.offset_inplane = self.parameters.get("offset_inplane", 0)
+
+        # parameters for series (several frames per point) at P10
+        self.is_series = self.parameters.get("is_series", False)  # boolean
 
         # initialize other attributes
+        self.logfile: Optional[ContextFile] = None
         self.detector_position: Optional[Tuple[Real, Real, Real]] = None
-        self.logfile = None
-        self.tilt_angles = None  # will store the array of tilt values
+        self.tilt_angles: Optional[np.ndarray] = None
+
+        # initialize the paths and the logfile
+        self.initialize_analysis()
+
+    def initialize_analysis(self) -> None:
+        """Initialize the paths, logfile and load motor positions."""
+        self.init_paths(
+            sample_name=self.parameters["sample_name"][self.scan_index],
+            scan_number=self.scan_nb,
+            data_dir=self.parameters["data_dir"][self.scan_index],
+            root_folder=self.parameters["root_folder"],
+            save_dir=self.parameters["save_dir"][self.scan_index],
+            save_dirname=self.parameters["save_dirname"],
+            specfile_name=self.parameters["specfile_name"][self.scan_index],
+            template_imagefile=self.parameters["template_imagefile"][self.scan_index],
+        )
+        self.create_logfile(
+            scan_number=self.scan_nb,
+            root_folder=self.parameters["root_folder"],
+            filename=self.detector.specfile,
+        )
+        self.read_logfile(scan_number=self.scan_nb)
 
     @property
     def actuators(self):
@@ -686,6 +649,10 @@ class Setup:
             )
         else:
             self._rocking_angle = value
+
+    @property
+    def scan_nb(self) -> int:
+        return int(self.parameters["scans"][self.scan_index])
 
     @property
     def tilt_angle(self):

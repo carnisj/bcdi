@@ -16,6 +16,7 @@ import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 
 from bcdi.graph.turbo_colormap import turbo_colormap_data
+from bcdi.utils import utilities as util
 from bcdi.utils.validation import is_float
 
 data_table = (
@@ -77,3 +78,7 @@ class ColormapFactory:
         else:
             raise NotImplementedError(f"colormap {self.colormap} not implemented")
         self.cmap.set_bad(color=self.bad_color)
+
+    def __repr__(self):
+        """Representation string of the ColormapFactory instance."""
+        return util.create_repr(self, ColormapFactory)
