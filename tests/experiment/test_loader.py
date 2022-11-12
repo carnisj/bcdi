@@ -288,18 +288,24 @@ class TestRetrieveDistance(fake_filesystem_unittest.TestCase):
                 "det_distance_CC=1.434,det_distance_COM=1.193,"
                 "timestamp=2021-02-28T13:01:16.615422"
             )
-        filename = self.valid_path + "defined.spec"
-
-        distance = self.beamline.loader.retrieve_distance(filename)
+        distance = self.beamline.loader.retrieve_distance(
+            filename="defined.spec", default_folder=self.valid_path
+        )
         self.assertTrue(np.isclose(distance, 1.193))
 
     def test_distance_undefined(self):
         with open(self.valid_path + "undefined.spec", "w") as f:
             f.write("test\n#this,is,bad")
-        filename = self.valid_path + "undefined.spec"
-
-        distance = self.beamline.loader.retrieve_distance(filename)
+        distance = self.beamline.loader.retrieve_distance(
+            filename="undefined.spec", default_folder=self.valid_path
+        )
         self.assertTrue(distance is None)
+
+    def test_distance_not_a_spec_file(self):
+        with self.assertRaises(ValueError):
+            self.beamline.loader.retrieve_distance(
+                filename="undefined.txt", default_folder=self.valid_path
+            )
 
 
 class TestRepr(unittest.TestCase):
