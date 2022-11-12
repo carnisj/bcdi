@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Remove temporal couping in the initialization of the Setup instance. Set the paths,
+  create the logfile and read it directly in `setup.__init__`.
+
 * Create classes Analysis, PreprocessingLoader and InteractiveMasker for preprocessing.
   Refactor `preprocessing.process_scan` to use these classes.
 
