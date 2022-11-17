@@ -23,7 +23,7 @@ import yaml
 # import bcdi.postprocessing.postprocessing_utils as pu
 from bcdi.experiment.setup import Setup
 from bcdi.postprocessing.analysis import create_analysis
-# from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.utils.constants import AXIS_TO_ARRAY
 from bcdi.utils.snippets_logging import FILE_FORMATTER
 
 logger = logging.getLogger(__name__)
@@ -142,6 +142,39 @@ def orthogonalize(
     logger.info("Centering the crystal")
     analysis.center_object_based_on_modulus(centering_method="com")
 
+    # whether or not to rotate the crystal
+    if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
+        import bcdi.utils.utilities as util
+        amplitude, phase = util.rotate_crystal(
+            arrays=(np.abs(analysis.data), np.angle(analysis.data)),
+            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
+            voxel_size=analysis.voxel_sizes,
+            is_orthogonal=prm["is_orthogonal"],
+            reciprocal_space=False,
+            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+            debugging=(False, False),
+        )
+        q_bragg_in_saving_frame = q_lab
+
+        if prm["save_frame"] == "lab_flat_sample":
+
+            (amplitude, phase), q_bragg_in_saving_frame = setup.beamline.flatten_sample(
+                arrays=(amplitude, phase),
+                voxel_size=analysis.voxel_sizes,
+                q_bragg=setup.q_laboratory / float(np.linalg.norm(setup.q_laboratory)),
+                is_orthogonal=prm["is_orthogonal"],
+                reciprocal_space=False,
+                rocking_angle=setup.rocking_angle,
+                debugging=(False, False)
+            )
+
+        complex_object = amplitude * np.exp(1j * phase)
+    
+    else:
+        complex_object = analysis.data
+        q_bragg_in_saving_frame = q_lab
+   
+    q_bragg_in_saving_frame *= 2 * np.pi / (10 * analysis.get_interplanar_distance)
     
     # Save the complex object in the desired output file
     output_file_path_template = (
@@ -150,9 +183,9 @@ def orthogonalize(
     )
     np.savez(
         f"{output_file_path_template}.npz",
-        data=analysis.data,
+        data=complex_object,
         voxel_sizes=analysis.voxel_sizes,
-        q_bragg=q_lab,
+        q_bragg=q_bragg_in_saving_frame,
         detector=str(yaml.dump(setup.detector.params)),
         setup=str(yaml.dump(setup.params)),
         params=str(yaml.dump(prm)),
@@ -161,8 +194,8 @@ def orthogonalize(
     with h5py.File(f"{output_file_path_template}.h5", "w") as hf:
         output = hf.create_group("output")
         parameters = hf.create_group("parameters")
-        output.create_dataset("data", data=analysis.data)
-        output.create_dataset("q_bragg", data=q_lab)
+        output.create_dataset("data", data=complex_object)
+        output.create_dataset("q_bragg", data=q_bragg_in_saving_frame)
         output.create_dataset("voxel_sizes", data=analysis.voxel_sizes)
         parameters.create_dataset("detector", data=str(setup.detector.params))
         parameters.create_dataset("setup", data=str(setup.params))
