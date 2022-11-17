@@ -19,6 +19,7 @@ import numpy as np
 
 import bcdi.utils.utilities as util
 from bcdi.postprocessing.process_scan import process_scan
+from bcdi.postprocessing.raw_orthogonalization import orthogonalize
 from bcdi.utils.parameters import PostprocessingChecker
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
     ).check_config()
 
 
-def run(prm: Dict[str, Any]) -> None:
+def run(prm: Dict[str, Any], procedure="strain_computation") -> None:
     """
     Run the postprocessing defined by the configuration parameters.
 
@@ -137,6 +138,16 @@ def run(prm: Dict[str, Any]) -> None:
 
     :param prm: the parsed parameters
     """
+    if procedure == "strain_computation":
+        process = process_scan
+    elif procedure == "orthogonalization":
+        process = orthogonalize
+    else:
+        print(
+            "procedure should be either 'strain_computation' or  'orthogonalize'"
+        )
+        exit(1)
+
     prm = initialize_parameters(prm)
 
     ############################
@@ -158,7 +169,7 @@ def run(prm: Dict[str, Any]) -> None:
                 f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
             )
             pool.apply_async(
-                process_scan,
+                process,
                 args=(scan_idx, prm),
                 callback=util.move_log,
                 error_callback=util.catch_error,
@@ -168,5 +179,5 @@ def run(prm: Dict[str, Any]) -> None:
         # until all processes in the queue are done.
     else:
         for scan_idx in range(nb_scans):
-            result = process_scan(scan_idx=scan_idx, prm=prm)
+            result = process(scan_idx=scan_idx, prm=prm)
             util.move_log(result)
