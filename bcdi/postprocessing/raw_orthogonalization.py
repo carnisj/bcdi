@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional, Tuple
 import h5py
 import numpy as np
 import yaml
+from matplotlib import pyplot as plt
 
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
@@ -194,5 +195,11 @@ def orthogonalize(
         parameters.create_dataset("detector", data=str(setup.detector.params))
         parameters.create_dataset("setup", data=str(setup.params))
         parameters.create_dataset("parameters", data=str(prm))
+
+    if len(prm["scans"]) > 1:
+        plt.close("all")
+
+    logger.removeHandler(filehandler)
+    filehandler.close()
 
     return tmpfile, Path(setup.detector.savedir), logger
