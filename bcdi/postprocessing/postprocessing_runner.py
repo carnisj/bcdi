@@ -148,7 +148,7 @@ def run(prm: Dict[str, Any], procedure: str = "strain_computation") -> None:
         raise NotImplementedError(
             f"procedure {procedure} unknown, should be either "
             "'strain_computation' or  'orthogonalize'"
-            )
+        )
 
     prm = initialize_parameters(prm)
 
