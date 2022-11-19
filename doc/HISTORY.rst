@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Create a new script `postprocessing/bcdi_orthogonalization.py`, which only
+  interpolates the output of phase retrieval (no processing on the phase)
+
 * Remove temporal couping in the initialization of the Setup instance. Set the paths,
   create the logfile and read it directly in `setup.__init__`.
 

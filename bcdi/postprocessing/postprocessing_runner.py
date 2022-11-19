@@ -129,7 +129,7 @@ def initialize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
     ).check_config()
 
 
-def run(prm: Dict[str, Any], procedure="strain_computation") -> None:
+def run(prm: Dict[str, Any], procedure: str = "strain_computation") -> None:
     """
     Run the postprocessing defined by the configuration parameters.
 
@@ -137,16 +137,18 @@ def run(prm: Dict[str, Any], procedure="strain_computation") -> None:
     instance.
 
     :param prm: the parsed parameters
+    :param procedure: "orthogonalization" to do only the interpolation,
+     "strain_computation" to use the full workflow
     """
     if procedure == "strain_computation":
         process = process_scan
     elif procedure == "orthogonalization":
         process = orthogonalize
     else:
-        print(
-            "procedure should be either 'strain_computation' or  'orthogonalize'"
+        raise NotImplementedError(
+            f"procedure {procedure} unknown, should be either "
+            "'strain_computation' or  'orthogonalize'"
         )
-        exit(1)
 
     prm = initialize_parameters(prm)
 
