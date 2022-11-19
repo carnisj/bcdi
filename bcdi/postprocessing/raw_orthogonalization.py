@@ -8,19 +8,17 @@
 #         Clement Atlan, c.atlan@outlook.com
 
 """Workflow for BCDI data orthogonalization of a single scan, after phase retrieval."""
-from datetime import datetime
-import h5py
 import logging
+from datetime import datetime
 from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
+import h5py
 import numpy as np
 import yaml
 
-
-# import bcdi.graph.graph_utils as gu
-# import bcdi.postprocessing.postprocessing_utils as pu
+import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
 from bcdi.postprocessing.analysis import create_analysis
 from bcdi.utils.constants import AXIS_TO_ARRAY
@@ -30,9 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def orthogonalize(
-        scan_idx: int,
-        prm: Dict[str, Any]
-)-> Tuple[Path, Path, Optional[Logger]]:
+    scan_idx: int, prm: Dict[str, Any]
+) -> Tuple[Path, Path, Optional[Logger]]:
     """
     Run the orthogonalization defined by the configuration parameters for a single scan.
 
@@ -43,19 +40,12 @@ def orthogonalize(
     :param scan_idx: index of the scan to be processed in prm["scans"]
     :param prm: the parsed parameters
     """
-
     scan_nb = prm["scans"][scan_idx]
-    tmpfile = (
-        Path(
-            prm["save_dir"][scan_idx]
-            if prm["save_dir"][scan_idx] is not None
-            else prm["root_folder"]
-        )
-        / (
-            f"interpolation_run{scan_idx}_{prm['sample_name'][scan_idx]}"
-            f"{scan_nb}.log"
-        )
-    )  
+    tmpfile = Path(
+        prm["save_dir"][scan_idx]
+        if prm["save_dir"][scan_idx] is not None
+        else prm["root_folder"]
+    ) / (f"interpolation_run{scan_idx}_{prm['sample_name'][scan_idx]}" f"{scan_nb}.log")
 
     filehandler = logging.FileHandler(tmpfile, mode="w", encoding="utf-8")
     filehandler.setFormatter(FILE_FORMATTER)
@@ -63,13 +53,11 @@ def orthogonalize(
     logger.addHandler(filehandler)
     if not prm["multiprocessing"] or len(prm["scans"]) == 1:
         logger.propagate = True
-    
+
     # prm["sample"] = f"{prm['sample_name']}+{scan_nb}"
     tmp_str = f"Scan {scan_idx + 1}/{len(prm['scans'])}: S{scan_nb}"
     logger.info(f"Start {orthogonalize.__name__} at {datetime.now()}")
-    logger.info(
-        f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}'
-    )
+    logger.info(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 
     #################################
     # define the experimental setup #
@@ -80,9 +68,7 @@ def orthogonalize(
         logger=logger,
     )
 
-    logger.info(
-        f"##############\nSetup instance\n##############\n{setup.params}"
-    )
+    logger.info(f"##############\nSetup instance\n##############\n{setup.params}")
     logger.info(
         "#################\nDetector instance\n#################\n"
         f"{setup.detector.params}"
@@ -114,7 +100,7 @@ def orthogonalize(
                 "outofplane_angle": setup.outofplane_angle,
             }
         )
-    
+
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
@@ -124,9 +110,7 @@ def orthogonalize(
         f"{[f'{val:.4f}' for _, val in enumerate(q_lab)]} (1/A)"
     )
     logger.info(f"Wavevector transfer: {analysis.get_norm_q_bragg:.4f} 1/A")
-    logger.info(
-        f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} nm"
-    )
+    logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} nm")
 
     #######################
     #  orthogonalize data #
@@ -134,7 +118,9 @@ def orthogonalize(
     logger.info(f"Shape before interpolation {analysis.data.shape}")
     analysis.interpolate_into_crystal_frame()
 
-    print("Voxel size is: ", analysis.voxel_sizes)
+    if analysis.voxel_sizes is None:
+        raise ValueError("voxel sizes undefined")
+    logger.info(f"Voxel size: {analysis.voxel_sizes}")
 
     ######################################################
     # center the object (centering based on the modulus) #
@@ -142,9 +128,12 @@ def orthogonalize(
     logger.info("Centering the crystal")
     analysis.center_object_based_on_modulus(centering_method="com")
 
-    # whether or not to rotate the crystal
+    #######################################
+    # optionally rotates back the crystal #
+    # into the laboratory frame           #
+    #######################################
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
-        import bcdi.utils.utilities as util
+
         amplitude, phase = util.rotate_crystal(
             arrays=(np.abs(analysis.data), np.angle(analysis.data)),
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
@@ -165,17 +154,22 @@ def orthogonalize(
                 is_orthogonal=prm["is_orthogonal"],
                 reciprocal_space=False,
                 rocking_angle=setup.rocking_angle,
-                debugging=(False, False)
+                debugging=(False, False),
             )
 
         complex_object = amplitude * np.exp(1j * phase)
-    
-    else:
+
+    else:  # crystal frame
         complex_object = analysis.data
-        q_bragg_in_saving_frame = q_lab
-   
+        q_bragg_in_saving_frame = util.rotate_vector(
+            vectors=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
+            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+        )
+
+    # rescale q (it is normalized)
     q_bragg_in_saving_frame *= 2 * np.pi / (10 * analysis.get_interplanar_distance)
-    
+
     # Save the complex object in the desired output file
     output_file_path_template = (
         f"{prm['save_dir'][scan_idx]}/S{scan_nb}"
@@ -200,7 +194,5 @@ def orthogonalize(
         parameters.create_dataset("detector", data=str(setup.detector.params))
         parameters.create_dataset("setup", data=str(setup.params))
         parameters.create_dataset("parameters", data=str(prm))
-
-
 
     return tmpfile, Path(setup.detector.savedir), logger
