@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Split `setup.ortho_directspace` into methods to get the transformation matrix in the
+  laboratory frame or crystal frame. Implement `setup.ortho_directspace_labframe`.
+
 * Create a new script `postprocessing/bcdi_orthogonalization.py`, which only
   interpolates the output of phase retrieval (no processing on the phase)
 

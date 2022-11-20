@@ -416,19 +416,26 @@ class DetectorFrameLinearization(Analysis):
 
     def interpolate_into_crystal_frame(self) -> None:
         """Interpolate the data in the pseudo crystal frame."""
+        original_shape = self.original_shape
+        if len(original_shape) != 3:
+            raise NotImplementedError("Can only process 3D arrays")
         obj_ortho, voxel_sizes, transfer_matrix = self.setup.ortho_directspace(
             arrays=self.data,
             q_bragg=np.array(self.get_normalized_q_bragg_laboratory_frame[::-1]),
-            initial_shape=self.original_shape,
+            initial_shape=original_shape,  # type: ignore
             voxel_size=self.parameters["fix_voxel"],
             reference_axis=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
-            fill_value=0,
+            fill_value=(0,),
             debugging=True,
             title="modulus",
             cmap=self.parameters["colormap"].cmap,
         )
+        if not isinstance(obj_ortho, np.ndarray):
+            raise TypeError(
+                "Expecting a single interpolated array, " f"got {type(obj_ortho)}"
+            )
         self.data = obj_ortho
-        self.voxel_sizes = voxel_sizes
+        self.voxel_sizes = list(voxel_sizes)
         self.update_parameters(
             {"transformation_matrix": transfer_matrix, "is_orthogonal": True}
         )
