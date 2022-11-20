@@ -1733,18 +1733,22 @@ class Setup:
 
     def ortho_directspace(
         self,
-        arrays,
-        q_bragg,
-        initial_shape=None,
-        voxel_size=None,
-        fill_value=0,
-        reference_axis=(0, 1, 0),
-        verbose=True,
-        debugging=False,
+        arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+        q_bragg: np.ndarray,
+        initial_shape: Optional[Tuple[int, int, int]] = None,
+        voxel_size: Optional[Tuple[float, float, float]] = None,
+        fill_value: Tuple[float, ...] = (0,),
+        reference_axis: Union[np.ndarray, Tuple[int, int, int]] = (0, 1, 0),
+        verbose: bool = True,
+        debugging: bool = False,
         **kwargs,
-    ):
+    ) -> Tuple[
+        Union[np.ndarray, List[np.ndarray]],
+        Tuple[float, float, float],
+        np.ndarray,
+    ]:
         """
-        Geometrical transformation in direct space.
+        Geometrical transformation in direct space, into the crystal frame.
 
         Interpolate arrays (direct space output of the phase retrieval) in the
         orthogonal reference frame where q_bragg is aligned onto the array axis
@@ -1752,7 +1756,7 @@ class Setup:
 
         :param arrays: tuple of 3D arrays of the same shape (output of the phase
          retrieval), in the detector frame
-        :param q_bragg: tuple of 3 vector components for the q values of the center
+        :param q_bragg: array of 3 vector components for the q values of the center
          of mass of the Bragg peak, expressed in an orthonormal frame x y z
         :param initial_shape: shape of the FFT used for phasing
         :param voxel_size: number or list of three user-defined voxel sizes for
@@ -1789,105 +1793,134 @@ class Setup:
         if isinstance(arrays, np.ndarray):
             arrays = (arrays,)
         valid.valid_ndarray(arrays, ndim=3)
-        nb_arrays = len(arrays)
-        input_shape = arrays[0].shape
-        # could be smaller than the shape used in phase retrieval,
-        # if the object was cropped around the support
+        current_shape = arrays[0].shape
 
-        #########################
-        # check and load kwargs #
-        #########################
-        valid.valid_kwargs(
-            kwargs=kwargs,
-            allowed_kwargs={"cmap", "title", "width_z", "width_y", "width_x"},
-            name="kwargs",
+        transfer_matrix, voxel_size = self.get_transfer_matrix_crystal_frame(
+            current_shape=current_shape,  # type: ignore
+            q_bragg=q_bragg,
+            reference_axis=reference_axis,
+            initial_shape=initial_shape,
+            voxel_size=voxel_size,
+            verbose=verbose,
         )
-        title = kwargs.get("title", ("Object",) * nb_arrays)
-        if isinstance(title, str):
-            title = (title,) * nb_arrays
-        valid.valid_container(
-            title,
-            container_types=(tuple, list),
-            length=nb_arrays,
-            item_types=str,
-            name="title",
-        )
-        width_z = kwargs.get("width_z")
-        valid.valid_item(
-            value=width_z,
-            allowed_types=int,
-            min_excluded=0,
-            allow_none=True,
-            name="width_z",
-        )
-        width_y = kwargs.get("width_y")
-        valid.valid_item(
-            value=width_y,
-            allowed_types=int,
-            min_excluded=0,
-            allow_none=True,
-            name="width_y",
-        )
-        width_x = kwargs.get("width_x")
-        valid.valid_item(
-            value=width_x,
-            allowed_types=int,
-            min_excluded=0,
-            allow_none=True,
-            name="width_x",
+        output_arrays, voxel_size, transfer_matrix = self.interpolate_direct_space(
+            arrays=arrays,
+            current_shape=current_shape,
+            transfer_matrix=transfer_matrix,
+            voxel_size=voxel_size,
+            fill_value=fill_value,
+            verbose=verbose,
+            debugging=debugging,
+            **kwargs,
         )
 
+        return output_arrays, voxel_size, transfer_matrix
+
+    def ortho_directspace_labframe(
+        self,
+        arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+        initial_shape: Optional[Tuple[int, int, int]] = None,
+        voxel_size: Optional[Tuple[float, float, float]] = None,
+        fill_value: Tuple[float, ...] = (0,),
+        verbose: bool = True,
+        debugging: bool = False,
+        **kwargs,
+    ) -> Tuple[
+        Union[np.ndarray, List[np.ndarray]],
+        Tuple[float, float, float],
+        np.ndarray,
+    ]:
+        """
+        Geometrical transformation in direct space, into the laboratory frame.
+
+        Interpolate arrays (direct space output of the phase retrieval) in the
+        orthogonal laboratory frame.
+
+        :param arrays: tuple of 3D arrays of the same shape (output of the phase
+         retrieval), in the detector frame
+        :param initial_shape: shape of the FFT used for phasing
+        :param voxel_size: number or list of three user-defined voxel sizes for
+         the interpolation, in nm. If a single number is provided, the voxel size
+         will be identical in all directions.
+        :param fill_value: tuple of real numbers, fill_value parameter for the
+         RegularGridInterpolator, same length as the number of arrays
+        :param verbose: True to have printed comments
+        :param debugging: tuple of booleans of the same length as the number of
+         input arrays, True to show plots before and after interpolation
+        :param kwargs:
+
+         - 'cmap': str, name of the colormap
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of
+           the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of
+           the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of
+           the initial array
+
+        :return:
+
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
+         - a tuple of 3 voxels size for the interpolated arrays
+         - a numpy array of shape (3, 3): transformation matrix from the detector
+           frame to the laboratory/crystal frame
+
+        """
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_ndarray(arrays, ndim=3)
+        current_shape = arrays[0].shape
+
+        transfer_matrix, voxel_size = self.get_transfer_matrix_labframe(
+            current_shape=current_shape,  # type: ignore
+            initial_shape=initial_shape,
+            voxel_size=voxel_size,
+            verbose=verbose,
+        )
+        output_arrays, voxel_size, transfer_matrix = self.interpolate_direct_space(
+            arrays=arrays,
+            current_shape=current_shape,
+            transfer_matrix=transfer_matrix,
+            voxel_size=voxel_size,
+            fill_value=fill_value,
+            verbose=verbose,
+            debugging=debugging,
+            **kwargs,
+        )
+
+        return output_arrays, voxel_size, transfer_matrix
+
+    def get_transfer_matrix_labframe(
+        self,
+        current_shape: Tuple[int, int, int],
+        initial_shape: Optional[Tuple[int, int, int]] = None,
+        voxel_size: Optional[Tuple[float, float, float]] = None,
+        verbose: bool = True,
+    ) -> Tuple[np.ndarray, Tuple[float, float, float]]:
+        """
+        Calculate the transformation matrix in direct space, in the laboratory frame.
+
+        :param current_shape: shape of the output of phase retrieval. It could be
+         smaller than the shape used in phase retrieval, if the object was cropped
+         around the support.
+        :param initial_shape: shape of the FFT used for phasing
+        :param voxel_size: number or list of three user-defined voxel sizes for
+         the interpolation, in nm. If a single number is provided, the voxel size
+         will be identical in all directions.
+        :param verbose: True to have printed comments
+        :return:
+
+         - the transformation matrix as a numpy array of shape (3, 3)
+         - a tuple of 3 voxels size for the interpolated arrays
+
+        """
         #########################
         # check some parameters #
         #########################
-        valid.valid_container(
-            q_bragg,
-            container_types=(tuple, list, np.ndarray),
-            length=3,
-            item_types=Real,
-            name="q_bragg",
-        )
-        if np.linalg.norm(q_bragg) == 0:
-            raise ValueError("q_bragg should be a non zero vector")
-
-        if isinstance(fill_value, Real):
-            fill_value = (fill_value,) * nb_arrays
-        valid.valid_container(
-            fill_value,
-            container_types=(tuple, list, np.ndarray),
-            length=nb_arrays,
-            item_types=Real,
-            name="fill_value",
-        )
-        if isinstance(debugging, bool):
-            debugging = (debugging,) * nb_arrays
-        valid.valid_container(
-            debugging,
-            container_types=(tuple, list),
-            length=nb_arrays,
-            item_types=bool,
-            name="debugging",
-        )
-        q_com = np.array(q_bragg)
-        valid.valid_container(
-            reference_axis,
-            container_types=(tuple, list, np.ndarray),
-            length=3,
-            item_types=Real,
-            name="reference_axis",
-        )
-        reference_axis = np.array(reference_axis)
-        if not any(
-            (reference_axis == val).all()
-            for val in (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))
-        ):
-            raise NotImplementedError(
-                "strain calculation along directions "
-                "other than array axes is not implemented"
-            )
-
         if not initial_shape:
-            initial_shape = input_shape
+            initial_shape = current_shape
         else:
             valid.valid_container(
                 initial_shape,
@@ -1922,11 +1955,11 @@ class Setup:
                 f" {dx_realspace:.2f} nm)"
             )
 
-        if input_shape != initial_shape:
+        if current_shape != initial_shape:
             # recalculate the tilt and pixel sizes to accomodate a shape change
-            tilt *= initial_shape[0] / input_shape[0]
-            pixel_y = self.detector.pixelsize_y * initial_shape[1] / input_shape[1]
-            pixel_x = self.detector.pixelsize_x * initial_shape[2] / input_shape[2]
+            tilt *= initial_shape[0] / current_shape[0]
+            pixel_y = self.detector.pixelsize_y * initial_shape[1] / current_shape[1]
+            pixel_x = self.detector.pixelsize_x * initial_shape[2] / current_shape[2]
             if verbose:
                 self.logger.info(
                     "Tilt, pixel_y, pixel_x based on the shape of the cropped array: "
@@ -1938,7 +1971,7 @@ class Setup:
             # sanity check, the direct space voxel sizes
             # calculated below should be equal to the original ones
             dz_realspace, dy_realspace, dx_realspace = self.voxel_sizes(
-                input_shape, tilt_angle=abs(tilt), pixel_x=pixel_x, pixel_y=pixel_y
+                current_shape, tilt_angle=abs(tilt), pixel_x=pixel_x, pixel_y=pixel_y
             )
             if verbose:
                 self.logger.info(
@@ -1951,45 +1984,191 @@ class Setup:
             pixel_y = self.detector.pixelsize_y
             pixel_x = self.detector.pixelsize_x
 
-        if not voxel_size:
+        if voxel_size is None:
             voxel_size = dz_realspace, dy_realspace, dx_realspace  # in nm
         else:
             if isinstance(voxel_size, Real):
                 voxel_size = (voxel_size, voxel_size, voxel_size)
-            if not isinstance(voxel_size, Sequence):
-                raise TypeError(
-                    "voxel size should be a sequence of three positive numbers in nm"
-                )
-            if len(voxel_size) != 3 or any(val <= 0 for val in voxel_size):
-                raise ValueError(
-                    "voxel_size should be a sequence of three positive numbers in nm"
-                )
+        valid.valid_container(
+            voxel_size,
+            container_types=tuple,
+            min_excluded=0,
+            length=3,
+            name="voxel_size",
+        )
 
         ######################################################################
         # calculate the transformation matrix based on the beamline geometry #
         ######################################################################
         transfer_matrix, _ = self.transformation_bcdi(
-            array_shape=input_shape,
+            array_shape=current_shape,
             tilt_angle=tilt,
             pixel_x=pixel_x,
             pixel_y=pixel_y,
             direct_space=True,
             verbose=verbose,
         )
+        return transfer_matrix, voxel_size
 
+    def get_transfer_matrix_crystal_frame(
+        self,
+        current_shape: Tuple[int, int, int],
+        q_bragg: np.ndarray,
+        reference_axis: Union[np.ndarray, Tuple[int, int, int]] = (0, 1, 0),
+        initial_shape: Optional[Tuple[int, int, int]] = None,
+        voxel_size: Optional[Tuple[float, float, float]] = None,
+        verbose: bool = True,
+    ) -> Tuple[np.ndarray, Tuple[float, float, float]]:
+        """
+        Calculate the transformation matrix in direct space, in crystal frame.
+
+        :param current_shape: shape of the output of phase retrieval. It could be
+         smaller than the shape used in phase retrieval, if the object was cropped
+         around the support.
+        :param q_bragg: tuple of 3 vector components for the q values of the center
+         of mass of the Bragg peak, expressed in an orthonormal frame x y z
+        :param reference_axis: 3D vector along which q will be aligned, expressed in
+         an orthonormal frame x y z
+        :param initial_shape: shape of the FFT used for phasing
+        :param voxel_size: number or list of three user-defined voxel sizes for
+         the interpolation, in nm. If a single number is provided, the voxel size
+         will be identical in all directions.
+        :param verbose: True to have printed comments
+        :return:
+
+         - the transformation matrix as a numpy array of shape (3, 3)
+         - a tuple of 3 voxels size for the interpolated arrays
+
+        """
+        #########################
+        # check some parameters #
+        #########################
+        valid.valid_container(
+            q_bragg,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name="q_bragg",
+        )
+        if np.linalg.norm(q_bragg) == 0:
+            raise ValueError("q_bragg should be a non zero vector")
+        valid.valid_container(
+            reference_axis,
+            container_types=(tuple, list, np.ndarray),
+            length=3,
+            item_types=Real,
+            name="reference_axis",
+        )
+        if not any(
+            (np.array(reference_axis) == val).all()
+            for val in (np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1]))
+        ):
+            raise NotImplementedError(
+                "strain calculation along directions "
+                "other than array axes is not implemented"
+            )
+
+        q_com = np.array(q_bragg)
+        transfer_matrix, voxel_size = self.get_transfer_matrix_labframe(
+            current_shape=current_shape,
+            initial_shape=initial_shape,
+            voxel_size=voxel_size,
+            verbose=verbose,
+        )
         ################################################################################
         # calculate the rotation matrix from the crystal frame to the laboratory frame #
         ################################################################################
         # (inverse rotation to have reference_axis along q)
         rotation_matrix = util.rotation_matrix_3d(
-            axis_to_align=reference_axis, reference_axis=q_com / np.linalg.norm(q_com)
+            axis_to_align=np.array(reference_axis),
+            reference_axis=q_com / np.linalg.norm(q_com),
+        )
+        return np.matmul(rotation_matrix, transfer_matrix), voxel_size
+
+    def interpolate_direct_space(
+        self,
+        arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+        current_shape: Tuple[int, ...],
+        transfer_matrix: np.ndarray,
+        voxel_size: Tuple[float, float, float],
+        fill_value: Tuple[float, ...],
+        verbose: bool,
+        debugging: Union[bool, Tuple[bool, ...]],
+        **kwargs,
+    ) -> Tuple[
+        Union[np.ndarray, List[np.ndarray]],
+        Tuple[float, float, float],
+        np.ndarray,
+    ]:
+        """
+        Interpolate arrays using the transfer matrix.
+
+        :param arrays: tuple of 3D arrays of the same shape (output of the phase
+         retrieval), in the detector frame
+        :param current_shape: shape of the output of phase retrieval. It could be
+         smaller than the shape used in phase retrieval, if the object was cropped
+         around the support.
+        :param transfer_matrix: the transformation matrix, numpy array of shape (3, 3)
+        :param voxel_size: number or list of three user-defined voxel sizes for
+         the interpolation, in nm. If a single number is provided, the voxel size
+         will be identical in all directions.
+        :param fill_value: tuple of real numbers, fill_value parameter for the
+         RegularGridInterpolator, same length as the number of arrays
+        :param verbose: True to have printed comments
+        :param debugging: tuple of booleans of the same length as the number of
+         input arrays, True to show plots before and after interpolation
+        :param kwargs:
+
+         - 'cmap': str, name of the colormap
+         - 'title': tuple of strings, titles for the debugging plots, same length as
+           the number of arrays
+         - width_z: size of the area to plot in z (axis 0), centered on the middle of
+           the initial array
+         - width_y: size of the area to plot in y (axis 1), centered on the middle of
+           the initial array
+         - width_x: size of the area to plot in x (axis 2), centered on the middle of
+           the initial array
+
+        :return:
+
+         - an array (if a single array was provided) or a tuple of arrays interpolated
+           on an orthogonal grid (same length as the number of input arrays)
+         - a tuple of 3 voxels size for the interpolated arrays
+         - a numpy array of shape (3, 3): transformation matrix from the detector
+           frame to the laboratory/crystal frame
+
+        """
+        #########################
+        # check some parameters #
+        #########################
+        if isinstance(arrays, np.ndarray):
+            arrays = (arrays,)
+        valid.valid_ndarray(arrays, ndim=3)
+        nb_arrays = len(arrays)
+        if isinstance(debugging, bool):
+            debugging = (debugging,) * nb_arrays
+        if isinstance(fill_value, (float, int)):
+            fill_value = (fill_value,) * nb_arrays
+        if len(fill_value) == 1:
+            fill_value *= nb_arrays
+        valid.valid_container(
+            fill_value,
+            container_types=(tuple, list, np.ndarray),
+            length=nb_arrays,
+            item_types=Real,
+            name="fill_value",
+        )
+        title = kwargs.get("title", ("Object",) * nb_arrays)
+        if isinstance(title, str):
+            title = (title,) * nb_arrays
+        valid.valid_container(
+            title,
+            container_types=(tuple, list),
+            length=nb_arrays,
+            item_types=str,
+            name="title",
         )
 
-        ################################################
-        # calculate the full transfer matrix including #
-        # the rotation into the crystal frame          #
-        ################################################
-        transfer_matrix = np.matmul(rotation_matrix, transfer_matrix)
         # transfer_matrix is the transformation matrix of the direct space coordinates
         # the spacing in the crystal frame is therefore given by the rows of the matrix
         d_along_x = np.linalg.norm(transfer_matrix[0, :])  # along x outboard
@@ -2003,9 +2182,9 @@ class Setup:
 
         # calculate the voxel coordinates of the data points in the laboratory frame
         myz, myy, myx = np.meshgrid(
-            np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
-            np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
-            np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1),
+            np.arange(-current_shape[0] // 2, current_shape[0] // 2, 1),
+            np.arange(-current_shape[1] // 2, current_shape[1] // 2, 1),
+            np.arange(-current_shape[2] // 2, current_shape[2] // 2, 1),
             indexing="ij",
         )
 
@@ -2084,9 +2263,9 @@ class Setup:
         for idx, array in enumerate(arrays):
             rgi = RegularGridInterpolator(
                 (
-                    np.arange(-input_shape[0] // 2, input_shape[0] // 2, 1),
-                    np.arange(-input_shape[1] // 2, input_shape[1] // 2, 1),
-                    np.arange(-input_shape[2] // 2, input_shape[2] // 2, 1),
+                    np.arange(-current_shape[0] // 2, current_shape[0] // 2, 1),
+                    np.arange(-current_shape[1] // 2, current_shape[1] // 2, 1),
+                    np.arange(-current_shape[2] // 2, current_shape[2] // 2, 1),
                 ),
                 array,
                 method="linear",
@@ -2111,9 +2290,9 @@ class Setup:
                 gu.multislices_plot(
                     abs(array),
                     sum_frames=False,
-                    width_z=width_z,
-                    width_y=width_y,
-                    width_x=width_x,
+                    width_z=kwargs.get("width_z"),
+                    width_y=kwargs.get("width_y"),
+                    width_x=kwargs.get("width_x"),
                     reciprocal_space=False,
                     is_orthogonal=False,
                     scale="linear",
@@ -2124,9 +2303,9 @@ class Setup:
                 gu.multislices_plot(
                     abs(ortho_array),
                     sum_frames=False,
-                    width_z=width_z,
-                    width_y=width_y,
-                    width_x=width_x,
+                    width_z=kwargs.get("width_z"),
+                    width_y=kwargs.get("width_y"),
+                    width_x=kwargs.get("width_x"),
                     reciprocal_space=False,
                     is_orthogonal=True,
                     scale="linear",
