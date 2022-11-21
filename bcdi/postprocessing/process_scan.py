@@ -185,12 +185,6 @@ def process_scan(
             analysis.update_parameters({"bragg_peak": metadata["bragg_peak"]})
 
         analysis.update_detector_angles(bragg_peak_position=prm["bragg_peak"])
-        analysis.update_parameters(
-            {
-                "inplane_angle": setup.inplane_angle,
-                "outofplane_angle": setup.outofplane_angle,
-            }
-        )
 
     #########################################################
     # calculate q of the Bragg peak in the laboratory frame #

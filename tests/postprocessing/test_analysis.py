@@ -171,6 +171,12 @@ class TestAnalysis(unittest.TestCase):
         self.process.update_detector_angles(bragg_peak)
         self.assertAlmostEqual(self.process.setup.inplane_angle, expected_inplane)
         self.assertAlmostEqual(self.process.setup.outofplane_angle, expected_outofplane)
+        self.assertAlmostEqual(
+            self.process.parameters["inplane_angle"], expected_inplane
+        )
+        self.assertAlmostEqual(
+            self.process.parameters["outofplane_angle"], expected_outofplane
+        )
 
     def test_get_interplanar_distance(self):
         expected = 0.22637604819304932

@@ -399,6 +399,12 @@ class Analysis(ABC):
 
     def update_detector_angles(self, bragg_peak_position: List[int]) -> None:
         self.setup.correct_detector_angles(bragg_peak_position=bragg_peak_position)
+        self.update_parameters(
+            {
+                "inplane_angle": self.setup.inplane_angle,
+                "outofplane_angle": self.setup.outofplane_angle,
+            }
+        )
 
     def update_parameters(self, dictionary: Dict[str, Any]) -> None:
         self.parameters.update(dictionary)
