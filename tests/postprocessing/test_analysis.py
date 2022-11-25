@@ -5,6 +5,7 @@
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
+import copy
 import os.path
 import tempfile
 import unittest
@@ -33,7 +34,7 @@ class TestAnalysis(unittest.TestCase):
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
-        self.parameters = parameters
+        self.parameters = copy.deepcopy(parameters)
         self.parameters.update(
             {
                 "phasing_binning": [2, 2, 1],
@@ -171,6 +172,12 @@ class TestAnalysis(unittest.TestCase):
         self.process.update_detector_angles(bragg_peak)
         self.assertAlmostEqual(self.process.setup.inplane_angle, expected_inplane)
         self.assertAlmostEqual(self.process.setup.outofplane_angle, expected_outofplane)
+        self.assertAlmostEqual(
+            self.process.parameters["inplane_angle"], expected_inplane
+        )
+        self.assertAlmostEqual(
+            self.process.parameters["outofplane_angle"], expected_outofplane
+        )
 
     def test_get_interplanar_distance(self):
         expected = 0.22637604819304932
@@ -269,7 +276,7 @@ class TestCreateAnalysis(unittest.TestCase):
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
-        self.parameters = parameters
+        self.parameters = copy.deepcopy(parameters)
         self.parameters.update(
             {
                 "reconstruction_files": [self.file_path],
@@ -321,7 +328,7 @@ class TestDetectorFrameLinearization(unittest.TestCase):
             self.skipTest(
                 reason="This test can only run locally with the example dataset"
             )
-        self.parameters = parameters
+        self.parameters = copy.deepcopy(parameters)
         self.parameters.update(
             {
                 "reconstruction_files": [self.file_path],
@@ -337,6 +344,7 @@ class TestDetectorFrameLinearization(unittest.TestCase):
 
     def test_interpolate_into_crystal_frame(self):
         self.analysis.interpolate_into_crystal_frame()
+        print(self.analysis.parameters["transformation_matrix"])
         self.assertTrue(
             np.allclose(
                 self.analysis.parameters["transformation_matrix"],
