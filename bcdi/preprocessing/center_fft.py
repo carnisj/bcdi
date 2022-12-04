@@ -29,17 +29,19 @@ class CenterFFT(ABC):
 
     def __init__(
         self,
+        data_shape: Tuple[int, int, int],
         binning: Tuple[int, int, int],
         preprocessing_binning: Tuple[int, int, int],
         roi: Tuple[int, int, int, int],
         center_position: Tuple[int, int, int],
         max_symmetrical_window: Tuple[int, int, int],
-        fix_bragg: List[int],
+        fix_bragg: Optional[List[int]],
         fft_option: str,
         pad_size: Optional[Tuple[int, int, int]],
         q_values: Optional[Any] = None,
         logger: logging.Logger = module_logger,
     ):
+        self.data_shape = data_shape
         self.binning = binning
         self.preprocessing_binning = preprocessing_binning
         self.roi = roi
@@ -51,9 +53,8 @@ class CenterFFT(ABC):
         self.q_values = q_values
         self.logger = logger
 
-        self.data_shape: Optional[Tuple[int, int, int]] = None
-        self.pad_width: Optional[np.ndarray] = None
-        self.start_stop_indices: Optional[Tuple[int, int, int, int, int, int]] = None
+        self.pad_width = np.zeros(6, dtype=int)
+        self.start_stop_indices = (0, data_shape[0], 0, data_shape[1], 0, data_shape[2])
 
     @property
     def pad_size(self):
@@ -82,7 +83,7 @@ class CenterFFT(ABC):
         mask: Optional[np.ndarray],
         frames_logical: Optional[np.ndarray],
     ):
-        self.get_data_shape(data)
+        self.set_start_stop_indices()
         data = self.crop_array(data)
         if mask is not None:
             mask = self.crop_array(mask)
@@ -98,14 +99,11 @@ class CenterFFT(ABC):
         if frames_logical is not None:
             frames_logical = self.update_frames_logical(frames_logical)
 
-        if self.q_values is not None:
-            self.update_q_values()
+        self.update_q_values()
 
         return data, mask, self.pad_width, frames_logical, self.q_values
 
     def crop_array(self, array: np.ndarray):
-        if self.start_stop_indices is None:
-            raise ValueError("start_stop_indices is None")
         return array[
             self.start_stop_indices[0] : self.start_stop_indices[1],
             self.start_stop_indices[2] : self.start_stop_indices[3],
@@ -116,10 +114,13 @@ class CenterFFT(ABC):
         raise NotImplementedError
 
     def get_data_shape(self, data: np.ndarray) -> None:
-        self.data_shape = data.shape
+        if data.ndim != 3:
+            raise ValueError(f"Only 3D data supported, got {data.ndim}D")
+        nbz, nby, nbx = data.shape
+        self.data_shape = (nbz, nby, nbx)
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        raise NotImplementedError
+    def set_start_stop_indices(self) -> None:
+        return
 
     def update_frames_logical(
         self,
@@ -128,6 +129,8 @@ class CenterFFT(ABC):
         raise NotImplementedError
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         self.q_values[0] = self.q_values[0][
             self.start_stop_indices[0] : self.start_stop_indices[1]
         ]
@@ -146,13 +149,14 @@ class CenteringFactory:
         binning: Tuple[int, int, int],
         preprocessing_binning: Tuple[int, int, int],
         roi: Tuple[int, int, int, int],
-        fix_bragg: List[int],
+        fix_bragg: Optional[List[int]],
         fft_option: str = "crop_asymmetric_ZYX",
         pad_size: Optional[Tuple[int, int, int]] = None,
         centering_method: str = "max",
         logger: logging.Logger = module_logger,
         q_values: Optional[List[np.ndarray]] = None,
     ):
+        self.data_shape = data.shape
         self.binning = binning
         self.preprocessing_binning = preprocessing_binning
         self.roi = roi
@@ -165,6 +169,16 @@ class CenteringFactory:
         self.center_position = self.find_center(data=data, method=centering_method)
         self.max_symmetrical_window = self.get_max_symmetrical_box(data=data)
         self.check_center_position()
+
+    @property
+    def data_shape(self):
+        return self._data_shape
+
+    @data_shape.setter
+    def data_shape(self, value):
+        if not isinstance(value, tuple) and len(value) != 3:
+            raise ValueError(f"Only 3D data is supported, got {len(value)}")
+        self._data_shape = value
 
     def get_max_symmetrical_box(self, data: np.ndarray) -> Tuple[int, int, int]:
         nbz, nby, nbx = np.shape(data)
@@ -256,6 +270,7 @@ class CenteringFactory:
             raise ValueError(f"Incorrect value {self.fft_option} for 'fft_option'")
 
         return centering_class(
+            data_shape=self.data_shape,
             binning=self.binning,
             preprocessing_binning=self.preprocessing_binning,
             roi=self.roi,
@@ -270,44 +285,17 @@ class CenteringFactory:
 
 
 class CenterFFTCropSymZYX(CenterFFT):
-    def __init__(
-        self,
-        binning: Tuple[int, int, int],
-        preprocessing_binning: Tuple[int, int, int],
-        roi: Tuple[int, int, int, int],
-        center_position: Tuple[int, int, int],
-        max_symmetrical_window: Tuple[int, int, int],
-        fix_bragg: List[int],
-        fft_option: str,
-        pad_size: Optional[Tuple[int, int, int]],
-        q_values: Optional[List[np.ndarray]] = None,
-        logger: logging.Logger = module_logger,
-    ):
-        super().__init__(
-            binning=binning,
-            preprocessing_binning=preprocessing_binning,
-            roi=roi,
-            center_position=center_position,
-            max_symmetrical_window=max_symmetrical_window,
-            fix_bragg=fix_bragg,
-            fft_option=fft_option,
-            pad_size=pad_size,
-            q_values=q_values,
-            logger=logger,
-        )
-        self.start_stop_indices = self.get_start_stop_indices()
-
     def get_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         iz0, iy0, ix0 = self.center_position
 
         # crop rocking angle and detector, Bragg peak centered
         nz1, ny1, nx1 = util.smaller_primes(
             self.max_symmetrical_window, maxprime=7, required_dividers=(2,)
         )
-        return (
+        self.start_stop_indices = (
             iz0 - nz1 // 2,
             iz0 + nz1 // 2,
             iy0 - ny1 // 2,
@@ -320,8 +308,6 @@ class CenterFFTCropSymZYX(CenterFFT):
         self,
         frames_logical: np.ndarray,
     ) -> np.ndarray:
-        if self.data_shape is None:
-            raise ValueError("data_shape is None")
         if self.start_stop_indices[0] > 0:  # if 0, the first frame is used
             frames_logical[0 : self.start_stop_indices[0]] = 0
         if self.start_stop_indices[1] < self.data_shape[0]:
@@ -334,13 +320,13 @@ class CenterFFTCropAsymZYX(CenterFFT):
     def get_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         nbz, nby, nbx = self.data_shape
         # crop rocking angle and detector without centering the Bragg peak
         nz1, ny1, nx1 = util.smaller_primes(
             (nbz, nby, nbx), maxprime=7, required_dividers=(2,)
         )
-        return (
+        self.start_stop_indices = (
             nbz - nz1 // 2,
             nbz + nz1 // 2,
             nby - ny1 // 2,
@@ -353,8 +339,6 @@ class CenterFFTCropAsymZYX(CenterFFT):
         self,
         frames_logical: np.ndarray,
     ) -> np.ndarray:
-        if self.data_shape is None:
-            raise ValueError("data_shape is None")
         if self.start_stop_indices[0] > 0:  # if 0, the first frame is used
             frames_logical[0 : self.start_stop_indices[0]] = 0
         if self.start_stop_indices[1] < self.data_shape[0]:
@@ -367,6 +351,7 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
     def get_pad_width(self) -> None:
         if self.pad_size is None:
             self.pad_width = np.zeros(6, dtype=int)
+            return
 
         self.pad_width = np.array(
             [
@@ -392,13 +377,13 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         _, iy0, ix0 = self.center_position
 
         ny1, nx1 = util.smaller_primes(
             self.max_symmetrical_window[1:], maxprime=7, required_dividers=(2,)
         )
-        return (
+        self.start_stop_indices = (
             0,
             self.data_shape[0],
             iy0 - ny1 // 2,
@@ -418,6 +403,8 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -433,6 +420,7 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
     def get_pad_width(self) -> None:
         if self.pad_size is None:
             self.pad_width = np.zeros(6, dtype=int)
+            return
 
         self.pad_width = np.array(
             [
@@ -458,11 +446,11 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         ny1, nx1 = util.smaller_primes(
             self.max_symmetrical_window[1:], maxprime=7, required_dividers=(2,)
         )
-        return (
+        self.start_stop_indices = (
             0,
             self.data_shape[0],
             self.data_shape[1] - ny1 // 2,
@@ -482,6 +470,8 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -512,13 +502,13 @@ class CenterFFTPadAsymZCropSymYX(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         # crop detector (Bragg peak centered)
         ny1, nx1 = util.smaller_primes(
             self.max_symmetrical_window[1:], maxprime=7, required_dividers=(2,)
         )
         _, iy0, ix0 = self.center_position
-        return (
+        self.start_stop_indices = (
             0,
             self.data_shape[0],
             iy0 - ny1 // 2,
@@ -538,6 +528,8 @@ class CenterFFTPadAsymZCropSymYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
@@ -568,12 +560,12 @@ class CenterFFTPadAsymZCropAsymYX(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+    def set_start_stop_indices(self) -> None:
         # crop detector without centering the Bragg peak
         ny1, nx1 = util.smaller_primes(
             self.data_shape[1:], maxprime=7, required_dividers=(2,)
         )
-        return (
+        self.start_stop_indices = (
             0,
             self.data_shape[0],
             self.data_shape[1] // 2 - ny1 // 2,
@@ -593,6 +585,8 @@ class CenterFFTPadAsymZCropAsymYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
@@ -635,9 +629,6 @@ class CenterFFTPadSymZ(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        return 0, self.data_shape[0], 0, self.data_shape[1], 0, self.data_shape[2]
-
     def update_frames_logical(
         self,
         frames_logical: np.ndarray,
@@ -649,6 +640,8 @@ class CenterFFTPadSymZ(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -674,9 +667,6 @@ class CenterFFTPadAsymZ(CenterFFT):
             dtype=int,
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        return 0, self.data_shape[0], 0, self.data_shape[1], 0, self.data_shape[2]
-
     def update_frames_logical(
         self,
         frames_logical: np.ndarray,
@@ -688,6 +678,8 @@ class CenterFFTPadAsymZ(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
@@ -729,9 +721,6 @@ class CenterFFTPadSymZYX(CenterFFT):
             list((map(lambda value: max(value, 0), pad_width))), dtype=int
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        return 0, self.data_shape[0], 0, self.data_shape[1], 0, self.data_shape[2]
-
     def update_frames_logical(
         self,
         frames_logical: np.ndarray,
@@ -743,6 +732,8 @@ class CenterFFTPadSymZYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         dqx = self.q_values[0][1] - self.q_values[0][0]
         dqz = self.q_values[1][1] - self.q_values[1][0]
         dqy = self.q_values[2][1] - self.q_values[2][0]
@@ -774,9 +765,6 @@ class CenterFFTPadAsymZYX(CenterFFT):
             ]
         )
 
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        return 0, self.data_shape[0], 0, self.data_shape[1], 0, self.data_shape[2]
-
     def update_frames_logical(
         self,
         frames_logical: np.ndarray,
@@ -788,6 +776,8 @@ class CenterFFTPadAsymZYX(CenterFFT):
         return temp_frames
 
     def update_q_values(self) -> None:
+        if self.q_values is None:
+            return
         nbz, nby, nbx = self.data_shape
         nz1, ny1, nx1 = [
             util.higher_primes(nbz, maxprime=7, required_dividers=(2,)),
@@ -808,9 +798,6 @@ class CenterFFTPadAsymZYX(CenterFFT):
 class SkipCentering(CenterFFT):
     def get_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
-
-    def get_start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        return 0, self.data_shape[0], 0, self.data_shape[1], 0, self.data_shape[2]
 
     def update_frames_logical(
         self,
