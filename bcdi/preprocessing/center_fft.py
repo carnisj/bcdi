@@ -10,11 +10,14 @@
 
 import logging
 from abc import ABC
-from typing import Any, List, Optional, Tuple
+from numbers import Real
+from typing import Any, List, Optional, Tuple, Union
+
 import numpy as np
 from scipy.ndimage import center_of_mass
-from bcdi.utils import utilities as util
+
 from bcdi.preprocessing import bcdi_utils as bu
+from bcdi.utils import utilities as util
 
 module_logger = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ class CenterFFT(ABC):
         binning: Tuple[int, int, int],
         preprocessing_binning: Tuple[int, int, int],
         roi: Tuple[int, int, int, int],
-        center_position: Tuple[int, int, int],
+        center_position: Tuple[int, ...],
         max_symmetrical_window: Tuple[int, int, int],
         fix_bragg: Optional[List[int]],
         fft_option: str,
@@ -167,6 +170,7 @@ class CenteringFactory:
         self.q_values = q_values
 
         self.center_position = self.find_center(data=data, method=centering_method)
+        self.log_q_values_at_center(method=centering_method)
         self.max_symmetrical_window = self.get_max_symmetrical_box(data=data)
         self.check_center_position()
 
@@ -202,70 +206,66 @@ class CenteringFactory:
             )
             self.fft_option = "skip"
 
-    def find_center(self, data: np.ndarray, method: str) -> Tuple[int, int, int]:
-        if method == "max":
-            z0, y0, x0 = np.unravel_index(abs(data).argmax(), data.shape)
-            if self.q_values:
-                self.logger.info(
-                    f"Max at (qx, qz, qy): {self.q_values[0][z0]:.5f}, "
-                    f"{self.q_values[1][y0]:.5f}, {self.q_values[2][x0]:.5f}"
-                )
-            else:
-                self.logger.info(f"Max at pixel (Z, Y, X): ({z0, y0, x0})")
-        elif method == "com":
-            z0, y0, x0 = center_of_mass(data)
-            if self.q_values:
-                self.logger.info(
-                    "Center of mass at (qx, qz, qy): "
-                    f"{self.q_values[0][z0]:.5f}, {self.q_values[1][y0]:.5f}, "
-                    f"{self.q_values[2][x0]:.5f}"
-                )
-            else:
-                self.logger.info(f"Center of mass at pixel (Z, Y, X): ({z0, y0, x0})")
-        else:  # 'max_com'
-            position = list(np.unravel_index(abs(data).argmax(), data.shape))
-            position[1:] = center_of_mass(data[position[0], :, :])
-            z0, y0, x0 = tuple(map(lambda x: int(np.rint(x)), position))
+    @staticmethod
+    def round_sequence_to_int(
+        sequence: Union[Tuple[Any, ...], List[Any]]
+    ) -> Tuple[int, ...]:
+        if not isinstance(sequence, (tuple, list)):
+            raise TypeError(f"Expected a list or tuple, got {type(sequence)}")
+        if not all(isinstance(val, Real) for val in sequence):
+            raise ValueError("Non-numeric type encountered")
+        return tuple(map(lambda x: int(np.rint(x)), sequence))
 
+    def find_center(self, data: np.ndarray, method: str) -> Tuple[int, ...]:
         if self.fix_bragg:
             if len(self.fix_bragg) != 3:
                 raise ValueError("fix_bragg should be a list of 3 integers")
-            z0, y0, x0 = self.fix_bragg
             self.logger.info(
                 "Peak intensity position defined by user on the full detector: "
-                f"({z0, y0, x0})"
+                f"({self.fix_bragg})"
             )
-            y0 = (y0 - self.roi[0]) / (self.preprocessing_binning[1] * self.binning[1])
-            x0 = (x0 - self.roi[2]) / (self.preprocessing_binning[2] * self.binning[2])
-            self.logger.info(
-                "Peak intensity position with detector ROI and binning in the "
-                f"detector plane: ({z0, y0, x0})"
+            y0 = (self.fix_bragg[1] - self.roi[0]) / (
+                self.preprocessing_binning[1] * self.binning[1]
             )
-        return int(round(z0)), int(round(y0)), int(round(x0))
+            x0 = (self.fix_bragg[2] - self.roi[2]) / (
+                self.preprocessing_binning[2] * self.binning[2]
+            )
+            return self.round_sequence_to_int((self.fix_bragg[0], y0, x0))
+
+        if method == "max":
+            return self.round_sequence_to_int(
+                np.unravel_index(abs(data).argmax(), data.shape)
+            )
+        if method == "com":
+            return self.round_sequence_to_int(center_of_mass(data))
+        # 'max_com'
+        position = list(np.unravel_index(abs(data).argmax(), data.shape))
+        position[1:] = center_of_mass(data[position[0], :, :])
+        return self.round_sequence_to_int(position)
 
     def get_centering_instance(self) -> CenterFFT:
         if self.fft_option == "crop_sym_ZYX":
             centering_class = CenterFFTCropSymZYX
         elif self.fft_option == "crop_asym_ZYX":
-            centering_class = CenterFFTCropAsymZYX
+            centering_class = CenterFFTCropAsymZYX  # type: ignore
         elif self.fft_option == "pad_sym_Z_crop_sym_YX":
-            centering_class = CenterFFTPadSymZCropSymYX
+            centering_class = CenterFFTPadSymZCropSymYX  # type: ignore
         elif self.fft_option == "pad_sym_Z_crop_asym_YX":
-            centering_class = CenterFFTPadSymZCropAsymYX
+            centering_class = CenterFFTPadSymZCropAsymYX  # type: ignore
         elif self.fft_option == "pad_asym_Z_crop_sym_YX":
-            centering_class = CenterFFTPadAsymZCropSymYX
+            centering_class = CenterFFTPadAsymZCropSymYX  # type: ignore
         elif self.fft_option == "pad_asym_Z_crop_asym_YX":
-            centering_class = CenterFFTPadAsymZCropAsymYX
+            centering_class = CenterFFTPadAsymZCropAsymYX  # type: ignore
         elif self.fft_option == "pad_sym_Z":
-            centering_class = CenterFFTPadSymZ
+            centering_class = CenterFFTPadSymZ  # type: ignore
         elif self.fft_option == "pad_asym_Z":
-            centering_class = CenterFFTPadAsymZ
+            centering_class = CenterFFTPadAsymZ  # type: ignore
         elif self.fft_option == "pad_sym_ZYX":
-            centering_class = CenterFFTPadSymZYX
+            centering_class = CenterFFTPadSymZYX  # type: ignore
         elif self.fft_option == "pad_asym_ZYX":
-            centering_class = CenterFFTPadAsymZYX
+            centering_class = CenterFFTPadAsymZYX  # type: ignore
         elif self.fft_option == "skip":
-            centering_class = SkipCentering
+            centering_class = SkipCentering  # type: ignore
         else:
             raise ValueError(f"Incorrect value {self.fft_option} for 'fft_option'")
 
@@ -282,6 +282,30 @@ class CenteringFactory:
             logger=self.logger,
             q_values=self.q_values,
         )
+
+    def log_q_values_at_center(self, method: str) -> None:
+        z0, y0, x0 = self.center_position
+        if self.fix_bragg is not None:
+            self.logger.info(
+                "Peak intensity position with detector ROI and binning in the "
+                f"detector plane: ({z0, y0, x0})"
+            )
+            return
+
+        if method == "max":
+            text = "Max "
+        elif method == "com":
+            text = "Center of mass "
+        else:
+            text = "Max_com "
+
+        if self.q_values is None:
+            self.logger.info(f"{text} at pixel (Z, Y, X): ({z0, y0, x0})")
+        else:
+            self.logger.info(
+                f"{text} at (qx, qz, qy): {self.q_values[0][z0]:.5f}, "
+                f"{self.q_values[1][y0]:.5f}, {self.q_values[2][x0]:.5f}"
+            )
 
 
 class CenterFFTCropSymZYX(CenterFFT):
