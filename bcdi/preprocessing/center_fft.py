@@ -146,6 +146,45 @@ class CenterFFT(ABC):
 
 
 class CenteringFactory:
+    """
+    Factory class to instantiate the corrent centering child class.
+
+    :param data: the 3D data array
+    :param binning: binning factor of data in each dimension
+    :param preprocessing_binning: additional binning factor due to a previous
+     preprocessing step
+    :param roi: region of interest of the detector used to generate data.
+     [y_start, y_stop, x_start, x_stop]
+    :param fix_bragg: user-defined position in pixels of the Bragg peak
+     [z_bragg, y_bragg, x_bragg]
+    :param fft_option:
+     - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
+     - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
+       Brag peak
+     - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad
+       the rocking angle based on 'pad_size' (Bragg peak centered)
+     - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size'
+       (Bragg peak centered) and crop detector (Bragg peak non-centered)
+     - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered),
+       pad the rocking angle without centering the Brag peak
+     - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering
+       the Bragg peak
+     - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on
+       'pad_size', Bragg peak centered
+     - 'pad_asym_Z': keep detector size and pad the rocking angle without centering
+       the Brag peak
+     - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
+     - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
+       the Brag peak
+     - 'skip': keep the full dataset
+    :param pad_size: user defined output array size [nbz, nby, nbx]
+    :param centering_method: method used to determine the location of the Bragg peak:
+     'max', 'com' (center of mass), or 'max_com' (max along the first axis, center of
+     mass in the detector plane)
+    :param logger: a logger
+    :param q_values: [qx, qz, qy], each component being a 1D array
+    """
+
     def __init__(
         self,
         data: np.ndarray,
@@ -176,6 +215,7 @@ class CenteringFactory:
 
     @property
     def data_shape(self):
+        """Store the shape of the 3D dataset."""
         return self._data_shape
 
     @data_shape.setter
@@ -185,6 +225,13 @@ class CenteringFactory:
         self._data_shape = value
 
     def get_max_symmetrical_box(self, data: np.ndarray) -> Tuple[int, int, int]:
+        """
+        Calculate the largest symmetrical box around the center.
+
+        :param data: the 3D intensity dataset
+        :return: the width of the largest symmetrical box as a tuple of three positive
+         integers
+        """
         nbz, nby, nbx = np.shape(data)
         iz0, iy0, ix0 = self.center_position
         return (
@@ -194,6 +241,7 @@ class CenteringFactory:
         )
 
     def check_center_position(self) -> None:
+        """Check if the found center position is not at the edge of the data array."""
         max_nz, max_ny, max_nx = self.max_symmetrical_window
         if self.fft_option != "skip":
             self.logger.info(
@@ -210,6 +258,7 @@ class CenteringFactory:
     def round_sequence_to_int(
         sequence: Union[Tuple[Any, ...], List[Any]]
     ) -> Tuple[int, ...]:
+        """Round a sequence of numbers to integers."""
         if not isinstance(sequence, (tuple, list)):
             raise TypeError(f"Expected a list or tuple, got {type(sequence)}")
         if not all(isinstance(val, Real) for val in sequence):
@@ -217,6 +266,14 @@ class CenteringFactory:
         return tuple(map(lambda x: int(np.rint(x)), sequence))
 
     def find_center(self, data: np.ndarray, method: str) -> Tuple[int, ...]:
+        """
+        Find the center (ideally the Bragg peak) of the dataset.
+
+        :param data: the 3D intensity dataset
+        :param method: "max", "com", "max_com". It is overruled by fix_bragg if this
+         parameter is not None.
+        :return: the position of the found center as a tuple of three positive integers
+        """
         if self.fix_bragg:
             if len(self.fix_bragg) != 3:
                 raise ValueError("fix_bragg should be a list of 3 integers")
@@ -244,6 +301,7 @@ class CenteringFactory:
         return self.round_sequence_to_int(position)
 
     def get_centering_instance(self) -> CenterFFT:
+        """Return the correct centering instance depending on the FFT option."""
         if self.fft_option == "crop_sym_ZYX":
             centering_class = CenterFFTCropSymZYX
         elif self.fft_option == "crop_asym_ZYX":
@@ -284,6 +342,7 @@ class CenteringFactory:
         )
 
     def log_q_values_at_center(self, method: str) -> None:
+        """Log some message about q values at the center found by the method."""
         z0, y0, x0 = self.center_position
         if self.fix_bragg is not None:
             self.logger.info(
