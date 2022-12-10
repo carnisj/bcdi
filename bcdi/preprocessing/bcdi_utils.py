@@ -489,13 +489,11 @@ def center_fft(
         q_values=kwargs.get("q_values", []),
     ).get_centering_instance()
 
-    data, mask, pad_width, frames_logical, q_values = centering_fft.center_fft(
+    return centering_fft.center_fft(
         data=data,
         mask=mask,
         frames_logical=frames_logical,
     )
-
-    return data, mask, pad_width, q_values, frames_logical
 
 
 def find_bragg(

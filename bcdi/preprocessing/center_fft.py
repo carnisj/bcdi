@@ -6,7 +6,7 @@
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 
-"""Class for centering methods."""
+"""Classes related to centering the diffraction pattern in preprocessing."""
 
 import logging
 from abc import ABC
@@ -24,10 +24,48 @@ module_logger = logging.getLogger(__name__)
 
 class CenterFFT(ABC):
     """
+    Base class, with methods needing to be overloaded depending on the centering method.
 
-    axis=0, z downstream, qx in reciprocal space
-    axis=1, y vertical, qz in reciprocal space
-    axis=2, x outboard, qy in reciprocal space
+    Frame conventions:
+     - axis=0, z downstream, qx in reciprocal space
+     - axis=1, y vertical, qz in reciprocal space
+     - axis=2, x outboard, qy in reciprocal space
+
+    :params data_shape: shape of the 3D dataset to be centered
+    :param binning: binning factor of data in each dimension
+    :param preprocessing_binning: additional binning factor due to a previous
+     preprocessing step
+    :param roi: region of interest of the detector used to generate data.
+     [y_start, y_stop, x_start, x_stop]
+    :param center_position: position of the determined center
+    :param max_symmetrical_window: width of the largest symmetrical window around the
+     center_position
+    :param fix_bragg: user-defined position in pixels of the Bragg peak
+     [z_bragg, y_bragg, x_bragg]
+    :param fft_option:
+     - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
+     - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
+       Brag peak
+     - 'pad_sym_Z_crop_sym_YX': crop detector images (Bragg peak centered) and pad
+       the rocking angle based on 'pad_size' (Bragg peak centered)
+     - 'pad_sym_Z_crop_asym_YX': pad rocking angle based on 'pad_size'
+       (Bragg peak centered) and crop detector (Bragg peak non-centered)
+     - 'pad_asym_Z_crop_sym_YX': crop detector images (Bragg peak centered),
+       pad the rocking angle without centering the Brag peak
+     - 'pad_asym_Z_crop_asym_YX': pad rocking angle and crop detector without centering
+       the Bragg peak
+     - 'pad_sym_Z': keep detector size and pad/center the rocking angle based on
+       'pad_size', Bragg peak centered
+     - 'pad_asym_Z': keep detector size and pad the rocking angle without centering
+       the Brag peak
+     - 'pad_sym_ZYX': pad all dimensions based on 'pad_size', Brag peak centered
+     - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
+       the Brag peak
+     - 'skip': keep the full dataset
+
+    :param pad_size: user defined output array size [nbz, nby, nbx]
+    :param q_values: [qx, qz, qy], each component being a 1D array
+    :param logger: a logger instance
     """
 
     def __init__(
@@ -61,6 +99,7 @@ class CenterFFT(ABC):
 
     @property
     def pad_size(self):
+        """User defined shape to which the data should be padded."""
         return self._pad_size
 
     @pad_size.setter
@@ -85,13 +124,29 @@ class CenterFFT(ABC):
         data: np.ndarray,
         mask: Optional[np.ndarray],
         frames_logical: Optional[np.ndarray],
-    ):
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        np.ndarray,
+        Optional[Any],
+        Optional[np.ndarray],
+    ]:
+        """
+        Center/pad arrays and modify accordingly related objects.
+
+        :param data: a 3D array
+        :param mask: an optional 3D binary array of the same shape as data
+        :param frames_logical: array of initial length the number of measured frames.
+         In case of padding the length changes. A frame whose index is set to 1 means
+         that it is used, 0 means not used, -1 means padded (added) frame.
+        :return: the updated data, mask, pad_width, frames_logical, q_values
+        """
         self.set_start_stop_indices()
         data = self.crop_array(data)
         if mask is not None:
             mask = self.crop_array(mask)
 
-        self.get_pad_width()
+        self.set_pad_width()
         data = bu.zero_pad(data, padding_width=self.pad_width, mask_flag=False)
         if mask is not None:
             bu.zero_pad(
@@ -104,34 +159,40 @@ class CenterFFT(ABC):
 
         self.update_q_values()
 
-        return data, mask, self.pad_width, frames_logical, self.q_values
+        return data, mask, self.pad_width, self.q_values, frames_logical
 
-    def crop_array(self, array: np.ndarray):
+    def crop_array(self, array: np.ndarray) -> np.ndarray:
+        """Crop an array given stop-start indices."""
         return array[
             self.start_stop_indices[0] : self.start_stop_indices[1],
             self.start_stop_indices[2] : self.start_stop_indices[3],
             self.start_stop_indices[4] : self.start_stop_indices[5],
         ]
 
-    def get_pad_width(self) -> None:
-        raise NotImplementedError
-
     def get_data_shape(self, data: np.ndarray) -> None:
+        """Get and save the shape of the target data."""
         if data.ndim != 3:
             raise ValueError(f"Only 3D data supported, got {data.ndim}D")
         nbz, nby, nbx = data.shape
         self.data_shape = (nbz, nby, nbx)
 
+    def set_pad_width(self) -> None:
+        """Calculate the pad_width parameter depending on the centering method."""
+        raise NotImplementedError
+
     def set_start_stop_indices(self) -> None:
+        """Calculate the start-stop indices used for cropping the data."""
         return
 
     def update_frames_logical(
         self,
         frames_logical: np.ndarray,
     ) -> np.ndarray:
+        """Update the logical array depending on the processing applied to the data."""
         raise NotImplementedError
 
     def update_q_values(self) -> None:
+        """Update q values depending on the processing applied to the data."""
         if self.q_values is None:
             return
         self.q_values[0] = self.q_values[0][
@@ -177,12 +238,13 @@ class CenteringFactory:
      - 'pad_asym_ZYX': pad all dimensions based on 'pad_size' without centering
        the Brag peak
      - 'skip': keep the full dataset
+
     :param pad_size: user defined output array size [nbz, nby, nbx]
     :param centering_method: method used to determine the location of the Bragg peak:
      'max', 'com' (center of mass), or 'max_com' (max along the first axis, center of
      mass in the detector plane)
-    :param logger: a logger
     :param q_values: [qx, qz, qy], each component being a 1D array
+    :param logger: a logger instance
     """
 
     def __init__(
@@ -195,8 +257,8 @@ class CenteringFactory:
         fft_option: str = "crop_asymmetric_ZYX",
         pad_size: Optional[Tuple[int, int, int]] = None,
         centering_method: str = "max",
-        logger: logging.Logger = module_logger,
         q_values: Optional[List[np.ndarray]] = None,
+        logger: logging.Logger = module_logger,
     ):
         self.data_shape = data.shape
         self.binning = binning
@@ -205,8 +267,8 @@ class CenteringFactory:
         self.fix_bragg = fix_bragg
         self.fft_option = fft_option
         self.pad_size = pad_size
-        self.logger = logger
         self.q_values = q_values
+        self.logger = logger
 
         self.center_position = self.find_center(data=data, method=centering_method)
         self.log_q_values_at_center(method=centering_method)
@@ -368,7 +430,9 @@ class CenteringFactory:
 
 
 class CenterFFTCropSymZYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """Crop the data so that the peak is centered in XYZ."""
+
+    def set_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
 
     def set_start_stop_indices(self) -> None:
@@ -400,7 +464,9 @@ class CenterFFTCropSymZYX(CenterFFT):
 
 
 class CenterFFTCropAsymZYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """Crop the data without constraint on the peak position."""
+
+    def set_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
 
     def set_start_stop_indices(self) -> None:
@@ -431,7 +497,13 @@ class CenterFFTCropAsymZYX(CenterFFT):
 
 
 class CenterFFTPadSymZCropSymYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, crop it in Y and X.
+
+    The peak is centered in ZYX.
+    """
+
+    def set_pad_width(self) -> None:
         if self.pad_size is None:
             self.pad_width = np.zeros(6, dtype=int)
             return
@@ -500,7 +572,13 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
 
 
 class CenterFFTPadSymZCropAsymYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, crop it in Y and X.
+
+    The peak is centered in Z only.
+    """
+
+    def set_pad_width(self) -> None:
         if self.pad_size is None:
             self.pad_width = np.zeros(6, dtype=int)
             return
@@ -567,7 +645,13 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
 
 
 class CenterFFTPadAsymZCropSymYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, crop it in Y and X.
+
+    The peak is centered in Y and X only.
+    """
+
+    def set_pad_width(self) -> None:
         # pad rocking angle without centering the Bragg peak
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
         self.pad_width = np.array(
@@ -626,7 +710,13 @@ class CenterFFTPadAsymZCropSymYX(CenterFFT):
 
 
 class CenterFFTPadAsymZCropAsymYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, crop it in Y and X.
+
+    The peak is not centered.
+    """
+
+    def set_pad_width(self) -> None:
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
         self.pad_width = np.array(
             [
@@ -683,7 +773,13 @@ class CenterFFTPadAsymZCropAsymYX(CenterFFT):
 
 
 class CenterFFTPadSymZ(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z.
+
+    The peak is centered in Z.
+    """
+
+    def set_pad_width(self) -> None:
         if self.pad_size[0] != util.higher_primes(
             self.pad_size[0], maxprime=7, required_dividers=(2,)
         ):
@@ -731,7 +827,13 @@ class CenterFFTPadSymZ(CenterFFT):
 
 
 class CenterFFTPadAsymZ(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z.
+
+    The peak is not centered.
+    """
+
+    def set_pad_width(self) -> None:
         # pad rocking angle without centering the Bragg peak, keep detector size
         nz1 = util.higher_primes(self.data_shape[0], maxprime=7, required_dividers=(2,))
 
@@ -770,7 +872,13 @@ class CenterFFTPadAsymZ(CenterFFT):
 
 
 class CenterFFTPadSymZYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, Y and X.
+
+    The peak is centered.
+    """
+
+    def set_pad_width(self) -> None:
         # pad both dimensions based on 'pad_size'
         self.logger.info(f"pad_size: {self.pad_size}")
         self.logger.info(
@@ -829,7 +937,13 @@ class CenterFFTPadSymZYX(CenterFFT):
 
 
 class CenterFFTPadAsymZYX(CenterFFT):
-    def get_pad_width(self) -> None:
+    """
+    Pad the data along Z, Y and X.
+
+    The peak is not centered.
+    """
+
+    def set_pad_width(self) -> None:
         nbz, nby, nbx = self.data_shape
         nz1, ny1, nx1 = [
             util.higher_primes(nbz, maxprime=7, required_dividers=(2,)),
@@ -879,7 +993,9 @@ class CenterFFTPadAsymZYX(CenterFFT):
 
 
 class SkipCentering(CenterFFT):
-    def get_pad_width(self) -> None:
+    """Skip centering."""
+
+    def set_pad_width(self) -> None:
         self.pad_width = np.zeros(6, dtype=int)
 
     def update_frames_logical(
