@@ -182,7 +182,7 @@ class CenterFFT(ABC):
 
     def set_start_stop_indices(self) -> None:
         """Calculate the start-stop indices used for cropping the data."""
-        return
+        return  # start_stop_indices already set for the general case in __init__
 
     def update_frames_logical(
         self,
@@ -1005,4 +1005,4 @@ class SkipCentering(CenterFFT):
         return frames_logical
 
     def update_q_values(self) -> None:
-        return
+        return  # nothing to do in that case
