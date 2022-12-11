@@ -16,10 +16,73 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 from scipy.ndimage import center_of_mass
 
-from bcdi.preprocessing import bcdi_utils as bu
 from bcdi.utils import utilities as util
+from bcdi.graph import graph_utils as gu
+from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
+
+
+def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
+    """
+    Pad obj with zeros.
+
+    :param array: 3D array to be padded
+    :param padding_width: number of zero pixels to padd on each side
+    :param mask_flag: set to True to pad with 1, False to pad with 0
+    :type mask_flag: bool
+    :param debugging: set to True to see plots
+    :type debugging: bool
+    :return: obj padded with zeros
+    """
+    valid.valid_ndarray(arrays=array, ndim=3)
+    nbz, nby, nbx = array.shape
+    if all(x == 0 for x in np.zeros(6)):
+        return array
+
+    if debugging:
+        gu.multislices_plot(
+            array=array,
+            sum_frames=False,
+            plot_colorbar=True,
+            vmin=0,
+            vmax=1,
+            title="Array before padding",
+        )
+
+    if mask_flag:
+        newobj = np.ones(
+            (
+                nbz + padding_width[0] + padding_width[1],
+                nby + padding_width[2] + padding_width[3],
+                nbx + padding_width[4] + padding_width[5],
+            )
+        )
+    else:
+        newobj = np.zeros(
+            (
+                nbz + padding_width[0] + padding_width[1],
+                nby + padding_width[2] + padding_width[3],
+                nbx + padding_width[4] + padding_width[5],
+            )
+        )
+
+    newobj[
+        padding_width[0] : padding_width[0] + nbz,
+        padding_width[2] : padding_width[2] + nby,
+        padding_width[4] : padding_width[4] + nbx,
+    ] = array
+
+    if debugging:
+        gu.multislices_plot(
+            array=newobj,
+            sum_frames=False,
+            plot_colorbar=True,
+            vmin=0,
+            vmax=1,
+            title="Array after padding",
+        )
+    return newobj
 
 
 class CenterFFT(ABC):
@@ -147,9 +210,9 @@ class CenterFFT(ABC):
             mask = self.crop_array(mask)
 
         self.set_pad_width()
-        data = bu.zero_pad(data, padding_width=self.pad_width, mask_flag=False)
+        data = zero_pad(data, padding_width=self.pad_width, mask_flag=False)
         if mask is not None:
-            bu.zero_pad(
+            zero_pad(
                 mask, padding_width=self.pad_width, mask_flag=True
             )  # mask padded pixels
         self.logger.info(f"FFT box (qx, qz, qy): {self.data_shape}")
