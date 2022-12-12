@@ -7,14 +7,11 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
 import logging
-import pathlib
-import tempfile
 import unittest
 from typing import Tuple
 import numpy as np
 
-from bcdi.preprocessing.center_fft import CenteringFactory
-from bcdi.utils.utilities import gaussian_window
+from bcdi.preprocessing import center_fft
 from tests.config import run_tests
 
 module_logger = logging.getLogger(__name__)
@@ -35,7 +32,7 @@ def create_data(shape: Tuple[int, int, int]) -> np.ndarray:
 class TestCenteringFactory(unittest.TestCase):
     def setUp(self) -> None:
         self.data_shape = (7, 7, 7)
-        self.factory = CenteringFactory(
+        self.factory = center_fft.CenteringFactory(
             data=create_data(self.data_shape),
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
@@ -47,6 +44,10 @@ class TestCenteringFactory(unittest.TestCase):
             q_values=None,
             logger=module_logger,
         )
+
+    def test_data_shape(self):
+        with self.assertRaises(ValueError):
+            self.factory.data_shape = (2, 2)
 
     def test_find_center_max(self):
         self.assertEqual(
@@ -76,6 +77,57 @@ class TestCenteringFactory(unittest.TestCase):
             (4, 2, 4),
         )
 
+    def test_find_center_fix_bragg(self):
+        self.factory.fix_bragg = [3, 3, 3]
+        center = self.factory.find_center(
+            data=create_data(self.data_shape), method="max_com"
+        )
+        self.assertEqual(
+            center,
+            (3, 3, 3),
+        )
+
+    def test_find_center_fix_bragg_wrong_length(self):
+        self.factory.fix_bragg = [3, 3]
+        with self.assertRaises(ValueError):
+            self.factory.find_center(
+                data=create_data(self.data_shape), method="max_com"
+            )
+
+    def test_find_center_fix_bragg_binning(self):
+        self.factory.fix_bragg = [6, 6, 6]
+        self.factory.binning = [1, 2, 1]
+        center = self.factory.find_center(
+            data=create_data(self.data_shape), method="max_com"
+        )
+        self.assertEqual(
+            center,
+            (6, 3, 6),
+        )
+
+    def test_find_center_fix_bragg_preprocessing_binning(self):
+        self.factory.fix_bragg = [6, 6, 6]
+        self.factory.binning = [1, 2, 1]
+        self.factory.preprocessing_binning = [1, 1, 3]
+        center = self.factory.find_center(
+            data=create_data(self.data_shape), method="max_com"
+        )
+        self.assertEqual(
+            center,
+            (6, 3, 2),
+        )
+
+    def test_find_center_fix_bragg_roi(self):
+        self.factory.fix_bragg = [6, 6, 6]
+        self.factory.roi = (1, self.data_shape[1], 3, self.data_shape[2])
+        center = self.factory.find_center(
+            data=create_data(self.data_shape), method="max_com"
+        )
+        self.assertEqual(
+            center,
+            (6, 5, 3),
+        )
+
     def test_get_max_symmetrical_window(self):
         self.assertEqual(
             self.factory.max_symmetrical_window,
@@ -89,6 +141,102 @@ class TestCenteringFactory(unittest.TestCase):
             self.factory.fft_option,
             "skip",
         )
+
+    def test_round_sequence_to_int(self):
+        self.assertEqual(self.factory.round_sequence_to_int((2.3, -1.1)), (2, -1))
+
+    def test_round_sequence_to_int_not_a_sequence(self):
+        with self.assertRaises(TypeError):
+            self.factory.round_sequence_to_int(2.3)
+
+    def test_round_sequence_to_int_not_numbers(self):
+        with self.assertRaises(ValueError):
+            self.factory.round_sequence_to_int([2.3, "c"])
+
+    def test_round_sequence_to_int_none(self):
+        with self.assertRaises(ValueError):
+            self.factory.round_sequence_to_int([2.3, None])
+
+    def test_round_sequence_to_int_nan(self):
+        with self.assertRaises(ValueError):
+            self.factory.round_sequence_to_int([2.3, np.nan])
+
+    def test_get_centering_instance(self):
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFT
+        )
+
+    def test_get_centering_instance_crop_sym_ZYX(self):
+        self.factory.fft_option = "crop_sym_ZYX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTCropSymZYX
+        )
+
+    def test_get_centering_instance_crop_asym_ZYX(self):
+        self.factory.fft_option = "crop_asym_ZYX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTCropAsymZYX
+        )
+
+    def test_get_centering_instance_pad_sym_Z_crop_sym_YX(self):
+        self.factory.fft_option = "pad_sym_Z_crop_sym_YX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadSymZCropSymYX
+        )
+
+    def test_get_centering_instance_pad_sym_Z_crop_asym_YX(self):
+        self.factory.fft_option = "pad_sym_Z_crop_asym_YX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadSymZCropAsymYX
+        )
+
+    def test_get_centering_instance_pad_asym_Z_crop_sym_YX(self):
+        self.factory.fft_option = "pad_asym_Z_crop_sym_YX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadAsymZCropSymYX
+        )
+
+    def test_get_centering_instance_pad_asym_Z_crop_asym_YX(self):
+        self.factory.fft_option = "pad_asym_Z_crop_asym_YX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(),
+            center_fft.CenterFFTPadAsymZCropAsymYX,
+        )
+
+    def test_get_centering_instance_pad_sym_Z(self):
+        self.factory.fft_option = "pad_sym_Z"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadSymZ
+        )
+
+    def test_get_centering_instance_pad_asym_Z(self):
+        self.factory.fft_option = "pad_asym_Z"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadAsymZ
+        )
+
+    def test_get_centering_instance_pad_sym_ZYX(self):
+        self.factory.fft_option = "pad_sym_ZYX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadSymZYX
+        )
+
+    def test_get_centering_instance_pad_asym_ZYX(self):
+        self.factory.fft_option = "pad_asym_ZYX"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.CenterFFTPadAsymZYX
+        )
+
+    def test_get_centering_instance_skip(self):
+        self.factory.fft_option = "skip"
+        self.assertIsInstance(
+            self.factory.get_centering_instance(), center_fft.SkipCentering
+        )
+
+    def test_get_centering_instance_not_implemented(self):
+        self.factory.fft_option = "unknown"
+        with self.assertRaises(ValueError):
+            self.factory.get_centering_instance()
 
 
 if __name__ == "__main__":

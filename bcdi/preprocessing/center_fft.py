@@ -345,7 +345,7 @@ class CenteringFactory:
 
     @data_shape.setter
     def data_shape(self, value):
-        if not isinstance(value, tuple) and len(value) != 3:
+        if not isinstance(value, tuple) or len(value) != 3:
             raise ValueError(f"Only 3D data is supported, got {len(value)}")
         self._data_shape = value
 
