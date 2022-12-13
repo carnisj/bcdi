@@ -477,11 +477,11 @@ class CenteringFactory:
             return
 
         if method == "max":
-            text = "Max "
+            text = "Max"
         elif method == "com":
-            text = "Center of mass "
+            text = "Center of mass"
         else:
-            text = "Max_com "
+            text = "Max_com"
 
         if self.q_values is None:
             self.logger.info(f"{text} at pixel (Z, Y, X): ({z0, y0, x0})")

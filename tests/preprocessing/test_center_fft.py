@@ -238,6 +238,56 @@ class TestCenteringFactory(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.factory.get_centering_instance()
 
+    def test_log_q_values_at_center_fix_bragg(self):
+        self.factory.fix_bragg = (3, 3, 3)
+        expected = (
+            "Peak intensity position with detector ROI and binning in the "
+            f"detector plane: ({self.factory.center_position})"
+        )
+        with self.assertLogs() as captured:
+            self.factory.log_q_values_at_center("max")
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].getMessage(), expected)
+
+    def test_log_q_values_at_center_max(self):
+        expected = f"Max at pixel (Z, Y, X): ({self.factory.center_position})"
+        with self.assertLogs() as captured:
+            self.factory.log_q_values_at_center("max")
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].getMessage(), expected)
+
+    def test_log_q_values_at_center_com(self):
+        expected = (
+            f"Center of mass at pixel (Z, Y, X): ({self.factory.center_position})"
+        )
+        with self.assertLogs() as captured:
+            self.factory.log_q_values_at_center("com")
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].getMessage(), expected)
+
+    def test_log_q_values_at_center_maxcom(self):
+        expected = f"Max_com at pixel (Z, Y, X): ({self.factory.center_position})"
+        with self.assertLogs() as captured:
+            self.factory.log_q_values_at_center("max_com")
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].getMessage(), expected)
+
+    def test_log_q_values_at_center_maxcom_q_values(self):
+        z0, y0, x0 = self.factory.center_position
+        self.factory.q_values = [
+            np.ones(self.data_shape[0]),
+            2 * np.ones(self.data_shape[1]),
+            3 * np.ones(self.data_shape[2]),
+        ]
+        expected = (
+            f"Max_com at (qx, qz, qy): {self.factory.q_values[0][z0]:.5f}, "
+            f"{self.factory.q_values[1][y0]:.5f}, {self.factory.q_values[2][x0]:.5f}"
+        )
+        with self.assertLogs() as captured:
+            self.factory.log_q_values_at_center("max_com")
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].getMessage(), expected)
+
 
 if __name__ == "__main__":
     run_tests(TestCenteringFactory)
