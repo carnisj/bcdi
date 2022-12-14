@@ -289,5 +289,87 @@ class TestCenteringFactory(unittest.TestCase):
         self.assertEqual(captured.records[0].getMessage(), expected)
 
 
+class TestCenterFFT(unittest.TestCase):
+    def setUp(self) -> None:
+        self.data_shape = (7, 7, 7)
+        self.instance = center_fft.CenteringFactory(
+            data=create_data(self.data_shape),
+            binning=(1, 1, 1),
+            preprocessing_binning=(1, 1, 1),
+            roi=(0, self.data_shape[1], 0, self.data_shape[2]),
+            fix_bragg=None,
+            fft_option="crop_sym_ZYX",
+            pad_size=None,
+            centering_method="max",
+            q_values=[
+                np.ones(self.data_shape[0]),
+                2 * np.ones(self.data_shape[1]),
+                3 * np.ones(self.data_shape[2]),
+            ],
+            logger=module_logger,
+        ).get_centering_instance()
+
+    def test_init(self):
+        self.assertTrue(all(val == 0 for val in self.instance.pad_width))
+        self.assertEqual(
+            self.instance.start_stop_indices,
+            (
+                0,
+                self.instance.data_shape[0],
+                0,
+                self.instance.data_shape[1],
+                0,
+                self.instance.data_shape[2],
+            ),
+        )
+
+    def test_pad_size_not_a_sequence(self):
+        with self.assertRaises(TypeError):
+            self.instance.pad_size = 3
+
+    def test_pad_size_none(self):
+        self.assertIsNone(self.instance.pad_size)
+
+    def test_pad_size_sequence_wrong_length(self):
+        with self.assertRaises(ValueError):
+            self.instance.pad_size = (3, 3)
+
+    def test_pad_size_violate_fft_requirements(self):
+        with self.assertRaises(ValueError):
+            self.instance.pad_size = (9, 8, 8)
+
+    def test_pad_size_not_integers(self):
+        with self.assertRaises(TypeError):
+            self.instance.pad_size = (128, 128, 128.0)
+
+    def test_start_stop_indices_not_a_sequence(self):
+        with self.assertRaises(TypeError):
+            self.instance.start_stop_indices = 3
+
+    def test_start_stop_indices_sequence_wrong_length(self):
+        with self.assertRaises(ValueError):
+            self.instance.start_stop_indices = (3, 3)
+
+    def test_start_stop_indices_sequence_not_integers(self):
+        with self.assertRaises(TypeError):
+            self.instance.start_stop_indices = (0, 6, 0, 6, 0, 6.0)
+
+    def test_start_stop_indices_negative_index(self):
+        with self.assertRaises(ValueError):
+            self.instance.start_stop_indices = (0, 6, 0, 6, -1, 6)
+
+    def test_start_stop_indices_index_larger_than_shape(self):
+        with self.assertRaises(ValueError):
+            self.instance.start_stop_indices = (
+                0,
+                6,
+                0,
+                6,
+                0,
+                self.instance.data_shape[2] + 1,
+            )
+
+
 if __name__ == "__main__":
     run_tests(TestCenteringFactory)
+    run_tests(TestCenterFFT)

@@ -161,26 +161,59 @@ class CenterFFT(ABC):
         self.start_stop_indices = (0, data_shape[0], 0, data_shape[1], 0, data_shape[2])
 
     @property
-    def pad_size(self):
+    def pad_size(self) -> Optional[Tuple[int, int, int]]:
         """User defined shape to which the data should be padded."""
         return self._pad_size
 
     @pad_size.setter
-    def pad_size(self, value):
+    def pad_size(self, value) -> None:
         if isinstance(value, (list, tuple)):
-            if len(value) != 3:
-                raise ValueError("pad_size should be a list of three elements")
+            if len(value) != len(self.data_shape):
+                raise ValueError(
+                    f"pad_size should be a list of {len(self.data_shape)} elements"
+                )
             if value[0] != util.higher_primes(
                 value[0], maxprime=7, required_dividers=(2,)
             ):
                 raise ValueError(
-                    f"pad_size[0]={value[0]} " f"does not meet FFT requirements"
+                    f"pad_size[0]={value[0]} does not meet FFT requirements"
                 )
+            if any(not isinstance(val, int) for val in value):
+                raise TypeError(f"indices should be integers")
         elif value is not None:
-            raise ValueError(
-                "pad_size should be a None or list of three elements, " f"got {value}"
+            raise TypeError(
+                f"pad_size should be None or a list of {len(self.data_shape)} elements,"
+                f" got {value}"
             )
         self._pad_size = value
+
+    @property
+    def start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
+        """Indices used for cropping the array."""
+        return self._start_stop_indices
+
+    @start_stop_indices.setter
+    def start_stop_indices(self, value) -> None:
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("expecting a tuple, got " f"{type(value)}")
+        if len(value) != 2 * len(self.data_shape):
+            raise ValueError(
+                f"expecting a tuple of {2* len(self.data_shape)} integers, "
+                f"got {len(value)} values"
+            )
+        if any(val < 0 for val in value):
+            raise ValueError(f"start indices should be >=0, got {value}")
+        if (
+            value[1] > self.data_shape[0]
+            or value[3] > self.data_shape[1]
+            or value[5] > self.data_shape[2]
+        ):
+            raise ValueError(
+                "stop indices should be smaller than the data shape, got " f"{value}"
+            )
+        if any(not isinstance(val, int) for val in value):
+            raise TypeError(f"indices should be integers")
+        self._start_stop_indices = value
 
     def center_fft(
         self,
