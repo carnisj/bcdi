@@ -29,6 +29,27 @@ def create_data(shape: Tuple[int, int, int]) -> np.ndarray:
     return data
 
 
+class TestRoundSequenceToInt(unittest.TestCase):
+    def test_round_sequence_to_int(self):
+        self.assertEqual(center_fft.round_sequence_to_int((2.3, -1.1)), (2, -1))
+
+    def test_round_sequence_to_int_not_a_sequence(self):
+        with self.assertRaises(TypeError):
+            center_fft.round_sequence_to_int(2.3)
+
+    def test_round_sequence_to_int_not_numbers(self):
+        with self.assertRaises(ValueError):
+            center_fft.round_sequence_to_int([2.3, "c"])
+
+    def test_round_sequence_to_int_none(self):
+        with self.assertRaises(ValueError):
+            center_fft.round_sequence_to_int([2.3, None])
+
+    def test_round_sequence_to_int_nan(self):
+        with self.assertRaises(ValueError):
+            center_fft.round_sequence_to_int([2.3, np.nan])
+
+
 class TestCenteringFactory(unittest.TestCase):
     def setUp(self) -> None:
         self.data_shape = (7, 7, 7)
@@ -141,25 +162,6 @@ class TestCenteringFactory(unittest.TestCase):
             self.factory.fft_option,
             "skip",
         )
-
-    def test_round_sequence_to_int(self):
-        self.assertEqual(self.factory.round_sequence_to_int((2.3, -1.1)), (2, -1))
-
-    def test_round_sequence_to_int_not_a_sequence(self):
-        with self.assertRaises(TypeError):
-            self.factory.round_sequence_to_int(2.3)
-
-    def test_round_sequence_to_int_not_numbers(self):
-        with self.assertRaises(ValueError):
-            self.factory.round_sequence_to_int([2.3, "c"])
-
-    def test_round_sequence_to_int_none(self):
-        with self.assertRaises(ValueError):
-            self.factory.round_sequence_to_int([2.3, None])
-
-    def test_round_sequence_to_int_nan(self):
-        with self.assertRaises(ValueError):
-            self.factory.round_sequence_to_int([2.3, np.nan])
 
     def test_get_centering_instance(self):
         self.assertIsInstance(
@@ -292,8 +294,9 @@ class TestCenteringFactory(unittest.TestCase):
 class TestCenterFFT(unittest.TestCase):
     def setUp(self) -> None:
         self.data_shape = (7, 7, 7)
+        self.data = create_data(self.data_shape)
         self.instance = center_fft.CenteringFactory(
-            data=create_data(self.data_shape),
+            data=self.data,
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
@@ -369,7 +372,66 @@ class TestCenterFFT(unittest.TestCase):
                 self.instance.data_shape[2] + 1,
             )
 
+    def test_crop_array(self):
+        self.instance.start_stop_indices = (0, 6, 0, 6, 1, 6)
+        max_indices = center_fft.round_sequence_to_int(
+            np.unravel_index(abs(self.data).argmax(), self.data.shape)
+        )
+        out = self.instance.crop_array(self.data)
+        self.assertTrue(
+            out.shape
+            == (
+                self.instance.start_stop_indices[1]
+                - self.instance.start_stop_indices[0],
+                self.instance.start_stop_indices[3]
+                - self.instance.start_stop_indices[2],
+                self.instance.start_stop_indices[5]
+                - self.instance.start_stop_indices[4],
+            )
+        )
+        out_max_indices = center_fft.round_sequence_to_int(
+            np.unravel_index(abs(out).argmax(), out.shape)
+        )
+        self.assertTrue(
+            out_max_indices
+            == (
+                max_indices[0] - self.instance.start_stop_indices[0],
+                max_indices[1] - self.instance.start_stop_indices[2],
+                max_indices[2] - self.instance.start_stop_indices[4],
+            )
+        )
+
+    def test_get_data_shape_wrong_length(self):
+        with self.assertRaises(ValueError):
+            self.instance.data_shape = (5, 3)
+
+    def test_center_fft(self):
+        self.data_shape = (16, 16, 16)
+        self.data = create_data(self.data_shape)
+        self.instance = center_fft.CenteringFactory(
+            data=self.data,
+            binning=(1, 1, 1),
+            preprocessing_binning=(1, 1, 1),
+            roi=(0, self.data_shape[1], 0, self.data_shape[2]),
+            fix_bragg=None,
+            fft_option="crop_sym_ZYX",
+            pad_size=None,
+            centering_method="max",
+            q_values=None,
+            logger=module_logger,
+        ).get_centering_instance()
+        data, mask, pad_width, q_values, frames_logical = self.instance.center_fft(
+            data=self.data, mask=None, frames_logical=None
+        )
+        self.assertIsNone(mask)
+        self.assertIsNone(frames_logical)
+        self.assertIsNone(q_values)
+        self.assertTrue(all(val == 0 for val in self.instance.pad_width))
+        self.assertEqual(self.instance.center_position, (9, 9, 9))
+        self.assertEqual(self.instance.start_stop_indices, (2, 16, 2, 16, 2, 16))
+
 
 if __name__ == "__main__":
+    run_tests(TestRoundSequenceToInt)
     run_tests(TestCenteringFactory)
     run_tests(TestCenterFFT)

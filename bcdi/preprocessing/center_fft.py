@@ -23,7 +23,20 @@ from bcdi.utils import validation as valid
 module_logger = logging.getLogger(__name__)
 
 
-def zero_pad(array, padding_width=np.zeros(6), mask_flag=False, debugging=False):
+def round_sequence_to_int(
+    sequence: Union[Tuple[Any, ...], List[Any]]
+) -> Tuple[int, ...]:
+    """Round a sequence of numbers to integers."""
+    if not isinstance(sequence, (tuple, list)):
+        raise TypeError(f"Expected a list or tuple, got {type(sequence)}")
+    if not all(isinstance(val, Real) for val in sequence):
+        raise ValueError("Non-numeric type encountered")
+    return tuple(map(lambda x: int(np.rint(x)), sequence))
+
+
+def zero_pad(
+    array, padding_width=np.zeros(6), mask_flag=False, debugging=False
+) -> np.ndarray:
     """
     Pad obj with zeros.
 
@@ -161,6 +174,17 @@ class CenterFFT(ABC):
         self.start_stop_indices = (0, data_shape[0], 0, data_shape[1], 0, data_shape[2])
 
     @property
+    def data_shape(self) -> Tuple[int, int, int]:
+        """Shape of the target array."""
+        return self._data_shape
+
+    @data_shape.setter
+    def data_shape(self, value: Tuple[int, int, int]) -> None:
+        if len(value) != 3:
+            raise ValueError(f"Only 3D data supported, got {len(value)}D")
+        self._data_shape = value
+
+    @property
     def pad_size(self) -> Optional[Tuple[int, int, int]]:
         """User defined shape to which the data should be padded."""
         return self._pad_size
@@ -264,13 +288,6 @@ class CenterFFT(ABC):
             self.start_stop_indices[2] : self.start_stop_indices[3],
             self.start_stop_indices[4] : self.start_stop_indices[5],
         ]
-
-    def get_data_shape(self, data: np.ndarray) -> None:
-        """Get and save the shape of the target data."""
-        if data.ndim != 3:
-            raise ValueError(f"Only 3D data supported, got {data.ndim}D")
-        nbz, nby, nbx = data.shape
-        self.data_shape = (nbz, nby, nbx)
 
     def set_pad_width(self) -> None:
         """Calculate the pad_width parameter depending on the centering method."""
@@ -412,17 +429,6 @@ class CenteringFactory:
             )
             self.fft_option = "skip"
 
-    @staticmethod
-    def round_sequence_to_int(
-        sequence: Union[Tuple[Any, ...], List[Any]]
-    ) -> Tuple[int, ...]:
-        """Round a sequence of numbers to integers."""
-        if not isinstance(sequence, (tuple, list)):
-            raise TypeError(f"Expected a list or tuple, got {type(sequence)}")
-        if not all(isinstance(val, Real) for val in sequence):
-            raise ValueError("Non-numeric type encountered")
-        return tuple(map(lambda x: int(np.rint(x)), sequence))
-
     def find_center(self, data: np.ndarray, method: str) -> Tuple[int, ...]:
         """
         Find the center (ideally the Bragg peak) of the dataset.
@@ -445,18 +451,18 @@ class CenteringFactory:
             x0 = (self.fix_bragg[2] - self.roi[2]) / (
                 self.preprocessing_binning[2] * self.binning[2]
             )
-            return self.round_sequence_to_int((self.fix_bragg[0], y0, x0))
+            return round_sequence_to_int((self.fix_bragg[0], y0, x0))
 
         if method == "max":
-            return self.round_sequence_to_int(
+            return round_sequence_to_int(
                 np.unravel_index(abs(data).argmax(), data.shape)
             )
         if method == "com":
-            return self.round_sequence_to_int(center_of_mass(data))
+            return round_sequence_to_int(center_of_mass(data))
         # 'max_com'
         position = list(np.unravel_index(abs(data).argmax(), data.shape))
         position[1:] = center_of_mass(data[position[0], :, :])
-        return self.round_sequence_to_int(position)
+        return round_sequence_to_int(position)
 
     def get_centering_instance(self) -> CenterFFT:
         """Return the correct centering instance depending on the FFT option."""
