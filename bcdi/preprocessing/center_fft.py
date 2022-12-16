@@ -35,7 +35,10 @@ def round_sequence_to_int(
 
 
 def zero_pad(
-    array, padding_width=np.zeros(6), mask_flag=False, debugging=False
+    array: np.ndarray,
+    padding_width: np.ndarray = np.zeros(6),
+    mask_flag: bool = False,
+    debugging: bool = False,
 ) -> np.ndarray:
     """
     Pad obj with zeros.
@@ -190,7 +193,7 @@ class CenterFFT(ABC):
         return self._pad_size
 
     @pad_size.setter
-    def pad_size(self, value) -> None:
+    def pad_size(self, value: Optional[Tuple[int, int, int]]) -> None:
         if isinstance(value, (list, tuple)):
             if len(value) != len(self.data_shape):
                 raise ValueError(
@@ -217,7 +220,7 @@ class CenterFFT(ABC):
         return self._start_stop_indices
 
     @start_stop_indices.setter
-    def start_stop_indices(self, value) -> None:
+    def start_stop_indices(self, value: Tuple[int, int, int, int, int, int]) -> None:
         if not isinstance(value, (list, tuple)):
             raise TypeError("expecting a tuple, got " f"{type(value)}")
         if len(value) != 2 * len(self.data_shape):
@@ -662,6 +665,10 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
     def update_q_values(self) -> None:
         if self.q_values is None:
             return
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -735,6 +742,10 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
     def update_q_values(self) -> None:
         if self.q_values is None:
             return
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -882,6 +893,10 @@ class CenterFFTPadSymZ(CenterFFT):
     """
 
     def set_pad_width(self) -> None:
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         if self.pad_size[0] != util.higher_primes(
             self.pad_size[0], maxprime=7, required_dividers=(2,)
         ):
@@ -923,6 +938,10 @@ class CenterFFTPadSymZ(CenterFFT):
     def update_q_values(self) -> None:
         if self.q_values is None:
             return
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         dqx = self.q_values[0][1] - self.q_values[0][0]
         qx0 = self.q_values[0][0] - self.pad_width[0] * dqx
         self.q_values[0] = qx0 + np.arange(self.pad_size[0]) * dqx
@@ -981,6 +1000,10 @@ class CenterFFTPadSymZYX(CenterFFT):
     """
 
     def set_pad_width(self) -> None:
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         # pad both dimensions based on 'pad_size'
         self.logger.info(f"pad_size: {self.pad_size}")
         self.logger.info(
@@ -1027,6 +1050,10 @@ class CenterFFTPadSymZYX(CenterFFT):
     def update_q_values(self) -> None:
         if self.q_values is None:
             return
+        if self.pad_size is None:
+            raise ValueError(
+                "pad_size should be a sequence of three integers, got None"
+            )
         dqx = self.q_values[0][1] - self.q_values[0][0]
         dqz = self.q_values[1][1] - self.q_values[1][0]
         dqy = self.q_values[2][1] - self.q_values[2][0]
