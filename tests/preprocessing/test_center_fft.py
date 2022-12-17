@@ -447,7 +447,7 @@ class TestCenterFFT(unittest.TestCase):
             q_values=None,
             logger=module_logger,
         ).get_centering_instance()
-        data, mask, _, _, frames_logical = self.instance.center_fft(
+        _, mask, _, _, frames_logical = self.instance.center_fft(
             data=self.data, mask=self.data, frames_logical=np.ones(self.data.shape[0])
         )
         self.assertEqual(mask.shape, (14, 14, 14))
