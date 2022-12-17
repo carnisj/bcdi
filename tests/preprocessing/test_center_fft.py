@@ -9,6 +9,7 @@
 import logging
 import unittest
 from typing import Tuple
+
 import numpy as np
 
 from bcdi.preprocessing import center_fft
@@ -405,7 +406,7 @@ class TestCenterFFT(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.instance.data_shape = (5, 3)
 
-    def test_center_fft(self):
+    def test_center_fft_minimum_config(self):
         self.data_shape = (16, 16, 16)
         self.data = create_data(self.data_shape)
         self.instance = center_fft.CenteringFactory(
@@ -426,9 +427,62 @@ class TestCenterFFT(unittest.TestCase):
         self.assertIsNone(mask)
         self.assertIsNone(frames_logical)
         self.assertIsNone(q_values)
-        self.assertTrue(all(val == 0 for val in self.instance.pad_width))
+        self.assertTrue(all(val == 0 for val in pad_width))
         self.assertEqual(self.instance.center_position, (9, 9, 9))
         self.assertEqual(self.instance.start_stop_indices, (2, 16, 2, 16, 2, 16))
+        self.assertEqual(data.shape, (14, 14, 14))
+
+    def test_center_fft_mask_frames_logical_not_none(self):
+        self.data_shape = (16, 16, 16)
+        self.data = create_data(self.data_shape)
+        self.instance = center_fft.CenteringFactory(
+            data=self.data,
+            binning=(1, 1, 1),
+            preprocessing_binning=(1, 1, 1),
+            roi=(0, self.data_shape[1], 0, self.data_shape[2]),
+            fix_bragg=None,
+            fft_option="crop_sym_ZYX",
+            pad_size=None,
+            centering_method="max",
+            q_values=None,
+            logger=module_logger,
+        ).get_centering_instance()
+        data, mask, _, _, frames_logical = self.instance.center_fft(
+            data=self.data, mask=self.data, frames_logical=np.ones(self.data.shape[0])
+        )
+        self.assertEqual(mask.shape, (14, 14, 14))
+        self.assertTrue(
+            all(
+                val == 0
+                for val in frames_logical[0 : self.instance.start_stop_indices[0]]
+            )
+        )
+
+    def test_center_fft_q_values_not_none(self):
+        self.data_shape = (16, 16, 16)
+        self.data = create_data(self.data_shape)
+        self.instance = center_fft.CenteringFactory(
+            data=self.data,
+            binning=(1, 1, 1),
+            preprocessing_binning=(1, 1, 1),
+            roi=(0, self.data_shape[1], 0, self.data_shape[2]),
+            fix_bragg=None,
+            fft_option="crop_sym_ZYX",
+            pad_size=None,
+            centering_method="max",
+            q_values=[
+                np.arange(self.data.shape[0], dtype=int),
+                -np.arange(self.data.shape[1], dtype=int),
+                10 + np.arange(self.data.shape[2], dtype=int),
+            ],
+            logger=module_logger,
+        ).get_centering_instance()
+        _, _, _, q_values, _ = self.instance.center_fft(
+            data=self.data, mask=self.data, frames_logical=np.ones(self.data.shape[0])
+        )
+        self.assertTrue(q_values[0][0] == 2)
+        self.assertTrue(q_values[1][0] == -2)
+        self.assertTrue(q_values[2][0] == 12)
 
 
 if __name__ == "__main__":

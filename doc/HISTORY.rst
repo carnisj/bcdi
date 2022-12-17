@@ -1,6 +1,9 @@
 Future:
 -------
 
+* Refactor the function `bcdi_utils.center_fft` in separate classes using
+  inheritance.
+
 * Split `setup.ortho_directspace` into methods to get the transformation matrix in the
   laboratory frame or crystal frame. Implement `setup.ortho_directspace_labframe`.
 

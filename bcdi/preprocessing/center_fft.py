@@ -16,8 +16,8 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 from scipy.ndimage import center_of_mass
 
-from bcdi.utils import utilities as util
 from bcdi.graph import graph_utils as gu
+from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
@@ -206,7 +206,7 @@ class CenterFFT(ABC):
                     f"pad_size[0]={value[0]} does not meet FFT requirements"
                 )
             if any(not isinstance(val, int) for val in value):
-                raise TypeError(f"indices should be integers")
+                raise TypeError("indices should be integers")
         elif value is not None:
             raise TypeError(
                 f"pad_size should be None or a list of {len(self.data_shape)} elements,"
@@ -216,7 +216,7 @@ class CenterFFT(ABC):
 
     @property
     def start_stop_indices(self) -> Tuple[int, int, int, int, int, int]:
-        """Indices used for cropping the array."""
+        """Define the indices defining ranges used when cropping the array."""
         return self._start_stop_indices
 
     @start_stop_indices.setter
@@ -239,7 +239,7 @@ class CenterFFT(ABC):
                 "stop indices should be smaller than the data shape, got " f"{value}"
             )
         if any(not isinstance(val, int) for val in value):
-            raise TypeError(f"indices should be integers")
+            raise TypeError("indices should be integers")
         self._start_stop_indices = value
 
     def center_fft(
@@ -262,7 +262,7 @@ class CenterFFT(ABC):
         :param frames_logical: array of initial length the number of measured frames.
          In case of padding the length changes. A frame whose index is set to 1 means
          that it is used, 0 means not used, -1 means padded (added) frame.
-        :return: the updated data, mask, pad_width, frames_logical, q_values
+        :return: the updated data, mask, pad_width, q_values, frames_logical
         """
         self.set_start_stop_indices()
         data = self.crop_array(data)
