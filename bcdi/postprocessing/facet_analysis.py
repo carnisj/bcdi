@@ -59,7 +59,7 @@ class Facets:
         self,
         filename: str,
         pathdir: str = "./",
-        savedir: str = None,
+        savedir: Optional[str] = None,
         lattice: float = 3.912,
     ) -> None:
         # Create other required parameters with default None value
