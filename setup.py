@@ -165,7 +165,7 @@ setup(
             "pydocstyle==6.1.1",
             "pyfakefs==4.5.6",
             "twine==4.0.0",
-            "wheel==0.37.1",
+            "wheel==0.38.1",
         ],
     },
     classifiers=[
