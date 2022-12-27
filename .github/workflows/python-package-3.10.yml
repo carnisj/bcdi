@@ -27,14 +27,14 @@ jobs:
       run: | 
         python_path=$(which python  2>&1)
         echo "Python path: $python_path"
-        site_packages="Site packages path: $( cd "$(dirname "$(dirname "$python_path")")"/lib/python${{ matrix.python-version }}/site-packages ; pwd -P )"
+        site_packages="Site packages path: $( cd "$(dirname "$(dirname "$python_path")")"/lib/python3.10/site-packages ; pwd -P )"
         echo $site_packages
 
     - name: Cache dependencies
       id: myCache
       uses: actions/cache@v2
       with:
-        path: ${{env.LD_LIBRARY_PATH}}/python${{ matrix.python-version }}/site-packages
+        path: ${{env.LD_LIBRARY_PATH}}/python3.10/site-packages
         key: ${{ runner.os }}-pip-v0-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
