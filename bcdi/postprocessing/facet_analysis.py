@@ -211,8 +211,8 @@ class Facets:
         except AttributeError:
             raise NameError("This file does not exist or is not right.")
 
-        print("Number of points = %s" % str(vtkdata.GetNumberOfPoints()))
-        print("Number of cells = %s" % str(vtkdata.GetNumberOfCells()))
+        print(f"Number of points = {vtkdata.GetNumberOfPoints()}")
+        print(f"Number of cells = {vtkdata.GetNumberOfCells()}")
 
         self.vtk_data = {
             "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
@@ -250,7 +250,7 @@ class Facets:
         ]
 
         self.nb_facets = int(max(self.vtk_data["facet_id"]))
-        print("Number of facets = %s" % str(self.nb_facets))
+        print(f"Number of facets = {self.nb_facets}")
 
         # Get means
         facet_indices = np.arange(1, int(self.nb_facets) + 1, 1)
@@ -262,7 +262,7 @@ class Facets:
         disp_std = np.zeros(self.nb_facets)  # stored later in field data
 
         for ind in facet_indices:
-            print("Facet = %d" % ind)
+            print(f"Facet = {ind}")
             results = self.extract_facet(int(ind), plot=False)
             if results is not None:
                 strain_mean[ind - 1] = results["strain_mean"]
@@ -327,10 +327,9 @@ class Facets:
         }
 
         # Update legend
-        legend: List[str] = []
-        for e in normals.keys():
-            legend = legend + [" ".join(str("{:.2f}".format(e)) for e in normals[e])]
-        self.field_data["legend"] = legend
+        self.field_data["legend"] = [
+            f"{val[0]:.2f} {val[1]:.2f} {val[2]:.2f}" for _, val in normals.items()
+        ]
 
     def set_rotation_matrix(
         self,
@@ -410,9 +409,7 @@ class Facets:
             self.field_data.loc[mask, "n2"] = v[2]
 
             # Update legend
-            self.field_data.loc[mask, "legend"] = " ".join(
-                ["{:.2f}".format(e) for e in v]
-            )
+            self.field_data.loc[mask, "legend"] = f"{v[0]:.2f} {v[1]:.2f} {v[2]:.2f}"
 
     @no_type_check
     def fixed_reference(
