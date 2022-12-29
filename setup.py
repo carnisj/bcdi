@@ -186,6 +186,7 @@ setup(
         # 'python_requires' below.
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
 )
