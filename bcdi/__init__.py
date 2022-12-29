@@ -6,7 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """The main bcdi package, which contains the whole framework."""
-__version__ = "0.2.8"
+__version__ = "0.2.9"
 
 from subprocess import PIPE, Popen
 
