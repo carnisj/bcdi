@@ -1,5 +1,7 @@
-Future:
--------
+Version 0.2.9:
+--------------
+
+* Add support for Python3.10 and update dependencies.
 
 * Refactor the function `bcdi_utils.center_fft` in separate classes using
   inheritance.
