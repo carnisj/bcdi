@@ -117,10 +117,17 @@ class TestCheckSetup(unittest.TestCase):
         self.setup.check_setup(**self.params)
         self.assertAlmostEqual(self.setup.tilt_angle, self.params["tilt_angle"])
 
-    def test_check_setup_tilt_angle_not_in_config_tilt_angle_single_valued_array(self):
+    def test_check_setup_tilt_angle_not_in_config_tilt_angle_0d_array(self):
         self.setup.tilt_angle = None
         self.params["tilt_angle"] = np.array(1.23)
         self.setup.check_setup(**self.params)
+        self.assertAlmostEqual(self.setup.tilt_angle, float(self.params["tilt_angle"]))
+
+    def test_check_setup_tilt_angle_not_in_config_tilt_angle_1d_array(self):
+        self.setup.tilt_angle = None
+        self.params["tilt_angle"] = np.array([1.23])
+        self.setup.check_setup(**self.params)
+        self.assertAlmostEqual(self.setup.tilt_angle, float(self.params["tilt_angle"]))
 
     def test_check_setup_outofplane_angle_predefined(self):
         self.setup.outofplane_angle = 2

@@ -784,7 +784,7 @@ class Setup:
         if tilt_angle is None or isinstance(tilt_angle, (float, int)):
             mean_tilt = tilt_angle
         elif isinstance(tilt_angle, np.ndarray):
-            if tilt_angle.ndim == 0:
+            if tilt_angle.size == 1:
                 mean_tilt = float(tilt_angle)
             else:
                 mean_tilt = np.mean(
