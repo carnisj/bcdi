@@ -660,8 +660,8 @@ class Setup:
         return self._tilt_angle
 
     @tilt_angle.setter
-    def tilt_angle(self, value):
-        if not isinstance(value, Real) and value is not None:
+    def tilt_angle(self, value: Union[float, int]) -> None:
+        if not isinstance(value, (float, int)) and value is not None:
             raise TypeError("tilt_angle should be a number in degrees")
         self._tilt_angle = value
 
@@ -781,11 +781,18 @@ class Setup:
             raise ValueError("the detector in-plane angle is not defined")
 
         self.tilt_angles = tilt_angle
-        if tilt_angle is not None:
-            tilt_angle = np.mean(
-                np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
-            )
-        self.tilt_angle = self.tilt_angle or tilt_angle
+        if tilt_angle is None or isinstance(tilt_angle, (float, int)):
+            mean_tilt = tilt_angle
+        elif isinstance(tilt_angle, np.ndarray):
+            if tilt_angle.ndim == 0:
+                mean_tilt = float(tilt_angle)
+            else:
+                mean_tilt = np.mean(
+                    np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
+                )
+        else:
+            raise TypeError(f"tilt_angle should be a ndarray, got {type(tilt_angle)}")
+        self.tilt_angle = self.tilt_angle or mean_tilt
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
