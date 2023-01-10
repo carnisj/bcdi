@@ -35,7 +35,7 @@ module_logger = logging.getLogger(__name__)
 
 
 def get_mean_tilt(
-    angles: Optional[Union[float, int, np.ndarray, list[Union[float, int]]]]
+    angles: Optional[Union[float, int, np.ndarray, List[Union[float, int]]]]
 ) -> Optional[float]:
     """
     Calculate the mean tilt depending on the array of incident angles.
