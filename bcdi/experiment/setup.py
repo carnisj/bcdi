@@ -781,22 +781,26 @@ class Setup:
             raise ValueError("the detector in-plane angle is not defined")
 
         self.tilt_angles = tilt_angle
-        if tilt_angle is None or isinstance(tilt_angle, (float, int)):
-            mean_tilt = tilt_angle
-        elif isinstance(tilt_angle, np.ndarray):
-            if tilt_angle.size == 1:
-                mean_tilt = float(tilt_angle)
-            else:
-                mean_tilt = np.mean(
-                    np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
-                )
-        else:
-            raise TypeError(f"tilt_angle should be a ndarray, got {type(tilt_angle)}")
-        self.tilt_angle = self.tilt_angle or mean_tilt
+        self.tilt_angle = self.tilt_angle or self._get_mean_tilt(tilt_angle)
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
+
+    @staticmethod
+    def _get_mean_tilt(
+        angles: Optional[Union[float, int, np.ndarray]]
+    ) -> Optional[float]:
+        """Calculate the mean tilt depending on the array of incident angles."""
+        if angles is None:
+            return angles
+        if isinstance(angles, (float, int)) or (
+            isinstance(angles, np.ndarray) and angles.size == 1
+        ):
+            return float(angles)
+        if isinstance(angles, np.ndarray) and angles.size > 1:
+            return float(np.mean(angles[1:] - angles[0:-1]))
+        raise TypeError(f"tilt_angle should be a ndarray, got {type(angles)}")
 
     def check_setup_cdi(
         self,
