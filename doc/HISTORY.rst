@@ -1,3 +1,9 @@
+Future:
+-------
+
+* Postprocessing: raise NotImplementedError for energy scans not interpolated during
+  preprocessing.
+
 Version 0.2.9:
 --------------
 
