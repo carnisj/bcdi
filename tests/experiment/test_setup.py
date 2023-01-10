@@ -10,8 +10,7 @@ import unittest
 
 import numpy as np
 
-from bcdi.experiment.setup import Setup
-from bcdi.graph.colormap import ColormapFactory
+from bcdi.experiment.setup import get_mean_tilt, Setup
 from tests.config import load_config, run_tests
 
 parameters, skip_tests = load_config("preprocessing")
@@ -177,6 +176,57 @@ class TestCheckSetup(unittest.TestCase):
         self.params["grazing_angle"] = None
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.grazing_angle, None)
+
+
+class TestGetMeanTilt(unittest.TestCase):
+    """
+    Tests related to _get_mean_tilt(
+        angles: Optional[Union[float, int, np.ndarray]]
+    ) -> Optional[float]:
+    """
+
+    def test_float(self):
+        expected = 1.23
+        out = get_mean_tilt(expected)
+        self.assertAlmostEqual(out, expected)
+
+    def test_int(self):
+        expected = 1
+        out = get_mean_tilt(expected)
+        self.assertEqual(out, expected)
+
+    def test_none(self):
+        out = get_mean_tilt(None)
+        self.assertIsNone(out)
+
+    def test_0d_array_of_size_1(self):
+        expected = 1.23
+        out = get_mean_tilt(np.array(expected))
+        self.assertAlmostEqual(out, expected)
+
+    def test_1d_array_of_size_1(self):
+        expected = 1.23
+        out = get_mean_tilt(np.array([expected]))
+        self.assertAlmostEqual(out, expected)
+
+    def test_list_of_length_1(self):
+        expected = 1.23
+        out = get_mean_tilt([expected])
+        self.assertAlmostEqual(out, expected)
+
+    def test_list_of_length_larger_than_1(self):
+        expected = 1
+        out = get_mean_tilt([1, 2, 3])
+        self.assertAlmostEqual(out, expected)
+
+    def test_1d_array_of_size_larger_than_1(self):
+        expected = 1
+        out = get_mean_tilt(np.array([1, 2, 3]))
+        self.assertAlmostEqual(out, expected)
+
+    def test_wrong_type(self):
+        with self.assertRaises(TypeError):
+            get_mean_tilt((1, 2, 3))
 
 
 class TestCorrectDirectBeam(unittest.TestCase):

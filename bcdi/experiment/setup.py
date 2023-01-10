@@ -34,6 +34,27 @@ from bcdi.utils.io_helper import ContextFile
 module_logger = logging.getLogger(__name__)
 
 
+def get_mean_tilt(
+    angles: Optional[Union[float, int, np.ndarray, list[Union[float, int]]]]
+) -> Optional[float]:
+    """
+    Calculate the mean tilt depending on the array of incident angles.
+
+    E.g., for input angles of [0, 0.25, 0.5, 0.75], the mean tilt is 0.25.
+    """
+    if angles is None:
+        return angles
+    if isinstance(angles, list):
+        angles = np.asarray(angles)
+    if isinstance(angles, (float, int)) or (
+        isinstance(angles, np.ndarray) and angles.size == 1
+    ):
+        return float(angles)
+    if isinstance(angles, np.ndarray) and angles.size > 1:
+        return float(np.mean(angles[1:] - angles[0:-1]))
+    raise TypeError(f"tilt_angle should be a ndarray, got {type(angles)}")
+
+
 class Setup:
     """
     Class for defining the experimental geometry.
@@ -781,26 +802,11 @@ class Setup:
             raise ValueError("the detector in-plane angle is not defined")
 
         self.tilt_angles = tilt_angle
-        self.tilt_angle = self.tilt_angle or self._get_mean_tilt(tilt_angle)
+        self.tilt_angle = self.tilt_angle or get_mean_tilt(tilt_angle)
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
             raise TypeError("the tilt angle should be a number")
-
-    @staticmethod
-    def _get_mean_tilt(
-        angles: Optional[Union[float, int, np.ndarray]]
-    ) -> Optional[float]:
-        """Calculate the mean tilt depending on the array of incident angles."""
-        if angles is None:
-            return angles
-        if isinstance(angles, (float, int)) or (
-            isinstance(angles, np.ndarray) and angles.size == 1
-        ):
-            return float(angles)
-        if isinstance(angles, np.ndarray) and angles.size > 1:
-            return float(np.mean(angles[1:] - angles[0:-1]))
-        raise TypeError(f"tilt_angle should be a ndarray, got {type(angles)}")
 
     def check_setup_cdi(
         self,
