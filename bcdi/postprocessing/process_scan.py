@@ -186,17 +186,6 @@ def process_scan(
 
         analysis.update_detector_angles(bragg_peak_position=prm["bragg_peak"])
 
-    #########################################################
-    # calculate q of the Bragg peak in the laboratory frame #
-    #########################################################
-    q_lab = analysis.get_normalized_q_bragg_laboratory_frame
-    logger.info(
-        "Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
-        f"{[f'{val:.4f}' for _, val in enumerate(q_lab)]} (1/A)"
-    )
-    logger.info(f"Wavevector transfer: {analysis.get_norm_q_bragg:.4f} 1/A")
-    logger.info(f"Atomic planar distance: {analysis.get_interplanar_distance:.4f} nm")
-
     #######################
     #  orthogonalize data #
     #######################
@@ -271,11 +260,7 @@ def process_scan(
         # rotate also q_lab to have it along ref_axis_q,
         # as a cross-checkm, vectors needs to be in xyz order
         comment.concatenate("crystalframe")
-        interpolated_crystal.rotate_vector_to_saving_frame(
-            vector=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
-            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
-        )
+        interpolated_crystal.set_q_bragg_to_saving_frame(analysis)
 
     ###############################################
     # rotates the crystal e.g. for easier slicing #
@@ -296,7 +281,6 @@ def process_scan(
             reference_axis=prm["axis_to_align"],
         )
 
-    interpolated_crystal.rescale_q()
     q_final = interpolated_crystal.q_bragg_in_saving_frame
     logger.info(
         f"q_final = ({q_final[0]:.4f} 1/A,"

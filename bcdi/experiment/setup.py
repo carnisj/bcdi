@@ -635,14 +635,16 @@ class Setup:
         }
 
     @property
-    def q_laboratory(self) -> np.ndarray:
+    def q_laboratory(self) -> Optional[np.ndarray]:
         """
         Calculate the diffusion vector in the laboratory frame.
 
         Frame convention: (z downstream, y vertical up, x outboard). The unit is 1/A.
 
-        :return: npdarray of three vectors components.
+        :return: ndarray of three vectors components.
         """
+        if self.exit_wavevector.ndim > 1:  # energy scan
+            return None
         q_laboratory = (self.exit_wavevector - self.incident_wavevector) * 1e-10
         if np.isclose(np.linalg.norm(q_laboratory), 0, atol=1e-15):
             raise ValueError("q_laboratory is null")
