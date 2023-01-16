@@ -17,9 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
-from numpy.fft import fftn, fftshift
 import yaml
 from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
 
 import bcdi.graph.graph_utils as gu
 import bcdi.graph.linecut as linecut
@@ -267,6 +267,8 @@ class Analysis(ABC):
 
     def get_optical_path(self) -> np.ndarray:
         """Calculate the optical path through the crystal."""
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         bulk = pu.find_bulk(
             amp=abs(self.data),
             support_threshold=self.parameters["threshold_unwrap_refraction"],
@@ -282,22 +284,27 @@ class Analysis(ABC):
         # latter is always in the crystal frame (for simpler strain calculation).
         # We need to transform kin and kout back
         # into the crystal frame (also, xrayutilities output is in crystal frame)
-        kin = util.rotate_vector(
-            vectors=[kin[2], kin[1], kin[0]],
+        rotated_kin = util.rotate_vector(
+            vectors=(kin[2], kin[1], kin[0]),
             axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
             reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
         )
-        kout = util.rotate_vector(
-            vectors=[kout[2], kout[1], kout[0]],
+        if isinstance(rotated_kin, tuple):
+            raise TypeError(f"rotated_kin should be a ndarray, got {type(rotated_kin)}")
+        rotated_kout = util.rotate_vector(
+            vectors=(kout[2], kout[1], kout[0]),
             axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
             reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
         )
-
+        if isinstance(rotated_kout, tuple):
+            raise TypeError(
+                f"rotated_kin should be a ndarray, got {type(rotated_kout)}"
+            )
         # calculate the optical path of the incoming wavevector
         path_in = pu.get_opticalpath(
             support=bulk,
             direction="in",
-            k=kin,
+            k=rotated_kin,
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
         )  # path_in already in nm
@@ -306,7 +313,7 @@ class Analysis(ABC):
         path_out = pu.get_opticalpath(
             support=bulk,
             direction="out",
-            k=kout,
+            k=rotated_kout,
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
         )  # path_our already in nm
@@ -324,7 +331,7 @@ class Analysis(ABC):
         )
 
     @abstractmethod
-    def get_q_bragg_crystal_frame(self) -> None:
+    def get_q_bragg_crystal_frame(self) -> Optional[np.ndarray]:
         """Return the q vector of the Bragg peak in the crystal frame."""
         raise NotImplementedError
 
@@ -474,10 +481,12 @@ class DetectorFrameLinearization(Analysis):
     def get_q_bragg_crystal_frame(self) -> Optional[np.ndarray]:
         if self.get_q_bragg_laboratory_frame is None:
             return None
-        return util.rotate_vector(
-            vectors=self.get_q_bragg_laboratory_frame[::-1],
-            axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
-            reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+        return np.asarray(
+            util.rotate_vector(
+                vectors=self.get_q_bragg_laboratory_frame[::-1],
+                axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+                reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+            )
         )
 
     def interpolate_into_crystal_frame(self) -> None:
@@ -485,6 +494,8 @@ class DetectorFrameLinearization(Analysis):
         original_shape = self.original_shape
         if len(original_shape) != 3:
             raise NotImplementedError("Can only process 3D arrays")
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         obj_ortho, voxel_sizes, transfer_matrix = self.setup.ortho_directspace(
             arrays=self.data,
             q_bragg=np.array(self.get_normalized_q_bragg_laboratory_frame[::-1]),
@@ -529,6 +540,8 @@ class OrthogonalFrame(Analysis):
     def calculate_voxel_sizes(self) -> List[float]:
         """Calculate the direct space voxel sizes based on loaded q values."""
         self.q_values = self.load_q_values()
+        if self.q_values is None:
+            raise ValueError("q_values is None")
         qx = self.q_values[0]
         qz = self.q_values[1]
         qy = self.q_values[2]
@@ -552,10 +565,12 @@ class OrthogonalFrame(Analysis):
             self.is_data_in_laboratory_frame
             and self.get_q_bragg_laboratory_frame is not None
         ):
-            return util.rotate_vector(
-                vectors=self.get_q_bragg_laboratory_frame[::-1],
-                axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
-                reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+            return np.asarray(
+                util.rotate_vector(
+                    vectors=self.get_q_bragg_laboratory_frame[::-1],
+                    axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+                    reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+                )
             )
         if self.q_values is None:
             self.q_values = self.load_q_values()
@@ -599,6 +614,8 @@ class OrthogonalFrame(Analysis):
             self.rotate_into_crystal_frame()
 
     def rotate_into_crystal_frame(self) -> None:
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         self.logger.info(
             "Rotating the object in the crystal frame " "for the strain calculation"
         )
@@ -744,6 +761,8 @@ class InterpolatedCrystal:
         Arrays are rotated such that all circles of the sample stage are at their zero
         position.
         """
+        if setup.q_laboratory is None:
+            raise ValueError("setup.q_laboratory is None")
         self.logger.info("Sending sample stage circles to 0")
         (
             self.modulus,
@@ -797,19 +816,24 @@ class InterpolatedCrystal:
 
     def rotate_vector_to_saving_frame(
         self,
-        vector: Union[np.ndarray, Tuple[Union[float, np.ndarray]]],
-        axis_to_align: List[float],
-        reference_axis: List[float],
+        vector: np.ndarray,
+        axis_to_align: np.ndarray,
+        reference_axis: np.ndarray,
     ) -> None:
         """Calculate the diffusion vector in the crystal frame."""
-        self.q_bragg_in_saving_frame = util.rotate_vector(
-            vectors=vector,
-            axis_to_align=axis_to_align,
-            reference_axis=reference_axis,
+        self.q_bragg_in_saving_frame = np.asarray(
+            util.rotate_vector(
+                vectors=vector,
+                axis_to_align=axis_to_align,
+                reference_axis=reference_axis,
+            )
         )
 
     def set_q_bragg_to_saving_frame(self, analysis: Analysis) -> None:
-        if analysis.is_data_in_laboratory_frame:
+        if (
+            analysis.is_data_in_laboratory_frame
+            and analysis.get_normalized_q_bragg_laboratory_frame is not None
+        ):
             self.rotate_vector_to_saving_frame(
                 vector=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
                 axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],

@@ -2367,8 +2367,11 @@ def rotate_crystal(
 
 
 def rotate_vector(
-    vectors, axis_to_align=None, reference_axis=None, rotation_matrix=None
-):
+    vectors: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    axis_to_align: Optional[np.ndarray] = None,
+    reference_axis: Optional[np.ndarray] = None,
+    rotation_matrix: Optional[np.ndarray] = None,
+) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
     """
     Rotate vectors.
 

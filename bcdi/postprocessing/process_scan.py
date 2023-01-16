@@ -242,6 +242,8 @@ def process_scan(
     # laboratory frame (for debugging purpose)     #
     ################################################
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
+        if analysis.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("analysis.get_normalized_q_bragg_laboratory_frame is None")
         comment.concatenate("labframe")
         logger.info("Rotating back the crystal in laboratory frame")
         interpolated_crystal.rotate_crystal(

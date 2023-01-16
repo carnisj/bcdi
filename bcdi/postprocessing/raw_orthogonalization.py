@@ -100,6 +100,8 @@ def orthogonalize(
     # calculate q of the Bragg peak in the laboratory frame #
     #########################################################
     q_lab = analysis.get_normalized_q_bragg_laboratory_frame
+    if q_lab is None:
+        raise ValueError("q_lab is None")
     logger.info(
         "Normalized diffusion vector in the laboratory frame (z*, y*, x*): "
         f"{[f'{val:.4f}' for _, val in enumerate(q_lab)]} (1/A)"
@@ -127,6 +129,8 @@ def orthogonalize(
     # optionally rotates back the crystal #
     # into the laboratory frame           #
     #######################################
+    if analysis.get_normalized_q_bragg_laboratory_frame is None:
+        raise ValueError("analysis.get_normalized_q_bragg_laboratory_frame is None")
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
 
         amplitude, phase = util.rotate_crystal(
@@ -141,7 +145,8 @@ def orthogonalize(
         q_bragg_in_saving_frame = q_lab
 
         if prm["save_frame"] == "lab_flat_sample":
-
+            if setup.q_laboratory is None:
+                raise ValueError("setup.q_laboratory is None")
             (amplitude, phase), q_bragg_in_saving_frame = setup.beamline.flatten_sample(
                 arrays=(amplitude, phase),
                 voxel_size=analysis.voxel_sizes,
@@ -156,13 +161,17 @@ def orthogonalize(
 
     else:  # crystal frame
         complex_object = analysis.data
-        q_bragg_in_saving_frame = util.rotate_vector(
-            vectors=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
-            axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
-            reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+        q_bragg_in_saving_frame = np.asarray(
+            util.rotate_vector(
+                vectors=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+                axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],
+                reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+            )
         )
 
     # rescale q (it is normalized)
+    if analysis.get_interplanar_distance is None:
+        raise ValueError("analysis.get_interplanar_distanc is None")
     q_bragg_in_saving_frame *= 2 * np.pi / (10 * analysis.get_interplanar_distance)
 
     # Save the complex object in the desired output file
