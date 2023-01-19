@@ -1165,6 +1165,40 @@ def get_strain(
     return strain
 
 
+def match_data_range_for_interpolation(
+    old_shape: Tuple[int, int, int],
+    old_voxelsizes: Tuple[int, int, int],
+    new_voxelsizes: Tuple[int, int, int],
+) -> Tuple[int, int, int]:
+    """
+    Find the shape of the array that keeps the data span constant with new voxel sizes.
+
+    :param old_shape: current shape of the 3D array
+    :param old_voxelsizes: current voxel size of the 3D array in each dimension
+    :param new_voxelsizes: voxel size of the 3D array in each dimension for the
+     interpolation
+    :return: the shape that keep the data span constant with the new voxel sizes.
+    """
+    nbz, nby, nbx = old_shape
+    data_extent = (
+        nbz * old_voxelsizes[0],
+        nby * old_voxelsizes[1],
+        nbx * old_voxelsizes[2],
+    )
+    new_extent = (
+        nbz * new_voxelsizes[0],
+        nby * new_voxelsizes[1],
+        nbx * new_voxelsizes[2],
+    )
+    pad_size = [
+        (data_extent[0] - new_extent[0]) // new_voxelsizes[0] + 1,
+        (data_extent[1] - new_extent[1]) // new_voxelsizes[1] + 1,
+        (data_extent[2] - new_extent[2]) // new_voxelsizes[2] + 1,
+    ]
+    pad_size = [int(val) if val >= 0 else 0 for val in pad_size]
+    return nbz + pad_size[0], nby + pad_size[1], nbx + pad_size[2]
+
+
 def mean_filter(
     array,
     support,
@@ -1445,7 +1479,16 @@ def regrid(array, old_voxelsize, new_voxelsize):
         min_excluded=0,
     )
 
-    nbz, nby, nbx = array.shape
+    nbz, nby, nbx = match_data_range_for_interpolation(
+        old_shape=array.shape,
+        old_voxelsizes=old_voxelsize,
+        new_voxelsizes=new_voxelsize,
+    )
+
+    array = util.crop_pad(
+        array=array,
+        output_shape=(nbz, nby, nbx),
+    )
 
     old_z = np.arange(-nbz // 2, nbz // 2, 1) * old_voxelsize[0]
     old_y = np.arange(-nby // 2, nby // 2, 1) * old_voxelsize[1]

@@ -19,6 +19,7 @@ import h5py
 import numpy as np
 import yaml
 from matplotlib import pyplot as plt
+from numpy.fft import fftn, fftshift
 
 import bcdi.graph.graph_utils as gu
 import bcdi.graph.linecut as linecut
@@ -55,6 +56,7 @@ class Analysis(ABC):
             self.parameters.get("original_size")
         )
         self.extent_phase: Optional[float] = None
+        self.q_values: Optional[List[np.ndarray]] = None
         self.voxel_sizes: Optional[List[float]] = None
         self.optimized_range = self.original_shape
         self.sorted_reconstructions_best_first = [0]
@@ -62,6 +64,30 @@ class Analysis(ABC):
         self.comment = self.initialize_comment()
         if os.path.splitext(self.file_path[0])[1] == ".h5":
             self.comment.concatenate("mode")
+
+    @property
+    def voxel_sizes(self):
+        """List of three positive numbers, voxel size in nm in each dimension."""
+        return self._voxel_sizes
+
+    @voxel_sizes.setter
+    def voxel_sizes(self, value):
+        if value is None:
+            self._voxel_sizes = value
+        elif isinstance(value, (int, float)):
+            self._voxel_sizes = [value, value, value]
+        elif isinstance(value, (list, float)):
+            valid.valid_container(
+                value,
+                container_types=(list, tuple),
+                length=3,
+                min_excluded=0,
+                allow_none=False,
+                name="voxel_sizes",
+            )
+            self._voxel_sizes = value
+        else:
+            raise TypeError("voxel_sizes should be a list of three positive values")
 
     @property
     def undefined_bragg_peak_but_retrievable(self) -> bool:
@@ -78,21 +104,41 @@ class Analysis(ABC):
         )
 
     @property
-    def get_interplanar_distance(self) -> float:
+    def get_interplanar_distance(self) -> Optional[float]:
         """Calculate the interplanar distance in nm."""
-        return float(2 * np.pi / (10 * np.linalg.norm(self.setup.q_laboratory)))
+        q_bragg = (
+            self.get_q_bragg_laboratory_frame
+            if self.get_q_bragg_laboratory_frame is not None
+            else self.get_q_bragg_crystal_frame()
+        )
+        if q_bragg is None:
+            return None
+        return float(2 * np.pi / (10 * np.linalg.norm(q_bragg)))
 
     @property
-    def get_normalized_q_bragg_laboratory_frame(self) -> np.ndarray:
+    def get_normalized_q_bragg_laboratory_frame(self) -> Optional[np.ndarray]:
+        if self.setup.q_laboratory is None:
+            return None
         return self.setup.q_laboratory / float(np.linalg.norm(self.setup.q_laboratory))
 
     @property
-    def get_norm_q_bragg(self) -> float:
-        return float(np.linalg.norm(self.setup.q_laboratory))
+    def get_norm_q_bragg(self) -> Optional[float]:
+        q_bragg = (
+            self.get_q_bragg_laboratory_frame
+            if self.get_q_bragg_laboratory_frame is not None
+            else self.get_q_bragg_crystal_frame()
+        )
+        if q_bragg is None:
+            return None
+        return float(np.linalg.norm(q_bragg))
 
     @property
-    def get_q_bragg_laboratory_frame(self) -> np.ndarray:
+    def get_q_bragg_laboratory_frame(self) -> Optional[np.ndarray]:
         return self.setup.q_laboratory
+
+    @property
+    def is_data_in_laboratory_frame(self):
+        return self.parameters["data_frame"] == "laboratory"
 
     @property
     def scan_index(self) -> int:
@@ -221,6 +267,8 @@ class Analysis(ABC):
 
     def get_optical_path(self) -> np.ndarray:
         """Calculate the optical path through the crystal."""
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         bulk = pu.find_bulk(
             amp=abs(self.data),
             support_threshold=self.parameters["threshold_unwrap_refraction"],
@@ -236,22 +284,27 @@ class Analysis(ABC):
         # latter is always in the crystal frame (for simpler strain calculation).
         # We need to transform kin and kout back
         # into the crystal frame (also, xrayutilities output is in crystal frame)
-        kin = util.rotate_vector(
-            vectors=[kin[2], kin[1], kin[0]],
+        rotated_kin = util.rotate_vector(
+            vectors=(kin[2], kin[1], kin[0]),
             axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
             reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
         )
-        kout = util.rotate_vector(
-            vectors=[kout[2], kout[1], kout[0]],
+        if isinstance(rotated_kin, tuple):
+            raise TypeError(f"rotated_kin should be a ndarray, got {type(rotated_kin)}")
+        rotated_kout = util.rotate_vector(
+            vectors=(kout[2], kout[1], kout[0]),
             axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
             reference_axis=self.get_normalized_q_bragg_laboratory_frame[::-1],
         )
-
+        if isinstance(rotated_kout, tuple):
+            raise TypeError(
+                f"rotated_kin should be a ndarray, got {type(rotated_kout)}"
+            )
         # calculate the optical path of the incoming wavevector
         path_in = pu.get_opticalpath(
             support=bulk,
             direction="in",
-            k=kin,
+            k=rotated_kin,
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
         )  # path_in already in nm
@@ -260,7 +313,7 @@ class Analysis(ABC):
         path_out = pu.get_opticalpath(
             support=bulk,
             direction="out",
-            k=kout,
+            k=rotated_kout,
             debugging=self.parameters["debug"],
             cmap=self.parameters["colormap"].cmap,
         )  # path_our already in nm
@@ -276,6 +329,11 @@ class Analysis(ABC):
             savedir=self.setup.detector.savedir,
             logger=self.logger,
         )
+
+    @abstractmethod
+    def get_q_bragg_crystal_frame(self) -> Optional[np.ndarray]:
+        """Return the q vector of the Bragg peak in the crystal frame."""
+        raise NotImplementedError
 
     def get_reconstrutions_path(self) -> Tuple[Any, ...]:
         if self.parameters["reconstruction_files"][self.scan_index] is not None:
@@ -420,11 +478,24 @@ class DetectorFrameLinearization(Analysis):
     an axis of the crystal frame, there is an unknown inplane rotation around it).
     """
 
+    def get_q_bragg_crystal_frame(self) -> Optional[np.ndarray]:
+        if self.get_q_bragg_laboratory_frame is None:
+            return None
+        return np.asarray(
+            util.rotate_vector(
+                vectors=self.get_q_bragg_laboratory_frame[::-1],
+                axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+                reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+            )
+        )
+
     def interpolate_into_crystal_frame(self) -> None:
         """Interpolate the data in the pseudo crystal frame."""
         original_shape = self.original_shape
         if len(original_shape) != 3:
             raise NotImplementedError("Can only process 3D arrays")
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         obj_ortho, voxel_sizes, transfer_matrix = self.setup.ortho_directspace(
             arrays=self.data,
             q_bragg=np.array(self.get_normalized_q_bragg_laboratory_frame[::-1]),
@@ -451,8 +522,16 @@ class OrthogonalFrame(Analysis):
     """Analysis workflow for data already in an orthogonal frame."""
 
     @property
-    def is_data_in_laboratory_frame(self):
-        return self.parameters["data_frame"] == "laboratory"
+    def q_values(self) -> Optional[List[np.ndarray]]:
+        """List of three 1D arrays [qx, qz, qy]."""
+        return self._q_values
+
+    @q_values.setter
+    def q_values(self, value: Optional[Dict[str, np.ndarray]]) -> None:
+        if value is None:
+            self._q_values = None
+        else:
+            self._q_values = [value["qx"], value["qz"], value["qy"]]
 
     @property
     def user_defined_voxel_size(self):
@@ -460,10 +539,12 @@ class OrthogonalFrame(Analysis):
 
     def calculate_voxel_sizes(self) -> List[float]:
         """Calculate the direct space voxel sizes based on loaded q values."""
-        file = self.load_q_values()
-        qx = file["qx"]
-        qy = file["qy"]
-        qz = file["qz"]
+        self.q_values = self.load_q_values()
+        if self.q_values is None:
+            raise ValueError("q_values is None")
+        qx = self.q_values[0]
+        qz = self.q_values[1]
+        qy = self.q_values[2]
         dy_real = (
             2 * np.pi / abs(qz.max() - qz.min()) / 10
         )  # in nm qz=y in nexus convention
@@ -479,6 +560,50 @@ class OrthogonalFrame(Analysis):
         )
         return [dz_real, dy_real, dx_real]
 
+    def get_q_bragg_crystal_frame(self) -> Optional[np.ndarray]:
+        if (
+            self.is_data_in_laboratory_frame
+            and self.get_q_bragg_laboratory_frame is not None
+        ):
+            return np.asarray(
+                util.rotate_vector(
+                    vectors=self.get_q_bragg_laboratory_frame[::-1],
+                    axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+                    reference_axis=self.get_q_bragg_laboratory_frame[::-1],
+                )
+            )
+        if self.q_values is None:
+            self.q_values = self.load_q_values()
+
+        # get the data padded to the phasing shape
+        data = util.crop_pad(
+            array=self.data,
+            output_shape=self.original_shape,
+            cmap=self.parameters["colormap"].cmap,
+        )
+        # go back to reciprocal space
+        data = abs(fftshift(fftn(data)))
+        # find the Bragg peak location in reciprocal space
+        indices = np.asarray(
+            bu.find_bragg(
+                array=data,
+                binning=None,
+                roi=None,
+                peak_method=self.parameters["centering_method"]["reciprocal_space"],
+                tilt_values=None,
+                savedir=self.setup.detector.savedir,
+                logger=self.logger,
+                plot_fit=False,
+            )["bragg_peak"]
+        )
+        return np.array(
+            [
+                self.q_values[0][indices[0]],
+                self.q_values[1][indices[1]],
+                self.q_values[2][indices[2]],
+            ]
+        )
+
     def interpolate_into_crystal_frame(self) -> None:
         """Regrid and rotate the data if necessary."""
         self.update_parameters({"is_orthogonal": True})
@@ -489,6 +614,8 @@ class OrthogonalFrame(Analysis):
             self.rotate_into_crystal_frame()
 
     def rotate_into_crystal_frame(self) -> None:
+        if self.get_normalized_q_bragg_laboratory_frame is None:
+            raise ValueError("q_bragg_laboratory_frame is None")
         self.logger.info(
             "Rotating the object in the crystal frame " "for the strain calculation"
         )
@@ -521,14 +648,6 @@ class OrthogonalFrame(Analysis):
 
     def regrid(self, new_voxelsizes: List[float]) -> None:
         """Regrid the data based on user-defined voxel sizes."""
-        valid.valid_container(
-            new_voxelsizes,
-            container_types=(list, tuple),
-            item_types=(float, int),
-            min_excluded=0,
-            allow_none=False,
-            name="new_voxelsizes",
-        )
         self.logger.info(
             f"Direct space pixel size for the interpolation: {new_voxelsizes} (nm)"
         )
@@ -538,7 +657,7 @@ class OrthogonalFrame(Analysis):
             old_voxelsize=self.voxel_sizes,
             new_voxelsize=new_voxelsizes,
         )
-        self.voxel_sizes = self.parameters["fix_voxel"]
+        self.voxel_sizes = new_voxelsizes
 
 
 class InterpolatedCrystal:
@@ -642,6 +761,8 @@ class InterpolatedCrystal:
         Arrays are rotated such that all circles of the sample stage are at their zero
         position.
         """
+        if setup.q_laboratory is None:
+            raise ValueError("setup.q_laboratory is None")
         self.logger.info("Sending sample stage circles to 0")
         (
             self.modulus,
@@ -695,16 +816,36 @@ class InterpolatedCrystal:
 
     def rotate_vector_to_saving_frame(
         self,
-        vector: Union[np.ndarray, Tuple[Union[float, np.ndarray]]],
-        axis_to_align: List[float],
-        reference_axis: List[float],
+        vector: np.ndarray,
+        axis_to_align: np.ndarray,
+        reference_axis: np.ndarray,
     ) -> None:
         """Calculate the diffusion vector in the crystal frame."""
-        self.q_bragg_in_saving_frame = util.rotate_vector(
-            vectors=vector,
-            axis_to_align=axis_to_align,
-            reference_axis=reference_axis,
+        self.q_bragg_in_saving_frame = np.asarray(
+            util.rotate_vector(
+                vectors=vector,
+                axis_to_align=axis_to_align,
+                reference_axis=reference_axis,
+            )
         )
+
+    def set_q_bragg_to_saving_frame(self, analysis: Analysis) -> None:
+        if (
+            analysis.is_data_in_laboratory_frame
+            and analysis.get_normalized_q_bragg_laboratory_frame is not None
+        ):
+            self.rotate_vector_to_saving_frame(
+                vector=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+                axis_to_align=AXIS_TO_ARRAY[self.parameters["ref_axis_q"]],
+                reference_axis=analysis.get_normalized_q_bragg_laboratory_frame[::-1],
+            )
+        else:
+            q_bragg = analysis.get_q_bragg_crystal_frame()
+            if q_bragg is not None:
+                self.q_bragg_in_saving_frame = q_bragg / np.linalg.norm(q_bragg)
+            else:
+                raise ValueError("q_bragg_crystal_frame is undefined")
+        self.rescale_q()
 
     def save_results_as_npz(self, filename: str, setup: "Setup") -> None:
         np.savez_compressed(

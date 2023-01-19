@@ -10,8 +10,8 @@ import unittest
 
 import numpy as np
 
-from bcdi.experiment.setup import Setup
-from bcdi.graph.colormap import ColormapFactory
+from bcdi.experiment.setup import Setup, get_mean_tilt
+from bcdi.graph.colormap import ColormapFactory  # needed for test_rocking_angle_str
 from tests.config import load_config, run_tests
 
 parameters, skip_tests = load_config("preprocessing")
@@ -111,6 +111,24 @@ class TestCheckSetup(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.setup.check_setup(**self.params)
 
+    def test_check_setup_tilt_angle_not_in_config_energy_scan(self):
+        self.setup.tilt_angle = None
+        self.params["tilt_angle"] = 1.23
+        self.setup.check_setup(**self.params)
+        self.assertAlmostEqual(self.setup.tilt_angle, self.params["tilt_angle"])
+
+    def test_check_setup_tilt_angle_not_in_config_tilt_angle_0d_array(self):
+        self.setup.tilt_angle = None
+        self.params["tilt_angle"] = np.array(1.23)
+        self.setup.check_setup(**self.params)
+        self.assertAlmostEqual(self.setup.tilt_angle, float(self.params["tilt_angle"]))
+
+    def test_check_setup_tilt_angle_not_in_config_tilt_angle_1d_array(self):
+        self.setup.tilt_angle = None
+        self.params["tilt_angle"] = np.array([1.23])
+        self.setup.check_setup(**self.params)
+        self.assertAlmostEqual(self.setup.tilt_angle, float(self.params["tilt_angle"]))
+
     def test_check_setup_outofplane_angle_predefined(self):
         self.setup.outofplane_angle = 2
         self.setup.check_setup(**self.params)
@@ -159,6 +177,57 @@ class TestCheckSetup(unittest.TestCase):
         self.params["grazing_angle"] = None
         self.setup.check_setup(**self.params)
         self.assertEqual(self.setup.grazing_angle, None)
+
+
+class TestGetMeanTilt(unittest.TestCase):
+    """
+    Tests related to _get_mean_tilt(
+        angles: Optional[Union[float, int, np.ndarray]]
+    ) -> Optional[float]:
+    """
+
+    def test_float(self):
+        expected = 1.23
+        out = get_mean_tilt(expected)
+        self.assertAlmostEqual(out, expected)
+
+    def test_int(self):
+        expected = 1
+        out = get_mean_tilt(expected)
+        self.assertEqual(out, expected)
+
+    def test_none(self):
+        out = get_mean_tilt(None)
+        self.assertIsNone(out)
+
+    def test_0d_array_of_size_1(self):
+        expected = 1.23
+        out = get_mean_tilt(np.array(expected))
+        self.assertAlmostEqual(out, expected)
+
+    def test_1d_array_of_size_1(self):
+        expected = 1.23
+        out = get_mean_tilt(np.array([expected]))
+        self.assertAlmostEqual(out, expected)
+
+    def test_list_of_length_1(self):
+        expected = 1.23
+        out = get_mean_tilt([expected])
+        self.assertAlmostEqual(out, expected)
+
+    def test_list_of_length_larger_than_1(self):
+        expected = 1
+        out = get_mean_tilt([1, 2, 3])
+        self.assertAlmostEqual(out, expected)
+
+    def test_1d_array_of_size_larger_than_1(self):
+        expected = 1
+        out = get_mean_tilt(np.array([1, 2, 3]))
+        self.assertAlmostEqual(out, expected)
+
+    def test_wrong_type(self):
+        with self.assertRaises(TypeError):
+            get_mean_tilt((1, 2, 3))
 
 
 class TestCorrectDirectBeam(unittest.TestCase):

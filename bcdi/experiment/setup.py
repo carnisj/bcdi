@@ -17,7 +17,6 @@ import datetime
 import logging
 import multiprocessing as mp
 import time
-from collections.abc import Sequence
 from numbers import Integral, Real
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -25,6 +24,7 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
 from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -32,6 +32,27 @@ from bcdi.utils import validation as valid
 from bcdi.utils.io_helper import ContextFile
 
 module_logger = logging.getLogger(__name__)
+
+
+def get_mean_tilt(
+    angles: Optional[Union[float, int, np.ndarray, List[Union[float, int]]]]
+) -> Optional[float]:
+    """
+    Calculate the mean tilt depending on the array of incident angles.
+
+    E.g., for input angles of [0, 0.25, 0.5, 0.75], the mean tilt is 0.25.
+    """
+    if angles is None:
+        return angles
+    if isinstance(angles, list):
+        angles = np.asarray(angles)
+    if isinstance(angles, (float, int)) or (
+        isinstance(angles, np.ndarray) and angles.size == 1
+    ):
+        return float(angles)
+    if isinstance(angles, np.ndarray) and angles.size > 1:
+        return float(np.mean(angles[1:] - angles[0:-1]))
+    raise TypeError(f"tilt_angle should be a ndarray, got {type(angles)}")
 
 
 class Setup:
@@ -614,14 +635,16 @@ class Setup:
         }
 
     @property
-    def q_laboratory(self) -> np.ndarray:
+    def q_laboratory(self) -> Optional[np.ndarray]:
         """
         Calculate the diffusion vector in the laboratory frame.
 
         Frame convention: (z downstream, y vertical up, x outboard). The unit is 1/A.
 
-        :return: npdarray of three vectors components.
+        :return: ndarray of three vectors components.
         """
+        if self.exit_wavevector.ndim > 1:  # energy scan
+            return None
         q_laboratory = (self.exit_wavevector - self.incident_wavevector) * 1e-10
         if np.isclose(np.linalg.norm(q_laboratory), 0, atol=1e-15):
             raise ValueError("q_laboratory is null")
@@ -660,8 +683,8 @@ class Setup:
         return self._tilt_angle
 
     @tilt_angle.setter
-    def tilt_angle(self, value):
-        if not isinstance(value, Real) and value is not None:
+    def tilt_angle(self, value: Union[float, int]) -> None:
+        if not isinstance(value, (float, int)) and value is not None:
             raise TypeError("tilt_angle should be a number in degrees")
         self._tilt_angle = value
 
@@ -781,11 +804,7 @@ class Setup:
             raise ValueError("the detector in-plane angle is not defined")
 
         self.tilt_angles = tilt_angle
-        if tilt_angle is not None:
-            tilt_angle = np.mean(
-                np.asarray(tilt_angle)[1:] - np.asarray(tilt_angle)[0:-1]
-            )
-        self.tilt_angle = self.tilt_angle or tilt_angle
+        self.tilt_angle = self.tilt_angle or get_mean_tilt(tilt_angle)
         if self.tilt_angle is None:
             raise ValueError("the tilt angle is not defined")
         if not isinstance(self.tilt_angle, Real):
@@ -1603,6 +1622,11 @@ class Setup:
          - a tuple of motor offsets used later for q calculation
 
         """
+        if not isinstance(self.beamline, BeamlineGoniometer):
+            raise TypeError(
+                "init_qconversion supports only for beamlines with goniometer, "
+                f"got {type(self.beamline)}"
+            )
         return self.beamline.init_qconversion(
             conversion_table=self.labframe_to_xrayutil,
             beam_direction=self.beam_direction_xrutils,
@@ -2819,6 +2843,11 @@ class Setup:
          - the q offset (3D vector) if direct_space is False.
 
         """
+        if not isinstance(self.beamline, BeamlineGoniometer):
+            raise TypeError(
+                "transformation_bcdi supports only for beamlines with goniometer, "
+                f"got {type(self.beamline)}"
+            )
         if verbose:
             self.logger.info(
                 f"out-of plane detector angle={self.outofplane_angle:.3f} deg, "
@@ -2892,6 +2921,11 @@ class Setup:
            region of interest and binning.
 
         """
+        if not isinstance(self.beamline, BeamlineSaxs):
+            raise TypeError(
+                "transformation_cdi supports only for SAXS beamlines, "
+                f"got {type(self.beamline)}"
+            )
         #########################
         # check some parameters #
         #########################

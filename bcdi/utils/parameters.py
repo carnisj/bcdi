@@ -213,7 +213,7 @@ class CDIPreprocessingChecker(ConfigChecker):
     """Configure preprocessing-dependent parameters for the 'CDI' case."""
 
     def _configure_params(self) -> None:
-        """Hard-code processing-dependent parameter configuration."""
+        """Hard-coded processing-dependent parameter configuration."""
         self._checked_params["roi_detector"] = self._create_roi()
         if self._checked_params["photon_filter"] == "loading":
             self._checked_params["loading_threshold"] = self._checked_params[
@@ -284,7 +284,7 @@ class PreprocessingChecker(ConfigChecker):
     """Configure preprocessing-dependent parameters."""
 
     def _configure_params(self) -> None:
-        """Hard-code processing-dependent parameter configuration."""
+        """Hard-coded processing-dependent parameter configuration."""
         if self._nb_scans is not None and self._nb_scans > 1:
             if self._checked_params["center_fft"] not in [
                 "crop_asymmetric_ZYX",
@@ -388,8 +388,20 @@ class PreprocessingChecker(ConfigChecker):
 class PostprocessingChecker(ConfigChecker):
     """Configure postprocessing-dependent parameters."""
 
+    def check_config(self) -> Dict[str, Any]:
+        """Check if the provided config is consistent."""
+        super().check_config()
+        if (
+            self._checked_params["rocking_angle"] == "energy"
+            and self._checked_params["data_frame"] == "detector"
+        ):
+            raise NotImplementedError(
+                "Energy scans must be interpolated during preprocessing."
+            )
+        return self._checked_params
+
     def _configure_params(self) -> None:
-        """Hard-code processing-dependent parameter configuration."""
+        """Hard-coded processing-dependent parameter configuration."""
         if self._nb_scans is not None and self._nb_scans > 1:
             self._checked_params["backend"] = "Agg"
             if self._checked_params["multiprocessing"] and any(

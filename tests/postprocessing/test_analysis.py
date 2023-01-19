@@ -12,7 +12,7 @@ import unittest
 from copy import deepcopy
 from logging import Logger
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import numpy as np
 
@@ -344,7 +344,6 @@ class TestDetectorFrameLinearization(unittest.TestCase):
 
     def test_interpolate_into_crystal_frame(self):
         self.analysis.interpolate_into_crystal_frame()
-        print(self.analysis.parameters["transformation_matrix"])
         self.assertTrue(
             np.allclose(
                 self.analysis.parameters["transformation_matrix"],
@@ -357,6 +356,24 @@ class TestDetectorFrameLinearization(unittest.TestCase):
                 ),
             )
         )
+
+    def test_get_q_bragg_crystal_frame_q_lab_defined(self):
+        expected_q_norm = 2.7755521652279227
+        expected_q_bragg_crystal = np.array([0, expected_q_norm, 0])
+        self.assertTrue(
+            np.allclose(
+                self.analysis.get_q_bragg_crystal_frame(),
+                expected_q_bragg_crystal,
+            )
+        )
+
+    def test_get_q_bragg_crystal_frame_q_lab_is_none(self):
+        with patch(
+            "bcdi.postprocessing.analysis.Analysis.get_q_bragg_laboratory_frame",
+            new_callable=PropertyMock,
+        ) as mock_get_q_lab:
+            mock_get_q_lab.return_value = None
+            self.assertIsNone(self.analysis.get_q_bragg_crystal_frame())
 
 
 if __name__ == "__main__":
