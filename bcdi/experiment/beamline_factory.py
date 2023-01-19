@@ -275,6 +275,36 @@ class Beamline(ABC):
         """
 
     @abstractmethod
+    def inplane_coeff(self):
+        """
+        Coefficient related to the detector inplane orientation.
+
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
+
+        For a SAXS Beamline it does not matter, the fixed detector inplane angle is 0.
+
+        :return: +1
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def outofplane_coeff(self):
+        """
+        Coefficient related to the detector inplane orientation.
+
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
+
+        For a SAXS Beamline it does not matter, the fixed detector inplane angle is 0.
+
+        :return: +1
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def process_positions(
         self,
         setup: "Setup",
@@ -314,7 +344,7 @@ class Beamline(ABC):
         Crop or pad array depending on how compare two numbers.
 
         Cropping or padding depends on the number of current frames compared to the
-        number of motor steps. For padding it assumes that array is linear in the
+        number of motor steps. For pading it assumes that array is linear in the
         angular_step.
 
         :param array: a 1D numpy array of motor values
@@ -680,3 +710,31 @@ class BeamlineSaxs(Beamline):
                 title="calculated polar radius for the 2D grid",
             )
         return interp_angle, interp_radius
+
+    def inplane_coeff(self):
+        """
+        Coefficient related to the detector inplane orientation.
+
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
+
+        For a SAXS Beamline it does not matter, the fixed detector inplane angle is 0.
+
+        :return: +1
+        """
+        return 1
+
+    def outofplane_coeff(self):
+        """
+        Coefficient related to the detector inplane orientation.
+
+        Define a coefficient +/- 1 depending on the detector inplane rotation direction
+        (1 for clockwise, -1 for anti-clockwise) and the detector inplane orientation
+        (1 for inboard, -1 for outboard).
+
+        For a SAXS Beamline it does not matter, the fixed detector inplane angle is 0.
+
+        :return: +1
+        """
+        return 1

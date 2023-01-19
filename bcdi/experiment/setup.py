@@ -17,7 +17,6 @@ import datetime
 import logging
 import multiprocessing as mp
 import time
-from collections.abc import Sequence
 from numbers import Integral, Real
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -25,6 +24,7 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
 from bcdi.experiment.beamline import create_beamline
+from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
@@ -1622,6 +1622,11 @@ class Setup:
          - a tuple of motor offsets used later for q calculation
 
         """
+        if not isinstance(self.beamline, BeamlineGoniometer):
+            raise TypeError(
+                "init_qconversion supports only for beamlines with goniometer, "
+                f"got {type(self.beamline)}"
+            )
         return self.beamline.init_qconversion(
             conversion_table=self.labframe_to_xrayutil,
             beam_direction=self.beam_direction_xrutils,
@@ -2838,6 +2843,11 @@ class Setup:
          - the q offset (3D vector) if direct_space is False.
 
         """
+        if not isinstance(self.beamline, BeamlineGoniometer):
+            raise TypeError(
+                "transformation_bcdi supports only for beamlines with goniometer, "
+                f"got {type(self.beamline)}"
+            )
         if verbose:
             self.logger.info(
                 f"out-of plane detector angle={self.outofplane_angle:.3f} deg, "
@@ -2911,6 +2921,11 @@ class Setup:
            region of interest and binning.
 
         """
+        if not isinstance(self.beamline, BeamlineSaxs):
+            raise TypeError(
+                "transformation_cdi supports only for SAXS beamlines, "
+                f"got {type(self.beamline)}"
+            )
         #########################
         # check some parameters #
         #########################

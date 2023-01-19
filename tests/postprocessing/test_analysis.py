@@ -12,7 +12,7 @@ import unittest
 from copy import deepcopy
 from logging import Logger
 from pathlib import Path
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
 
 import numpy as np
 
