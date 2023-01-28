@@ -164,7 +164,7 @@ class PeakFinder:
         self._region_of_interest = value
 
     def find_peak(
-        self, user_defined_peak: Optional[List[int]]
+        self, user_defined_peak: Optional[Tuple[int, int, int]] = None
     ) -> Dict[str, Tuple[int, int, int]]:
         """
         Find the position of the Bragg peak using three different metrics.
@@ -198,12 +198,17 @@ class PeakFinder:
             f"MaxCom at (z, y, x): {position_max_com}, "
             f"value = {int(self.array[position_max_com])}"
         )
-
+        if user_defined_peak is not None:
+            return {
+                "max": self.get_indices_full_detector(list(position_max)),
+                "com": self.get_indices_full_detector(list(position_com)),
+                "max_com": self.get_indices_full_detector(list(position_max_com)),
+                "user": user_defined_peak,
+            }
         return {
             "max": self.get_indices_full_detector(list(position_max)),
             "com": self.get_indices_full_detector(list(position_com)),
             "max_com": self.get_indices_full_detector(list(position_max_com)),
-            "user": user_defined_peak,
         }
 
     def get_indices_cropped_binned_detector(self, position: List[int]) -> List[int]:

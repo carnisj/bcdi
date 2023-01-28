@@ -39,6 +39,16 @@ class TestPeakFinder(unittest.TestCase):
         peaks = self.peakfinder.find_peak()
         self.assertTrue(peaks["com"] == (1, 25, 23))
 
+    def test_no_user_defined_peak(self):
+        user_defined_peak = None
+        peaks = self.peakfinder.find_peak(user_defined_peak=user_defined_peak)
+        self.assertTrue("user" not in peaks.keys())
+
+    def test_user_defined_peak(self):
+        user_defined_peak = (1, 22, 21)
+        peaks = self.peakfinder.find_peak(user_defined_peak=user_defined_peak)
+        self.assertTrue(peaks["user"] == user_defined_peak)
+
     def test_maxcom(self):
         peaks = self.peakfinder.find_peak()
         self.assertTrue(peaks["max_com"] == (1, 25, 23))
