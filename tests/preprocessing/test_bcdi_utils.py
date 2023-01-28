@@ -239,6 +239,18 @@ class TestFindBragg(unittest.TestCase):
         metadata = find_bragg(array=self.data, plot_fit=False)
         self.assertTrue(metadata["bragg_peak"] == expected)
 
+    def test_with_binning(self):
+        expected = (3, 50, 46)
+        metadata = find_bragg(array=self.data, binning=[3, 2, 2], plot_fit=False)
+        self.assertTrue(metadata["bragg_peak"] == expected)
+
+    def test_with_binning_and_roi(self):
+        expected = (3, 62, 55)
+        metadata = find_bragg(
+            array=self.data, binning=[3, 2, 2], roi=[12, 44, 9, 41], plot_fit=False
+        )
+        self.assertTrue(metadata["bragg_peak"] == expected)
+
 
 if __name__ == "__main__":
     run_tests(TestPeakFinder)
