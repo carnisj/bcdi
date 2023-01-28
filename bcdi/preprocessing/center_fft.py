@@ -119,8 +119,7 @@ class CenterFFT(ABC):
     :param center_position: position of the determined center
     :param max_symmetrical_window: width of the largest symmetrical window around the
      center_position
-    :param fix_bragg: user-defined position in pixels of the Bragg peak
-     [z_bragg, y_bragg, x_bragg]
+    :param bragg_peak: position in pixels of the Bragg peak [z_bragg, y_bragg, x_bragg]
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
@@ -155,7 +154,7 @@ class CenterFFT(ABC):
         roi: Tuple[int, int, int, int],
         center_position: Tuple[int, ...],
         max_symmetrical_window: Tuple[int, int, int],
-        fix_bragg: Optional[List[int]],
+        bragg_peak: Optional[List[int]],
         fft_option: str,
         pad_size: Optional[Tuple[int, int, int]],
         q_values: Optional[Any] = None,
@@ -167,7 +166,7 @@ class CenterFFT(ABC):
         self.roi = roi
         self.center_position = center_position
         self.max_symmetrical_window = max_symmetrical_window
-        self.fix_bragg = fix_bragg
+        self.bragg_peak = bragg_peak
         self.fft_option = fft_option
         self.pad_size = pad_size
         self.q_values = q_values
@@ -332,8 +331,7 @@ class CenteringFactory:
      preprocessing step
     :param roi: region of interest of the detector used to generate data.
      [y_start, y_stop, x_start, x_stop]
-    :param fix_bragg: user-defined position in pixels of the Bragg peak
-     [z_bragg, y_bragg, x_bragg]
+    :param bragg_peak: position in pixels of the Bragg peak [z_bragg, y_bragg, x_bragg]
     :param fft_option:
      - 'crop_sym_ZYX': crop the array for FFT requirements, Bragg peak centered
      - 'crop_asym_ZYX': crop the array for FFT requirements without centering the
@@ -369,7 +367,7 @@ class CenteringFactory:
         binning: Tuple[int, int, int],
         preprocessing_binning: Tuple[int, int, int],
         roi: Tuple[int, int, int, int],
-        fix_bragg: Optional[List[int]],
+        bragg_peak: Optional[List[int]],
         fft_option: str = "crop_asymmetric_ZYX",
         pad_size: Optional[Tuple[int, int, int]] = None,
         centering_method: str = "max",
@@ -380,7 +378,7 @@ class CenteringFactory:
         self.binning = binning
         self.preprocessing_binning = preprocessing_binning
         self.roi = roi
-        self.fix_bragg = fix_bragg
+        self.bragg_peak = bragg_peak
         self.fft_option = fft_option
         self.pad_size = pad_size
         self.q_values = q_values
@@ -437,24 +435,24 @@ class CenteringFactory:
         Find the center (ideally the Bragg peak) of the dataset.
 
         :param data: the 3D intensity dataset
-        :param method: "max", "com", "max_com". It is overruled by fix_bragg if this
+        :param method: "max", "com", "max_com". It is overruled by bragg_peak if this
          parameter is not None.
         :return: the position of the found center as a tuple of three positive integers
         """
-        if self.fix_bragg:
-            if len(self.fix_bragg) != 3:
-                raise ValueError("fix_bragg should be a list of 3 integers")
+        if self.bragg_peak:
+            if len(self.bragg_peak) != 3:
+                raise ValueError("bragg_peak should be a list of 3 integers")
             self.logger.info(
-                "Peak intensity position defined by user on the full detector: "
-                f"({self.fix_bragg})"
+                "Peak intensity position on the full detector provided: "
+                f"({self.bragg_peak})"
             )
-            y0 = (self.fix_bragg[1] - self.roi[0]) / (
+            y0 = (self.bragg_peak[1] - self.roi[0]) / (
                 self.preprocessing_binning[1] * self.binning[1]
             )
-            x0 = (self.fix_bragg[2] - self.roi[2]) / (
+            x0 = (self.bragg_peak[2] - self.roi[2]) / (
                 self.preprocessing_binning[2] * self.binning[2]
             )
-            return round_sequence_to_int((self.fix_bragg[0], y0, x0))
+            return round_sequence_to_int((self.bragg_peak[0], y0, x0))
 
         if method == "max":
             return round_sequence_to_int(
@@ -501,7 +499,7 @@ class CenteringFactory:
             roi=self.roi,
             center_position=self.center_position,
             max_symmetrical_window=self.max_symmetrical_window,
-            fix_bragg=self.fix_bragg,
+            bragg_peak=self.bragg_peak,
             fft_option=self.fft_option,
             pad_size=self.pad_size,
             logger=self.logger,
@@ -511,7 +509,7 @@ class CenteringFactory:
     def log_q_values_at_center(self, method: str) -> None:
         """Log some message about q values at the center found by the method."""
         z0, y0, x0 = self.center_position
-        if self.fix_bragg is not None:
+        if self.bragg_peak is not None:
             self.logger.info(
                 "Peak intensity position with detector ROI and binning in the "
                 f"detector plane: ({z0, y0, x0})"

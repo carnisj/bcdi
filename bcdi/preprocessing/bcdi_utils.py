@@ -51,6 +51,7 @@ class PeakFinder:
     :param peak_method: peak searching method, among "max", "com", "max_com".
     :param kwargs:
      - 'logger': an optional logger
+     - "user_defined_peak": [z, y, x] Bragg peak position defined by the user
      - 'frames_pattern' = list of int, of length the size of the original dataset along
        the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
@@ -77,7 +78,7 @@ class PeakFinder:
         self.frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
-        self._peaks = self.find_peak()
+        self._peaks = self.find_peak(kwargs.get("user_defined_peak"))
         self._rocking_curve: Optional[np.ndarray] = None
         self._detector_data_at_peak: Optional[np.ndarray] = self.array[
             self._roi_center[0], :, :
@@ -162,7 +163,9 @@ class PeakFinder:
         )
         self._region_of_interest = value
 
-    def find_peak(self) -> Dict[str, Tuple[int, int, int]]:
+    def find_peak(
+        self, user_defined_peak: Optional[List[int]]
+    ) -> Dict[str, Tuple[int, int, int]]:
         """
         Find the position of the Bragg peak using three different metrics.
 
@@ -170,6 +173,8 @@ class PeakFinder:
          - "max": maximum of the modulus
          - "com": center of mass of the modulus
          - "max_com": "max" along the first axis, "com" along the other axes
+
+        :param user_defined_peak: [z, y, x] Bragg peak position defined by the user
         """
         index_max = np.unravel_index(abs(self.array).argmax(), self.array.shape)
         position_max = [int(val) for val in index_max]
@@ -198,6 +203,7 @@ class PeakFinder:
             "max": self.get_indices_full_detector(list(position_max)),
             "com": self.get_indices_full_detector(list(position_com)),
             "max_com": self.get_indices_full_detector(list(position_max_com)),
+            "user": user_defined_peak,
         }
 
     def get_indices_cropped_binned_detector(self, position: List[int]) -> List[int]:
@@ -207,8 +213,7 @@ class PeakFinder:
 
     def get_indices_full_detector(self, position: List[int]) -> Tuple[int, int, int]:
         """Calculate the position in the unbinned, full detector frame."""
-        unbinned_position = self._unbin(position)
-        return self._offset(unbinned_position, frame="full_detector")
+        return self._offset(self._unbin(position), frame="full_detector")
 
     def fit_rocking_curve(self, tilt_values: Optional[np.ndarray] = None):
         """
@@ -472,8 +477,7 @@ def center_fft(
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"fix_bragg", "logger", "pad_size", "q_values"},
-        name="kwargs",
+        allowed_kwargs={"bragg_peak", "logger", "pad_size", "q_values"},
     )
 
     centering_fft = CenteringFactory(
@@ -481,7 +485,7 @@ def center_fft(
         binning=detector.binning,
         preprocessing_binning=detector.preprocessing_binning,
         roi=detector.roi,
-        fix_bragg=kwargs.get("fix_bragg"),
+        bragg_peak=kwargs.get("bragg_peak"),
         fft_option=fft_option,
         pad_size=kwargs.get("pad_size"),
         centering_method=centering,
@@ -499,7 +503,7 @@ def center_fft(
 def find_bragg(
     array: np.ndarray,
     binning: Optional[List[int]] = None,
-    region_of_interest: Optional[List[int]] = None,
+    roi: Optional[List[int]] = None,
     peak_method: str = "max_com",
     tilt_values: Optional[np.ndarray] = None,
     savedir: Optional[str] = None,
@@ -513,7 +517,7 @@ def find_bragg(
 
     :param array: the detector data
     :param binning: the binning factor of array relative to the unbinned detector
-    :param region_of_interest: the region of interest applied to build array out of the
+    :param roi: the region of interest applied to build array out of the
      full detector
     :param peak_method: peak searching method, among "max", "com", "max_com".
     :param tilt_values: the angular values of the motor during the rocking curve
@@ -521,19 +525,25 @@ def find_bragg(
     :param plot_fit: if True, will plot results and fit the rocking curve
     :param kwargs:
      - "logger": an optional logger
+     - "user_defined_peak": [z, y, x] Bragg peak position defined by the user
      - 'frames_pattern' = list of int, of length the size of the original dataset along
        the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     :return: the metadata with the results of the peak search and the fit.
     """
+    valid.valid_kwargs(
+        kwargs=kwargs,
+        allowed_kwargs={"frames_pattern", "logger", "user_defined_peak"},
+    )
     logger: logging.Logger = kwargs.get("logger", module_logger)
     frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
     peakfinder = PeakFinder(
         array=array,
-        region_of_interest=region_of_interest,
+        region_of_interest=roi,
         binning=binning,
         peak_method=peak_method,
         frames_pattern=frames_pattern,
+        user_defined_peak=kwargs.get("user_defined_peak"),
         logger=logger,
     )
 
@@ -598,7 +608,6 @@ def grid_bcdi_labframe(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"cmap", "fill_value", "logger", "reference_axis"},
-        name="kwargs",
     )
     cmap = kwargs.get("cmap", "turbo")
     fill_value = kwargs.get("fill_value", (0, 0))
@@ -966,7 +975,6 @@ def load_bcdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"photon_threshold", "frames_pattern", "logger"},
-        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(
@@ -1082,7 +1090,6 @@ def reload_bcdi_data(
     valid.valid_kwargs(
         kwargs=kwargs,
         allowed_kwargs={"frames_pattern", "logger", "photon_threshold"},
-        name="kwargs",
     )
     photon_threshold = kwargs.get("photon_threshold", 0)
     valid.valid_item(

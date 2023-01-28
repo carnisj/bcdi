@@ -59,7 +59,7 @@ class TestCenteringFactory(unittest.TestCase):
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
-            fix_bragg=None,
+            bragg_peak=None,
             fft_option="crop_sym_ZYX",
             pad_size=None,
             centering_method="max",
@@ -99,8 +99,8 @@ class TestCenteringFactory(unittest.TestCase):
             (4, 2, 4),
         )
 
-    def test_find_center_fix_bragg(self):
-        self.factory.fix_bragg = [3, 3, 3]
+    def test_find_center_bragg_peak(self):
+        self.factory.bragg_peak = [3, 3, 3]
         center = self.factory.find_center(
             data=create_data(self.data_shape), method="max_com"
         )
@@ -109,15 +109,15 @@ class TestCenteringFactory(unittest.TestCase):
             (3, 3, 3),
         )
 
-    def test_find_center_fix_bragg_wrong_length(self):
-        self.factory.fix_bragg = [3, 3]
+    def test_find_center_bragg_peak_wrong_length(self):
+        self.factory.bragg_peak = [3, 3]
         with self.assertRaises(ValueError):
             self.factory.find_center(
                 data=create_data(self.data_shape), method="max_com"
             )
 
-    def test_find_center_fix_bragg_binning(self):
-        self.factory.fix_bragg = [6, 6, 6]
+    def test_find_center_bragg_peak_binning(self):
+        self.factory.bragg_peak = [6, 6, 6]
         self.factory.binning = [1, 2, 1]
         center = self.factory.find_center(
             data=create_data(self.data_shape), method="max_com"
@@ -127,8 +127,8 @@ class TestCenteringFactory(unittest.TestCase):
             (6, 3, 6),
         )
 
-    def test_find_center_fix_bragg_preprocessing_binning(self):
-        self.factory.fix_bragg = [6, 6, 6]
+    def test_find_center_bragg_peak_preprocessing_binning(self):
+        self.factory.bragg_peak = [6, 6, 6]
         self.factory.binning = [1, 2, 1]
         self.factory.preprocessing_binning = [1, 1, 3]
         center = self.factory.find_center(
@@ -139,8 +139,8 @@ class TestCenteringFactory(unittest.TestCase):
             (6, 3, 2),
         )
 
-    def test_find_center_fix_bragg_roi(self):
-        self.factory.fix_bragg = [6, 6, 6]
+    def test_find_center_bragg_peak_roi(self):
+        self.factory.bragg_peak = [6, 6, 6]
         self.factory.roi = (1, self.data_shape[1], 3, self.data_shape[2])
         center = self.factory.find_center(
             data=create_data(self.data_shape), method="max_com"
@@ -241,8 +241,8 @@ class TestCenteringFactory(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.factory.get_centering_instance()
 
-    def test_log_q_values_at_center_fix_bragg(self):
-        self.factory.fix_bragg = (3, 3, 3)
+    def test_log_q_values_at_center_bragg_peak(self):
+        self.factory.bragg_peak = (3, 3, 3)
         expected = (
             "Peak intensity position with detector ROI and binning in the "
             f"detector plane: ({self.factory.center_position})"
@@ -301,7 +301,7 @@ class TestCenterFFT(unittest.TestCase):
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
-            fix_bragg=None,
+            bragg_peak=None,
             fft_option="crop_sym_ZYX",
             pad_size=None,
             centering_method="max",
@@ -414,7 +414,7 @@ class TestCenterFFT(unittest.TestCase):
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
-            fix_bragg=None,
+            bragg_peak=None,
             fft_option="crop_sym_ZYX",
             pad_size=None,
             centering_method="max",
@@ -440,7 +440,7 @@ class TestCenterFFT(unittest.TestCase):
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
-            fix_bragg=None,
+            bragg_peak=None,
             fft_option="crop_sym_ZYX",
             pad_size=None,
             centering_method="max",
@@ -466,7 +466,7 @@ class TestCenterFFT(unittest.TestCase):
             binning=(1, 1, 1),
             preprocessing_binning=(1, 1, 1),
             roi=(0, self.data_shape[1], 0, self.data_shape[2]),
-            fix_bragg=None,
+            bragg_peak=None,
             fft_option="crop_sym_ZYX",
             pad_size=None,
             centering_method="max",

@@ -921,7 +921,7 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
     elif key == "root_folder":
         valid.valid_container(value, container_types=str, min_length=1, name=key)
         if not os.path.isdir(value):
-            raise ValueError(f"The directory {value} does not exist")
+            raise ValueError(f"The directory '{value}' does not exist")
     elif key == "sample_inplane":
         valid.valid_container(
             value,

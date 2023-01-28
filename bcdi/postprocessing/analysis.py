@@ -414,6 +414,7 @@ class Analysis(ABC):
             peak_method=self.parameters["centering_method"]["reciprocal_space"],
             tilt_values=self.setup.tilt_angles,
             savedir=self.setup.detector.savedir,
+            user_defined_peak=self.parameters["bragg_peak"],
             logger=self.logger,
             plot_fit=True,
         )
@@ -592,6 +593,7 @@ class OrthogonalFrame(Analysis):
                 peak_method=self.parameters["centering_method"]["reciprocal_space"],
                 tilt_values=None,
                 savedir=self.setup.detector.savedir,
+                user_defined_peak=self.parameters["bragg_peak"],
                 logger=self.logger,
                 plot_fit=False,
             )["bragg_peak"]
