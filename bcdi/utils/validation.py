@@ -185,7 +185,7 @@ def valid_container(
     return True
 
 
-def valid_kwargs(kwargs, allowed_kwargs, name=None):
+def valid_kwargs(kwargs, allowed_kwargs, name="kwargs"):
     """
     Check if the provided parameters belong to the set of allowed kwargs.
 
@@ -197,9 +197,8 @@ def valid_kwargs(kwargs, allowed_kwargs, name=None):
     # check the validity of the parameters
     if not isinstance(kwargs, dict):
         raise TypeError("kwargs should be a dictionnary")
-    if name is not None and not isinstance(name, str):
+    if not isinstance(name, str):
         raise TypeError("name should be a string")
-    name = name or "obj"
 
     # check if requirements are satisfied
     if isinstance(allowed_kwargs, str):

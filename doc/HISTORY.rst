@@ -1,6 +1,10 @@
 Future:
 -------
 
+* `bcdi_utils.find_bragg`: a parameter name in the function signature was change from
+  "roi" to "region_of_interest", therefore the region of interest was not taken into
+  account anymore when calculating the peak position.
+
 * Postprocessing: raise NotImplementedError for energy scans not interpolated during
   preprocessing.
 

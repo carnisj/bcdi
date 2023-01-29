@@ -39,6 +39,16 @@ class TestPeakFinder(unittest.TestCase):
         peaks = self.peakfinder.find_peak()
         self.assertTrue(peaks["com"] == (1, 25, 23))
 
+    def test_no_user_defined_peak(self):
+        user_defined_peak = None
+        peaks = self.peakfinder.find_peak(user_defined_peak=user_defined_peak)
+        self.assertTrue("user" not in peaks)
+
+    def test_user_defined_peak(self):
+        user_defined_peak = (1, 22, 21)
+        peaks = self.peakfinder.find_peak(user_defined_peak=user_defined_peak)
+        self.assertTrue(peaks["user"] == user_defined_peak)
+
     def test_maxcom(self):
         peaks = self.peakfinder.find_peak()
         self.assertTrue(peaks["max_com"] == (1, 25, 23))
@@ -178,7 +188,7 @@ class TestPeakFinder(unittest.TestCase):
             "tilt_value_at_peak",
         }
         self.peakfinder.fit_rocking_curve()
-        self.assertTrue(key in self.peakfinder.metadata.keys() for key in expected_keys)
+        self.assertTrue(key in self.peakfinder.metadata for key in expected_keys)
 
     def test_plot_peaks_image_saved(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -232,11 +242,23 @@ class TestFindBragg(unittest.TestCase):
 
     def test_check_return_keys(self):
         output = find_bragg(array=self.data)
-        self.assertTrue("detector_data_at_peak" in output.keys())
+        self.assertTrue("detector_data_at_peak" in output)
 
     def test_run_only_peak_finding(self):
         expected = (1, 25, 23)
         metadata = find_bragg(array=self.data, plot_fit=False)
+        self.assertTrue(metadata["bragg_peak"] == expected)
+
+    def test_with_binning(self):
+        expected = (3, 50, 46)
+        metadata = find_bragg(array=self.data, binning=[3, 2, 2], plot_fit=False)
+        self.assertTrue(metadata["bragg_peak"] == expected)
+
+    def test_with_binning_and_roi(self):
+        expected = (3, 62, 55)
+        metadata = find_bragg(
+            array=self.data, binning=[3, 2, 2], roi=[12, 44, 9, 41], plot_fit=False
+        )
         self.assertTrue(metadata["bragg_peak"] == expected)
 
 

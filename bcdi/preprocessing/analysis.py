@@ -523,7 +523,7 @@ class Analysis(ABC):
             centering=self.parameters["centering_method"],
             fft_option=self.parameters["center_fft"],
             pad_size=self.parameters["pad_size"],
-            fix_bragg=self.parameters["bragg_peak"],
+            bragg_peak=self.parameters["bragg_peak"],
             q_values=self.data_loader.q_values,
             logger=self.logger,
         )
@@ -665,6 +665,7 @@ class Analysis(ABC):
             tilt_values=self.setup.tilt_angles,
             savedir=self.setup.detector.savedir,
             frames_pattern=self.parameters.get("frames_pattern"),
+            user_defined_peak=self.parameters["bragg_peak"],
             logger=self.logger,
             plot_fit=True,
         )
