@@ -353,11 +353,23 @@ class PeakFinder:
 
     def _fit_rocking_curve(self, tilt_values) -> None:
         """Fit the rocking curve and optionally tilt values by cubic interpolation."""
+        # Create mask to remove duplicate in tilt_values
+        mask = [
+            r not in np.delete(tilt_values.copy(), j) for (j, r) in enumerate(tilt_values)
+        ]
+
+        # Apply mask
+        tilt_values = tilt_values[mask]
+
         self._tilt_values = tilt_values
         self._tilt_value_at_peak = (
             tilt_values[self._roi_center[0]] if tilt_values is not None else None
         )
         rocking_curve = self.metadata.get("rocking_curve")
+
+        # Apply mask
+        rocking_curve = rocking_curve[mask]
+
         if rocking_curve is None:
             self.logger.info("'rocking_curve' is None, nothing to fit")
             return
@@ -372,6 +384,7 @@ class PeakFinder:
                 "you reload cropped data?)"
             )
             return
+
         interpolation = interp1d(x_axis, rocking_curve, kind="cubic")
         interp_points = 5 * self.array.shape[0]
         interp_tilt = np.linspace(x_axis.min(), x_axis.max(), interp_points)
