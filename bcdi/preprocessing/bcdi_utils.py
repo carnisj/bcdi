@@ -305,6 +305,14 @@ class PeakFinder:
         else:
             x_label = "Rocking angle (deg)"
 
+        # Create mask to remove duplicate in tilt_values
+        mask = [
+            r not in np.delete(tilt_values.copy(), j) for (j, r) in enumerate(tilt_values)
+        ]
+        # Apply mask
+        rocking_curve = rocking_curve[mask]
+        tilt_values = tilt_values[mask]
+
         interp_tilt = self.metadata.get("interp_tilt_values")
         interp_curve = self.metadata.get("interp_rocking_curve")
 
