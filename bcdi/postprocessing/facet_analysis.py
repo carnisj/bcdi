@@ -214,19 +214,39 @@ class Facets:
         print(f"Number of points = {vtkdata.GetNumberOfPoints()}")
         print(f"Number of cells = {vtkdata.GetNumberOfCells()}")
 
-        self.vtk_data = {
-            "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
-            "y": [vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())],
-            "z": [vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())],
-            "strain": [
-                point_data.GetArray("strain").GetValue(i)
-                for i in range(vtkdata.GetNumberOfPoints())
-            ],
-            "disp": [
-                point_data.GetArray("disp").GetValue(i)
-                for i in range(vtkdata.GetNumberOfPoints())
-            ],
-        }
+        try:
+            self.vtk_data = {
+                "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
+                "y": [vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())],
+                "z": [vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())],
+                "strain": [
+                    point_data.GetArray("strain").GetValue(i)
+                    for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "disp": [
+                    point_data.GetArray("disp").GetValue(i)
+                    for i in range(vtkdata.GetNumberOfPoints())
+                ],
+            }
+
+            self.phase_or_disp = "disp"
+
+        except AttributeError:
+            self.vtk_data = {
+                "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
+                "y": [vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())],
+                "z": [vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())],
+                "strain": [
+                    point_data.GetArray("strain").GetValue(i)
+                    for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "phase": [
+                    point_data.GetArray("phase").GetValue(i)
+                    for i in range(vtkdata.GetNumberOfPoints())
+                ],
+            }
+
+            self.phase_or_disp = "phase"
 
         # Get cell data
         cell_data = vtkdata.GetCellData()
@@ -267,8 +287,8 @@ class Facets:
             if results is not None:
                 strain_mean[ind - 1] = results["strain_mean"]
                 strain_std[ind - 1] = results["strain_std"]
-                disp_mean[ind - 1] = results["disp_mean"]
-                disp_std[ind - 1] = results["disp_std"]
+                disp_mean[ind - 1] = results[self.phase_or_disp + "_mean"]
+                disp_std[ind - 1] = results[self.phase_or_disp + "_std"]
 
         # Get field data
         field_data = vtkdata.GetFieldData()
@@ -278,8 +298,8 @@ class Facets:
         ]
         self.field_data["strain_mean"] = strain_mean
         self.field_data["strain_std"] = strain_std
-        self.field_data["disp_mean"] = disp_mean
-        self.field_data["disp_std"] = disp_std
+        self.field_data[self.phase_or_disp + "_mean"] = disp_mean
+        self.field_data[self.phase_or_disp + "_std"] = disp_std
         self.field_data["n0"] = [
             field_data.GetArray("facetNormals").GetValue(3 * i)
             for i in range(self.nb_facets)
@@ -611,7 +631,7 @@ class Facets:
             "y": np.zeros(len(voxel_indices_new)),
             "z": np.zeros(len(voxel_indices_new)),
             "strain": np.zeros(len(voxel_indices_new)),
-            "disp": np.zeros(len(voxel_indices_new)),
+            self.phase_or_disp: np.zeros(len(voxel_indices_new)),
         }
 
         for j, _ in enumerate(voxel_indices_new):
@@ -619,11 +639,11 @@ class Facets:
             results["y"][j] = self.vtk_data["y"][int(voxel_indices_new[j])]
             results["z"][j] = self.vtk_data["z"][int(voxel_indices_new[j])]
             results["strain"][j] = self.vtk_data["strain"][int(voxel_indices_new[j])]
-            results["disp"][j] = self.vtk_data["disp"][int(voxel_indices_new[j])]
+            results[self.phase_or_disp][j] = self.vtk_data[self.phase_or_disp][int(voxel_indices_new[j])]
         results["strain_mean"] = np.mean(results["strain"])
         results["strain_std"] = np.std(results["strain"])
-        results["disp_mean"] = np.mean(results["disp"])
-        results["disp_std"] = np.std(results["disp"])
+        results[self.phase_or_disp + "_mean"] = np.mean(results[self.phase_or_disp])
+        results[self.phase_or_disp + "_std"] = np.std(results[self.phase_or_disp])
 
         # plot single result
         if plot:
@@ -998,7 +1018,7 @@ class Facets:
 
         # 3D displacement
         p = None
-        fig_name = "disp_3D_" + self.hkls + self.comment + "_" + str(self.disp_range)
+        fig_name = self.phase_or_disp + "_3D_" + self.hkls + self.comment + "_" + str(self.disp_range)
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(projection="3d")
 
@@ -1010,7 +1030,7 @@ class Facets:
                     results["y"],
                     results["z"],
                     s=50,
-                    c=results["disp"],
+                    c=results[self.phase_or_disp],
                     cmap=self.cmap,
                     vmin=-self.disp_range,
                     vmax=self.disp_range,
@@ -1030,7 +1050,7 @@ class Facets:
 
         # Average disp
         fig_name = (
-            "disp_3D_avg_" + self.hkls + self.comment + "_" + str(self.disp_range_avg)
+            self.phase_or_disp + "_3D_avg_" + self.hkls + self.comment + "_" + str(self.disp_range_avg)
         )
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(projection="3d")
@@ -1038,8 +1058,8 @@ class Facets:
         for ind in range(1, self.nb_facets):
             results = self.extract_facet(ind, plot=False)
             if results is not None:
-                disp_mean_facet = np.zeros(results["disp"].shape)
-                disp_mean_facet.fill(results["disp_mean"])
+                disp_mean_facet = np.zeros(results[self.phase_or_disp].shape)
+                disp_mean_facet.fill(results[self.phase_or_disp + "_mean"])
                 self.disp_mean_facets = np.append(
                     self.disp_mean_facets, disp_mean_facet, axis=0
                 )
@@ -1103,8 +1123,8 @@ class Facets:
         for _, row in self.field_data.iterrows():
             ax.errorbar(
                 row["facet_id"],
-                row["disp_mean"],
-                row["disp_std"],
+                row[self.phase_or_disp + "_mean"],
+                row[self.phase_or_disp + "_std"],
                 fmt="o",
                 label=row["legend"],
             )
@@ -1176,7 +1196,7 @@ class Facets:
 
         # disp, strain & size vs angle planes,
         # change line style as a fct of the planes indices
-        fig_name = "disp_strain_size_vs_angle_planes_" + self.hkls + self.comment
+        fig_name = self.phase_or_disp + "_strain_size_vs_angle_planes_" + self.hkls + self.comment
         fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="all", figsize=(10, 12))
 
         plt.xticks(fontsize=self.ticks_fontsize)
@@ -1215,8 +1235,8 @@ class Facets:
                 fmt = "+"
             ax0.errorbar(
                 row["interplanar_angles"],
-                row["disp_mean"],
-                row["disp_std"],
+                row[self.phase_or_disp + "_mean"],
+                row[self.phase_or_disp + "_std"],
                 fmt=fmt,
                 capsize=2,
                 label=row["legend"],
@@ -1309,8 +1329,8 @@ class Facets:
                         "facet_id": [0],
                         "strain_mean": result["strain_mean"],
                         "strain_std": result["strain_std"],
-                        "disp_mean": result["disp_mean"],
-                        "disp_std": result["disp_std"],
+                        self.phase_or_disp + "_mean": result[self.phase_or_disp + "_mean"],
+                        self.phase_or_disp + "_std": result[self.phase_or_disp + "_std"],
                         "n0": None,
                         "n1": None,
                         "n2": None,
