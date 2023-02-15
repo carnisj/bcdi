@@ -1040,7 +1040,7 @@ class Facets:
 
         fig.colorbar(p)
         ax.view_init(elev=elev, azim=azim)
-        plt.title("Displacement for each voxel", fontsize=self.title_fontsize)
+        plt.title(f"{self.phase_or_disp} for each voxel", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
 
@@ -1079,7 +1079,7 @@ class Facets:
 
         fig.colorbar(p)
         ax.view_init(elev=elev, azim=azim)
-        plt.title("Mean displacement per facet", fontsize=self.title_fontsize)
+        plt.title(f"Mean {self.phase_or_disp} per facet", fontsize=self.title_fontsize)
         ax.tick_params(axis="both", which="major", labelsize=self.ticks_fontsize)
         ax.tick_params(axis="both", which="minor", labelsize=self.ticks_fontsize)
 
@@ -1130,10 +1130,10 @@ class Facets:
             )
 
         ax.set_title(
-            "Average displacement vs facet index", fontsize=self.title_fontsize
+            f"Average {self.phase_or_disp} vs facet index", fontsize=self.title_fontsize
         )
         ax.set_xlabel("Facet index", fontsize=self.axes_fontsize)
-        ax.set_ylabel("Average retrieved displacement", fontsize=self.axes_fontsize)
+        ax.set_ylabel(f"Average retrieved {self.phase_or_disp}", fontsize=self.axes_fontsize)
 
         ax.legend(
             bbox_to_anchor=(1, 1),
@@ -1194,7 +1194,8 @@ class Facets:
         plt.savefig(self.pathsave + fig_name + ".png", bbox_inches="tight")
         plt.show()
 
-        # disp, strain & size vs angle planes,
+        # phase or disp, strain & size vs angle planes,
+        # Remove edges and corners here
         # change line style as a fct of the planes indices
         fig_name = self.phase_or_disp + "_strain_size_vs_angle_planes_" + self.hkls + self.comment
         fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="all", figsize=(10, 12))
@@ -1217,31 +1218,32 @@ class Facets:
         ax0.set_yticks(minor_y_ticks, minor=True)
 
         for _, row in self.field_data.iterrows():
-            try:
-                lx, ly = (
-                    float(row.legend.split()[0]),
-                    float(row.legend.split()[1]),
-                )
-                if lx >= 0:
-                    if ly >= 0:
-                        fmt = "o"
+            if row.facet_id != 0:
+                try:
+                    lx, ly = (
+                        float(row.legend.split()[0]),
+                        float(row.legend.split()[1]),
+                    )
+                    if lx >= 0:
+                        if ly >= 0:
+                            fmt = "o"
+                        else:
+                            fmt = "d"
+                    elif ly >= 0:
+                        fmt = "s"
                     else:
-                        fmt = "d"
-                elif ly >= 0:
-                    fmt = "s"
-                else:
+                        fmt = "+"
+                except AttributeError:
                     fmt = "+"
-            except AttributeError:
-                fmt = "+"
-            ax0.errorbar(
-                row["interplanar_angles"],
-                row[self.phase_or_disp + "_mean"],
-                row[self.phase_or_disp + "_std"],
-                fmt=fmt,
-                capsize=2,
-                label=row["legend"],
-            )
-        ax0.set_ylabel("Retrieved <disp> (A)", fontsize=self.axes_fontsize)
+                ax0.errorbar(
+                    row["interplanar_angles"],
+                    row[self.phase_or_disp + "_mean"],
+                    row[self.phase_or_disp + "_std"],
+                    fmt=fmt,
+                    capsize=2,
+                    label=row["legend"],
+                )
+        ax0.set_ylabel(f"Retrieved <{self.phase_or_disp}>", fontsize=self.axes_fontsize)
         ax0.legend(
             loc="upper left",
             bbox_to_anchor=(1, 1),
@@ -1265,30 +1267,31 @@ class Facets:
         ax1.set_yticks(minor_y_ticks, minor=True)
 
         for _, row in self.field_data.iterrows():
-            try:
-                lx, ly = (
-                    float(row.legend.split()[0]),
-                    float(row.legend.split()[1]),
-                )
-                if lx >= 0:
-                    if ly >= 0:
-                        fmt = "o"
+            if row.facet_id != 0:
+                try:
+                    lx, ly = (
+                        float(row.legend.split()[0]),
+                        float(row.legend.split()[1]),
+                    )
+                    if lx >= 0:
+                        if ly >= 0:
+                            fmt = "o"
+                        else:
+                            fmt = "d"
+                    elif ly >= 0:
+                        fmt = "s"
                     else:
-                        fmt = "d"
-                elif ly >= 0:
-                    fmt = "s"
-                else:
+                        fmt = "+"
+                except AttributeError:
                     fmt = "+"
-            except AttributeError:
-                fmt = "+"
-            ax1.errorbar(
-                row["interplanar_angles"],
-                row["strain_mean"],
-                row["strain_std"],
-                fmt=fmt,
-                capsize=2,
-                label=row["legend"],
-            )
+                ax1.errorbar(
+                    row["interplanar_angles"],
+                    row["strain_mean"],
+                    row["strain_std"],
+                    fmt=fmt,
+                    capsize=2,
+                    label=row["legend"],
+                )
         ax1.set_ylabel("Retrieved <strain>", fontsize=self.axes_fontsize)
         ax1.grid(which="minor", alpha=0.2)
         ax1.grid(which="major", alpha=0.5)
@@ -1305,12 +1308,13 @@ class Facets:
         ax2.set_yticks(minor_y_ticks, minor=True)
 
         for _, row in self.field_data.iterrows():
-            ax2.plot(
-                row["interplanar_angles"],
-                row["rel_facet_size"],
-                "o",
-                label=row["legend"],
-            )
+            if row.facet_id != 0:
+                ax2.plot(
+                    row["interplanar_angles"],
+                    row["rel_facet_size"],
+                    "o",
+                    label=row["legend"],
+                )
         ax2.set_xlabel("Angle (deg.)", fontsize=self.axes_fontsize)
         ax2.set_ylabel("Relative facet size", fontsize=self.axes_fontsize)
         ax2.grid(which="minor", alpha=0.2)
