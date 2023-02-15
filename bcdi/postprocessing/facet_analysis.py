@@ -1459,7 +1459,7 @@ class Facets:
             # Replace nan by zeroes for edges and corners and change dtype
             # so that we can save as hdf
             self.field_data.iloc[0,5:] = np.zeros(10)
-            self.field_data = GUI_facets.Dataset.Facets.field_data.astype({
+            self.field_data = self.field_data.astype({
                 'facet_id': 'int64',
                 "strain_mean": "float64",
                 "strain_std": "float64",
