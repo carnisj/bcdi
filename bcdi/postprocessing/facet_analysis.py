@@ -355,7 +355,6 @@ class Facets:
         self,
         u0: np.ndarray,
         v0: np.ndarray,
-        w0: np.ndarray,
         u: np.ndarray,
         v: np.ndarray,
     ) -> None:
@@ -368,18 +367,18 @@ class Facets:
 
         :param u0: numpy.ndarray, shape (3,)
         :param v0: numpy.ndarray, shape (3,)
-        :param w0: numpy.ndarray, shape (3,)
         :param u: numpy.ndarray, shape (3,)
         :param v: numpy.ndarray, shape (3,)
         """
         # Check parameters
-        valid.valid_ndarray(arrays=(u0, v0, w0, u, v), shape=(3,))
+        valid.valid_ndarray(arrays=(u0, v0, u, v), shape=(3,))
 
         # Input theoretical values for three facets' normals
-        self.u0 = u0
-        self.v0 = v0
-        self.w0 = w0
-        print("Cross product of u0 and v0:", np.cross(self.u0, self.v0))
+        w0 = np.cross(u0, v0)
+        self.u0 = u0 / np.linalg.norm(u0)
+        self.v0 = v0 / np.linalg.norm(v0)
+        self.w0 = w0 / np.linalg.norm(w0)
+        print("Cross product of u0 and v0:", w0)
 
         # Current values for the first two facets' normals,
         # to compute the rotation matrix
@@ -413,7 +412,7 @@ class Facets:
 
         try:
             for e in normals.keys():
-                normals[e] = np.dot(self.rotation_matrix, normals[e])
+                normals[e] = np.dot(self.rotation_matrix, normals[e] / np.linalg.norm(normals[e]))
         except AttributeError:
             print(
                 """You need to define the rotation matrix first if you want to rotate
@@ -566,7 +565,7 @@ class Facets:
             plt.show()
 
     @no_type_check
-    def test_vector(self, vec: np.ndarray) -> None:
+    def test_rotation_matrix(self, vec: np.ndarray) -> None:
         """
         Computes value of a vector passed through the rotation matrix.
 
