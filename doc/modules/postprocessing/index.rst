@@ -22,7 +22,8 @@ API Reference
 analysis
 ^^^^^^^^
 
-This module provides the classes used in postprocessing strain analysis.
+This module provides the classes used in postprocessing strain analysis. It is mainly
+an abstration layer making analysis steps more understandable.
 
 API Reference
 -------------
