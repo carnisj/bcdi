@@ -13,8 +13,8 @@ import os
 from functools import wraps
 from typing import Callable, Optional, Union
 
+import bcdi.utils.format as fmt
 import bcdi.utils.validation as valid
-from bcdi.utils import utilities as util
 
 module_logger = logging.getLogger(__name__)
 
@@ -191,7 +191,7 @@ class ContextFile:
 
     def __repr__(self):
         """Representation string of the ContextFile instance."""
-        return util.create_repr(obj=self, cls=ContextFile)
+        return fmt.create_repr(obj=self, cls=ContextFile)
 
 
 def safeload(func: Callable) -> Callable:

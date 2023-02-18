@@ -13,7 +13,7 @@ from numbers import Real
 
 import numpy as np
 
-from bcdi.utils import utilities as util
+import bcdi.utils.format as fmt
 from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
@@ -121,4 +121,4 @@ class RotationMatrix:
 
     def __repr__(self):
         """Representation string of the RotationMatrix instance."""
-        return util.create_repr(self, RotationMatrix)
+        return fmt.create_repr(self, RotationMatrix)

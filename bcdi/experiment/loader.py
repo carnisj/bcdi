@@ -65,6 +65,7 @@ import numpy as np
 from silx.io.specfile import SpecFile
 
 from bcdi.graph import graph_utils as gu
+import bcdi.utils.format as fmt
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 from bcdi.utils.io_helper import ContextFile, safeload
@@ -946,7 +947,7 @@ class Loader(ABC):
 
     def __repr__(self):
         """Representation string of the Loader instance."""
-        return util.create_repr(self, Loader)
+        return fmt.create_repr(self, Loader)
 
 
 class LoaderID01(Loader):

@@ -22,6 +22,7 @@ from scipy.ndimage.measurements import center_of_mass
 
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.facet_recognition as fu
+import bcdi.utils.format as fmt
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 
@@ -428,10 +429,10 @@ result["origin"] = origin
 result["roi"] = roi
 
 if debug:
-    print("output dictionary:\n", json.dumps(result, cls=util.CustomEncoder, indent=4))
+    print("output dictionary:\n", json.dumps(result, cls=fmt.CustomEncoder, indent=4))
 
 with open(savedir + "ang_width" + comment + ".json", "w", encoding="utf-8") as file:
-    json.dump(result, file, cls=util.CustomEncoder, ensure_ascii=False, indent=4)
+    json.dump(result, file, cls=fmt.CustomEncoder, ensure_ascii=False, indent=4)
 
 plt.ioff()
 plt.show()

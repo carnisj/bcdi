@@ -60,6 +60,7 @@ import xrayutilities as xu
 from bcdi.experiment.diffractometer import DiffractometerFactory
 from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
+import bcdi.utils.format as fmt
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
@@ -380,7 +381,7 @@ class Beamline(ABC):
 
     def __repr__(self):
         """Representation string of the Beamline instance."""
-        return util.create_repr(self, Beamline)
+        return fmt.create_repr(self, Beamline)
 
     @property
     def sample_angles(self):
