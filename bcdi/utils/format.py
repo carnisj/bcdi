@@ -7,11 +7,11 @@
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Functions related to formatting for string representation."""
 
+import json
 import logging
 from inspect import signature
 from typing import Any, List, Optional, Tuple
 
-import json
 import numpy as np
 
 module_logger = logging.getLogger(__name__)

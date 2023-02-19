@@ -213,10 +213,12 @@ Usage:
      the end of the script before saving
     :param bin_during_loading: e.g. False
      True to bin during loading, faster
-    :param frames_pattern:  list of int, of length data.shape[0].
-     If frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1
-     the frame will be added to the stack. Use this if you need to remove some frames
-     and you know it in advance.
+    :param frames_pattern: None or list of int.
+     Use this if you need to remove some frames, and you know it in advance. You can
+     provide a binary list of length the number of images in the dataset. If
+     frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1 the
+     frame will be added to the stack. Or you can directly specify the indices of the
+     frames to be skipped, e.g. [0, 127] to skip frames at indices 0 and 127.
     :param background_file: non-empty file path or None
     :param hotpixels_file: non-empty file path or None
     :param flatfield_file: non-empty file path or None

@@ -57,10 +57,10 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 import numpy as np
 import xrayutilities as xu
 
+import bcdi.utils.format as fmt
 from bcdi.experiment.diffractometer import DiffractometerFactory
 from bcdi.experiment.loader import create_loader
 from bcdi.graph import graph_utils as gu
-import bcdi.utils.format as fmt
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
@@ -599,7 +599,7 @@ class BeamlineGoniometer(Beamline):
 
     def __repr__(self):
         """Representation string of the Beamline instance."""
-        return util.create_repr(self, BeamlineGoniometer)
+        return fmt.create_repr(self, BeamlineGoniometer)
 
     @abstractmethod
     def transformation_matrix(

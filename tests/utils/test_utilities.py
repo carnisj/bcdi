@@ -370,6 +370,80 @@ class TestUpsample(unittest.TestCase):
         self.assertTrue(np.allclose(output, expected))
 
 
+class TestGenerateFramesLogical(unittest.TestCase):
+    """
+    Tests on the function utilities.generate_frames_logical.
+
+    def generate_frames_logical(
+        nb_images: int, frames_pattern: Optional[List[int]]
+    ) -> np.ndarray:
+    """
+
+    def test_nb_image_none(self) -> None:
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(nb_images=None, frames_pattern=[128])
+
+    def test_nb_image_null(self) -> None:
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(nb_images=0, frames_pattern=[128])
+
+    def test_frames_pattern_none(self) -> None:
+        nb_images = 12
+        expected = np.ones(nb_images, dtype=int)
+        out = util.generate_frames_logical(nb_images=nb_images, frames_pattern=None)
+        self.assertTrue(np.array_equal(expected, out))
+
+    def test_frames_pattern_binary(self) -> None:
+        nb_images = 6
+        frames_pattern = [1, 0, 0, 1, 1, 1]
+        expected = np.array([1, 0, 0, 1, 1, 1], dtype=int)
+        out = util.generate_frames_logical(
+            nb_images=nb_images, frames_pattern=frames_pattern
+        )
+        self.assertTrue(np.array_equal(expected, out))
+
+    def test_frames_pattern_binary_wrong_length(self) -> None:
+        nb_images = 6
+        frames_pattern = [1, 0, 1, 1, 1]
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(
+                nb_images=nb_images, frames_pattern=frames_pattern
+            )
+
+    def test_frames_pattern_list_of_indices_too_long(self) -> None:
+        nb_images = 6
+        frames_pattern = [0, 1, 2, 3, 4, 5, 6]
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(
+                nb_images=nb_images, frames_pattern=frames_pattern
+            )
+
+    def test_frames_pattern_list_of_indices(self) -> None:
+        nb_images = 6
+        frames_pattern = [0, 3]
+        expected = np.array([0, 1, 1, 0, 1, 1], dtype=int)
+        out = util.generate_frames_logical(
+            nb_images=nb_images, frames_pattern=frames_pattern
+        )
+        self.assertTrue(np.array_equal(expected, out))
+
+    def test_frames_pattern_index_too_large(self) -> None:
+        nb_images = 6
+        frames_pattern = [0, 6]
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(
+                nb_images=nb_images, frames_pattern=frames_pattern
+            )
+
+    def test_frames_pattern_duplicated_indices(self) -> None:
+        nb_images = 6
+        frames_pattern = [0, 2, 2]
+        with self.assertRaises(ValueError):
+            util.generate_frames_logical(
+                nb_images=nb_images, frames_pattern=frames_pattern
+            )
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestFindFile)

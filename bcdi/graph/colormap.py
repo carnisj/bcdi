@@ -15,8 +15,8 @@ from typing import Optional
 import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 
-from bcdi.graph.turbo_colormap import turbo_colormap_data
 import bcdi.utils.format as fmt
+from bcdi.graph.turbo_colormap import turbo_colormap_data
 from bcdi.utils.validation import is_float
 
 data_table = (

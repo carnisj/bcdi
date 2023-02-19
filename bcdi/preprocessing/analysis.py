@@ -1175,7 +1175,7 @@ class FirstDataLoading(PreprocessingLoader):
         return bu.load_bcdi_data(
             scan_number=self.scan_nb,
             setup=self.setup,
-            frames_pattern=self.parameters["frames_pattern"],
+            frames_pattern=self.parameters.get("frames_pattern"),
             bin_during_loading=self.parameters["bin_during_loading"],
             flatfield=util.load_flatfield(self.parameters["flatfield_file"]),
             hotpixels=util.load_hotpixels(self.parameters["hotpixels_file"]),

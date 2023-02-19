@@ -75,7 +75,9 @@ class PeakFinder:
         )
         self.binning = [1, 1, 1] if binning is None else binning
         self.peak_method = peak_method
-        self.frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
+        self.frames_pattern = util.generate_frames_logical(
+            nb_images=self.array.shape[0], frames_pattern=kwargs.get("frames_pattern")
+        )
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
         self._peaks = self.find_peak(kwargs.get("user_defined_peak"))
@@ -356,8 +358,7 @@ class PeakFinder:
         x_axis = (
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
-        if self.frames_pattern is not None:
-            x_axis = x_axis[self.frames_pattern == 1]
+        x_axis = x_axis[self.frames_pattern == 1]
         if len(x_axis) != len(rocking_curve):
             self.logger.warning(
                 "tilt_values and rocking curve don't have the same length (hint: did "
@@ -531,8 +532,12 @@ def find_bragg(
     :param kwargs:
      - "logger": an optional logger
      - "user_defined_peak": [z, y, x] Bragg peak position defined by the user
-     - 'frames_pattern' = list of int, of length the size of the original dataset along
-       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
+     - 'frames_pattern': None or list of int.
+       Use this if you need to remove some frames, and you know it in advance. You can
+       provide a binary list of length the number of images in the dataset. If
+       frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1 the
+       frame will be added to the stack. Or you can directly specify the indices of the
+       frames to be skipped, e.g. [0, 127] to skip frames at indices 0 and 127.
 
     :return: the metadata with the results of the peak search and the fit.
     """
@@ -541,13 +546,12 @@ def find_bragg(
         allowed_kwargs={"frames_pattern", "logger", "user_defined_peak"},
     )
     logger: logging.Logger = kwargs.get("logger", module_logger)
-    frames_pattern: Optional[List[int]] = kwargs.get("frames_pattern")
     peakfinder = PeakFinder(
         array=array,
         region_of_interest=roi,
         binning=binning,
         peak_method=peak_method,
-        frames_pattern=frames_pattern,
+        frames_pattern=kwargs.get("frames_pattern"),
         user_defined_peak=kwargs.get("user_defined_peak"),
         logger=logger,
     )
@@ -961,9 +965,12 @@ def load_bcdi_data(
     :param kwargs:
 
      - 'photon_threshold': float, photon threshold to apply before binning
-     - 'frames_pattern': 1D array of int, of length data.shape[0]. If
-       frames_pattern is 0 at index, the frame at data[index] will be skipped,
-       if 1 the frame will added to the stack.
+     - 'frames_pattern': None or list of int.
+       Use this if you need to remove some frames, and you know it in advance. You can
+       provide a binary list of length the number of images in the dataset. If
+       frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1 the
+       frame will be added to the stack. Or you can directly specify the indices of the
+       frames to be skipped, e.g. [0, 127] to skip frames at indices 0 and 127.
      - 'logger': an optional logger
 
     :return:
@@ -988,15 +995,11 @@ def load_bcdi_data(
         min_included=0,
         name="photon_threshold",
     )
-    frames_pattern = kwargs.get("frames_pattern")
-    valid.valid_1d_array(
-        frames_pattern, allow_none=True, allowed_values={0, 1}, name="frames_pattern"
-    )
 
     rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
         setup=setup,
-        frames_pattern=frames_pattern,
+        frames_pattern=kwargs.get("frames_pattern"),
         bin_during_loading=bin_during_loading,
         flatfield=flatfield,
         hotpixels=hotpixels,
@@ -1078,8 +1081,12 @@ def reload_bcdi_data(
     :param debugging:  set to True to see plots
     :parama kwargs:
 
-     - 'frames_pattern' = list of int, of length the size of the original dataset along
-       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
+     - 'frames_pattern': None or list of int.
+       Use this if you need to remove some frames, and you know it in advance. You can
+       provide a binary list of length the number of images in the dataset. If
+       frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1 the
+       frame will be added to the stack. Or you can directly specify the indices of the
+       frames to be skipped, e.g. [0, 127] to skip frames at indices 0 and 127.
      - 'photon_threshold' = float, photon threshold to apply before binning
      - 'logger': an optional logger
 
@@ -1089,7 +1096,6 @@ def reload_bcdi_data(
 
     """
     logger = kwargs.get("logger", module_logger)
-    frames_pattern = kwargs.get("frames_pattern")
     valid.valid_ndarray(arrays=(data, mask), ndim=3)
     # check and load kwargs
     valid.valid_kwargs(
@@ -1105,8 +1111,8 @@ def reload_bcdi_data(
     )
 
     nbz, nby, nbx = data.shape
-    frames_logical = (
-        frames_pattern if frames_pattern is not None else np.ones(nbz, dtype=int)
+    frames_logical = util.generate_frames_logical(
+        nb_images=nbz, frames_pattern=kwargs.get("frames_pattern")
     )
 
     logger.info(f"{(data < 0).sum()} negative data points masked")

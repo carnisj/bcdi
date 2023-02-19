@@ -57,9 +57,9 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
+import bcdi.utils.format as fmt
 from bcdi.constants import BEAMLINES_BCDI, BEAMLINES_SAXS
 from bcdi.experiment.rotation_matrix import RotationMatrix
-import bcdi.utils.format as fmt
 from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)

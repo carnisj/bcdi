@@ -940,6 +940,52 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
     return window
 
 
+def generate_frames_logical(
+    nb_images: int, frames_pattern: Optional[List[int]]
+) -> np.ndarray:
+    """
+    Generate a logical array allowing ti discrad frames in the dataset.
+
+    :param nb_images: the number of 2D images in te dataset.
+    :param frames_pattern: user-provided list which can be:
+     - a binary list of length nb_images
+     - a list of the indices of frames to be skipped
+
+    :return: a binary numpy array of length nb_images
+    """
+    valid.valid_item(nb_images, allowed_types=int, min_excluded=0, name="nb_images")
+    if frames_pattern is None:
+        return np.ones(nb_images, dtype=int)
+
+    valid.valid_container(
+        frames_pattern,
+        container_types=list,
+        max_length=nb_images,
+        item_types=int,
+        min_included=0,
+        max_excluded=nb_images,
+        allow_none=False,
+        name="frames_pattern",
+    )
+
+    if len(frames_pattern) == nb_images:
+        if all(val in {0, 1} for val in frames_pattern):
+            return np.array(frames_pattern, dtype=int)
+        raise ValueError(f"A binary list of lenght {nb_images} is expected")
+
+    if len(set(frames_pattern)) != len(frames_pattern):
+        if all(val in {0, 1} for val in frames_pattern):
+            raise ValueError(
+                "frame_patterns is a binary list of length "
+                f"{len(frames_pattern)}, but there are {nb_images} images"
+            )
+        raise ValueError("Duplicated indices in frame_patterns")
+
+    frames_logical = np.ones(nb_images, dtype=int)
+    frames_logical[frames_pattern] = 0
+    return frames_logical
+
+
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
     """
     Find the closest larger number that meets some condition.

@@ -23,11 +23,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, griddata
 
+import bcdi.utils.format as fmt
 from bcdi.experiment.beamline import create_beamline
 from bcdi.experiment.beamline_factory import BeamlineGoniometer, BeamlineSaxs
 from bcdi.experiment.detector import Detector, create_detector
 from bcdi.graph import graph_utils as gu
-import bcdi.utils.format as fmt
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 from bcdi.utils.io_helper import ContextFile
