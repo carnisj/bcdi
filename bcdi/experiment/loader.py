@@ -501,9 +501,9 @@ def select_frames(data: np.ndarray, frames_logical: np.ndarray) -> np.ndarray:
         frames_logical,
         length=data.shape[0],
         allow_none=False,
-        allowed_types=int,
+        allowed_types=Integral,
         allowed_values=(0, 1),
-        name="frames_pattern",
+        name="frames_logical",
     )
     return np.asarray(data[frames_logical != 0])
 
