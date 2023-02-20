@@ -489,7 +489,6 @@ class Analysis(ABC):
                 tilt_values=None,
                 logger=self.logger,
                 plot_fit=False,
-                frames_pattern=self.parameters["frames_pattern"],
             )
             self.q_bragg = np.array(
                 [
@@ -664,7 +663,6 @@ class Analysis(ABC):
             peak_method=self.parameters["centering_method"]["reciprocal_space"],
             tilt_values=self.setup.tilt_angles,
             savedir=self.setup.detector.savedir,
-            frames_pattern=self.parameters.get("frames_pattern"),
             user_defined_peak=self.parameters["bragg_peak"],
             logger=self.logger,
             plot_fit=True,

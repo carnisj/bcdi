@@ -52,8 +52,6 @@ class PeakFinder:
     :param kwargs:
      - 'logger': an optional logger
      - "user_defined_peak": [z, y, x] Bragg peak position defined by the user
-     - 'frames_pattern' = list of int, of length the size of the original dataset along
-       the rocking curve dimension. 0 if a frame was skipped, 1 otherwise
 
     """
 
@@ -75,9 +73,6 @@ class PeakFinder:
         )
         self.binning = [1, 1, 1] if binning is None else binning
         self.peak_method = peak_method
-        self.frames_pattern = util.generate_frames_logical(
-            nb_images=self.array.shape[0], frames_pattern=kwargs.get("frames_pattern")
-        )
         self.logger: logging.Logger = kwargs.get("logger", module_logger)
 
         self._peaks = self.find_peak(kwargs.get("user_defined_peak"))
@@ -358,7 +353,6 @@ class PeakFinder:
         x_axis = (
             tilt_values if tilt_values is not None else np.arange(len(rocking_curve))
         )
-        x_axis = x_axis[self.frames_pattern == 1]
         if len(x_axis) != len(rocking_curve):
             self.logger.warning(
                 "tilt_values and rocking curve don't have the same length (hint: did "
@@ -532,18 +526,12 @@ def find_bragg(
     :param kwargs:
      - "logger": an optional logger
      - "user_defined_peak": [z, y, x] Bragg peak position defined by the user
-     - 'frames_pattern': None or list of int.
-       Use this if you need to remove some frames, and you know it in advance. You can
-       provide a binary list of length the number of images in the dataset. If
-       frames_pattern is 0 at index, the frame at data[index] will be skipped, if 1 the
-       frame will be added to the stack. Or you can directly specify the indices of the
-       frames to be skipped, e.g. [0, 127] to skip frames at indices 0 and 127.
 
     :return: the metadata with the results of the peak search and the fit.
     """
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"frames_pattern", "logger", "user_defined_peak"},
+        allowed_kwargs={"logger", "user_defined_peak"},
     )
     logger: logging.Logger = kwargs.get("logger", module_logger)
     peakfinder = PeakFinder(
@@ -551,7 +539,6 @@ def find_bragg(
         region_of_interest=roi,
         binning=binning,
         peak_method=peak_method,
-        frames_pattern=kwargs.get("frames_pattern"),
         user_defined_peak=kwargs.get("user_defined_peak"),
         logger=logger,
     )
@@ -804,7 +791,6 @@ def grid_bcdi_xrayutil(
         hxrd=hxrd,
         nb_frames=numz,
         scan_number=scan_number,
-        frames_logical=frames_logical,
     )
 
     maxbins: List[int] = []
@@ -996,7 +982,7 @@ def load_bcdi_data(
         name="photon_threshold",
     )
 
-    rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
+    rawdata, rawmask, monitor, setup.frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
         setup=setup,
         frames_pattern=kwargs.get("frames_pattern"),
@@ -1057,7 +1043,7 @@ def load_bcdi_data(
         pad_value=(0, 1),
     )
 
-    return rawdata, rawmask, frames_logical, monitor
+    return rawdata, rawmask, setup.frames_logical, monitor
 
 
 def reload_bcdi_data(
@@ -1111,7 +1097,7 @@ def reload_bcdi_data(
     )
 
     nbz, nby, nbx = data.shape
-    frames_logical = util.generate_frames_logical(
+    setup.frames_logical = util.generate_frames_logical(
         nb_images=nbz, frames_pattern=kwargs.get("frames_pattern")
     )
 
@@ -1200,4 +1186,4 @@ def reload_bcdi_data(
             )
         )
 
-    return data, mask, frames_logical, monitor
+    return data, mask, setup.frames_logical, monitor

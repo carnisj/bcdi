@@ -2567,6 +2567,28 @@ def unpack_array(
     return np.asarray(array)
 
 
+def update_frames_logical(
+    frames_logical: np.ndarray, logical_subset: np.ndarray
+) -> np.ndarray:
+    """
+    Update frames_logical with a logical array of smaller length.
+
+    The number of non-zero elements of frames_logical should be equal to the length of
+    the logical subset.
+    """
+    if len(np.where(frames_logical != 0)[0]) != len(logical_subset):
+        raise ValueError(
+            f"len(frames_logical != 0)={len(np.where(frames_logical != 0)[0])} "
+            f"but len(logical_subset)={len(logical_subset)}"
+        )
+    counter = 0
+    for idx, val in enumerate(frames_logical):
+        if val != 0:
+            frames_logical[idx] = logical_subset[counter]
+            counter += 1
+    return frames_logical
+
+
 def upsample(array: Union[np.ndarray, List], factor: int = 2) -> np.ndarray:
     """
     Upsample an array.

@@ -146,6 +146,7 @@ class Setup:
         self.logfile: Optional[ContextFile] = None
         self.detector_position: Optional[Tuple[Real, Real, Real]] = None
         self.tilt_angles: Optional[np.ndarray] = None
+        self.frames_logical: Optional[np.ndarray] = None
 
         # initialize the paths and the logfile
         self.initialize_analysis()
@@ -505,6 +506,30 @@ class Setup:
         self._filtered_data = value
 
     @property
+    def frames_logical(self) -> Optional[np.ndarray]:
+        """
+        Specify invalid frames using a logical array.
+
+        1D array of length equal to the number of measured frames.
+        In case of cropping the length of the stack of frames changes. A frame whose
+        index is set to 1 means that it is used, 0 means not used.
+        """
+        return self._frames_logical
+
+    @frames_logical.setter
+    def frames_logical(self, value: Optional[np.ndarray]) -> None:
+        valid.valid_1d_array(
+            value,
+            allowed_types=Integral,
+            allow_none=True,
+            allowed_values=(-1, 0, 1),
+            name="frames_logical",
+        )
+        self._frames_logical = value
+        if self._frames_logical is not None:
+            self.apply_frames_logical()
+
+    @property
     def grazing_angle(self):
         """
         Motor positions for the goniometer circles below the rocking angle.
@@ -711,10 +736,6 @@ class Setup:
         :param kwargs:
 
          - 'scan_number': the scan number to load
-         - 'frames_logical': array of length the number of measured frames.
-           In case of cropping/padding the number of frames changes. A frame whose
-           index is set to 1 means that it is used, 0 means not used, -1 means padded
-           (added) frame
 
         :return:
          - qx, qz, qy components for the dataset. xrayutilities uses the xyz crystal
@@ -726,9 +747,8 @@ class Setup:
 
         """
         # check some parameters
-        frames_logical = kwargs.get("frames_logical")
         valid.valid_1d_array(
-            frames_logical,
+            self.frames_logical,
             allow_none=True,
             allowed_types=Integral,
             allowed_values=(-1, 0, 1),
@@ -745,7 +765,7 @@ class Setup:
             setup=self,
             nb_frames=nb_frames,
             scan_number=scan_number,
-            frames_logical=frames_logical,
+            frames_logical=self.frames_logical,
         )
 
         # calculate q values
@@ -757,7 +777,27 @@ class Setup:
         self.logger.info(
             "Use the parameter 'sample_offsets' to correct diffractometer values."
         )
-        return qx, qz, qy, frames_logical
+        return qx, qz, qy, self.frames_logical
+
+    def apply_frames_logical(self) -> None:
+        """Crop setup attributes where data frames have been excluded."""
+        if isinstance(self.energy, np.ndarray):
+            self.energy = util.apply_logical_array(
+                arrays=self.energy,
+                frames_logical=self.frames_logical,
+            )
+            print("energy")
+        if isinstance(self.outofplane_angle, np.ndarray):
+            self.outofplane_angle = util.apply_logical_array(
+                arrays=self.outofplane_angle,
+                frames_logical=self.frames_logical,
+            )
+            print("outofplane_angle")
+        if isinstance(self.tilt_angles, np.ndarray):
+            self.tilt_angles = util.apply_logical_array(
+                arrays=self.tilt_angles,
+                frames_logical=self.frames_logical,
+            )
 
     def check_setup(
         self,
