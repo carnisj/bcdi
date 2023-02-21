@@ -794,9 +794,11 @@ class Setup:
             )
             print("outofplane_angle")
         if isinstance(self.tilt_angles, np.ndarray):
-            self.tilt_angles = util.apply_logical_array(
-                arrays=self.tilt_angles,
-                frames_logical=self.frames_logical,
+            self.tilt_angles = np.asarray(
+                util.apply_logical_array(
+                    arrays=self.tilt_angles,
+                    frames_logical=self.frames_logical,
+                )
             )
 
     def check_setup(

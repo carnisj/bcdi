@@ -982,7 +982,7 @@ def load_bcdi_data(
         name="photon_threshold",
     )
 
-    rawdata, rawmask, monitor, setup.frames_logical = setup.loader.load_check_dataset(
+    rawdata, rawmask, monitor, frames_logical = setup.loader.load_check_dataset(
         scan_number=scan_number,
         setup=setup,
         frames_pattern=kwargs.get("frames_pattern"),
@@ -993,7 +993,7 @@ def load_bcdi_data(
         normalize=normalize,
         debugging=debugging,
     )
-
+    setup.frames_logical = frames_logical
     #####################################################
     # apply an optional photon threshold before binning #
     #####################################################
@@ -1043,7 +1043,7 @@ def load_bcdi_data(
         pad_value=(0, 1),
     )
 
-    return rawdata, rawmask, setup.frames_logical, monitor
+    return np.asarray(rawdata), np.asarray(rawmask), frames_logical, np.asarray(monitor)
 
 
 def reload_bcdi_data(

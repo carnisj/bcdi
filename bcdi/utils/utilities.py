@@ -35,9 +35,9 @@ module_logger = logging.getLogger(__name__)
 
 
 def apply_logical_array(
-    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    arrays: Union[Real, np.ndarray, Tuple[Union[Real, np.ndarray], ...]],
     frames_logical: Optional[np.ndarray],
-) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
+) -> Union[Real, np.ndarray, Tuple[Union[Real, np.ndarray], ...]]:
     """
     Apply a logical array to a sequence of arrays.
 
@@ -50,7 +50,7 @@ def apply_logical_array(
      (added) frame
     :return: an array (if a single array was provided) or a tuple of cropped arrays
     """
-    if isinstance(arrays, np.ndarray):
+    if not isinstance(arrays, (tuple, list)):
         arrays = (arrays,)
     if frames_logical is None:
         return arrays

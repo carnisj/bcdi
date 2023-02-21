@@ -444,9 +444,92 @@ class TestGenerateFramesLogical(unittest.TestCase):
             )
 
 
+class TestUpdateFramesLogical(unittest.TestCase):
+    """
+    Tests on the function utilities.update_frames_logical.
+
+    def update_frames_logical(
+        frames_logical: np.ndarray, logical_subset: np.ndarray
+    ) -> np.ndarray:
+    """
+
+    def test_inconsitency_with_length_of_logical_subset(self):
+        frames_logical = np.array([0, 1, 1, 1])
+        logical_subset = np.array([1, 1])
+        with self.assertRaises(ValueError):
+            util.update_frames_logical(
+                frames_logical=frames_logical, logical_subset=logical_subset
+            )
+
+    def test_remove_1_frame(self):
+        frames_logical = np.array([0, 1, 1, 1])
+        logical_subset = np.array([1, 1, 0])
+        expected = np.array([0, 1, 1, 0])
+        out = util.update_frames_logical(
+            frames_logical=frames_logical, logical_subset=logical_subset
+        )
+        self.assertTrue(np.array_equal(expected, out))
+
+
+class TestApplyLogicalArray(unittest.TestCase):
+    """
+    Tests on the function utilities.apply_logical_array.
+
+    def apply_logical_array(
+        arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+        frames_logical: Optional[np.ndarray],
+    ) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
+    """
+
+    def setUp(self) -> None:
+        self.frames_logical = np.array([1, 0, 1, 1, 1, 1, 0])
+
+    def test_single_array(self):
+        expected = np.array([0, 2, 3, 4, 5])
+        out = util.apply_logical_array(
+            arrays=np.arange(len(self.frames_logical)),
+            frames_logical=self.frames_logical,
+        )
+        self.assertTrue(np.array_equal(expected, out))
+
+    def test_tuple_of_arrays(self):
+        expected = np.array([0, 2, 3, 4, 5]), np.array([0, -2, -3, -4, -5])
+        out = util.apply_logical_array(
+            arrays=(
+                np.arange(len(self.frames_logical)),
+                -np.arange(len(self.frames_logical)),
+            ),
+            frames_logical=self.frames_logical,
+        )
+        self.assertIsInstance(out, tuple)
+        for idx, val in enumerate(out):
+            self.assertTrue(np.array_equal(expected[idx], out[idx]))
+
+    def test_input_is_a_number(self):
+        expected = 3
+        out = util.apply_logical_array(
+            arrays=expected,
+            frames_logical=self.frames_logical,
+        )
+        self.assertEqual(out, expected)
+
+    def test_mixed_tuple(self):
+        expected = (3, np.array([0, 2, 3, 4, 5]))
+        out = util.apply_logical_array(
+            arrays=(3, np.arange(len(self.frames_logical))),
+            frames_logical=self.frames_logical,
+        )
+        self.assertIsInstance(out, tuple)
+        self.assertEqual(out[0], expected[0])
+        self.assertTrue(np.array_equal(expected[1], out[1]))
+
+
 if __name__ == "__main__":
     run_tests(TestInRange)
     run_tests(TestFindFile)
     run_tests(TestGaussianWindow)
     run_tests(TestUnpackArray)
     run_tests(TestUpsample)
+    run_tests(TestGenerateFramesLogical)
+    run_tests(TestUpdateFramesLogical)
+    run_tests(TestApplyLogicalArray)
