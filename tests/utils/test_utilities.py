@@ -503,7 +503,7 @@ class TestApplyLogicalArray(unittest.TestCase):
         )
         self.assertIsInstance(out, tuple)
         for idx, val in enumerate(out):
-            self.assertTrue(np.array_equal(expected[idx], out[idx]))
+            self.assertTrue(np.array_equal(expected[idx], val))
 
     def test_input_is_a_number(self):
         expected = 3

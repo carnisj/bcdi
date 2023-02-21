@@ -22,7 +22,7 @@ import vtk
 from ipywidgets import Layout, interactive
 from pandas import DataFrame
 
-import bcdi.utils.format as fmt
+import bcdi.utils.format as ft
 from bcdi.utils import validation as valid
 
 
@@ -1473,7 +1473,7 @@ class Facets:
 
     def __repr__(self):
         """Unambiguous representation of the class."""
-        return fmt.create_repr(obj=self, cls=Facets)
+        return ft.create_repr(obj=self, cls=Facets)
 
     def __str__(self):
         """Readable representation of the class."""
