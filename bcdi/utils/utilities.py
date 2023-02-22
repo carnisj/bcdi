@@ -211,14 +211,18 @@ def bin_parameters(
 
 
 def cast(
-    val: Union[float, List, np.ndarray], target_type: type = float
+    val: Union[float, List, np.ndarray], target_type: type = float, **kwargs
 ) -> Union[float, List, np.ndarray]:
     """
     Cast val to a number or an array of numbers of the target type.
 
     :param val: the value to be converted
     :param target_type: the type to convert to
+    :param kwargs:
+     - 'logger': an optional logger
+
     """
+    logger = kwargs.get("logger", module_logger)
     if not isinstance(target_type, type):
         raise TypeError("target_type should be a type")
     if target_type not in [int, float]:
@@ -232,7 +236,7 @@ def cast(
             val = target_type(val)
         return val
     except (TypeError, ValueError):
-        print(f"Cannot cast to {target_type}")
+        logger.info(f"Cannot cast {val} to {target_type}")
         raise
 
 

@@ -6,6 +6,7 @@
 # J.Carnis 27/04/2018
 """Functions related to the registration and alignement of two arrays."""
 
+import logging
 from numbers import Complex, Real
 from typing import Sequence, Union
 
@@ -17,6 +18,8 @@ from scipy.stats import pearsonr
 from ..graph import graph_utils as gu
 from ..utils import utilities as util
 from ..utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 def align_arrays(
@@ -743,6 +746,7 @@ def get_shift(
     precision: int = 1000,
     support_threshold: Union[None, float] = None,
     verbose: bool = True,
+    **kwargs,
 ) -> Sequence[float]:
     """
     Calculate the shift between two arrays.
@@ -763,10 +767,14 @@ def get_shift(
      will be used to define a support. The center of mass will be calculated for that
      support instead of the modulus.
     :param verbose: True to print comment
+    :param kwargs:
+     - 'logger': an optional logger
+
     :return: list of shifts, of length equal to the number of dimensions of the arrays.
      These are shifts that need to be applied to shifted_array in order to align it
      with reference_array (no need to flip signs)
     """
+    logger = kwargs.get("logger", module_logger)
     ##########################
     # check input parameters #
     ##########################
@@ -815,7 +823,7 @@ def get_shift(
     shift = getimageregistration(reference_obj, shifted_obj, precision=precision)
 
     if verbose:
-        print(f"shifts with the reference object: {shift} pixels")
+        logger.info(f"shifts with the reference object: {shift} pixels")
     return tuple(shift)
 
 

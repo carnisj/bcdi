@@ -409,7 +409,6 @@ class TestParameters(unittest.TestCase):
 
     def test_false_expected_1(self):
         val, flag = valid_param(key="align_axis", value="False")
-        print(val, flag)
         self.assertTrue(val is False and flag is True)
 
     def test_false_expected_2(self):

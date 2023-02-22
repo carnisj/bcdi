@@ -69,7 +69,6 @@ class TestCreateReprFake(fake_filesystem_unittest.TestCase):
             'encoding="utf-8", longname=None, shortname=None, directory=None, )'
         )
         out = fmt.create_repr(obj=ctx, cls=ContextFile)
-        print(out)
         self.assertEqual(out, valid)
 
     def test_detector(self):
@@ -81,7 +80,6 @@ class TestCreateReprFake(fake_filesystem_unittest.TestCase):
             "preprocessing_binning=(1, 1, 1), offsets=None, linearity_func=None, )"
         )
         out = fmt.create_repr(obj=det, cls=Detector)
-        print(out)
         self.assertEqual(out, valid)
 
     def test_not_a_class(self):

@@ -74,14 +74,12 @@ class TestContextFile(unittest.TestCase):
         ctx = ContextFile(
             filename=self.filename, open_func=self.open_func, shortname="test"
         )
-        print(repr(ctx))
         self.assertIsInstance(eval(repr(ctx)), ContextFile)
 
     def test_repr_str_none(self):
         ctx = ContextFile(
             filename=self.filename, open_func=self.open_func, shortname=None
         )
-        print(repr(ctx))
         self.assertIsInstance(eval(repr(ctx)), ContextFile)
 
 
