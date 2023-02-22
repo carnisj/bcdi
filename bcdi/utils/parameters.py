@@ -743,9 +743,13 @@ def valid_param(key: str, value: Any) -> Tuple[Any, bool]:
         )
     elif key == "frames_pattern":
         if value is not None:
-            value = np.asarray(value)
-            valid.valid_1d_array(
-                value, allow_none=False, allowed_values={0, 1}, name=key
+            valid.valid_container(
+                value,
+                container_types=list,
+                item_types=int,
+                allow_none=False,
+                min_included=0,
+                name=key,
             )
     elif key == "half_width_avg_phase":
         valid.valid_item(value, allowed_types=int, min_included=0, name=key)

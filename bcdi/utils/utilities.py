@@ -9,13 +9,11 @@
 
 import ctypes
 import gc
-import json
 import logging
 import os
 import shutil
 from collections import OrderedDict
 from functools import reduce
-from inspect import signature
 from logging import Logger
 from numbers import Integral, Real
 from pathlib import Path
@@ -36,25 +34,10 @@ from bcdi.utils import validation as valid
 module_logger = logging.getLogger(__name__)
 
 
-class CustomEncoder(json.JSONEncoder):
-    """Class to handle the serialization of np.ndarrays, sets."""
-
-    def default(self, obj):
-        """Override the JSONEncoder.default method to support more types."""
-        if isinstance(obj, np.ndarray):
-            return ndarray_to_list(obj)
-            # Let the base class default method raise the TypeError
-        if isinstance(obj, set):
-            return list(obj)
-        if isinstance(obj, (np.int32, np.int64)):
-            return int(obj)
-        return json.JSONEncoder.default(self, obj)
-
-
 def apply_logical_array(
-    arrays: Union[np.ndarray, Tuple[np.ndarray, ...]],
+    arrays: Union[Real, np.ndarray, Tuple[Union[Real, np.ndarray], ...]],
     frames_logical: Optional[np.ndarray],
-) -> Union[np.ndarray, Tuple[np.ndarray, ...]]:
+) -> Union[Real, np.ndarray, Tuple[Union[Real, np.ndarray], ...]]:
     """
     Apply a logical array to a sequence of arrays.
 
@@ -67,7 +50,7 @@ def apply_logical_array(
      (added) frame
     :return: an array (if a single array was provided) or a tuple of cropped arrays
     """
-    if isinstance(arrays, np.ndarray):
+    if not isinstance(arrays, (tuple, list)):
         arrays = (arrays,)
     if frames_logical is None:
         return arrays
@@ -814,67 +797,6 @@ def fit3d_poly4(x_axis, a, b, c, d, e, f, g, h, i, j, k, m, n):
     )
 
 
-def create_repr(obj: Any, cls: type) -> str:
-    """
-    Generate the string representation of the object.
-
-    It uses the parameters given to __init__, except self, args and kwargs.
-
-    :param obj: the object for which the string representation should be generated
-    :param cls: the cls from which __init__ parameters should be extracted (e.g., base
-     class in case of inheritance)
-    :return: the string representation
-    """
-    if not isinstance(cls, type):
-        raise TypeError(f"'cls' should be a class, for {type(cls)}")
-    output = obj.__class__.__name__ + "("
-    for _, param in enumerate(
-        signature(cls.__init__).parameters.keys()  # type: ignore
-    ):
-        if param not in ["self", "args", "kwargs"]:
-            out, quote_mark = format_value(getattr(obj, param))
-            output += f"{param}=" + format_repr(out, quote_mark)
-
-    output += ")"
-    return str(output)
-
-
-def format_value(value: Any) -> Tuple[Any, bool]:
-    """Format the value for a proper representation."""
-    quote_mark = True
-    if isinstance(value, np.ndarray):
-        out = ndarray_to_list(value)
-        quote_mark = True
-    elif callable(value):
-        out = value.__module__ + "." + value.__name__
-        # it's a string, but we don't want to put it in quote mark in order to
-        # be able to call it directly
-        quote_mark = False
-    elif isinstance(value, dict):
-        out = {}  # type: ignore
-        for key, val in value.items():
-            if not isinstance(key, str):
-                raise NotImplementedError(f"key {key} should be a string")
-            out[key] = format_value(val)[0]  # type: ignore
-        quote_mark = False
-    else:
-        out = value
-    return out, quote_mark
-
-
-def format_repr(value: Optional[Any], quote_mark: bool = True) -> str:
-    """
-    Format strings for the __repr__ method.
-
-    :param value: string or None
-    :param quote_mark: True to put quote marks around strings
-    :return: a string
-    """
-    if isinstance(value, str) and quote_mark:
-        return f'"{value}", '.replace("\\", "/")
-    return f"{value}, ".replace("\\", "/")
-
-
 def function_lmfit(params, x_axis, distribution, iterator=0):
     """
     Calculate distribution defined by lmfit Parameters.
@@ -1016,6 +938,52 @@ def gaussian_window(window_shape, sigma=0.3, mu=0.0, voxel_size=None, debugging=
         )
 
     return window
+
+
+def generate_frames_logical(
+    nb_images: int, frames_pattern: Optional[List[int]]
+) -> np.ndarray:
+    """
+    Generate a logical array allowing ti discrad frames in the dataset.
+
+    :param nb_images: the number of 2D images in te dataset.
+    :param frames_pattern: user-provided list which can be:
+     - a binary list of length nb_images
+     - a list of the indices of frames to be skipped
+
+    :return: a binary numpy array of length nb_images
+    """
+    valid.valid_item(nb_images, allowed_types=int, min_excluded=0, name="nb_images")
+    if frames_pattern is None:
+        return np.ones(nb_images, dtype=int)
+
+    valid.valid_container(
+        frames_pattern,
+        container_types=list,
+        max_length=nb_images,
+        item_types=int,
+        min_included=0,
+        max_excluded=nb_images,
+        allow_none=False,
+        name="frames_pattern",
+    )
+
+    if len(frames_pattern) == nb_images:
+        if all(val in {0, 1} for val in frames_pattern):
+            return np.array(frames_pattern, dtype=int)
+        raise ValueError(f"A binary list of lenght {nb_images} is expected")
+
+    if len(set(frames_pattern)) != len(frames_pattern):
+        if all(val in {0, 1} for val in frames_pattern):
+            raise ValueError(
+                "frame_patterns is a binary list of length "
+                f"{len(frames_pattern)}, but there are {nb_images} images"
+            )
+        raise ValueError("Duplicated indices in frame_patterns")
+
+    frames_logical = np.ones(nb_images, dtype=int)
+    frames_logical[frames_pattern] = 0
+    return frames_logical
 
 
 def higher_primes(number, maxprime=13, required_dividers=(4,)):
@@ -1602,22 +1570,6 @@ def move_log(result: Tuple[Path, Path, Optional[Logger]]):
     filename = result[0].name
     shutil.move(result[0], result[1] / filename)
     logger.info(f"{filename.replace('.log', '')} processed")
-
-
-def ndarray_to_list(array: np.ndarray) -> List:
-    """
-    Convert a numpy ndarray of any dimension to a nested list.
-
-    :param array: the array to be converted
-    """
-    if not isinstance(array, np.ndarray):
-        raise TypeError("a numpy ndarray is expected")
-    if array.ndim == 1:
-        return list(array)
-    output = []
-    for idx in range(array.shape[0]):
-        output.append(ndarray_to_list(array[idx]))
-    return output
 
 
 def objective_lmfit(params, x_axis, data, distribution):
@@ -2613,6 +2565,28 @@ def unpack_array(
     if isinstance(array, (list, tuple, np.ndarray)) and len(array) == 1:
         return array[0]
     return np.asarray(array)
+
+
+def update_frames_logical(
+    frames_logical: np.ndarray, logical_subset: np.ndarray
+) -> np.ndarray:
+    """
+    Update frames_logical with a logical array of smaller length.
+
+    The number of non-zero elements of frames_logical should be equal to the length of
+    the logical subset.
+    """
+    if len(np.where(frames_logical != 0)[0]) != len(logical_subset):
+        raise ValueError(
+            f"len(frames_logical != 0)={len(np.where(frames_logical != 0)[0])} "
+            f"but len(logical_subset)={len(logical_subset)}"
+        )
+    counter = 0
+    for idx, val in enumerate(frames_logical):
+        if val != 0:
+            frames_logical[idx] = logical_subset[counter]
+            counter += 1
+    return frames_logical
 
 
 def upsample(array: Union[np.ndarray, List], factor: int = 2) -> np.ndarray:

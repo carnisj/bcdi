@@ -15,8 +15,8 @@ from typing import Optional
 import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 
+import bcdi.utils.format as fmt
 from bcdi.graph.turbo_colormap import turbo_colormap_data
-from bcdi.utils import utilities as util
 from bcdi.utils.validation import is_float
 
 data_table = (
@@ -81,4 +81,4 @@ class ColormapFactory:
 
     def __repr__(self):
         """Representation string of the ColormapFactory instance."""
-        return util.create_repr(self, ColormapFactory)
+        return fmt.create_repr(self, ColormapFactory)

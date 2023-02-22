@@ -57,9 +57,9 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
+import bcdi.utils.format as fmt
 from bcdi.constants import BEAMLINES_BCDI, BEAMLINES_SAXS
 from bcdi.experiment.rotation_matrix import RotationMatrix
-from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
@@ -400,7 +400,7 @@ class Diffractometer(ABC):
 
     def __repr__(self) -> str:
         """Representation string of the Diffractometer instance."""
-        return util.create_repr(self, Diffractometer)
+        return fmt.create_repr(self, Diffractometer)
 
     def rotation_matrix(self, stage_name: str, angles: List[Real]) -> np.ndarray:
         """

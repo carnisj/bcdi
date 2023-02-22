@@ -64,6 +64,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from silx.io.specfile import SpecFile
 
+import bcdi.utils.format as fmt
 from bcdi.graph import graph_utils as gu
 from bcdi.utils import utilities as util
 from bcdi.utils import validation as valid
@@ -161,18 +162,13 @@ def check_empty_frames(data, mask=None, monitor=None, frames_logical=None, **kwa
     if is_intensity.sum() != data.shape[0]:
         logger.info("Empty frame detected, cropping the data")
 
-    # update frames_logical
-    if len(frames_logical) != len(is_intensity):
-        raise ValueError(
-            f"len(frames_logical)={len(frames_logical)} "
-            f"but len(is_intensity)={len(is_intensity)}"
-        )
-    frames_logical = np.multiply(frames_logical, is_intensity)
-
-    # remove empty frames from the data and update the mask and the monitor
-    data = data[np.nonzero(frames_logical)]
-    mask = mask[np.nonzero(frames_logical)]
-    monitor = monitor[np.nonzero(frames_logical)]
+    # remove empty frames from the data, update the mask, monitor and frames_logical
+    data = data[np.nonzero(is_intensity)]
+    mask = mask[np.nonzero(is_intensity)]
+    monitor = monitor[np.nonzero(is_intensity)]
+    frames_logical = util.update_frames_logical(
+        frames_logical=frames_logical, logical_subset=is_intensity
+    )
     return data, mask, monitor, frames_logical
 
 
@@ -289,11 +285,19 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     return data, mask
 
 
-def load_filtered_data(detector):
+def load_filtered_data(
+    detector, frames_pattern: Optional[List[int]]
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load a filtered dataset and the corresponding mask.
 
+    In that case
+
     :param detector: an instance of the class Detector
+    :param frames_pattern: user-provided list which can be:
+     - a binary list of length nb_images
+     - a list of the indices of frames to be skipped
+
     :return: the data and the mask array
     """
     root = tk.Tk()
@@ -315,9 +319,25 @@ def load_filtered_data(detector):
     with np.load(file_path) as npzfile:
         mask = npzfile[list(npzfile.files)[0]]
 
-    monitor = np.ones(data.shape[0])
-    frames_logical = np.ones(data.shape[0])
+    valid.valid_container(
+        frames_pattern,
+        container_types=list,
+        item_types=int,
+        min_included=0,
+        max_included=1,
+        allow_none=True,
+        name="frames_pattern",
+    )
+    nb_images = data.shape[0]
 
+    if frames_pattern is not None and len(frames_pattern) != nb_images:
+        # it means that frames_pattern is a list of indices of skipped frames
+        nb_images += len(frames_pattern)
+
+    frames_logical = util.generate_frames_logical(
+        nb_images=nb_images, frames_pattern=frames_pattern
+    )
+    monitor = np.ones(len(frames_logical))
     return data, mask, monitor, frames_logical
 
 
@@ -477,7 +497,7 @@ def normalize_dataset(
     return array, monitor
 
 
-def select_frames(data, frames_pattern=None):
+def select_frames(data: np.ndarray, frames_logical: np.ndarray) -> np.ndarray:
     """
     Select frames, update the monitor and create a logical array.
 
@@ -486,9 +506,9 @@ def select_frames(data, frames_pattern=None):
     want to delete one or average them...
 
     :param data: a 3D data array
-    :param frames_pattern: 1D array of int, of length data.shape[0]. If
-     frames_pattern is 0 at index, the frame at data[index] will be skipped,
-     if 1 the frame will added to the stack.
+    :param frames_logical: 1D array of length equal to the number of measured frames.
+     In case of cropping the length of the stack of frames changes. A frame whose
+     index is set to 1 means that it is used, 0 means not used.
     :return:
      - the updated 3D data, eventually cropped along the first axis
      - a 1D array of length the original number of 2D frames, 0 if a frame was
@@ -496,17 +516,15 @@ def select_frames(data, frames_pattern=None):
        accordingly.
 
     """
-    if frames_pattern is None:
-        frames_pattern = np.ones(data.shape[0], dtype=int)
     valid.valid_1d_array(
-        frames_pattern,
+        frames_logical,
         length=data.shape[0],
-        allow_none=True,
+        allow_none=False,
         allowed_types=Integral,
         allowed_values=(0, 1),
-        name="frames_pattern",
+        name="frames_logical",
     )
-    return data[frames_pattern != 0], frames_pattern
+    return np.asarray(data[frames_logical != 0])
 
 
 class Loader(ABC):
@@ -730,9 +748,10 @@ class Loader(ABC):
 
         :param scan_number: the scan number to load
         :param setup: an instance of the class Setup
-        :param frames_pattern: 1D array of int, of length data.shape[0]. If
-         frames_pattern is 0 at index, the frame at data[index] will be skipped,
-         if 1 the frame will added to the stack.
+        :param frames_pattern: user-provided list which can be:
+         - a binary list of length nb_images
+         - a list of the indices of frames to be skipped
+
         :param flatfield: the 2D flatfield array
         :param hotpixels: the 2D hotpixels array. 1 for a hotpixel, 0 for normal pixels.
         :param background: the 2D background array to subtract to the data
@@ -770,7 +789,7 @@ class Loader(ABC):
 
         if setup.filtered_data:
             data, mask3d, monitor, frames_logical = load_filtered_data(
-                detector=setup.detector
+                detector=setup.detector, frames_pattern=frames_pattern
             )
         else:
             data, mask2d, monitor, loading_roi = self.load_data(
@@ -802,9 +821,10 @@ class Loader(ABC):
             #################
             # select frames #
             #################
-            data, frames_logical = select_frames(
-                data=data, frames_pattern=frames_pattern
+            frames_logical = util.generate_frames_logical(
+                nb_images=data.shape[0], frames_pattern=frames_pattern
             )
+            data = select_frames(data=data, frames_logical=frames_logical)
 
             #################################
             # crop the monitor if necessary #
@@ -857,7 +877,7 @@ class Loader(ABC):
             mask3d[data < 0] = 1
             data[data < 0] = 0
 
-        return data, mask3d, monitor, frames_logical.astype(int)
+        return data, mask3d, monitor, frames_logical
 
     @abstractmethod
     def load_data(
@@ -946,7 +966,7 @@ class Loader(ABC):
 
     def __repr__(self):
         """Representation string of the Loader instance."""
-        return util.create_repr(self, Loader)
+        return fmt.create_repr(self, Loader)
 
 
 class LoaderID01(Loader):

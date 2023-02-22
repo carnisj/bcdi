@@ -1,3 +1,9 @@
+Future:
+-------
+
+* Allow the config parameter 'frames_pattern' to be a list containing only the indices
+  of the detector frames to skip.
+
 Version 0.3.0:
 --------------
 

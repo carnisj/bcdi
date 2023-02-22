@@ -130,9 +130,11 @@ photon_filter: "loading"  # 'loading' or 'postprocessing',
 # it is applied at the end of the script before saving
 bin_during_loading: False  # True to bin during loading, faster
 frames_pattern: None
-# list of int, of length data.shape[0]. If frames_pattern is 0 at index,
-# the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
-# Use this if you need to remove some frames and you know it in advance.
+# Use this if you need to remove some frames, and you know it in advance. You can
+# provide a binary list of length the number of images in the dataset. If frames_pattern
+# is 0 at index, the frame at data[index] will be skipped, if 1 the frame will be added
+# to the stack. Or you can directly specify the indices of the frames to be skipped,
+# e.g. [0, 127] to skip frames at indices 0 and 127.
 background_file: None  # non-empty file path or None
 hotpixels_file: None  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None

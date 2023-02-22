@@ -67,7 +67,7 @@ from numbers import Integral, Real
 
 import numpy as np
 
-from bcdi.utils import utilities as util
+import bcdi.utils.format as fmt
 from bcdi.utils import validation as valid
 
 module_logger = logging.getLogger(__name__)
@@ -528,7 +528,7 @@ class Detector(ABC):
 
     def __repr__(self):
         """Representation string of the Detector instance."""
-        return util.create_repr(self, Detector)
+        return fmt.create_repr(self, Detector)
 
     @staticmethod
     def _background_subtraction(data, background):
