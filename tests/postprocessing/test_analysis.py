@@ -72,7 +72,6 @@ class TestAnalysis(unittest.TestCase):
 
     def test_get_shape_during_phasing(self):
         expected = [126, 210, 392]
-        print(self.process.original_shape)
         self.assertTrue(
             all(
                 val1 == val2

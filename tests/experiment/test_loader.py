@@ -315,7 +315,6 @@ class TestRepr(unittest.TestCase):
         self.loader = create_loader(name="ID01", sample_offsets=(0, 0, 0))
 
     def test_return_type(self):
-        print(repr(self.loader))
         self.assertIsInstance(eval(repr(self.loader)), LoaderID01)
 
 

@@ -11,7 +11,8 @@ import unittest
 import numpy as np
 
 from bcdi.experiment.setup import Setup, get_mean_tilt
-from bcdi.graph.colormap import ColormapFactory  # needed for test_rocking_angle_str
+
+# from bcdi.graph.colormap import ColormapFactory  # needed for test_rocking_angle_str
 from tests.config import load_config, run_tests
 
 parameters, skip_tests = load_config("preprocessing")
@@ -344,7 +345,6 @@ class TestCorrectDetectorAngles(unittest.TestCase):
 
     def test_correct(self):
         self.setup.correct_detector_angles(bragg_peak_position=(165, 35))
-        print(self.setup.inplane_angle, self.setup.outofplane_angle)
         self.assertTrue(
             np.isclose(self.setup.inplane_angle, 11.940419849886538)
             and np.isclose(self.setup.outofplane_angle, 33.6080130206483)

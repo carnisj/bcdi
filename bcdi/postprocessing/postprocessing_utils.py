@@ -54,6 +54,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
        tuple of 3 floats
      - 'is_orthogonal': True if the data is in an orthonormal frame. Used for defining
        default plot labels.
+     - 'logger': an optional logger
 
     :return: filtered amplitude, phase of the same shape as myamp
     """
@@ -61,9 +62,10 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     # check and load kwargs
     valid.valid_kwargs(
         kwargs=kwargs,
-        allowed_kwargs={"cmap", "sigma", "mu", "alpha", "is_orthogonal"},
+        allowed_kwargs={"logger", "cmap", "sigma", "mu", "alpha", "is_orthogonal"},
         name="postprocessing_utils.apodize",
     )
+    logger = kwargs.get("logger", module_logger)
     sigma = kwargs.get("sigma")
     mu = kwargs.get("mu")
     alpha = kwargs.get("alpha")
@@ -91,8 +93,8 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     del myobj
     gc.collect()
     fftmax = abs(my_fft).max()
-    print("Max FFT=", fftmax)
     if debugging:
+        logger.info(f"Max FFT={fftmax}")
         gu.multislices_plot(
             array=abs(my_fft),
             sum_frames=False,
@@ -105,7 +107,7 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         )
 
     if window_type == "normal":
-        print("Apodization using a 3d multivariate normal window")
+        logger.info("Apodization using a 3d multivariate normal window")
         sigma = sigma or np.array([0.3, 0.3, 0.3])
         mu = mu or np.array([0.0, 0.0, 0.0])
 
@@ -126,12 +128,12 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
         window = window.reshape((nbz, nby, nbx))
 
     elif window_type == "tukey":
-        print("Apodization using a 3d Tukey window")
+        logger.info("Apodization using a 3d Tukey window")
         alpha = alpha or np.array([0.5, 0.5, 0.5])
         window = tukey_window(initial_shape, alpha=alpha)
 
     elif window_type == "blackman":
-        print("Apodization using a 3d Blackman window")
+        logger.info("Apodization using a 3d Blackman window")
         window = blackman_window(initial_shape)
 
     else:
@@ -141,8 +143,8 @@ def apodize(amp, phase, initial_shape, window_type, debugging=False, **kwargs):
     del window
     gc.collect()
     my_fft = my_fft * fftmax / abs(my_fft).max()
-    print("Max apodized FFT after normalization =", abs(my_fft).max())
     if debugging:
+        logger.info(f"Max apodized FFT after normalization = {abs(my_fft).max()}")
         gu.multislices_plot(
             array=abs(my_fft),
             sum_frames=False,
@@ -608,9 +610,11 @@ def find_bulk(
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: the support corresponding to the bulk
     """
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=amp, ndim=3)
     cmap = kwargs.get("cmap", "turbo")
 
@@ -635,7 +639,7 @@ def find_bulk(
         else:
             raise ValueError("Kernel not yet implemented")
 
-        outer[mycoordination_matrix == 0] = 1  # corresponds to outside of the crystal
+        outer[mycoordination_matrix == 0] = 1  # corresponds to outside the crystal
         if debugging:
             gu.multislices_plot(
                 outer,
@@ -694,7 +698,7 @@ def find_bulk(
                 keep_voxels / nb_voxels
             )  # % of voxels whose amplitude is larger than support_threshold
             mean_amp = np.mean(amp[np.nonzero(surface)].flatten()) / max_amp
-            print(
+            logger.info(
                 f"number of surface voxels = {nb_voxels}, "
                 f"% of surface voxels above threshold = {100 * voxels_counter:.2f} %, ",
                 f"mean surface amplitude = {mean_amp}",
@@ -703,7 +707,7 @@ def find_bulk(
                 outer[np.nonzero(surface)] = 1
                 idx = idx + 1
             else:
-                print("Surface of object reached after", idx, "iterations")
+                logger.info(f"Surface of object reached after {idx} iterations")
                 break
         support_defect = np.ones((nbz, nby, nbx)) - outer
         support = np.ones((nbz, nby, nbx))
@@ -1235,6 +1239,7 @@ def mean_filter(
     :param kwargs:
 
      - 'cmap': str, name of the colormap
+     - 'logger': an optional logger
 
     :return: averaged array of the same shape as the input array
     """
@@ -1242,6 +1247,7 @@ def mean_filter(
     # check some parameters #
     #########################
     cmap = kwargs.get("cmap", "turbo")
+    logger = kwargs.get("logger", module_logger)
     valid.valid_ndarray(arrays=(array, support), ndim=3)
     valid.valid_item(half_width, allowed_types=int, min_included=0, name="half_width")
     valid.valid_container(title, container_types=str, name="title")
@@ -1339,7 +1345,9 @@ def mean_filter(
                 cmap=cmap,
             )
         if counter != 0:
-            print("There were", counter, "voxels for which phase could not be averaged")
+            logger.info(
+                f"There were {counter} voxels for which phase could not be averaged"
+            )
     return array
 
 

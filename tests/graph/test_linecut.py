@@ -12,6 +12,7 @@ import unittest
 
 import matplotlib
 import numpy as np
+from matplotlib import pyplot as plt
 
 import bcdi.graph.linecut as lc
 from bcdi.postprocessing.postprocessing_utils import tukey_window

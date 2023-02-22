@@ -986,6 +986,7 @@ class PhaseManipulator:
             is_orthogonal=self.parameters["is_orthogonal"],
             debugging=True,
             cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
         )
 
     def average_phase(self) -> None:
@@ -995,6 +996,7 @@ class PhaseManipulator:
             support_threshold=self.parameters["isosurface_strain"],
             method="threshold",
             cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
         )
         # the phase should be averaged only in the support defined by the isosurface
         self._phase = pu.mean_filter(
@@ -1002,6 +1004,7 @@ class PhaseManipulator:
             support=bulk,
             half_width=self.parameters["half_width_avg_phase"],
             cmap=self.parameters["colormap"].cmap,
+            logger=self.logger,
         )
 
     def calculate_strain(
