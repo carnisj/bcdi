@@ -216,9 +216,15 @@ class Facets:
 
         try:
             self.vtk_data = {
-                "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
-                "y": [vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())],
-                "z": [vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())],
+                "x": [
+                    vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "y": [
+                    vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "z": [
+                    vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())
+                ],
                 "strain": [
                     point_data.GetArray("strain").GetValue(i)
                     for i in range(vtkdata.GetNumberOfPoints())
@@ -233,9 +239,15 @@ class Facets:
 
         except AttributeError:
             self.vtk_data = {
-                "x": [vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())],
-                "y": [vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())],
-                "z": [vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())],
+                "x": [
+                    vtkdata.GetPoint(i)[0] for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "y": [
+                    vtkdata.GetPoint(i)[1] for i in range(vtkdata.GetNumberOfPoints())
+                ],
+                "z": [
+                    vtkdata.GetPoint(i)[2] for i in range(vtkdata.GetNumberOfPoints())
+                ],
                 "strain": [
                     point_data.GetArray("strain").GetValue(i)
                     for i in range(vtkdata.GetNumberOfPoints())
@@ -412,7 +424,9 @@ class Facets:
 
         try:
             for e in normals.keys():
-                normals[e] = np.dot(self.rotation_matrix, normals[e] / np.linalg.norm(normals[e]))
+                normals[e] = np.dot(
+                    self.rotation_matrix, normals[e] / np.linalg.norm(normals[e])
+                )
         except AttributeError:
             print(
                 """You need to define the rotation matrix first if you want to rotate
@@ -638,7 +652,9 @@ class Facets:
             results["y"][j] = self.vtk_data["y"][int(voxel_indices_new[j])]
             results["z"][j] = self.vtk_data["z"][int(voxel_indices_new[j])]
             results["strain"][j] = self.vtk_data["strain"][int(voxel_indices_new[j])]
-            results[self.phase_or_disp][j] = self.vtk_data[self.phase_or_disp][int(voxel_indices_new[j])]
+            results[self.phase_or_disp][j] = self.vtk_data[self.phase_or_disp][
+                int(voxel_indices_new[j])
+            ]
         results["strain_mean"] = np.mean(results["strain"])
         results["strain_std"] = np.std(results["strain"])
         results[self.phase_or_disp + "_mean"] = np.mean(results[self.phase_or_disp])
@@ -1017,7 +1033,14 @@ class Facets:
 
         # 3D displacement
         p = None
-        fig_name = self.phase_or_disp + "_3D_" + self.hkls + self.comment + "_" + str(self.disp_range)
+        fig_name = (
+            self.phase_or_disp
+            + "_3D_"
+            + self.hkls
+            + self.comment
+            + "_"
+            + str(self.disp_range)
+        )
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(projection="3d")
 
@@ -1049,7 +1072,12 @@ class Facets:
 
         # Average disp
         fig_name = (
-            self.phase_or_disp + "_3D_avg_" + self.hkls + self.comment + "_" + str(self.disp_range_avg)
+            self.phase_or_disp
+            + "_3D_avg_"
+            + self.hkls
+            + self.comment
+            + "_"
+            + str(self.disp_range_avg)
         )
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(projection="3d")
@@ -1132,7 +1160,9 @@ class Facets:
             f"Average {self.phase_or_disp} vs facet index", fontsize=self.title_fontsize
         )
         ax.set_xlabel("Facet index", fontsize=self.axes_fontsize)
-        ax.set_ylabel(f"Average retrieved {self.phase_or_disp}", fontsize=self.axes_fontsize)
+        ax.set_ylabel(
+            f"Average retrieved {self.phase_or_disp}", fontsize=self.axes_fontsize
+        )
 
         ax.legend(
             bbox_to_anchor=(1, 1),
@@ -1196,7 +1226,12 @@ class Facets:
         # phase or disp, strain & size vs angle planes,
         # Remove edges and corners here
         # change line style as a fct of the planes indices
-        fig_name = self.phase_or_disp + "_strain_size_vs_angle_planes_" + self.hkls + self.comment
+        fig_name = (
+            self.phase_or_disp
+            + "_strain_size_vs_angle_planes_"
+            + self.hkls
+            + self.comment
+        )
         fig, (ax0, ax1, ax2) = plt.subplots(3, 1, sharex="all", figsize=(10, 12))
 
         plt.xticks(fontsize=self.ticks_fontsize)
@@ -1332,8 +1367,10 @@ class Facets:
                         "facet_id": [0],
                         "strain_mean": result["strain_mean"],
                         "strain_std": result["strain_std"],
-                        self.phase_or_disp + "_mean": result[self.phase_or_disp + "_mean"],
-                        self.phase_or_disp + "_std": result[self.phase_or_disp + "_std"],
+                        self.phase_or_disp
+                        + "_mean": result[self.phase_or_disp + "_mean"],
+                        self.phase_or_disp
+                        + "_std": result[self.phase_or_disp + "_std"],
                         "n0": None,
                         "n1": None,
                         "n2": None,
@@ -1458,24 +1495,26 @@ class Facets:
         try:
             # Replace nan by zeroes for edges and corners and change dtype
             # so that we can save as hdf
-            self.field_data.iloc[0,5:] = np.zeros(10)
-            self.field_data = self.field_data.astype({
-                'facet_id': 'int64',
-                "strain_mean": "float64",
-                "strain_std": "float64",
-                "phase_mean": "float64",
-                "phase_std": "float64",
-                "n0": "float64",
-                "n1": "float64",
-                "n2": "float64",
-                "c0": "float64",
-                "c1": "float64",
-                "c2": "float64",
-                "interplanar_angles": "float64",
-                "abs_facet_size": "float64",
-                "rel_facet_size": "float64",
-                "legend": str,
-            })
+            self.field_data.iloc[0, 5:] = np.zeros(10)
+            self.field_data = self.field_data.astype(
+                {
+                    "facet_id": "int64",
+                    "strain_mean": "float64",
+                    "strain_std": "float64",
+                    "phase_mean": "float64",
+                    "phase_std": "float64",
+                    "n0": "float64",
+                    "n1": "float64",
+                    "n2": "float64",
+                    "c0": "float64",
+                    "c1": "float64",
+                    "c2": "float64",
+                    "interplanar_angles": "float64",
+                    "abs_facet_size": "float64",
+                    "rel_facet_size": "float64",
+                    "legend": str,
+                }
+            )
             self.field_data.to_hdf(
                 path_to_data,
                 key="entry_1/process_4/tables/field_data",
