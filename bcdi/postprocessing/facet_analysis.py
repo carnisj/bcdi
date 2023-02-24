@@ -64,7 +64,7 @@ class Facets:
         pathdir: str = "./",
         savedir: Optional[str] = None,
         lattice: float = 3.912,
-        **kwargs
+        **kwargs,
     ) -> None:
         # Create other required parameters with default None value
         self.nb_facets: Optional[int] = None
@@ -594,7 +594,9 @@ class Facets:
         valid.valid_ndarray(vec, shape=(3,), name="vec")
 
         try:
-            self.logger.info(f"{np.dot(self.rotation_matrix, vec / np.linalg.norm(vec))}")
+            self.logger.info(
+                f"{np.dot(self.rotation_matrix, vec / np.linalg.norm(vec))}"
+            )
         except AttributeError:
             self.logger.info("You need to define the rotation matrix before")
         except TypeError:
