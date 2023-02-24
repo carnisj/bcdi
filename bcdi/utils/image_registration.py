@@ -369,7 +369,7 @@ def average_arrays(
             myfig.text(
                 0.60,
                 0.30,
-                "pearson-correlation = " + str("{:.4f}".format(correlation)),
+                f"pearson-correlation = {correlation:.4f}",
                 size=20,
             )
 
