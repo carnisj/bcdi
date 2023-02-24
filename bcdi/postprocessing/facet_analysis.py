@@ -10,6 +10,7 @@
 
 """Postprocessing of the output from the facet analyzer plugin for Paraview."""
 
+import logging
 import pathlib
 from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check
 
@@ -24,6 +25,8 @@ from pandas import DataFrame
 
 import bcdi.utils.format as ft
 from bcdi.utils import validation as valid
+
+module_logger = logging.getLogger(__name__)
 
 
 class Facets:
@@ -61,6 +64,7 @@ class Facets:
         pathdir: str = "./",
         savedir: Optional[str] = None,
         lattice: float = 3.912,
+        **kwargs
     ) -> None:
         # Create other required parameters with default None value
         self.nb_facets: Optional[int] = None
@@ -82,7 +86,7 @@ class Facets:
         self.planar_dist = None
         self.ref_normal = None
         self.theoretical_angles: Optional[Dict[str, float]] = None
-
+        self.logger = kwargs.get("logger", module_logger)
         # Check input parameters
         valid.valid_container(
             pathdir, container_types=str, min_length=1, name="pathdir"
@@ -207,12 +211,12 @@ class Facets:
         # Get point data
         try:
             point_data = vtkdata.GetPointData()
-            print("Loading data...")
+            self.logger.info("Loading data...")
         except AttributeError:
             raise NameError("This file does not exist or is not right.")
 
-        print(f"Number of points = {vtkdata.GetNumberOfPoints()}")
-        print(f"Number of cells = {vtkdata.GetNumberOfCells()}")
+        self.logger.info(f"Number of points = {vtkdata.GetNumberOfPoints()}")
+        self.logger.info(f"Number of cells = {vtkdata.GetNumberOfCells()}")
 
         try:
             self.vtk_data = {
@@ -282,7 +286,7 @@ class Facets:
         ]
 
         self.nb_facets = int(max(self.vtk_data["facet_id"]))
-        print(f"Number of facets = {self.nb_facets}")
+        self.logger.info(f"Number of facets = {self.nb_facets}")
 
         # Get means
         facet_indices = np.arange(1, int(self.nb_facets) + 1, 1)
@@ -294,7 +298,7 @@ class Facets:
         disp_std = np.zeros(self.nb_facets)  # stored later in field data
 
         for ind in facet_indices:
-            print(f"Facet = {ind}")
+            self.logger.info(f"Facet = {ind}")
             results = self.extract_facet(int(ind), plot=False)
             if results is not None:
                 strain_mean[ind - 1] = results["strain_mean"]
@@ -390,7 +394,7 @@ class Facets:
         self.u0 = u0 / np.linalg.norm(u0)
         self.v0 = v0 / np.linalg.norm(v0)
         self.w0 = w0 / np.linalg.norm(w0)
-        print("Cross product of u0 and v0:", w0)
+        self.logger.info(f"Cross product of u0 and v0: {w0}")
 
         # Current values for the first two facets' normals,
         # to compute the rotation matrix
@@ -400,7 +404,7 @@ class Facets:
         self.norm_u = self.u / np.linalg.norm(self.u)
         self.norm_v = self.v / np.linalg.norm(self.v)
         self.norm_w = np.cross(self.norm_u, self.norm_v)
-        print("Normalized cross product of u and v:", self.norm_w)
+        self.logger.info(f"Normalized cross product of u and v: {self.norm_w}")
 
         # Transformation matrix
         tensor0 = np.array([self.u0, self.v0, self.w0])
@@ -428,7 +432,7 @@ class Facets:
                     self.rotation_matrix, normals[e] / np.linalg.norm(normals[e])
                 )
         except AttributeError:
-            print(
+            self.logger.info(
                 """You need to define the rotation matrix first if you want to rotate
                 the particle. Please choose vectors from the normals in field data"""
             )
@@ -590,11 +594,11 @@ class Facets:
         valid.valid_ndarray(vec, shape=(3,), name="vec")
 
         try:
-            print(np.dot(self.rotation_matrix, vec / np.linalg.norm(vec)))
+            self.logger.info(f"{np.dot(self.rotation_matrix, vec / np.linalg.norm(vec))}")
         except AttributeError:
-            print("You need to define the rotation matrix before")
+            self.logger.info("You need to define the rotation matrix before")
         except TypeError:
-            print("You need to define the rotation matrix before")
+            self.logger.info("You need to define the rotation matrix before")
 
     def extract_facet(
         self,
@@ -706,7 +710,7 @@ class Facets:
                 n1 = row.n1.values[0]
                 n2 = row.n2.values[0]
                 n = np.array([n0, n1, n2])
-                print(f"Facet normal: {np.round(n, 2)}")
+                self.logger.info(f"Facet normal: {np.round(n, 2)}")
             except IndexError:
                 pass  # we are on the corners and edges
             except Exception as e:
@@ -1435,10 +1439,10 @@ class Facets:
                 facets.create_dataset("planar_dist", data=self.planar_dist)
                 facets["planar_dist"].attrs["units"] = "Angstrom"
                 facets.create_dataset("ref_normal", data=self.ref_normal)
-                print("Saved Facets class attributes")
+                self.logger.info("Saved Facets class attributes")
 
             except ValueError:
-                print("Data already exists, overwriting ...")
+                self.logger.info("Data already exists, overwriting ...")
 
                 f["/entry_1/process_4/path_to_data"][...] = self.path_to_data
                 f["/entry_1/process_4/nb_facets"][...] = self.nb_facets
@@ -1457,11 +1461,11 @@ class Facets:
                 f["/entry_1/process_4/planar_dist"][...] = self.planar_dist
                 f["/entry_1/process_4/planar_dist"].attrs["units"] = "Angstrom"
                 f["/entry_1/process_4/ref_normal"][...] = self.ref_normal
-                print("Saved Facets class attributes")
+                self.logger.info("Saved Facets class attributes")
 
             except (AttributeError, TypeError):
                 try:
-                    print(
+                    self.logger.info(
                         "Particle not rotated, some attributes could not be saved ..."
                     )
                     facets.create_dataset("u0", data=np.zeros(3))
@@ -1523,7 +1527,7 @@ class Facets:
                 format="table",
                 data_columns=True,
             )
-            print("Saved field data")
+            self.logger.info("Saved field data")
 
         except Exception as e:
             raise e
@@ -1546,10 +1550,10 @@ class Facets:
                 format="table",
                 data_columns=True,
             )
-            print("Saved theoretical angles")
+            self.logger.info("Saved theoretical angles")
 
         except AttributeError:
-            print("Facets has no attribute theoretical_angles yet")
+            self.logger.info("Facets has no attribute theoretical_angles yet")
         except Exception as e:
             raise e
 
