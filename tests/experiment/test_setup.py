@@ -11,7 +11,6 @@ import unittest
 import numpy as np
 
 from bcdi.experiment.setup import Setup, get_mean_tilt
-
 from bcdi.graph.colormap import ColormapFactory  # needed for test_rocking_angle_str
 from tests.config import load_config, run_tests
 
