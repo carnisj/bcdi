@@ -10,6 +10,8 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+import matplotlib
+from matplotlib import pyplot as plt
 from pandas import DataFrame
 
 from bcdi.postprocessing.facet_analysis import Facets
@@ -19,6 +21,7 @@ here = Path(__file__).parent
 THIS_DIR = str(here)
 SAVEDIR = str(here.parents[1] / "test_output/")
 FILENAME = "3572_fa.vtk"
+matplotlib.use("Agg")
 
 
 class TestInitFacetsParams(unittest.TestCase):
@@ -27,6 +30,13 @@ class TestInitFacetsParams(unittest.TestCase):
 
     __init__(self, filename : str,pathdir : str = "./",lattice : float = 3.912) -> None:
     """
+
+    def setUp(self):
+        # executed before each test
+        plt.ion()
+
+    def tearDown(self) -> None:
+        plt.close("all")
 
     def test_init_pathdir_empty(self):
         with self.assertRaises(ValueError):
@@ -88,7 +98,11 @@ class TestInitFacetsAttributes(unittest.TestCase):
 
     def setUp(self):
         # executed before each test
+        plt.ion()
         self.facets = Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR)
+
+    def tearDown(self) -> None:
+        plt.close("all")
 
     def test_init_nb_facets(self):
         self.assertTrue(self.facets.nb_facets == 22)
