@@ -19,7 +19,6 @@ class TestRepr(unittest.TestCase):
         self.diffractometer = DiffractometerFactory.create_diffractometer(name="ID01")
 
     def test_return_type(self):
-        print(repr(self.diffractometer))
         self.assertIsInstance(eval(repr(self.diffractometer)), FullDiffractometer)
 
 
