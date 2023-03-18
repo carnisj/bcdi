@@ -595,7 +595,7 @@ def fit_plane(plane, label, debugging=False):
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
                 title=f"Points before coordination threshold plane {label}"
-                      f"\niteration {idx}"
+                f"\niteration {idx}",
             )
 
         for point in range(indices.shape[1]):
@@ -617,7 +617,7 @@ def fit_plane(plane, label, debugging=False):
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
                 title=f"Points after coordination threshold plane {label}"
-                      f"\niteration {idx}",
+                f"\niteration {idx}",
             )
 
         # update plane indices
@@ -641,7 +641,7 @@ def fit_plane(plane, label, debugging=False):
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
                 title=f"Points before distance threshold plane {label}"
-                      f"\niteration {idx}",
+                f"\niteration {idx}",
             )
 
         for point in range(indices.shape[1]):
@@ -964,16 +964,12 @@ def stereographic_proj(
         if event.inaxes == ax0:
             index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
             index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
-            sys.stdout.write(
-                f"\rKDE South: {density_south[index_v, index_u]:.0f}"
-            )
+            sys.stdout.write(f"\rKDE South: {density_south[index_v, index_u]:.0f}")
             sys.stdout.flush()
         elif event.inaxes == ax1:
             index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
             index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
-            sys.stdout.write(
-                f"\rKDE North: {density_north[index_v, index_u]:.0f}"
-            )
+            sys.stdout.write(f"\rKDE North: {density_north[index_v, index_u]:.0f}")
             sys.stdout.flush()
         else:
             pass
