@@ -143,7 +143,7 @@ setup(
         "pyqt5==5.15.9",
         "pyyaml==6.0",
         "scikit-image==0.20.0",
-        "scipy==1.10.1",
+        "scipy==1.9.1",
         "silx==1.1.2",
         "tables==3.8.0",
         "traits==6.4.1",
