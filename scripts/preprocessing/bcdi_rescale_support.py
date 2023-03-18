@@ -620,16 +620,16 @@ if not all(
 
     else:  # data in detector frame
         setup = Setup(
-            beamline_name=beamline,
-            energy=energy,
-            outofplane_angle=outofplane_angle,
-            inplane_angle=inplane_angle,
-            tilt_angle=tilt_angle,
-            rocking_angle=rocking_angle,
-            distance=distance,
-            pixel_x=pixel_x,
-            pixel_y=pixel_y,
-            grazing_angle=grazing_angle,
+            parameters={
+                "beamline": beamline,
+                "energy": energy,
+                "outofplane_angle": outofplane_angle,
+                "inplane_angle": inplane_angle,
+                "tilt_angle": tilt_angle,
+                "rocking_angle": rocking_angle,
+                "detector_distance": distance,
+                "grazing_angle": grazing_angle,
+            },
         )
 
         voxelsize_z, voxelsize_y, voxelsize_x = setup.voxel_sizes(

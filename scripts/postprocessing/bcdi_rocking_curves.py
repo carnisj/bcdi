@@ -182,19 +182,21 @@ check_roi = []  # a small ROI around the Bragg peak will be stored for each scan
 # Initialize setup #
 ####################
 setup = Setup(
-    beamline_name=beamline,
-    energy=energy,
-    rocking_angle=rocking_angle,
-    distance=sdd,
-    beam_direction=beam_direction,
-    custom_scan=custom_scan,
-    custom_images=custom_images,
-    custom_monitor=custom_monitor,
-    custom_motors=custom_motors,
-    is_series=is_series,
-    detector_name=detector,
-    template_imagefile=template_imagefile,
-    roi=roi_detector,
+    parameters={
+        "beamline": beamline,
+        "energy": energy,
+        "rocking_angle": rocking_angle,
+        "detector_distance": sdd,
+        "beam_direction": beam_direction,
+        "custom_scan": custom_scan,
+        "custom_images": custom_images,
+        "custom_monitor": custom_monitor,
+        "custom_motors": custom_motors,
+        "is_series": is_series,
+        "detector": detector,
+        "template_imagefile": template_imagefile,
+        "roi_detector": roi_detector,
+    }
 )
 
 ########################################
