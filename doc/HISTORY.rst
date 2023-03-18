@@ -1,5 +1,7 @@
-Future:
--------
+Version 0.3.1:
+--------------
+
+* Update dependencies.
 
 * Allow the config parameter 'frames_pattern' to be a list containing only the indices
   of the detector frames to skip.
