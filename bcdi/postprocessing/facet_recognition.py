@@ -1454,7 +1454,6 @@ def taubin_smooth(
         )  # find indices of vertices defining non-shared edges (near hole...)
 
         for i in range(vertices.shape[0]):
-
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(
                 np.sum((vertices[indices, :] - vertices[i, :]) ** 2, axis=1)

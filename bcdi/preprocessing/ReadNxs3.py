@@ -63,7 +63,6 @@ class DataSet:
     ]
 
     def __init__(self, filename, directory="", nxs2spec=False, alias_dict=None):
-
         self.directory = directory
         self.filename = filename
         self.end_time = 2

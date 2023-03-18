@@ -1045,7 +1045,6 @@ class Dummy(Detector):
     """
 
     def __init__(self, name, **kwargs):
-
         self.custom_pixelsize = kwargs.get("custom_pixelsize")
         valid.valid_item(
             self.custom_pixelsize,

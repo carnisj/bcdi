@@ -212,7 +212,6 @@ flatfield = util.load_flatfield(flatfield_file)
 hotpix_array = util.load_hotpixels(hotpixels_file)
 
 for scan_idx, scan_nb in enumerate(scans, start=1):
-
     tmp_str = f"Scan {scan_idx}/{len(scans)}: S{scan_nb}"
     print(f'\n{"#" * len(tmp_str)}\n' + tmp_str + "\n" + f'{"#" * len(tmp_str)}')
 

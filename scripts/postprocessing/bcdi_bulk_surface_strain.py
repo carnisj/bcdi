@@ -140,7 +140,6 @@ if save_txt:
         ),
         "w",
     ) as file_bulk:
-
         # write surface points position / strain to file
         surface_indices = np.nonzero(surface)
         nb_surface = len(surface_indices[0])

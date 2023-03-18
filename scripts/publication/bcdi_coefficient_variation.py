@@ -110,7 +110,6 @@ datasets = {new_list: [] for new_list in fieldnames}  # create dictionnary
 datasets["scans"].append(scans)
 
 for index, item in enumerate(scans):
-
     file_path = filedialog.askopenfilename(
         initialdir=rootfolder,
         title="Select amp-disp-strain file for S" + str(item),

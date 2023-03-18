@@ -84,7 +84,6 @@ class InteractiveMasker:
         if not event.inaxes:
             return
         if not self.flag_pause:
-
             if (self.previous_axis == event.inaxes) or (
                 self.previous_axis is None
             ):  # collect points

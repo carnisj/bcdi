@@ -307,7 +307,6 @@ def combined_plots(
     plt.ion()
     fig = plt.figure(figsize=(12, 9))
     for idx in range(nb_subplots):
-
         axis = plt.subplot(position[idx])
 
         array = tuple_array[idx]
@@ -340,7 +339,6 @@ def combined_plots(
             continue
 
         if nb_dim == 1:
-
             if np.isnan(vmin):
                 tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = np.inf
