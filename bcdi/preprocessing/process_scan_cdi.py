@@ -72,7 +72,6 @@ def process_scan_cdi(
         if not event.inaxes:
             return
         if not flag_pause:
-
             if (previous_axis == event.inaxes) or (
                 previous_axis is None
             ):  # collect points

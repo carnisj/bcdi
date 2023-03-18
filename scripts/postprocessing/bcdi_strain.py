@@ -366,7 +366,6 @@ Usage:
 
 
 if __name__ == "__main__":
-
     now = datetime.now()
     configure_logging()
     logging.info(f"Start script at {now}")

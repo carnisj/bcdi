@@ -361,7 +361,6 @@ class Analysis(ABC):
     def get_shape_during_phasing(
         self, user_defined_shape: Optional[List[int]]
     ) -> Tuple[int, ...]:
-
         input_shape = (
             user_defined_shape if user_defined_shape is not None else self.data.shape
         )

@@ -168,7 +168,7 @@ def detect_edges(faces):
         edges, return_index=True, return_counts=True, axis=0
     )
 
-    # isolate non redundant edges
+    # isolate non-redundant edges
     unique_edges = edge_list[edges_counts == 1].flatten()
     return unique_edges
 
@@ -337,7 +337,7 @@ def equirectangular_proj(
 
     # watershed segmentation
     labels = watershed(-1 * distances, markers, mask=mask)
-    print("There are", str(labels.max()), "facets")  # label 0 is the background
+    print(f"There are {labels.max()} facets")  # label 0 is the background
 
     plt.figure()
     plt.imshow(labels, cmap=cmap, interpolation="nearest")
@@ -451,19 +451,13 @@ def find_facet(
                 markersizes=(8, 2),
                 markercolors=("b", "r"),
                 labels=("axis 0", "axis 1", "axis 2"),
-                title="Plane"
-                + str(plane_label)
-                + " after shifting - iteration"
-                + str(nbloop),
+                title=f"Plane {plane_label} after shifting - iteration {nbloop}",
             )
 
             print(
-                "(while) iteration ",
-                nbloop,
-                "- Mean distance of the plane to outer shell = "
-                + str("{:.2f}".format(temp_mean_dist))
-                + "\n pixels - common_points = ",
-                common_points,
+                f"(while) iteration {nbloop} - "
+                f"Mean distance of the plane to outer shell = {temp_mean_dist:.2f}"
+                f"pixels\n - common_points = {common_points}"
             )
 
         if common_points != 0:  # some plane points are in commun with the surface layer
@@ -471,12 +465,9 @@ def find_facet(
                 found_plane = 0
                 common_previous = common_points
                 print(
-                    "(while, common_points != 0), iteration ",
-                    nbloop,
-                    " - ",
-                    common_previous,
-                    "points belonging to the facet for plane ",
-                    plane_label,
+                    f"(while, common_points != 0), iteration {nbloop} - "
+                    f"{common_previous} points belonging to the facet "
+                    f"for plane {plane_label}"
                 )
                 nbloop = nbloop + 1
                 crossed_surface = 1
@@ -486,23 +477,18 @@ def find_facet(
                 found_plane = 1
                 print(
                     "(while, common_points != 0), "
-                    "exiting while loop after threshold reached - ",
-                    common_previous,
-                    "points belonging to the facet for plane ",
-                    plane_label,
-                    "- next step common points=",
-                    common_points,
+                    "exiting while loop after threshold reached - "
+                    f"{common_previous} points belonging to the facet "
+                    f"for plane {plane_label} - "
+                    f"next step common points={common_points}"
                 )
             else:
                 found_plane = 0
                 common_previous = common_points
                 print(
-                    "(while, common_points != 0), iteration ",
-                    nbloop,
-                    " - ",
-                    common_previous,
-                    "points belonging to the facet for plane ",
-                    plane_label,
+                    f"(while, common_points != 0), iteration {nbloop} - "
+                    f"{common_previous} points belonging to the facet "
+                    f"for plane {plane_label}"
                 )
                 nbloop = nbloop + 1
                 crossed_surface = 1
@@ -510,22 +496,17 @@ def find_facet(
             if crossed_surface == 1:  # found the outer shell, which is 1 step before
                 found_plane = 1
                 print(
-                    "(while, common_points = 0), exiting while loop - ",
-                    common_previous,
-                    "points belonging to the facet for plane ",
-                    plane_label,
-                    "- next step common points=",
-                    common_points,
+                    "(while, common_points = 0), exiting while loop - "
+                    f"{common_previous} points belonging to the facet "
+                    f"for plane {plane_label} - "
+                    f"next step common points={common_points}"
                 )
             elif not shift_direction:
                 if nbloop < 5:  # continue to scan
                     print(
-                        "(while, common_points = 0), iteration ",
-                        nbloop,
-                        " - ",
-                        common_previous,
-                        "points belonging to the facet for plane ",
-                        plane_label,
+                        f"(while, common_points = 0), iteration {nbloop} - "
+                        f"{common_previous} points belonging to the facet "
+                        f"for plane {plane_label}"
                     )
                     nbloop = nbloop + 1
                 else:  # scan in the other direction
@@ -536,19 +517,15 @@ def find_facet(
             else:  # shift_direction = 1
                 if nbloop < 10:
                     print(
-                        "(while, common_points = 0), iteration ",
-                        nbloop,
-                        " - ",
-                        common_previous,
-                        "points belonging to the facet for plane ",
-                        plane_label,
+                        f"(while, common_points = 0), iteration {nbloop} - "
+                        f"{common_previous} points belonging to the facet "
+                        f"for plane {plane_label}"
                     )
                     nbloop = nbloop + 1
                 else:  # we were already unsuccessfull in the other direction, give up
                     print(
-                        "(while, common_points = 0),"
-                        " no point from support is intersecting the plane ",
-                        plane_label,
+                        "(while, common_points = 0), no point from support is "
+                        f"intersecting the plane {plane_label}"
                     )
                     break
 
@@ -617,9 +594,8 @@ def fit_plane(plane, label, debugging=False):
             gu.scatter_plot(
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
-                title="Points before coordination threshold plane "
-                + str(label)
-                + f"\niteration {idx}",
+                title=f"Points before coordination threshold plane {label}"
+                f"\niteration {idx}",
             )
 
         for point in range(indices.shape[1]):
@@ -632,21 +608,16 @@ def fit_plane(plane, label, debugging=False):
                 plane[indices[0, point], indices[1, point], indices[2, point]] = 0
 
         print(
-            "Fit plane",
-            label,
-            ", ",
-            str(indices.shape[1] - plane[plane == 1].sum()),
-            "points isolated, ",
-            str(plane[plane == 1].sum()),
-            "remaining",
+            f"Fit plane {label}, "
+            f"{indices.shape[1] - plane[plane == 1].sum()} points isolated, "
+            f"{plane[plane == 1].sum()} remaining"
         )
         if debugging:
             gu.scatter_plot(
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
-                title="Points after coordination threshold plane "
-                + str(label)
-                + f"\niteration {idx}",
+                title=f"Points after coordination threshold plane {label}"
+                f"\niteration {idx}",
             )
 
         # update plane indices
@@ -669,30 +640,23 @@ def fit_plane(plane, label, debugging=False):
             gu.scatter_plot(
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
-                title="Points before distance threshold plane "
-                + str(label)
-                + f"\niteration {idx}",
+                title=f"Points before distance threshold plane {label}"
+                f"\niteration {idx}",
             )
 
         for point in range(indices.shape[1]):
             if dist[point] > median_dist:
                 plane[indices[0, point], indices[1, point], indices[2, point]] = 0
         print(
-            "Fit plane",
-            label,
-            ", ",
-            str(indices.shape[1] - plane[plane == 1].sum()),
-            "points too far from COM, ",
-            str(plane[plane == 1].sum()),
-            "remaining",
+            f"Fit plane {label}, "
+            f"{indices.shape[1] - plane[plane == 1].sum()} points too far from COM, "
+            f"{plane[plane == 1].sum()} remaining"
         )
         if debugging:
             gu.scatter_plot(
                 np.asarray(np.nonzero(plane)).transpose(),
                 labels=("axis 0", "axis 1", "axis 2"),
-                title="Points after distance threshold plane "
-                + str(label)
-                + f"\niteration {idx}",
+                title=f"Points after distance threshold plane {label}\niteration {idx}",
             )
 
         # update plane indices and check if enough points remain
@@ -752,7 +716,7 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
             markersizes=(2, 8),
             markercolors=("b", "r"),
             labels=("x", "y", "z"),
-            title="Plane" + str(label) + " before facet growing and coord matrix",
+            title=f"Plane {label} before facet growing and coord matrix",
         )
 
     # update plane with new voxels
@@ -791,10 +755,10 @@ def grow_facet(fit, plane, label, support, max_distance=0.90, debugging=True):
         gu.scatter_plot(
             array=np.asarray(indices).T,
             labels=("x", "y", "z"),
-            title="Plane" + str(label) + " after 1 cycle of facet growing",
+            title=f"Plane {label} after 1 cycle of facet growing",
         )
         print(f"{count_grad} points excluded by gradient filtering")
-        print(str(len(indices[0])) + " after 1 cycle of facet growing")
+        print(f"{len(indices[0])} after 1 cycle of facet growing")
     return plane, no_points
 
 
@@ -855,7 +819,7 @@ def remove_duplicates(vertices, faces, debugging=False):
     # remove duplicates in vertices
     remove_vertices = [value for sublist in list_duplicated for value in sublist[1:]]
     vertices = np.delete(vertices, remove_vertices, axis=0)
-    print(len(remove_vertices), "duplicated vertices removed")
+    print(f"{len(remove_vertices)} duplicated vertices removed")
 
     # remove duplicated_vertices in faces
     for idx, temp_array in enumerate(list_duplicated):
@@ -870,8 +834,8 @@ def remove_duplicates(vertices, faces, debugging=False):
 
             # update accordingly all indices above temp_array[idy]
             if debugging:
-                print("temp_array before", temp_array)
-                print("list_duplicated before", list_duplicated)
+                print(f"temp_array before {temp_array}")
+                print(f"list_duplicated before {list_duplicated}")
             temp_array = [
                 (value - 1) if value > duplicated_value else value
                 for value in temp_array
@@ -884,8 +848,8 @@ def remove_duplicates(vertices, faces, debugging=False):
                 for sublist in list_duplicated
             ]
             if debugging:
-                print("temp_array after", temp_array)
-                print("list_duplicated after", list_duplicated)
+                print(f"temp_array after {temp_array}")
+                print(f"list_duplicated after {list_duplicated}")
 
     # look for faces with 2 identical vertices
     # (cannot define later a normal to these faces)
@@ -894,7 +858,7 @@ def remove_duplicates(vertices, faces, debugging=False):
         if np.unique(faces[idx, :], axis=0).shape[0] != faces[idx, :].shape[0]:
             remove_faces.append(idx)
     faces = np.delete(faces, remove_faces, axis=0)
-    print(len(remove_faces), "faces with identical vertices removed")
+    print(f"{len(remove_faces)} faces with identical vertices removed")
 
     return vertices, faces
 
@@ -1000,22 +964,18 @@ def stereographic_proj(
         if event.inaxes == ax0:
             index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
             index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
-            sys.stdout.write(
-                "\rKDE South:" + str("{:.0f}".format(density_south[index_v, index_u]))
-            )
+            sys.stdout.write(f"\rKDE South: {density_south[index_v, index_u]:.0f}")
             sys.stdout.flush()
         elif event.inaxes == ax1:
             index_u = util.find_nearest(u_grid[0, :], event.xdata, width=None)
             index_v = util.find_nearest(v_grid[:, 0], event.ydata, width=None)
-            sys.stdout.write(
-                "\rKDE North:" + str("{:.0f}".format(density_north[index_v, index_u]))
-            )
+            sys.stdout.write(f"\rKDE North: {density_north[index_v, index_u]:.0f}")
             sys.stdout.flush()
         else:
             pass
 
     if comment_fig and comment_fig[-1] != "_":
-        comment_fig = comment_fig + "_"
+        comment_fig = f"{comment_fig}_"
     radius_mean = 1  # normals are normalized
     stereo_center = 0  # COM of the weighted point density,
     # where the projection plane intersects the reference axis
@@ -1079,7 +1039,7 @@ def stereographic_proj(
         uv_labels=uv_labels,
         debugging=debugging,
     )
-    fig.savefig(savedir + comment_fig + "South pole_" + scale + ".png")
+    fig.savefig(f"{savedir}{comment_fig}South pole_{scale}.png")
     fig, _ = gu.contour_stereographic(
         euclidian_u=stereo_proj[:, 2],
         euclidian_v=stereo_proj[:, 3],
@@ -1093,7 +1053,7 @@ def stereographic_proj(
         uv_labels=uv_labels,
         debugging=debugging,
     )
-    fig.savefig(savedir + comment_fig + "North pole_" + scale + ".png")
+    fig.savefig(f"{savedir}{comment_fig}North pole_{scale}.png")
 
     # regrid stereo_proj
     # stereo_proj[:, 0] is the euclidian u_south,
@@ -1128,22 +1088,16 @@ def stereographic_proj(
         # save metric coordinates in text file
         density_south[np.isnan(density_south)] = 0.0
         density_north[np.isnan(density_north)] = 0.0
-        with open(savedir + "CDI_poles.dat", "w") as file:
+        with open(f"{savedir}CDI_poles.dat", "w") as file:
             for ii in range(len(v_grid)):
                 for jj in range(len(u_grid)):
                     file.write(
-                        str(v_grid[ii, 0])
-                        + "\t"
-                        + str(u_grid[0, jj])
-                        + "\t"
-                        + str(density_south[ii, jj])
-                        + "\t"
-                        + str(v_grid[ii, 0])
-                        + "\t"
-                        + str(u_grid[0, jj])
-                        + "\t"
-                        + str(density_north[ii, jj])
-                        + "\n"
+                        f"{v_grid[ii, 0]}\t"
+                        f"{u_grid[0, jj]}\t"
+                        f"{density_south[ii, jj]}\t"
+                        f"{v_grid[ii, 0]}\t"
+                        f"{u_grid[0, jj]}\t"
+                        f"{density_north[ii, jj]}\n"
                     )
 
     # inverse densities for watershed segmentation
@@ -1307,7 +1261,7 @@ def stereographic_proj(
     gu.colorbar(img1, numticks=int(labels_north.max() + 1))
     fig.tight_layout()
     plt.pause(0.1)
-    fig.savefig(savedir + comment_fig + "labels.png")
+    fig.savefig(f"{savedir}{comment_fig}labels.png")
 
     return labels_south, labels_north, stereo_proj, remove_row
 
@@ -1409,8 +1363,8 @@ def taubin_smooth(
 
     plt.ion()
 
-    print("Original number of vertices:", vertices.shape[0])
-    print("Original number of faces:", faces.shape[0])
+    print(f"Original number of vertices: {vertices.shape[0]}")
+    print(f"Original number of faces: {faces.shape[0]}")
     new_vertices = np.copy(vertices)
 
     for k in range(iterations):
@@ -1454,7 +1408,6 @@ def taubin_smooth(
         )  # find indices of vertices defining non-shared edges (near hole...)
 
         for i in range(vertices.shape[0]):
-
             indices = neighbours[i]  # list of indices
             distances = np.sqrt(
                 np.sum((vertices[indices, :] - vertices[i, :]) ** 2, axis=1)
@@ -1476,10 +1429,8 @@ def taubin_smooth(
 
     nan_vertices = np.argwhere(np.isnan(new_vertices[:, 0]))
     print(
-        "Number of nan in new_vertices:",
-        nan_vertices.shape[0],
-        "; Total number of vertices:",
-        new_vertices.shape[0],
+        f"Number of nan in new_vertices: {nan_vertices.shape[0]}; "
+        f"Total number of vertices: {new_vertices.shape[0]}"
     )
 
     # Create an indexed view into the vertex array using
@@ -1570,24 +1521,12 @@ def update_logfile(
         if strain_array[ind_z[idx], ind_y[idx], ind_x[idx]] != 0:
             # remove the artefact from YY reconstrutions at the bottom facet
             allpoints_file.write(
-                "{0: <10}".format(str(label))
-                + "\t"
-                + "{0: <10}".format(str("{:.3f}".format(angle_plane)))
-                + "\t"
-                + "{0: <10}".format(
-                    str(
-                        "{:.7f}".format(
-                            strain_array[ind_z[idx], ind_y[idx], ind_x[idx]]
-                        )
-                    )
-                )
-                + "\t"
-                + "{0: <10}".format(str(ind_z[idx]))
-                + "\t"
-                + "{0: <10}".format(str(ind_y[idx]))
-                + "\t"
-                + "{0: <10}".format(str(ind_x[idx]))
-                + "\n"
+                f"{label: <10}\t"
+                f"{f'{angle_plane:.3f}': <10}\t"
+                f"{f'{strain_array[ind_z[idx], ind_y[idx], ind_x[idx]]:.7f}': <10}\t"
+                f"{ind_z[idx]: <10}\t"
+                f"{ind_y[idx]: <10}\t"
+                f"{ind_x[idx]: <10}\n"
             )
 
     str_array = strain_array[support == 1]
@@ -1600,30 +1539,18 @@ def update_logfile(
     # support_strain = np.mean(strain_array[support == 1])
     # support_deviation = np.std(strain_array[support == 1])
     summary_file.write(
-        "{0: <10}".format(str(label))
-        + "\t"
-        + "{0: <10}".format(str("{:.3f}".format(angle_plane)))
-        + "\t"
-        + "{0: <10}".format(str(nb_points))
-        + "\t"
-        + "{0: <10}".format(str("{:.7f}".format(support_strain)))
-        + "\t"
-        + "{0: <10}".format(str("{:.7f}".format(support_deviation)))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_coeffs[0])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_coeffs[1])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_coeffs[2])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_coeffs[3])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_normal[0])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_normal[1])))
-        + "\t"
-        + "{0: <10}".format(str("{:.5f}".format(plane_normal[2])))
-        + "\n"
+        f"{label: <10}\t"
+        f"{f'{angle_plane:.3f}': <10}\t"
+        f"{nb_points: <10}\t"
+        f"{f'{support_strain:.7f}': <10}\t"
+        f"{f'{support_deviation:.7f}': <10}\t"
+        f"{f'{plane_coeffs[0]:.5f}': <10}\t"
+        f"{f'{plane_coeffs[1]:.5f}': <10}\t"
+        f"{f'{plane_coeffs[2]:.5f}': <10}\t"
+        f"{f'{plane_coeffs[3]:.5f}': <10}\t"
+        f"{f'{plane_normal[0]:.5f}': <10}\t"
+        f"{f'{plane_normal[1]:.5f}': <10}\t"
+        f"{f'{plane_normal[2]:.5f}': <10}\n"
     )
 
 
@@ -1665,7 +1592,7 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
             gu.multislices_plot(
                 array,
                 sum_frames=False,
-                title=title + " before upsampling",
+                title=f"{title} before upsampling",
                 vmin=vmin,
                 vmax=vmax,
                 scale="linear",
@@ -1716,7 +1643,7 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
             gu.multislices_plot(
                 obj,
                 sum_frames=False,
-                title=title + " after upsampling",
+                title=f"{title} after upsampling",
                 vmin=vmin,
                 vmax=vmax,
                 scale="linear",
@@ -1729,7 +1656,7 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
         if debugging:
             gu.imshow_plot(
                 array,
-                title=title + " before upsampling",
+                title=f"{title} before upsampling",
                 vmin=vmin,
                 vmax=vmax,
                 scale="linear",
@@ -1769,7 +1696,7 @@ def upsample(array, upsampling_factor, voxelsizes=None, title="", debugging=Fals
         if debugging:
             gu.imshow_plot(
                 obj,
-                title=title + " after upsampling",
+                title=f"{title} after upsampling",
                 vmin=vmin,
                 vmax=vmax,
                 scale="linear",

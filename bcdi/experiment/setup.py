@@ -1782,7 +1782,11 @@ class Setup:
         # interpolate the diffraction pattern #
         #######################################
         if correct_curvature:
-            (arrays, q_values, offseted_direct_beam,) = self.transformation_cdi_ewald(
+            (
+                arrays,
+                q_values,
+                offseted_direct_beam,
+            ) = self.transformation_cdi_ewald(
                 arrays=arrays,
                 cdi_angle=cdi_angle,
                 fill_value=fill_value,

@@ -130,7 +130,6 @@ def on_click(event):
     if not event.inaxes:
         return
     if not flag_pause:
-
         if (previous_axis == event.inaxes) or (previous_axis is None):  # collect points
             _x, _y = int(np.rint(event.xdata)), int(np.rint(event.ydata))
             xy.append([_x, _y])
@@ -449,7 +448,6 @@ if psf_iterations > 0:
 # optional: apply a filter #
 ############################
 if filter_name != "skip":
-
     comment = comment + "_" + filter_name
     data = pu.filter_3d(
         data, filter_name=filter_name, sigma=gaussian_sigma, debugging=True
@@ -622,16 +620,16 @@ if not all(
 
     else:  # data in detector frame
         setup = Setup(
-            beamline_name=beamline,
-            energy=energy,
-            outofplane_angle=outofplane_angle,
-            inplane_angle=inplane_angle,
-            tilt_angle=tilt_angle,
-            rocking_angle=rocking_angle,
-            distance=distance,
-            pixel_x=pixel_x,
-            pixel_y=pixel_y,
-            grazing_angle=grazing_angle,
+            parameters={
+                "beamline": beamline,
+                "energy": energy,
+                "outofplane_angle": outofplane_angle,
+                "inplane_angle": inplane_angle,
+                "tilt_angle": tilt_angle,
+                "rocking_angle": rocking_angle,
+                "detector_distance": distance,
+                "grazing_angle": grazing_angle,
+            },
         )
 
         voxelsize_z, voxelsize_y, voxelsize_x = setup.voxel_sizes(

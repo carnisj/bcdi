@@ -132,7 +132,6 @@ def orthogonalize(
     if analysis.get_normalized_q_bragg_laboratory_frame is None:
         raise ValueError("analysis.get_normalized_q_bragg_laboratory_frame is None")
     if prm["save_frame"] in ["laboratory", "lab_flat_sample"]:
-
         amplitude, phase = util.rotate_crystal(
             arrays=(np.abs(analysis.data), np.angle(analysis.data)),
             axis_to_align=AXIS_TO_ARRAY[prm["ref_axis_q"]],

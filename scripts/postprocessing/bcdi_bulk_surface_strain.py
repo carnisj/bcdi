@@ -99,8 +99,8 @@ surface[coordination_matrix > 22] = 0  # remove the bulk 22
 bulk = support - surface
 nb_surface = len(np.nonzero(surface)[0])
 nb_bulk = len(np.nonzero(bulk)[0])
-print("Number of surface points = ", str(nb_surface))
-print("Number of bulk points = ", str(nb_bulk))
+print(f"Number of surface points = {nb_surface}")
+print(f"Number of bulk points = {nb_bulk}")
 if debug:
     gu.multislices_plot(
         surface,
@@ -130,17 +130,16 @@ if save_txt:
     with open(
         os.path.join(
             savedir,
-            "S" + str(scan) + "_threshold" + str(support_threshold) + "_surface.dat",
+            f"S{scan}_threshold{support_threshold}_surface.dat",
         ),
         "w",
     ) as file_surface, open(
         os.path.join(
             savedir,
-            "S" + str(scan) + "_threshold" + str(support_threshold) + "_bulk.dat",
+            f"S{scan}_threshold{support_threshold}_bulk.dat",
         ),
         "w",
     ) as file_bulk:
-
         # write surface points position / strain to file
         surface_indices = np.nonzero(surface)
         nb_surface = len(surface_indices[0])
@@ -149,14 +148,7 @@ if save_txt:
         ind_x = surface_indices[2]
         for point in range(nb_surface):
             file_surface.write(
-                "{0: <10}".format(
-                    str(
-                        "{:.7f}".format(
-                            strain[ind_z[point], ind_y[point], ind_x[point]]
-                        )
-                    )
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
 
         # write bulk points position / strain to file
@@ -167,14 +159,7 @@ if save_txt:
         ind_x = bulk_indices[2]
         for point in range(nb_bulk):
             file_bulk.write(
-                "{0: <10}".format(
-                    str(
-                        "{:.7f}".format(
-                            strain[ind_z[point], ind_y[point], ind_x[point]]
-                        )
-                    )
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
     file_surface.close()
     file_bulk.close()
@@ -198,21 +183,14 @@ if save_txt:
     ) as file_total:
         for point in range(nb_total):
             file_total.write(
-                "{0: <10}".format(
-                    str(
-                        "{:.7f}".format(
-                            strain[ind_z[point], ind_y[point], ind_x[point]]
-                        )
-                    )
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
 
 ####################################
 # fit the bulk strain distribution #
 ####################################
-print("Min surface strain = {:.5f}".format(strain[np.nonzero(surface)].min()))
-print("Max surface strain = {:.5f}".format(strain[np.nonzero(surface)].max()))
+print(f"Min surface strain = {strain[np.nonzero(surface)].min():.5f}")
+print(f"Max surface strain = {strain[np.nonzero(surface)].max():.5f}")
 hist, bin_edges = np.histogram(
     strain[np.nonzero(surface)],
     bins=int(
@@ -317,43 +295,38 @@ ax.legend(
 )
 ax.add_artist(legend_fit)
 ax.set_title(
-    "S{:d} histogram of the strain for {:d} surface points".format(scan, nb_surface)
-    + "\nModulus threshold="
-    + str(support_threshold)
+    f"S{scan:d} histogram of the strain for {nb_surface:d} surface points\n"
+    f"Modulus threshold={support_threshold}"
 )
-fig.text(0.65, 0.70, "<strain>={:.2e}".format(np.mean(strain[np.nonzero(surface)])))
-fig.text(0.65, 0.65, "std(strain)={:.2e}".format(np.std(strain[np.nonzero(surface)])))
+fig.text(0.65, 0.70, f"<strain>={np.mean(strain[np.nonzero(surface)]):.2e}")
+fig.text(0.65, 0.65, f"std(strain)={np.std(strain[np.nonzero(surface)]):.2e}")
 
 if fit_pdf == "skewed_gaussian":
-    fig.text(0.13, 0.76, "SK_max @ strain={:.2e}".format(strain_mode))
+    fig.text(0.13, 0.76, f"SK_max @ strain={strain_mode:.2e}")
     fig.text(
         0.13,
         0.66,
-        "SK std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_0"].value, result.params["sig_0"].stderr
-        ),
+        f"SK std={result.params['sig_0'].value:.2e}\n"
+        f"   +/-{result.params['sig_0'].stderr:.2e}",
     )
 else:
     fig.text(
         0.15,
         0.70,
-        "PDF center={:.2e}\n   +/-{:.2e}".format(
-            result.params["cen_0"].value, result.params["cen_0"].stderr
-        ),
+        f"PDF center={result.params['cen_0'].value:.2e}\n"
+        f"   +/-{result.params['cen_0'].stderr:.2e}",
     )
     fig.text(
         0.15,
         0.60,
-        "PDF std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_0"].value, result.params["sig_0"].stderr
-        ),
+        f"PDF std={result.params['sig_0'].value:.2e}\n"
+        f"   +/-{result.params['sig_0'].stderr:.2e}",
     )
     fig.text(
         0.15,
         0.50,
-        "PDF ratio={:.2e}\n   +/-{:.2e}".format(
-            result.params["ratio_0"].value, result.params["ratio_0"].stderr
-        ),
+        f"PDF ratio={result.params['ratio_0'].value:.2e}\n"
+        f"   +/-{result.params['ratio_0'].stderr:.2e}",
     )
 plt.pause(0.1)
 fig.savefig(
@@ -368,8 +341,8 @@ fig.savefig(
 ####################################
 # fit the bulk strain distribution #
 ####################################
-print("Min bulk strain = {:.5f}".format(strain[np.nonzero(bulk)].min()))
-print("Max bulk strain = {:.5f}".format(strain[np.nonzero(bulk)].max()))
+print(f"Min bulk strain = {strain[np.nonzero(bulk)].min():.5f}")
+print(f"Max bulk strain = {strain[np.nonzero(bulk)].max():.5f}")
 hist, bin_edges = np.histogram(
     strain[np.nonzero(bulk)],
     bins=int(
@@ -452,9 +425,7 @@ if ylim is not None:
 
 vline1 = ax.axvline(x=0, ymin=0, ymax=1, color="k", linestyle="dotted", linewidth=1.0)
 ax.tick_params(labelbottom=False, labelleft=False)
-fig.savefig(
-    savedir + "S" + str(scan) + "_bulk_strain_iso" + str(support_threshold) + ".png"
-)
+fig.savefig(savedir + f"S{scan}_bulk_strain_iso{support_threshold}.png")
 
 ax.set_xlabel("strain")
 vline2 = ax.axvline(
@@ -469,43 +440,37 @@ ax.legend(
 )
 ax.add_artist(legend_fit)
 ax.set_title(
-    "S{:d} histogram for {:d} bulk points".format(scan, nb_bulk)
-    + "\nModulus threshold="
-    + str(support_threshold)
+    f"S{scan:d} histogram for {nb_bulk:d} bulk points\n"
+    f"Modulus threshold={support_threshold}"
 )
-fig.text(0.65, 0.70, "<strain>={:.2e}".format(np.mean(strain[np.nonzero(bulk)])))
-fig.text(0.65, 0.65, "std(strain)={:.2e}".format(np.std(strain[np.nonzero(bulk)])))
+fig.text(0.65, 0.70, f"<strain>={np.mean(strain[np.nonzero(bulk)]):.2e}")
+fig.text(0.65, 0.65, f"std(strain)={np.std(strain[np.nonzero(bulk)]):.2e}")
 
 if fit_pdf == "skewed_gaussian":
-    fig.text(0.13, 0.76, "SK_max @ strain={:.2e}".format(strain_mode))
+    fig.text(0.13, 0.76, f"SK_max @ strain={strain_mode:.2e}")
     fig.text(
         0.13,
         0.66,
-        "SK std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_0"].value, result.params["sig_0"].stderr
-        ),
+        f"SK std={result.params['sig_0'].value:.2e}\n   +/-{result.params['sig_0'].stderr:.2e}",
     )
 else:
     fig.text(
         0.15,
         0.70,
-        "PDF center={:.2e}\n   +/-{:.2e}".format(
-            result.params["cen_0"].value, result.params["cen_0"].stderr
-        ),
+        f"PDF center={result.params['cen_0'].value:.2e}\n"
+        f"   +/-{result.params['cen_0'].stderr:.2e}",
     )
     fig.text(
         0.15,
         0.60,
-        "PDF std={:.2e}\n   +/-{:.2e}".format(
-            result.params["sig_0"].value, result.params["sig_0"].stderr
-        ),
+        f"PDF std={result.params['sig_0'].value:.2e}\n"
+        f"   +/-{result.params['sig_0'].stderr:.2e}",
     )
     fig.text(
         0.15,
         0.50,
-        "PDF ratio={:.2e}\n   +/-{:.2e}".format(
-            result.params["ratio_0"].value, result.params["ratio_0"].stderr
-        ),
+        f"PDF ratio={result.params['ratio_0'].value:.2e}\n"
+        f"   +/-{result.params['ratio_0'].stderr:.2e}",
     )
 plt.pause(0.1)
 fig.savefig(
@@ -519,8 +484,8 @@ fig.savefig(
 
 nb_total = len(np.nonzero(support)[0])
 print(
-    "Sanity check: Total points = {:d}".format(nb_total),
-    ", surface+bulk = {:d}".format(nb_surface + nb_bulk),
+    f"Sanity check: Total points = {nb_total:d}, "
+    f"surface+bulk = {nb_surface + nb_bulk:d}",
 )
 ######################################################################
 # plot the overlay of strain histograms for the bulk and the surface #

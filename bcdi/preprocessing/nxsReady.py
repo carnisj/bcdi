@@ -204,7 +204,6 @@ class DataSet:
 
         if pref.inamedisplay == 0:
             for i in range(self.nmotors - 1):  # pas la peine de faire le dernier point!
-
                 nickname = self.nodenicknames[i]
 
                 if nickname in self.nodenicknames[i + 1 :]:  # item in double
