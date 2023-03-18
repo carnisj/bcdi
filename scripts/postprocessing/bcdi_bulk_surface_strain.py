@@ -148,10 +148,7 @@ if save_txt:
         ind_x = surface_indices[2]
         for point in range(nb_surface):
             file_surface.write(
-                "{0: <10}".format(
-                    f"{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}"
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
 
         # write bulk points position / strain to file
@@ -162,10 +159,7 @@ if save_txt:
         ind_x = bulk_indices[2]
         for point in range(nb_bulk):
             file_bulk.write(
-                "{0: <10}".format(
-                    f"{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}"
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
     file_surface.close()
     file_bulk.close()
@@ -189,10 +183,7 @@ if save_txt:
     ) as file_total:
         for point in range(nb_total):
             file_total.write(
-                "{0: <10}".format(
-                    f"{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}"
-                )
-                + "\n"
+                f"{f'{strain[ind_z[point], ind_y[point], ind_x[point]]:.7f}': <10}\n"
             )
 
 ####################################
@@ -307,8 +298,8 @@ ax.set_title(
     f"S{scan:d} histogram of the strain for {nb_surface:d} surface points\n"
     f"Modulus threshold={support_threshold}"
 )
-fig.text(0.65, 0.70, "<strain>={:.2e}".format(np.mean(strain[np.nonzero(surface)])))
-fig.text(0.65, 0.65, "std(strain)={:.2e}".format(np.std(strain[np.nonzero(surface)])))
+fig.text(0.65, 0.70, f"<strain>={np.mean(strain[np.nonzero(surface)]):.2e}")
+fig.text(0.65, 0.65, f"std(strain)={np.std(strain[np.nonzero(surface)]):.2e}")
 
 if fit_pdf == "skewed_gaussian":
     fig.text(0.13, 0.76, f"SK_max @ strain={strain_mode:.2e}")
