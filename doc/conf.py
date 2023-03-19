@@ -153,6 +153,13 @@ latex_documents = [
     (main_doc, "BCDI.tex", "BCDI Documentation", "Jerome Carnis", "manual"),
 ]
 
+# Options for link check
+linkcheck_ignore = [r"https://doi.org/.+"]
+linkcheck_allowed_redirects = {
+    # All HTTP redirections from the source URI to the canonical URI
+    # will be treated as "working".
+    r"https://youtu.be/.+": r"https://www.youtube.com/watch?v=.+"
+}
 
 # -- Options for manual page output ---------------------------------------
 
