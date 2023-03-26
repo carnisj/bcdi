@@ -23,9 +23,9 @@ from matplotlib import pyplot as plt
 
 import bcdi.graph.graph_utils as gu
 import bcdi.postprocessing.postprocessing_utils as pu
+from bcdi.constants import AXIS_TO_ARRAY
 from bcdi.experiment.setup import Setup
 from bcdi.postprocessing.analysis import create_analysis
-from bcdi.utils.constants import AXIS_TO_ARRAY
 from bcdi.utils.snippets_logging import FILE_FORMATTER
 
 logger = logging.getLogger(__name__)

@@ -6,6 +6,17 @@
 :mod:`bcdi.graph`: Templates for plotting and saving data
 =========================================================
 
+colormap
+^^^^^^^^
+
+This module provides the class ColormapFactory.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.graph.colormap
+   :members:
+
 graph_utils
 ^^^^^^^^^^^
 
