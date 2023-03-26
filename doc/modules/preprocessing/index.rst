@@ -55,6 +55,18 @@ API Reference
 .. automodule:: bcdi.preprocessing.cdi_utils
    :members:
 
+center_fft
+^^^^^^^^^^
+
+This module provides classes related to centering the diffraction pattern in
+preprocessing.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.preprocessing.center_fft
+   :members:
+
 process_scan
 ^^^^^^^^^^^^
 

@@ -82,3 +82,15 @@ API Reference
 
 .. automodule:: bcdi.postprocessing.process_scan
    :members:
+
+raw_orthogonalization
+^^^^^^^^^^^^^^^^^^^^^
+
+This module provides the function for BCDI data orthogonalization of a single scan,
+after phase retrieval (skipping centering, phase offset and ramp removal).
+
+API Reference
+-------------
+
+.. automodule:: bcdi.postprocessing.raw_orthogonalization
+   :members:

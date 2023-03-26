@@ -107,6 +107,17 @@ General organization of the module:
 .. automodule:: bcdi.experiment.beamline
    :members:
 
+beamline_factory
+^^^^^^^^^^^^^^^^
+
+This module provides beamline abstract classes.
+
+API Reference
+-------------
+
+.. automodule:: bcdi.experiment.beamline_factory
+   :members:
+
 detector
 ^^^^^^^^
 
