@@ -7,6 +7,15 @@
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Constants used throughout the package."""
 
+import numpy as np
+
+AXIS_TO_ARRAY = {
+    "x": np.array([1, 0, 0]),
+    "y": np.array([0, 1, 0]),
+    "z": np.array([0, 0, 1]),
+}  # in xyz order
+
+
 BEAMLINES_BCDI = [
     "BM02",
     "ID01",

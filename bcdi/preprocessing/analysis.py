@@ -31,7 +31,7 @@ import bcdi.preprocessing.bcdi_utils as bu
 import bcdi.utils.utilities as util
 import bcdi.utils.validation as valid
 from bcdi.experiment.setup import Setup
-from bcdi.utils.constants import AXIS_TO_ARRAY
+from bcdi.constants import AXIS_TO_ARRAY
 from bcdi.utils.text import Comment
 
 module_logger = logging.getLogger(__name__)
