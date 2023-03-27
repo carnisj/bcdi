@@ -170,6 +170,7 @@ def task_build_doc():
     return {
         "actions": [f"sphinx-build -b html {sourcedir} {outputdir}"],
         "targets": ["docs/"],
+        "verbosity": 2,
     }
 
 

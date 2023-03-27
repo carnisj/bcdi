@@ -76,6 +76,7 @@ pygments_style = "sphinx"
 todo_include_todos = False
 
 autodoc_mock_imports = [
+    "colorcet",
     "ipywidgets",
     "numpy",
     "pandas",
@@ -91,6 +92,8 @@ autodoc_mock_imports = [
     "lmfit",
     "moviepy",
     "mpl_toolkits",
+    "PIL",
+    "yaml",
 ]
 # -- Options for HTML output ----------------------------------------------
 

@@ -28,7 +28,7 @@ tests/test_output
 
 # Distribution / packaging
 .Python
-venv/
+venv*/
 env/
 build/
 develop-eggs/
