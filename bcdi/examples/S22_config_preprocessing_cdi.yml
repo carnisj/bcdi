@@ -1,7 +1,7 @@
 scans: 22  # scan number or list of scan numbers
-root_folder: "C:/Users/carnisj/Documents/data/dataset_P10_saxs/"
+root_folder: "C:/Users/Jerome/Documents/data/dataset_P10_saxs/"
 # folder of the experiment, where all scans are stored
-save_dir: "C:/Users/carnisj/Documents/data/dataset_P10_saxs/test/"
+save_dir: "C:/Users/Jerome/Documents/data/dataset_P10_saxs/test/"
 # images will be saved here, leave it to None otherwise (default to data directory's
 # parent). Provide a single path or a list of paths for multiple scans.
 data_dir: None
@@ -66,6 +66,7 @@ actuators: None  # {'rocking_angle': 'actuator_1_1'}
 # actuators in data files (useful at CRISTAL where the location of data keeps changing)
 # e.g.  {'rocking_angle': 'actuator_1_3', 'detector': 'data_04', 'monitor': 'data_05'}
 is_series: True  # specific to series measurement at P10
+rocking_angle: "inplane"
 specfile_name: None
 # string or list of strings for multiple scans.
 # template for ID01 and 34ID: name of the spec file if it is at the default location
@@ -95,6 +96,8 @@ mask_beamstop: False
 # True to apply beamstop correction (direct beam on the detector, masked by a beam stop)
 phasing_binning: [1, 2, 2]  # binning to apply to the data
 # (stacking dimension, detector vertical axis, detector horizontal axis)
+correct_curvature: False
+# Correct for the curvature of Ewald sphere. You can use False only at P10_SAXS (~ 8keV)
 linearity_func: None
 # [a, b, c, d, e] tuple of 5 numbers corresponding to the coefficients of the 4th order
 # polynomial ax^4 + bx^3 + cx^2 + dx + e which it used to correct the non-linearity of
@@ -129,7 +132,7 @@ frames_pattern: None
 # the frame at data[index] will be skipped, if 1 the frame will be added to the stack.
 # Use this if you need to remove some frames and you know it in advance.
 background_file: None  # non-empty file path or None
-hotpixels_file: "C:/Users/carnisj/Documents/data/dataset_P10_saxs/hotpixels.npz"  # non-empty file path or None
+hotpixels_file: "C:/Users/Jerome/Documents/data/dataset_P10_saxs/hotpixels.npz"  # non-empty file path or None
 flatfield_file: None  # non-empty file path or None
 template_imagefile: "_master.h5"
 # string or list of strings for multiple scans.
