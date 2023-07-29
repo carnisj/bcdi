@@ -142,7 +142,7 @@ setup(
         "pillow==9.4.0",
         "pyqt5==5.15.9",
         "pyyaml==6.0",
-        "scikit-image==0.20.0",
+        "scikit-image==0.21.0",
         "scipy==1.10.0",
         "silx==1.1.2",
         "tables==3.8.0",
