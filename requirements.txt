@@ -23,7 +23,7 @@ PyYAML==6.0
 scikit-image==0.21.0
 scipy==1.10.0
 silx==1.1.2
-Sphinx==7.2.3
+Sphinx==7.1.2
 sphinxcontrib-mermaid==0.9.2
 tables==3.8.0
 traits==6.4.1

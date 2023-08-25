@@ -152,7 +152,7 @@ setup(
     ],
     extras_require={
         "doc": [
-            "sphinx==7.2.3",
+            "sphinx==7.1.2",
             "sphinxcontrib-mermaid==0.9.2",
         ],
         "dev": [
