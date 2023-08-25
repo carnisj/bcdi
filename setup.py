@@ -152,8 +152,8 @@ setup(
     ],
     extras_require={
         "doc": [
-            "sphinx==6.1.3",
-            "sphinxcontrib-mermaid==0.8.1",
+            "sphinx==7.1.2",
+            "sphinxcontrib-mermaid==0.9.2",
         ],
         "dev": [
             "black==23.1.0",
@@ -161,7 +161,7 @@ setup(
             "doit==0.36.0",
             "isort==5.12.0",
             "mypy==1.1.1",
-            "pycodestyle==2.10.0",
+            "pycodestyle==2.11.0",
             "pydocstyle==6.3.0",
             "pyfakefs==5.1.0",
             "twine==4.0.2",
