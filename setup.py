@@ -152,8 +152,8 @@ setup(
     ],
     extras_require={
         "doc": [
-            "sphinx==6.1.3",
-            "sphinxcontrib-mermaid==0.8.1",
+            "sphinx==7.2.3",
+            "sphinxcontrib-mermaid==0.9.2",
         ],
         "dev": [
             "black==23.1.0",
