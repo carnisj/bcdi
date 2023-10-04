@@ -139,7 +139,7 @@ setup(
         "moviepy==1.0.3",
         "numpy==1.24.2",
         "pandas==1.5.3",
-        "pillow==9.4.0",
+        "pillow==10.0.1",
         "pyqt5==5.15.9",
         "pyyaml==6.0",
         "scikit-image==0.21.0",

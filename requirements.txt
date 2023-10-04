@@ -14,7 +14,7 @@ moviepy==1.0.3
 mypy==1.1.1
 numpy==1.24.2
 pandas==1.5.3
-Pillow==9.4.0
+Pillow==10.0.1
 pycodestyle==2.11.0
 pydocstyle==6.3.0
 pyfakefs==5.1.0
