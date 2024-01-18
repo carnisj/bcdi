@@ -330,7 +330,8 @@ Usage:
 
 """
 
-if __name__ == "__main__":
+
+def main():
     now = datetime.now()
     configure_logging()
     logging.info(f"Start script at {now}")
@@ -353,3 +354,7 @@ if __name__ == "__main__":
     logging.info(f"End of script at {now}")
     plt.ioff()
     plt.show()
+
+
+if __name__ == "__main__":
+    main()
