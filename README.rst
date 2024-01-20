@@ -125,6 +125,9 @@ installation.
 Note that there are issues with installing scikit-image within an Anaconda environment.
 In such situation, the workaround is to create instead a virtual environment using pip.
 
+If you want to contribute to bcdi development, install also extra dependencies:
+``python -m pip install bcdi[dev]``
+
 Please send feedback in `GitHub issues <https://github.com/carnisj/bcdi/issues>`_.
 
 Documentation
