@@ -177,9 +177,8 @@ def task_build_doc():
 def task_build_distribution():
     """Build the distribution."""
     return {
-        "actions": ["python setup.py sdist bdist_wheel"],
-        "targets": [f"dist/bcdi-{__version__}.tar.gz"],
-        "verbosity": 1,
+        "actions": ["poetry build"],
+        "verbosity": 2,
     }
 
 
