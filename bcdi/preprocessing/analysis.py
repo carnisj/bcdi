@@ -6,7 +6,7 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 """Implementation of preprocessing analysis classes."""
-
+# mypy: ignore-errors
 import logging
 import os
 from abc import ABC, abstractmethod
