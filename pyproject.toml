@@ -5,7 +5,7 @@ keywords = ["BCDI", "Bragg coherent X-ray diffraction imaging"]
 description = "BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data"
 authors = ["Jerome Carnis <carnis_jerome@yahoo.fr>"]
 maintainers = ["Jerome Carnis <carnis_jerome@yahoo.fr>"]
-readme = "README.rst"
+readme = "PyPI.md"
 license = "CeCILL-B"
 classifiers = [
     "Development Status :: 3 - Alpha",
