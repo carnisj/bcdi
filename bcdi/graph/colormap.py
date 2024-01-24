@@ -10,7 +10,7 @@ Implementation of the colormap class.
 
 New colormaps can be added to the method generate_colormap.
 """
-from typing import Optional
+from typing import Literal, Optional, Sequence, Tuple
 
 import colorcet as cc
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
@@ -19,7 +19,7 @@ import bcdi.utils.format as fmt
 from bcdi.graph.turbo_colormap import turbo_colormap_data
 from bcdi.utils.validation import is_float
 
-data_table = (
+data_table: Sequence[Tuple[float, ...]] = (
     (0.0, 1.0, 1.0),
     (0.11, 0.0, 0.0),
     (0.36, 0.0, 0.0),
@@ -28,7 +28,9 @@ data_table = (
     (1.0, 0.0, 0.0),
 )
 
-custom_colormap_data = {
+custom_colormap_data: dict[
+    Literal["red", "green", "blue", "alpha"], Sequence[Tuple[float, ...]]
+] = {
     "red": data_table,
     "green": data_table,
     "blue": data_table,
@@ -77,7 +79,8 @@ class ColormapFactory:
             self.cmap = getattr(cc.cm, self.colormap)
         else:
             raise NotImplementedError(f"colormap {self.colormap} not implemented")
-        self.cmap.set_bad(color=self.bad_color)
+        if self.cmap is not None:
+            self.cmap.set_bad(color=self.bad_color)
 
     def __repr__(self):
         """Representation string of the ColormapFactory instance."""

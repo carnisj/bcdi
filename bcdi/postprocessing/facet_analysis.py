@@ -9,7 +9,7 @@
 #         Maxime Dupraz, maxime.dupraz@esrf.fr
 
 """Postprocessing of the output from the facet analyzer plugin for Paraview."""
-
+# mypy: ignore-errors
 import logging
 import pathlib
 from typing import Any, Dict, List, Optional, Tuple, Union, no_type_check

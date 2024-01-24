@@ -5,7 +5,7 @@ keywords = ["BCDI", "Bragg coherent X-ray diffraction imaging"]
 description = "BCDI: tools for pre(post)-processing Bragg and forward coherent X-ray diffraction imaging data"
 authors = ["Jerome Carnis <carnis_jerome@yahoo.fr>"]
 maintainers = ["Jerome Carnis <carnis_jerome@yahoo.fr>"]
-readme = "README.rst"
+readme = "PyPI.md"
 license = "CeCILL-B"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -45,7 +45,7 @@ bcdi_strain = 'scripts.postprocessing.bcdi_strain:main'
 source = "init"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <=3.11"
+python = ">=3.9, <3.12"
 wheel = "0.42.0"
 xrayutilities = "1.7.6"
 vtk = "9.3.0"
@@ -70,12 +70,12 @@ tables = "3.9.2"
 black = "23.12.1"
 coverage = "7.4.0"
 doit = "0.36.0"
-pytest = "^7.4.4"
 isort = "5.13.2"
 mypy = "1.8.0"
 pycodestyle = "2.11.1"
 pydocstyle = "6.3.0"
 pyfakefs = "5.3.2"
+pytest = "7.4.4"
 sphinx = "7.2.6"
 sphinxcontrib-mermaid = "0.9.2"
 twine = "4.0.2"
@@ -87,10 +87,10 @@ pyqt5 = "5.15.10"
 dev = [
     "black",
     "coverage",
-    "pytest",
     "pycodestyle",
     "pydocstyle",
     "pyfakefs",
+    "pytest",
     "sphinx",
     "sphinxcontrib-mermaid",
     "twine",

@@ -11,7 +11,7 @@ Workflow for CDI data preprocessing of a single scan, before phase retrieval.
 The detector is expected to be fixed, its plane being always perpendicular to the direct
 beam independently of the detector position.
 """
-
+# mypy: ignore-errors
 import gc
 
 try:

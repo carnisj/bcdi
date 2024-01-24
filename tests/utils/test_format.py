@@ -65,7 +65,7 @@ class TestCreateReprFake(fake_filesystem_unittest.TestCase):
         ctx = ContextFile(filename=self.valid_path + self.filename, open_func=open)
         valid = (
             'ContextFile(filename="/gpfs/bcdi/data/dummy.spec", '
-            'open_func=pyfakefs.fake_filesystem.open, scan_number=None, mode="r", '
+            'open_func=pyfakefs.fake_io.open, scan_number=None, mode="r", '
             'encoding="utf-8", longname=None, shortname=None, directory=None, )'
         )
         out = fmt.create_repr(obj=ctx, cls=ContextFile)
