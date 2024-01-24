@@ -45,7 +45,7 @@ bcdi_strain = 'scripts.postprocessing.bcdi_strain:main'
 source = "init"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <=3.11"
+python = ">=3.9, <3.12"
 wheel = "0.42.0"
 xrayutilities = "1.7.6"
 vtk = "9.3.0"
