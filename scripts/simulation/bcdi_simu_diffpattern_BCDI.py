@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -185,10 +184,8 @@ q = q / Qnorm
 Qnorm = Qnorm * 1e-10  # switch to angstroms
 planar_dist = 2 * np.pi / Qnorm  # Qnorm should be in angstroms
 print("Wavevector transfer [z, y, x]:", q * Qnorm)
-print("Wavevector transfer: (angstroms)", str("{:.4f}".format(Qnorm)))
-print(
-    "Interplanar distance: (angstroms)", str("{:.4f}".format(planar_dist)), "angstroms"
-)
+print("Wavevector transfer: (angstroms)", str(f"{Qnorm:.4f}"))
+print("Interplanar distance: (angstroms)", str(f"{planar_dist:.4f}"), "angstroms")
 planar_dist = planar_dist / 10  # switch to nm
 
 #########################################
@@ -315,7 +312,7 @@ if debug and not flat_phase:
             + "S"
             + str(scan)
             + "_phase_"
-            + str("{:.0e}".format(photon_number))
+            + str(f"{photon_number:.0e}")
             + comment
             + ".png"
         )
@@ -359,7 +356,7 @@ if debug and not flat_phase:
             + "S"
             + str(scan)
             + "_strain_"
-            + str("{:.0e}".format(photon_number))
+            + str(f"{photon_number:.0e}")
             + comment
             + ".png"
         )
@@ -413,20 +410,20 @@ dqy = 2 * np.pi / (ny * voxel_size * 10)  # in inverse angstroms
 dqx = 2 * np.pi / (nx * voxel_size * 10)  # in inverse angstroms
 print(
     "Original reciprocal space resolution (z, y, x): (",
-    str("{:.5f}".format(dqz)),
+    str(f"{dqz:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy)),
+    str(f"{dqy:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx)),
+    str(f"{dqx:.5f}"),
     "A-1 )",
 )
 print(
     "Original q range (z, y, x): (",
-    str("{:.5f}".format(dqz * nz)),
+    str(f"{dqz * nz:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy * ny)),
+    str(f"{dqy * ny:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx * nx)),
+    str(f"{dqx * nx:.5f}"),
     "A-1 )\n",
 )
 dqz_pad = 2 * np.pi / (pad_size[0] * voxel_size * 10)  # in inverse angstroms
@@ -434,20 +431,20 @@ dqy_pad = 2 * np.pi / (pad_size[1] * voxel_size * 10)  # in inverse angstroms
 dqx_pad = 2 * np.pi / (pad_size[2] * voxel_size * 10)  # in inverse angstroms
 print(
     "Reciprocal space resolution (z, y, x) after padding: (",
-    str("{:.5f}".format(dqz_pad)),
+    str(f"{dqz_pad:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy_pad)),
+    str(f"{dqy_pad:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx_pad)),
+    str(f"{dqx_pad:.5f}"),
     "A-1 )",
 )
 print(
     "q range after padding (z, y, x): (",
-    str("{:.5f}".format(dqz_pad * pad_size[0])),
+    str(f"{dqz_pad * pad_size[0]:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy_pad * pad_size[1])),
+    str(f"{dqy_pad * pad_size[1]:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx_pad * pad_size[2])),
+    str(f"{dqx_pad * pad_size[2]:.5f}"),
     "A-1 )\n",
 )
 voxelsize_z = 2 * np.pi / (pad_size[0] * dqz_pad * 10)  # in nm
@@ -455,11 +452,11 @@ voxelsize_y = 2 * np.pi / (pad_size[1] * dqy_pad * 10)  # in nm
 voxelsize_x = 2 * np.pi / (pad_size[2] * dqx_pad * 10)  # in nm
 print(
     "Real-space voxel sizes (z, y, x) after padding: (",
-    str("{:.2f}".format(voxelsize_z)),
+    str(f"{voxelsize_z:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_y)),
+    str(f"{voxelsize_y:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_x)),
+    str(f"{voxelsize_x:.2f}"),
     "nm )",
 )
 print("Padding has no effect on real-space voxel size.\n")
@@ -470,7 +467,7 @@ print(
 print("Multiplication factor for the real-space voxel size:  pad_size/original_size")
 
 # compensate change in detector distance
-comment = comment + "_sdd_" + str("{:.2f}".format(simulated_sdd))
+comment = comment + "_sdd_" + str(f"{simulated_sdd:.2f}")
 print(
     "\nCurrent detector pixel size", setup.detector.unbinned_pixel_size[0] * 1e6, "um"
 )
@@ -485,20 +482,20 @@ print(
 )
 print(
     "Reciprocal space resolution before detector distance change (z, y, x): (",
-    str("{:.5f}".format(dqz)),
+    str(f"{dqz:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy)),
+    str(f"{dqy:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx)),
+    str(f"{dqx:.5f}"),
     "A-1 )",
 )
 print(
     "q range before detector distance change (z, y, x): (",
-    str("{:.5f}".format(dqz * nz)),
+    str(f"{dqz * nz:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy * ny)),
+    str(f"{dqy * ny:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx * nx)),
+    str(f"{dqx * nx:.5f}"),
     "A-1 )",
 )
 voxelsize_z = 2 * np.pi / (nz * dqz * 10)  # in nm
@@ -506,11 +503,11 @@ voxelsize_y = 2 * np.pi / (ny * dqy * 10)  # in nm
 voxelsize_x = 2 * np.pi / (nx * dqx * 10)  # in nm
 print(
     "Real-space voxel sizes before detector distance change (z, y, x): (",
-    str("{:.2f}".format(voxelsize_z)),
+    str(f"{voxelsize_z:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_y)),
+    str(f"{voxelsize_y:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_x)),
+    str(f"{voxelsize_x:.2f}"),
     "nm )\n",
 )
 
@@ -521,20 +518,20 @@ dqz_simu, dqy_simu, dqx_simu = (
 )
 print(
     "Reciprocal space resolution after detector distance change (z, y, x): (",
-    str("{:.5f}".format(dqz_simu)),
+    str(f"{dqz_simu:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy_simu)),
+    str(f"{dqy_simu:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx_simu)),
+    str(f"{dqx_simu:.5f}"),
     "A-1 )",
 )
 print(
     "q range after detector distance change (z, y, x): (",
-    str("{:.5f}".format(dqz_simu * nz)),
+    str(f"{dqz_simu * nz:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqy_simu * ny)),
+    str(f"{dqy_simu * ny:.5f}"),
     "A-1,",
-    str("{:.5f}".format(dqx_simu * nx)),
+    str(f"{dqx_simu * nx:.5f}"),
     "A-1 )",
 )
 voxelsize_z = 2 * np.pi / (nz * dqz_simu * 10)  # in nm
@@ -542,11 +539,11 @@ voxelsize_y = 2 * np.pi / (ny * dqy_simu * 10)  # in nm
 voxelsize_x = 2 * np.pi / (nx * dqx_simu * 10)  # in nm
 print(
     "Real-space voxel sizes after detector distance change (z, y, x): (",
-    str("{:.2f}".format(voxelsize_z)),
+    str(f"{voxelsize_z:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_y)),
+    str(f"{voxelsize_y:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsize_x)),
+    str(f"{voxelsize_x:.2f}"),
     "nm )\n",
 )
 
@@ -874,7 +871,7 @@ if save_fig:
         + "S"
         + str(scan)
         + "_diff_float_"
-        + str("{:.0e}".format(photon_number))
+        + str(f"{photon_number:.0e}")
         + comment
         + "_sum.png"
     )
@@ -929,7 +926,7 @@ if save_fig:
         + "S"
         + str(scan)
         + "_diff_"
-        + str("{:.0e}".format(photon_number))
+        + str(f"{photon_number:.0e}")
         + comment
         + "_sum.png"
     )
@@ -942,11 +939,11 @@ voxelsizey_crop = 2 * np.pi / (crop_size[1] * dqy_simu * 10)  # in nm
 voxelsizex_crop = 2 * np.pi / (crop_size[2] * dqx_simu * 10)  # in nm
 print(
     "Real-space voxel sizes (z, y, x) after cropping: (",
-    str("{:.2f}".format(voxelsizez_crop)),
+    str(f"{voxelsizez_crop:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsizey_crop)),
+    str(f"{voxelsizey_crop:.2f}"),
     "nm,",
-    str("{:.2f}".format(voxelsizex_crop)),
+    str(f"{voxelsizex_crop:.2f}"),
     "nm )",
 )
 
@@ -980,21 +977,11 @@ comment = comment + "_crop_" + str(nz) + "," + str(ny) + "," + str(nx)
 ##############
 if save_data:
     np.savez_compressed(
-        datadir
-        + "S"
-        + str(scan)
-        + "_diff_"
-        + str("{:.0e}".format(photon_number))
-        + comment,
+        datadir + "S" + str(scan) + "_diff_" + str(f"{photon_number:.0e}") + comment,
         data=simu_data,
     )
     np.savez_compressed(
-        datadir
-        + "S"
-        + str(scan)
-        + "_mask_"
-        + str("{:.0e}".format(photon_number))
-        + comment,
+        datadir + "S" + str(scan) + "_mask_" + str(f"{photon_number:.0e}") + comment,
         mask=mask,
     )
 
@@ -1031,18 +1018,18 @@ myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
 myfig.text(
     0.60,
     0.20,
-    "Detector distance =" + str("{:.5f}".format(simulated_sdd)) + " m",
+    "Detector distance =" + str(f"{simulated_sdd:.5f}") + " m",
     size=20,
 )
 myfig.text(
     0.60,
     0.15,
     "Voxel size ="
-    + str("{:.2f}".format(voxelsizez_crop))
+    + str(f"{voxelsizez_crop:.2f}")
     + ", "
-    + str("{:.2f}".format(voxelsizey_crop))
+    + str(f"{voxelsizey_crop:.2f}")
     + ", "
-    + str("{:.2f}".format(voxelsizex_crop))
+    + str(f"{voxelsizex_crop:.2f}")
     + " nm",
     size=20,
 )
@@ -1055,7 +1042,7 @@ if save_fig:
         + "S"
         + str(scan)
         + "_diff_"
-        + str("{:.0e}".format(photon_number))
+        + str(f"{photon_number:.0e}")
         + comment
         + "_center.png"
     )
@@ -1077,18 +1064,18 @@ myfig.text(0.60, 0.25, "Filled pixels =" + str(filled_pixels), size=20)
 myfig.text(
     0.60,
     0.20,
-    "Detector distance =" + str("{:.5f}".format(simulated_sdd)) + " m",
+    "Detector distance =" + str(f"{simulated_sdd:.5f}") + " m",
     size=20,
 )
 myfig.text(
     0.60,
     0.15,
     "Voxel size ="
-    + str("{:.2f}".format(voxelsizez_crop))
+    + str(f"{voxelsizez_crop:.2f}")
     + ", "
-    + str("{:.2f}".format(voxelsizey_crop))
+    + str(f"{voxelsizey_crop:.2f}")
     + ", "
-    + str("{:.2f}".format(voxelsizex_crop))
+    + str(f"{voxelsizex_crop:.2f}")
     + " nm",
     size=20,
 )
@@ -1101,7 +1088,7 @@ if save_fig:
         + "S"
         + str(scan)
         + "_diff_"
-        + str("{:.0e}".format(photon_number))
+        + str(f"{photon_number:.0e}")
         + comment
         + "_sum.png"
     )

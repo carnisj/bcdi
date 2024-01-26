@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -123,7 +122,7 @@ data = np.load(file_path)["data"]
 nz, ny, nx = data.shape
 print(
     "Sparsity of the data:",
-    str("{:.2f}".format((data == 0).sum() / (nz * ny * nx) * 100)),
+    str(f"{(data == 0).sum() / (nz * ny * nx) * 100:.2f}"),
     "%",
 )
 
@@ -155,7 +154,7 @@ except FileNotFoundError:
 data[data < photon_threshold] = 0
 print(
     "Sparsity of the data after photon threshold:",
-    str("{:.2f}".format((data == 0).sum() / (nz * ny * nx) * 100)),
+    str(f"{(data == 0).sum() / (nz * ny * nx) * 100:.2f}"),
     "%",
 )
 
@@ -485,14 +484,12 @@ if unitcell == "bct":  # corr is 5D
     best_param = a_values[piw], c_values[piv]
     text = (
         unitcell
-        + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(
-            best_param[0], best_param[1]
-        )
+        + f" unit cell of parameter(s) = {best_param[0]:.2f} nm, {best_param[1]:.2f}"
         + " nm"
     )
     print(
         "Maximum correlation for (angle_qx, angle_qz, angle_qy) = "
-        "{:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma)
+        f"{alpha:.2f}, {beta:.2f}, {gamma:.2f}"
     )
     print("Maximum correlation for a", text)
     corr_angles = np.copy(corr[:, :, :, piw, piv])
@@ -535,7 +532,7 @@ if unitcell == "bct":  # corr is 5D
             savedir
             + "correlation_lattice_"
             + comment
-            + "_param a={:.2f}nm,c={:.2f}nm".format(best_param[0], best_param[1])
+            + f"_param a={best_param[0]:.2f}nm,c={best_param[1]:.2f}nm"
             + ".png"
         )
 
@@ -543,15 +540,10 @@ else:  # corr is 4D
     piz, piy, pix, piw = np.unravel_index(abs(corr).argmax(), corr.shape)
     alpha, beta, gamma = angles_qx[piz], angles_qz[piy], angles_qy[pix]
     best_param = a_values[piw]
-    text = (
-        unitcell
-        + " unit cell of parameter = "
-        + str("{:.2f}".format(best_param))
-        + " nm"
-    )
+    text = unitcell + " unit cell of parameter = " + str(f"{best_param:.2f}") + " nm"
     print(
         "Maximum correlation for (angle_qx, angle_qz, angle_qy) = "
-        "{:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma)
+        f"{alpha:.2f}, {beta:.2f}, {gamma:.2f}"
     )
     print("Maximum correlation for a", text)
     corr_angles = np.copy(corr[:, :, :, piw])
@@ -566,7 +558,7 @@ else:  # corr is 4D
         savedir
         + "correlation_lattice_"
         + comment
-        + "_param a={:.2f}nm".format(best_param)
+        + f"_param a={best_param:.2f}nm"
         + ".png"
     )
 
@@ -647,7 +639,7 @@ if save_angles:
         savedir
         + "correlation_angles_"
         + comment
-        + "_rot_{:.2f}_{:.2f}_{:.2f}".format(alpha, beta, gamma)
+        + f"_rot_{alpha:.2f}_{beta:.2f}_{gamma:.2f}"
         + ".png"
     )
 
@@ -686,18 +678,11 @@ struct_array = simu.assign_peakshape(
 if unitcell == "bct":
     text = (
         unitcell
-        + " unit cell of parameter(s) = {:.2f} nm, {:.2f}".format(
-            best_param[0], best_param[1]
-        )
+        + f" unit cell of parameter(s) = {best_param[0]:.2f} nm, {best_param[1]:.2f}"
         + " nm"
     )
 else:
-    text = (
-        unitcell
-        + " unit cell of parameter(s) = "
-        + str("{:.2f}".format(best_param))
-        + " nm"
-    )
+    text = unitcell + " unit cell of parameter(s) = " + str(f"{best_param:.2f}") + " nm"
 
 plot_max = 2 * peak_shape.sum(axis=0).max()
 density_map[np.nonzero(density_map)] = 10 * plot_max
@@ -719,17 +704,12 @@ fig.text(
     0.5,
     0.10,
     "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-    " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma),
+    f" {alpha:.2f}, {beta:.2f}, {gamma:.2f}",
     size=12,
 )
 plt.pause(0.1)
 plt.savefig(
-    savedir
-    + "Overlay_"
-    + comment
-    + "_corr="
-    + str("{:.2f}".format(corr.max()))
-    + ".png"
+    savedir + "Overlay_" + comment + "_corr=" + str(f"{corr.max():.2f}") + ".png"
 )
 
 if debug:
@@ -751,7 +731,7 @@ if debug:
         0.5,
         0.10,
         "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-        " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma),
+        f" {alpha:.2f}, {beta:.2f}, {gamma:.2f}",
         size=12,
     )
     plt.pause(0.1)
@@ -777,7 +757,7 @@ if debug:
         0.5,
         0.10,
         "Rotation of the unit cell in degrees (Qx, Qz, Qy) ="
-        " {:.2f}, {:.2f}, {:.2f}".format(alpha, beta, gamma),
+        f" {alpha:.2f}, {beta:.2f}, {gamma:.2f}",
         size=12,
     )
     plt.pause(0.1)

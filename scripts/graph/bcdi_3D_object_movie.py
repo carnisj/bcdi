@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -16,7 +15,6 @@ import matplotlib.animation as manimation
 import numpy as np
 from matplotlib import pyplot as plt
 
-import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.graph.colormap import ColormapFactory
 

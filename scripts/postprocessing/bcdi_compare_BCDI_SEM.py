@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -109,7 +108,7 @@ file_path = filedialog.askopenfilename(
 
 _, ext = os.path.splitext(file_path)
 if ext == ".json":
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         json_string = f.read()
     sem_dict = json.loads(json_string, object_hook=util.decode_json)
 else:
@@ -129,7 +128,7 @@ file_path = filedialog.askopenfilename(
 
 _, ext = os.path.splitext(file_path)
 if ext == ".json":
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         json_string = f.read()
     bcdi_dict = json.loads(json_string, object_hook=util.decode_json)
 else:

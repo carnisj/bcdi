@@ -136,6 +136,14 @@ def task_clean_coverage():
     }
 
 
+def task_ruff():
+    """Run ruff on the modules."""
+    return {
+        "actions": ["ruff check ."],
+        "verbosity": 2,
+    }
+
+
 def task_docstrings():
     """Run pydocstyle on the modules."""
     return {

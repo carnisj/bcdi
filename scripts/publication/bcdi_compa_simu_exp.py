@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -247,11 +246,11 @@ shiftz, shifty, shiftx = reg.getimageregistration(amp_simu, abs(obj), precision=
 obj = reg.subpixel_shift(obj, shiftz, shifty, shiftx)
 print(
     "Shift calculated from dft registration: (",
-    str("{:.2f}".format(shiftz)),
+    str(f"{shiftz:.2f}"),
     ",",
-    str("{:.2f}".format(shifty)),
+    str(f"{shifty:.2f}"),
     ",",
-    str("{:.2f}".format(shiftx)),
+    str(f"{shiftx:.2f}"),
     ") pixels",
 )
 new_amp = abs(obj)
@@ -1252,12 +1251,12 @@ plt.axis("scaled")
 
 print("Number of defined points in surface = ", (~np.isnan(surface)).sum())
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(surface[~np.isnan(surface)]) ** 2))
-print("RMS of the difference in surface strain = ", str("{:.4e}".format(rms_strain)))
+print("RMS of the difference in surface strain = ", str(f"{rms_strain:.4e}"))
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(bulk[~np.isnan(bulk)]) ** 2))
-print("RMS of the difference in bulk strain = ", str("{:.4e}".format(rms_strain)))
+print("RMS of the difference in bulk strain = ", str(f"{rms_strain:.4e}"))
 mean_strain = np.mean(np.ndarray.flatten(surface[~np.isnan(surface)]))
-print("Mean difference in surface strain = ", str("{:.4e}".format(mean_strain)))
+print("Mean difference in surface strain = ", str(f"{mean_strain:.4e}"))
 mean_strain = np.mean(np.ndarray.flatten(bulk[~np.isnan(bulk)]))
-print("Mean difference in bulk strain = ", str("{:.4e}".format(mean_strain)))
+print("Mean difference in bulk strain = ", str(f"{mean_strain:.4e}"))
 plt.ioff()
 plt.show()

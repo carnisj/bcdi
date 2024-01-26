@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Created on Mon Mar 18 14:39:36 2019
 # Meant to open the data generated from the datarecorder upgrade of january 2019
 # Modified again the 24/06/2020
@@ -12,7 +11,6 @@ be used on the data produced after the 11/03/2019 data of the upgrade of the
 datarecorder.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import inspect
 import os

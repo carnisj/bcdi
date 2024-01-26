@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -59,7 +58,7 @@ if use_directlattice:
     )
 basis = simu.triclinic_to_basis(alpha_r, beta_r, gamma_r, b1, b2, b3)
 volume = basis[0].dot(np.cross(basis[1], basis[2]))
-print("Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3".format(volume))
+print(f"Volume of the reciprocal unit cell: {volume:.6f} nm\u207B\u00B3")
 ##############################################################
 # calculate the angle between reference_plane and test_plane #
 ##############################################################

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -89,7 +88,7 @@ def collect_result(result):
 
     current_point += 1
     if (current_point % 100) == 0:
-        sys.stdout.write("\rPoint {:d}".format(current_point))
+        sys.stdout.write(f"\rPoint {current_point:d}")
         sys.stdout.flush()
 
 
@@ -114,7 +113,7 @@ def collect_result_debug(ccf_uniq_val, counter_val, counter_indices):
 
     current_point += 1
     if (current_point % 100) == 0:
-        sys.stdout.write("\rPoint {:d}".format(current_point))
+        sys.stdout.write(f"\rPoint {current_point:d}")
         sys.stdout.flush()
 
 
@@ -221,13 +220,11 @@ def main(user_comment):
     for counter, q_value in enumerate(q_xcca):
         if (counter == 0) or ((counter == 1) and not same_q):
             indices = np.nonzero(
-                (np.logical_and((distances < q_value + dq), (distances > q_value - dq)))
+                np.logical_and((distances < q_value + dq), (distances > q_value - dq))
             )
             nb_voxels = indices[0].shape
             print(
-                "\nNumber of voxels for the sphere of radius q ={:.3f} 1/nm:".format(
-                    q_value
-                ),
+                f"\nNumber of voxels for the sphere of radius q ={q_value:.3f} 1/nm:",
                 nb_voxels,
             )
 
@@ -257,11 +254,11 @@ def main(user_comment):
                     euclidian_v=stereo_proj[:, 1],
                     color=int_voxels,
                     title="Projection from the South pole"
-                    " at q={:.3f} (1/nm)".format(q_value),
+                    f" at q={q_value:.3f} (1/nm)",
                     uv_labels=uv_labels,
                     cmap=my_cmap,
                 )
-                fig.savefig(savedir + "South pole_q={:.3f}.png".format(q_value))
+                fig.savefig(savedir + f"South pole_q={q_value:.3f}.png")
                 plt.close(fig)
 
                 # plot the projection from the North pole
@@ -270,11 +267,11 @@ def main(user_comment):
                     euclidian_v=stereo_proj[:, 3],
                     color=int_voxels,
                     title="Projection from the North pole"
-                    " at q={:.3f} (1/nm)".format(q_value),
+                    f" at q={q_value:.3f} (1/nm)",
                     uv_labels=uv_labels,
                     cmap=my_cmap,
                 )
-                fig.savefig(savedir + "North pole_q={:.3f}.png".format(q_value))
+                fig.savefig(savedir + f"North pole_q={q_value:.3f}.png")
                 plt.close(fig)
 
             # look for nan values
@@ -289,7 +286,7 @@ def main(user_comment):
             # normalize the intensity by the median value (remove the influence of
             # the form factor)
             print(
-                "q={:.3f}:".format(q_value),
+                f"q={q_value:.3f}:",
                 " normalizing by the median value",
                 np.median(int_voxels),
             )
@@ -307,7 +304,7 @@ def main(user_comment):
             # update the number of points without nan
             nb_points.append(len(qx_voxels))
             print(
-                "q={:.3f}:".format(q_value),
+                f"q={q_value:.3f}:",
                 " removing",
                 nan_indices.size,
                 "nan values,",
@@ -326,18 +323,14 @@ def main(user_comment):
     if same_q:
         key_q2 = "q1"
         print(
-            "\nThe CCF will be calculated over {:d} * {:d}"
-            " points and {:d} angular bins".format(
-                nb_points[0], nb_points[0], corr_count.shape[0]
-            )
+            f"\nThe CCF will be calculated over {nb_points[0]:d} * {nb_points[0]:d}"
+            f" points and {corr_count.shape[0]:d} angular bins"
         )
     else:
         key_q2 = "q2"
         print(
-            "\nThe CCF will be calculated over {:d} * {:d}"
-            " points and {:d} angular bins".format(
-                nb_points[0], nb_points[1], corr_count.shape[0]
-            )
+            f"\nThe CCF will be calculated over {nb_points[0]:d} * {nb_points[1]:d}"
+            f" points and {corr_count.shape[0]:d} angular bins"
         )
 
     angular_bins = np.linspace(
@@ -384,8 +377,8 @@ def main(user_comment):
     # save the cross-correlation function #
     #######################################
     filename = (
-        "CCF_q1={:.3f}_q2={:.3f}".format(q_xcca[0], q_xcca[1])
-        + "_points{:d}_res{:.3f}".format(nb_points[0], angular_resolution)
+        f"CCF_q1={q_xcca[0]:.3f}_q2={q_xcca[1]:.3f}"
+        + f"_points{nb_points[0]:d}_res{angular_resolution:.3f}"
         + user_comment
     )
     np.savez_compressed(
@@ -426,9 +419,7 @@ def main(user_comment):
     ax.set_xlabel("Angle (deg)")
     ax.set_ylabel("Cross-correlation")
     ax.set_xticks(np.arange(0, 181, 30))
-    ax.set_title(
-        "CCF at q1={:.3f} 1/nm  and q2={:.3f} 1/nm".format(q_xcca[0], q_xcca[1])
-    )
+    ax.set_title(f"CCF at q1={q_xcca[0]:.3f} 1/nm  and q2={q_xcca[1]:.3f} 1/nm")
     fig.savefig(savedir + filename + ".png")
 
     _, ax = plt.subplots()

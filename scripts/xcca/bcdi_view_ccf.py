@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -75,13 +74,7 @@ ax.set_ylabel("Cross-correlation")
 ax.set_xticks(np.arange(0, 181, 30))
 ax.set_title("CCF" + comment)
 if save:
-    fig.savefig(
-        savedir
-        + filename
-        + comment
-        + "_ylim[{:.1f},{:.1f}]".format(ymin, ymax)
-        + ".png"
-    )
+    fig.savefig(savedir + filename + comment + f"_ylim[{ymin:.1f},{ymax:.1f}]" + ".png")
 
 _, ax = plt.subplots()
 ax.plot(angles, points, linestyle="None", marker=".", markerfacecolor="blue")

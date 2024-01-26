@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -36,7 +35,7 @@ volume_file = open(
     os.path.join(savedir, "volume_vs_isosurface_noapod" + comment + ".dat"), "w"
 )
 volume_file.write(
-    "{0: <10}".format("isosurface") + "\t" + "{0: <10}".format("volume (um3)") + "\n"
+    "{: <10}".format("isosurface") + "\t" + "{: <10}".format("volume (um3)") + "\n"
 )
 
 
@@ -47,12 +46,7 @@ for iso in isosurface:
     temp_obj[temp_obj < iso] = 0
     temp_obj[np.nonzero(temp_obj)] = 1
     volume[index] = (0.001 * voxel_size) ** 3 * temp_obj.sum()  # convert to um3
-    volume_file.write(
-        "{0: <10}".format(str(iso))
-        + "\t"
-        + "{0: <10}".format(str(volume[index]))
-        + "\n"
-    )
+    volume_file.write(f"{str(iso): <10}" + "\t" + f"{str(volume[index]): <10}" + "\n")
     index = index + 1
 volume_file.close()
 

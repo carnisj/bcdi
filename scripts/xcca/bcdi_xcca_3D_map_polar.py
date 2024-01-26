@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -93,7 +92,7 @@ def collect_result(result):
 
     current_point += 1
     if (current_point % 100) == 0:
-        sys.stdout.write("\rPoint {:d}".format(current_point))
+        sys.stdout.write(f"\rPoint {current_point:d}")
         sys.stdout.flush()
 
 
@@ -111,17 +110,17 @@ def main(calc_self, user_comment):
     global corr_count, current_point
     if len(origin_qspace) != 3:
         raise ValueError("origin_qspace should be a tuple of 3 integer pixel values")
-    if type(calc_self) is not bool:
+    if not isinstance(calc_self, bool):
         raise TypeError(f"got unexpected type {type(calc_self)} for calc_self")
     if len(q_range) <= 1:
         raise ValueError("at least 2 values are needed for q_range")
 
-    print("the CCF map will be calculated for {:d} q values: ".format(len(q_range)))
+    print(f"the CCF map will be calculated for {len(q_range):d} q values: ")
     for _, item in enumerate(q_range):
         if calc_self:
             print(f"q1 = {item:.3f}  q2 = {item:.3f}")
         else:
-            print("q1 = {:.3f}  q2 = {:.3f}".format(q_range[0], item))
+            print(f"q1 = {q_range[0]:.3f}  q2 = {item:.3f}")
     warnings.filterwarnings("ignore")
 
     ###################
@@ -216,9 +215,7 @@ def main(calc_self, user_comment):
         ).sum()
 
         print(
-            "\nNumber of voxels for the sphere of radius q ={:.3f} 1/nm:".format(
-                q_value
-            ),
+            f"\nNumber of voxels for the sphere of radius q ={q_value:.3f} 1/nm:",
             nb_pixels,
         )
 
@@ -274,7 +271,7 @@ def main(calc_self, user_comment):
         # normalize the intensity by the median value (remove the influence of the
         # form factor)
         print(
-            "q={:.3f}:".format(q_value),
+            f"q={q_value:.3f}:",
             " normalizing by the median value",
             np.median(sphere_int),
         )
@@ -287,7 +284,7 @@ def main(calc_self, user_comment):
         # update the number of points without nan
         nb_points.append(len(theta))
         print(
-            "q={:.3f}:".format(q_value),
+            f"q={q_value:.3f}:",
             " removing",
             nan_indices.size,
             "nan values,",
@@ -315,12 +312,11 @@ def main(calc_self, user_comment):
                 euclidian_u=stereo_proj[:, 0],
                 euclidian_v=stereo_proj[:, 1],
                 color=sphere_debug,
-                title="Projection from the South pole"
-                " at q={:.3f} (1/nm)".format(q_value),
+                title="Projection from the South pole" f" at q={q_value:.3f} (1/nm)",
                 uv_labels=uv_labels,
                 cmap=my_cmap,
             )
-            fig.savefig(savedir + "South pole_q={:.3f}.png".format(q_value))
+            fig.savefig(savedir + f"South pole_q={q_value:.3f}.png")
             plt.close(fig)
 
             # plot the projection from the North pole
@@ -328,12 +324,11 @@ def main(calc_self, user_comment):
                 euclidian_u=stereo_proj[:, 2],
                 euclidian_v=stereo_proj[:, 3],
                 color=sphere_debug,
-                title="Projection from the North pole"
-                " at q={:.3f} (1/nm)".format(q_value),
+                title="Projection from the North pole" f" at q={q_value:.3f} (1/nm)",
                 uv_labels=uv_labels,
                 cmap=my_cmap,
             )
-            fig.savefig(savedir + "North pole_q={:.3f}.png".format(q_value))
+            fig.savefig(savedir + f"North pole_q={q_value:.3f}.png")
             plt.close(fig)
             del sphere_debug
 
@@ -428,8 +423,8 @@ def main(calc_self, user_comment):
     else:
         user_comment = user_comment + "_cross"
     filename = (
-        "CCFmap_qstart={:.3f}_qstop={:.3f}".format(q_range[0], q_range[-1])
-        + "_interp{:d}_res{:.3f}".format(interp_factor, angular_resolution)
+        f"CCFmap_qstart={q_range[0]:.3f}_qstop={q_range[-1]:.3f}"
+        + f"_interp{interp_factor:d}_res{angular_resolution:.3f}"
         + user_comment
     )
     np.savez_compressed(
@@ -475,15 +470,11 @@ def main(calc_self, user_comment):
     ax.set_aspect("auto")
     if calc_self:
         ax.set_title(
-            "self CCF from q={:.3f} 1/nm  to q={:.3f} 1/nm".format(
-                q_range[0], q_range[-1]
-            )
+            f"self CCF from q={q_range[0]:.3f} 1/nm  to q={q_range[-1]:.3f} 1/nm"
         )
     else:
         ax.set_title(
-            "cross CCF from q={:.3f} 1/nm  to q={:.3f} 1/nm".format(
-                q_range[0], q_range[-1]
-            )
+            f"cross CCF from q={q_range[0]:.3f} 1/nm  to q={q_range[-1]:.3f} 1/nm"
         )
     gu.colorbar(plt0, scale="linear", numticks=5)
     fig.savefig(savedir + filename + ".png")

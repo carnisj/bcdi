@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -191,18 +190,18 @@ for idx in range(nb_scans):
     h5file = h5py.File(datadir + "S" + str(scan_nb[idx]) + ".nxs", "r")
 
     raw_mgomega = (
-        h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["CRISTAL"][
+        h5file["test_" + str(f"{scan_nb[idx]:04d}")]["CRISTAL"][
             "I06-C-C07-EX-MG_OMEGA"
         ]["positon_pre"][:]
         / 1e6
     )
-    raw_delta = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"][
+    raw_delta = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"][
         "actuator_1_1"
     ][:]
-    raw_gamma = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"][
+    raw_gamma = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"][
         "actuator_2_1"
     ][:]
-    ccdn = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"]["data_06"][
+    ccdn = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"]["data_06"][
         :
     ]  # ndarray if mesh
     ccdn = np.reshape(

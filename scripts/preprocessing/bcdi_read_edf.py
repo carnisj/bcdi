@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -114,9 +113,9 @@ elif centering == 1:
     y0, x0 = center_of_mass(data)
     print(
         "Center of mass at (y, x): ",
-        str("{:.2f}".format(y0)),
+        str(f"{y0:.2f}"),
         " , ",
-        str("{:.2f}".format(x0)),
+        str(f"{x0:.2f}"),
     )
 else:
     sys.exit("Incorrect value for 'centering' parameter")
@@ -141,11 +140,11 @@ plt.title(
     "Img "
     + str(img)
     + " Max="
-    + str("{:.2f}".format(abs(data).max()))
+    + str(f"{abs(data).max():.2f}")
     + " @ H="
-    + str("{:.2f}".format(x0))
+    + str(f"{x0:.2f}")
     + "/V="
-    + str("{:.2f}".format(y0))
+    + str(f"{y0:.2f}")
 )
 plt.colorbar()
 if save == 1:

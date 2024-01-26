@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -694,10 +692,10 @@ class InterpolatedCrystal:
         output_size = self.parameters.get("output_size")
         if output_size is not None:
             cmap = self.parameters["colormap"].cmap
-            self.modulus, self.phase, self.strain = [
+            self.modulus, self.phase, self.strain = (
                 util.crop_pad(array=array, output_shape=output_size, cmap=cmap)
                 for array in [self.modulus, self.phase, self.strain]
-            ]
+            )
 
     def estimate_crystal_volume(self) -> None:
         support = np.copy(self.modulus / self.modulus.max())

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # BCDI documentation build configuration file, created by
 # sphinx-quickstart on Wed Apr 24 10:57:29 2019.
@@ -22,7 +21,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-from bcdi import __version__
+from bcdi import __version__  # noqa: E402
 
 # -- General configuration ------------------------------------------------
 # Add any Sphinx extension module names here, as strings. They can be

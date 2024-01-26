@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -15,7 +14,6 @@ from tkinter import filedialog
 import numpy as np
 from matplotlib import pyplot as plt
 
-import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.graph.colormap import ColormapFactory
 
@@ -73,7 +71,7 @@ def onclick(click_event):
         ax1.set_xlabel("Angle (deg)")
         ax1.set_ylabel("Cross-correlation (A.U.)")
         ax1.set_xticks(np.arange(0, 181, 30))
-        ax1.set_title("Cross-correlation at q={:.3f}".format(q_range[current_q]))
+        ax1.set_title(f"Cross-correlation at q={q_range[current_q]:.3f}")
         plt.draw()
 
 
@@ -123,7 +121,7 @@ def press_key(event):
         ax0.set_xticks(np.arange(0, 181, 30))
         ax0.set_yticks(q_range)
         ax0.set_aspect("auto")
-        ax0.set_title("CCF from q={:.3f} to q={:.3f}".format(q_range[0], q_range[-1]))
+        ax0.set_title(f"CCF from q={q_range[0]:.3f} to q={q_range[-1]:.3f}")
         plt.draw()
 
     if event.inaxes == ax1:
@@ -146,7 +144,7 @@ def press_key(event):
         ax1.set_xlabel("Angle (deg)")
         ax1.set_ylabel("Cross-correlation (A.U.)")
         ax1.set_xticks(np.arange(0, 181, 30))
-        ax1.set_title("Cross-correlation at q={:.3f}".format(q_range[current_q]))
+        ax1.set_title(f"Cross-correlation at q={q_range[current_q]:.3f}")
         plt.draw()
 
 
@@ -226,7 +224,7 @@ ax0.set_ylabel("q (nm$^{-1}$)")
 ax0.set_xticks(np.arange(0, 181, 30))
 ax0.set_yticks(q_range)
 ax0.set_aspect("auto")
-ax0.set_title("CCF from q={:.3f} to q={:.3f}".format(q_range[0], q_range[-1]))
+ax0.set_title(f"CCF from q={q_range[0]:.3f} to q={q_range[-1]:.3f}")
 
 ax1.plot(
     angles, ccf[current_q, :], linestyle="None", marker=".", markerfacecolor="blue"
@@ -236,7 +234,7 @@ ax1.set_ylim(ccf[current_q, :].min(), ymax)
 ax1.set_xlabel("Angle (deg)")
 ax1.set_ylabel("Cross-correlation (A.U.)")
 ax1.set_xticks(np.arange(0, 181, 30))
-ax1.set_title("Cross-correlation at q={:.3f}".format(q_range[current_q]))
+ax1.set_title(f"Cross-correlation at q={q_range[current_q]:.3f}")
 
 plt.tight_layout()
 figure.set_facecolor(background_plot)
