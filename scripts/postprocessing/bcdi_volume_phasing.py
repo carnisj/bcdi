@@ -35,7 +35,7 @@ volume_file = open(
     os.path.join(savedir, "volume_vs_isosurface_noapod" + comment + ".dat"), "w"
 )
 volume_file.write(
-    "{: <10}".format("isosurface") + "\t" + "{: <10}".format("volume (um3)") + "\n"
+    f"{'isosurface': <10}" + "\t" + f"{'volume (um3)': <10}" + "\n"
 )
 
 
