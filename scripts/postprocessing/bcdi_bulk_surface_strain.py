@@ -450,7 +450,8 @@ if fit_pdf == "skewed_gaussian":
     fig.text(
         0.13,
         0.66,
-        f"SK std={result.params['sig_0'].value:.2e}\n   +/-{result.params['sig_0'].stderr:.2e}",
+        f"SK std={result.params['sig_0'].value:.2e}\n"
+        f"   +/-{result.params['sig_0'].stderr:.2e}",
     )
 else:
     fig.text(

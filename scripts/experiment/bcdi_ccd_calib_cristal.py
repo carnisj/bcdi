@@ -267,7 +267,8 @@ plt.pause(0.1)
 ################################################################
 # version for fitting meshes in direct beam and Bragg condition:
 ################################################################
-# pwidth1,pwidth2,distance,tiltazimuth,tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength
+# parameters for area_detector_calib: (pwidth1,pwidth2,distance,tiltazimuth,
+# tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength)
 imgpbcnt = 0
 for idx in range(len(mgomega)):
     if np.all(hkl[idx] != (0, 0, 0)):
@@ -299,7 +300,8 @@ else:
     qconv = xu.experiment.QConversion(
         ["y-"], ["z+", "y-"], r_i=beam_direction
     )  # for ID01
-    # pwidth1,pwidth2,distance,tiltazimuth,tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength
+    # parameters for area_detector_calib_hkl: (pwidth1,pwidth2,distance,tiltazimuth,
+    # tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength)
     hxrd = xu.HXRD([1, 0, 0], [0, 0, 1], wl=wl, qconv=qconv)
     param, eps = xu.analysis.area_detector_calib_hkl(
         mgomega,
