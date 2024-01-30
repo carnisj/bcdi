@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -150,11 +149,7 @@ if fit:
         fig.text(0.15, 0.95, "at least one output is None", size=12)
     fig.text(0.15, 0.80, lineshape + " fit", size=12)
 plt.title(
-    "<amp>="
-    + str("{:.2f}".format(mean_amp))
-    + ", std="
-    + str("{:.2f}".format(std_amp))
-    + comment
+    "<amp>=" + str(f"{mean_amp:.2f}") + ", std=" + str(f"{std_amp:.2f}") + comment
 )
 if save:
     fig.savefig(homedir + "amp_histogram" + comment + ".png")

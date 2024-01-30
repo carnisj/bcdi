@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -112,7 +111,7 @@ if isinstance(sample_name, (tuple, list)):
         sample_name = [sample_name[0] for idx in range(len(scans))]
     if len(sample_name) != len(scans):
         raise ValueError("sample_name and scans should have the same length")
-elif type(sample_name) is str:
+elif isinstance(sample_name, str):
     sample_name = [sample_name for idx in range(len(scans))]
 else:
     print("sample_name should be either a string or a list of strings")
@@ -123,7 +122,7 @@ if isinstance(suffix, (tuple, list)):
         suffix = [suffix[0] for idx in range(len(scans))]
     if len(suffix) != len(scans):
         raise ValueError("sample_name and scans should have the same length")
-elif type(suffix) is str:
+elif isinstance(suffix, str):
     suffix = [suffix for idx in range(len(scans))]
 else:
     print("suffix should be either a string or a list of strings")
@@ -146,9 +145,7 @@ else:
 ###########################
 plt.ion()
 print(f"Scan list: {scans}")
-samplename = (
-    sample_name[reference_scan] + "_" + str("{:05d}").format(scans[reference_scan])
-)
+samplename = sample_name[reference_scan] + "_" + f"{scans[reference_scan]:05d}"
 print("Reference scan:", samplename)
 refdata = np.load(
     root_folder
@@ -267,7 +264,7 @@ for idx, item in enumerate(scans):
         combined_list.append(item)
         corr_coeff.append(1.0)
         continue  # sumdata and summask were already initialized with the reference scan
-    samplename = sample_name[idx] + "_" + str("{:05d}").format(item)
+    samplename = sample_name[idx] + "_" + f"{item:05d}"
     print(
         f'\n{"#" * len(samplename)}\n' + samplename + "\n" + f'{"#" * len(samplename)}'
     )
@@ -394,7 +391,7 @@ for idx, item in enumerate(scans):
         "Dataset ",
         idx + 1,
         ": Pearson correlation coefficient = ",
-        str("{:.3f}".format(correlation)),
+        str(f"{correlation:.3f}"),
     )
     corr_coeff.append(round(correlation, 2))
     if correlation >= correlation_threshold:
@@ -447,7 +444,7 @@ if shift_method != "skip":
         if (
             center_z + output_shape[0] // 2 > nbz - shift_min[0]
         ):  # not enough pixels on the larger indices side
-            print("cannot crop the first axis to {:d}".format(output_shape[0]))
+            print(f"cannot crop the first axis to {output_shape[0]:d}")
             # find the correct output_shape[0]
             # taking into accournt FFT shape considerations
             output_shape[0] = util.smaller_primes(
@@ -470,7 +467,7 @@ if shift_method != "skip":
         if (
             center_y + output_shape[1] // 2 > nby - shift_min[1]
         ):  # not enough pixels on the larger indices side
-            print("cannot crop the second axis to {:d}".format(output_shape[1]))
+            print(f"cannot crop the second axis to {output_shape[1]:d}")
             # find the correct output_shape[1]
             # taking into accournt FFT shape considerations
             output_shape[1] = util.smaller_primes(
@@ -493,7 +490,7 @@ if shift_method != "skip":
         if (
             center_x + output_shape[2] // 2 > nbx - shift_min[2]
         ):  # not enough pixels on the larger indices side
-            print("cannot crop the third axis to {:d}".format(output_shape[2]))
+            print(f"cannot crop the third axis to {output_shape[2]:d}")
             # find the correct output_shape[2]
             # taking into accournt FFT shape considerations
             output_shape[2] = util.smaller_primes(
@@ -551,7 +548,7 @@ template = (
     + str(combined_list[0])
     + "toS"
     + str(combined_list[-1])
-    + "_{:d}_{:d}_{:d=}".format(output_shape[0], output_shape[1], output_shape[2])
+    + f"_{output_shape[0]:d}_{output_shape[1]:d}_{output_shape[2]:d=}"
     + comment
 )
 
@@ -599,9 +596,7 @@ fig.text(
 fig.text(0.55, 0.15, "Scans concatenated:", size=12)
 fig.text(0.55, 0.10, str(combined_list), size=8)
 if plot_threshold != 0:
-    fig.text(
-        0.60, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12
-    )
+    fig.text(0.60, 0.05, f"Threshold for plots only: {plot_threshold:d}", size=12)
 
 plt.pause(0.1)
 plt.savefig(save_dir + "data" + template + ".png")
@@ -627,9 +622,7 @@ fig.text(
 fig.text(0.55, 0.15, "Scans concatenated:", size=12)
 fig.text(0.55, 0.10, str(combined_list), size=8)
 if plot_threshold != 0:
-    fig.text(
-        0.60, 0.05, "Threshold for plots only: {:d}".format(plot_threshold), size=12
-    )
+    fig.text(0.60, 0.05, f"Threshold for plots only: {plot_threshold:d}", size=12)
 
 plt.pause(0.1)
 plt.savefig(save_dir + "data_slice" + template + ".png")

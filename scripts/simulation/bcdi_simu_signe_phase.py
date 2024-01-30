@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -11,7 +10,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
 from numpy.fft import fftn, fftshift
 
 matplotlib.use("Qt5Agg")
@@ -22,7 +20,7 @@ sum, to show the relationship between the phase and the displacement.
 The object is a Ge-core / Si-shell nanowire.
 """
 
-savedir = "C:/Users/carnis/Work Folders/Documents/data/CH4760_Pt/S2227/simu/Figures/phasing_kin_FFT/new/"
+savedir = "C:/Users/carnis/Documents/data/CH4760_Pt/S2227/simu/Figures/phasing_kin_FFT/"
 colorbar_range = [-7, 4]  # [0, 9.5]  # [vmin, vmax] log scale in photon counts
 comment = "_GeSi_NW_scale" + str(colorbar_range)  # should start with _
 tick_spacing = 25  # for plots in real space, in nm

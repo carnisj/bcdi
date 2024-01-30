@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -80,7 +78,7 @@ class TestInitFacetsParams(unittest.TestCase):
 
     def test_init_lattice_int(self):
         with self.assertRaises(TypeError):
-            Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR, lattice=int(1))
+            Facets(pathdir=THIS_DIR, filename=FILENAME, savedir=SAVEDIR, lattice=1)
 
     def test_init_lattice_str(self):
         with self.assertRaises(TypeError):

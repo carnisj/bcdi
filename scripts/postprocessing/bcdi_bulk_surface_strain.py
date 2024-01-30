@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -451,7 +450,8 @@ if fit_pdf == "skewed_gaussian":
     fig.text(
         0.13,
         0.66,
-        f"SK std={result.params['sig_0'].value:.2e}\n   +/-{result.params['sig_0'].stderr:.2e}",
+        f"SK std={result.params['sig_0'].value:.2e}\n"
+        f"   +/-{result.params['sig_0'].stderr:.2e}",
     )
 else:
     fig.text(

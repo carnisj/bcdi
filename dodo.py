@@ -82,17 +82,6 @@ def task_clean_doc():
     }
 
 
-def task_code_style():
-    """Run pycodestyle on the modules."""
-    return {
-        "actions": [
-            "pycodestyle    bcdi --max-line-length=88 "
-            "--ignore=E24,E121,E123,E126,E203,E226,E704,W503"
-        ],
-        "verbosity": 2,
-    }
-
-
 def task_coverage_xml():
     """
     Generate an XML version of the coverage report.
@@ -132,6 +121,14 @@ def task_clean_coverage():
     return {
         "actions": [(delete_coverage, [".coverage"])],
         "file_dep": ["test_output/coverage-report.xml"],
+        "verbosity": 2,
+    }
+
+
+def task_ruff():
+    """Run ruff on the modules."""
+    return {
+        "actions": ["ruff check ."],
         "verbosity": 2,
     }
 

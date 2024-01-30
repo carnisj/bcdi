@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -25,9 +24,7 @@ orthonormal frame.
 
 scan = 22  # scan number
 datadir = (
-    "/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_{:05d}".format(
-        scan
-    )
+    f"/nfs/fs/fscxi/experiments/2020/PETRA/P10/11008562/raw/ht_pillar3_{scan:05d}"
     + "/pynx/"
 )
 tilt = 0.0239082357814962

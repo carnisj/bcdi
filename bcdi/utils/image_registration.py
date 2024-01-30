@@ -919,7 +919,7 @@ def shift_array(
         shifted_array = np.roll(
             array,
             shift=list(map(lambda x: int(np.rint(x)), shift)),
-            axis=tuple(range((len(shift)))),
+            axis=tuple(range(len(shift))),
         )
     return np.asarray(shifted_array)
 

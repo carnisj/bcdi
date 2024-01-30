@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -147,7 +145,7 @@ def bcc_lattice(
         print("BCC unit cell of parameter a =", unitcell_param, "nm")
         print(
             "reciprocal unit cell of parameter 2*pi/a =",
-            str("{:.4f}".format(recipr_param)),
+            str(f"{recipr_param:.4f}"),
             "1/nm",
         )
 
@@ -255,9 +253,9 @@ def bct_lattice(
         )
         print(
             "reciprocal unit cell of parameter 2*pi/a =",
-            str("{:.4f}".format(recipr_param[0])),
+            str(f"{recipr_param[0]:.4f}"),
             " , 2*pi/c =",
-            str("{:.4f}".format(recipr_param[1])),
+            str(f"{recipr_param[1]:.4f}"),
             "1/nm",
         )
 
@@ -352,7 +350,7 @@ def cubic_lattice(
         print("simple cubic unit cell of parameter a =", unitcell_param, "nm")
         print(
             "reciprocal unit cell of parameter 2*pi/a =",
-            str("{:.4f}".format(recipr_param)),
+            str(f"{recipr_param:.4f}"),
             "1/nm",
         )
 
@@ -441,7 +439,7 @@ def fcc_lattice(
         print("FCC unit cell of parameter a =", unitcell_param, "nm")
         print(
             "reciprocal unit cell of parameter 2*pi/a =",
-            str("{:.4f}".format(recipr_param)),
+            str(f"{recipr_param:.4f}"),
             "1/nm",
         )
 
@@ -670,15 +668,9 @@ def reciprocal_lattice(
     volume = v1.dot(np.cross(v2, v3))
     if verbose:
         if input_lattice == "direct":
-            print(
-                "Volume of the direct space unit cell: {:.6f} nm\u00B3".format(volume)
-            )
+            print(f"Volume of the direct space unit cell: {volume:.6f} nm\u00B3")
         elif input_lattice == "reciprocal":
-            print(
-                "Volume of the reciprocal unit cell: {:.6f} nm\u207B\u00B3".format(
-                    volume
-                )
-            )
+            print(f"Volume of the reciprocal unit cell: {volume:.6f} nm\u207B\u00B3")
         else:
             raise ValueError("Unexpected value for input_lattice parameter")
     w1 = 2 * np.pi / volume * np.cross(v2, v3)

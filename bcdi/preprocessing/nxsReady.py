@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Module for loading .nxs files from SIXS beamline @ SOLEIL
 # To be used together with the dictionnary 'alias_dict.txt'
 # Code from Andrea Resta @ Soleil Synchrotron

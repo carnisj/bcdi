@@ -1,16 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
 #       authors:
 #         Jerome Carnis, jerome.carnis@esrf.fr
 """Functions related to BCDI data preprocessing, before phase retrieval."""
-
-try:
-    import hdf5plugin  # for P10, should be imported before h5py or PyTables
-except ModuleNotFoundError:
-    pass
 
 import logging
 import pathlib
@@ -795,7 +788,7 @@ def grid_bcdi_xrayutil(
 
     maxbins: List[int] = []
     for dim in (qx, qy, qz):
-        maxstep = max((abs(np.diff(dim, axis=j)).max() for j in range(3)))
+        maxstep = max(abs(np.diff(dim, axis=j)).max() for j in range(3))
         maxbins.append(int(abs(dim.max() - dim.min()) / maxstep))
     logger.info(f"Maximum number of bins based on the sampling in q: {maxbins}")
     maxbins = util.smaller_primes(maxbins, maxprime=7, required_dividers=(2,))

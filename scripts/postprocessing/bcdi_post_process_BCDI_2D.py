@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -14,7 +13,6 @@ import h5py
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage.measurements import center_of_mass
 
 matplotlib.use("Qt5Agg")
@@ -139,9 +137,9 @@ def center_com_2d(myarray, debugging=0):
     piy, pix = center_of_mass(abs(myarray))
     print(
         "center of mass at (y, x): (",
-        str("{:.2f}".format(piy)),
+        str(f"{piy:.2f}"),
         ",",
-        str("{:.2f}".format(pix)),
+        str(f"{pix:.2f}"),
         ")",
     )
     offset_y = int(np.rint(nby / 2.0 - piy))
@@ -217,8 +215,8 @@ def remove_ramp_2d(myamp, myphase, threshold, gradient_threshold, debugging=0):
     myy, myx = np.meshgrid(np.arange(0, nby, 1), np.arange(0, nbx, 1), indexing="ij")
     print(
         "Phase_ramp_y, Phase_ramp_x: (",
-        str("{:.3f}".format(myrampy)),
-        str("{:.3f}".format(myrampx)),
+        str(f"{myrampy:.3f}"),
+        str(f"{myrampx:.3f}"),
         ") rad",
     )
     myphase = myphase - myy * myrampy - myx * myrampx
@@ -327,14 +325,14 @@ print("Mean phase:", phase[support == 1].mean(), "rad")
 print(
     "COM at (y, x): (",
     ",",
-    str("{:.2f}".format(ycom)),
+    str(f"{ycom:.2f}"),
     ",",
-    str("{:.2f}".format(xcom)),
+    str(f"{xcom:.2f}"),
     ")",
 )
 print(
     "Phase offset at COM(amp) of:",
-    str("{:.2f}".format(phase[int(ycom), int(xcom)])),
+    str(f"{phase[int(ycom), int(xcom)]:.2f}"),
     "rad",
 )
 phase = phase - phase[int(ycom), int(xcom)]

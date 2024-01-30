@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -130,7 +129,7 @@ for idx in range(1, nbfiles):
     del amp, phase, obj
     gc.collect()
 print("Summed modulus / summed modulus of the first:")
-print([str("{:.4f}".format(abs(stack[idx]).sum() / sum0)) for idx in range(nbfiles)])
+print([str(f"{abs(stack[idx]).sum() / sum0:.4f}") for idx in range(nbfiles)])
 for idx in range(nbfiles):
     stack[idx] = stack[idx] * sum0 / abs(stack[idx]).sum()
 ############################
@@ -151,7 +150,7 @@ fig, _, _ = gu.multislices_plot(
     is_orthogonal=True,
     title="",
 )
-fig.text(0.6, 0.30, "Strongest mode = {:d}".format(highest_weight), size=20)
-fig.text(0.6, 0.25, "weight = {:.2f}%".format(weights[highest_weight] * 100), size=20)
+fig.text(0.6, 0.30, f"Strongest mode = {highest_weight:d}", size=20)
+fig.text(0.6, 0.25, f"weight = {weights[highest_weight] * 100:.2f}%", size=20)
 plt.pause(0.1)
 plt.show()

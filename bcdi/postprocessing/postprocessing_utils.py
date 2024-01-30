@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -1684,7 +1682,7 @@ def remove_ramp(
     valid.valid_ndarray(arrays=(amp, phase), ndim=3)
     cmap = kwargs.get("cmap", "turbo")
     if method == "upsampling":
-        nbz, nby, nbx = [mysize * ups_factor for mysize in initial_shape]
+        nbz, nby, nbx = (mysize * ups_factor for mysize in initial_shape)
         nb_z, nb_y, nb_x = amp.shape
         myobj = util.crop_pad(amp * np.exp(1j * phase), (nbz, nby, nbx), cmap=cmap)
         if debugging:
@@ -1931,7 +1929,7 @@ def remove_ramp_2d(
     valid.valid_ndarray(arrays=(amp, phase), ndim=2)
 
     if method == "upsampling":
-        nby, nbx = [mysize * ups_factor for mysize in initial_shape]
+        nby, nbx = (mysize * ups_factor for mysize in initial_shape)
         nb_y, nb_x = amp.shape
         myobj = util.crop_pad(amp * np.exp(1j * phase), (nby, nbx))
         if debugging:

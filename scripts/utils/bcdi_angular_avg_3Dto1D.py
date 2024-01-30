@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -174,11 +173,11 @@ if save_txt:
         )
         for idx, item in enumerate(q_axis):
             file.write(
-                "{:8.6f}".format(item)
+                f"{item:8.6f}"
                 + "\t"
-                + "{:10.1f}".format(y_mean_masked[idx])
+                + f"{y_mean_masked[idx]:10.1f}"
                 + "\t"
-                + "{:10.1f}".format(y_median_masked[idx])
+                + f"{y_median_masked[idx]:10.1f}"
                 + "\n"
             )
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -97,7 +96,7 @@ else:  # use amplitude
 
 strain = npzfile["strain"]
 strain[support == 0] = 0
-print("Data size: ({:d},{:d},{:d})".format(nz, ny, nx))
+print(f"Data size: ({nz:d},{ny:d},{nx:d})")
 
 if debug:
     gu.multislices_plot(
@@ -132,11 +131,11 @@ var_strain = strain[np.nonzero(support)].var()
 rms_strain = np.sqrt(np.mean(np.ndarray.flatten(strain[np.nonzero(support)]) ** 2))
 print(
     "Mean strain = ",
-    str("{:.4e}".format(mean_strain)).replace(".", ","),
+    str(f"{mean_strain:.4e}").replace(".", ","),
     "\nVariance strain = ",
-    str("{:.4e}".format(var_strain)).replace(".", ","),
+    str(f"{var_strain:.4e}").replace(".", ","),
     "\nRMS strain = ",
-    str("{:.4e}".format(rms_strain)).replace(".", ","),
+    str(f"{rms_strain:.4e}").replace(".", ","),
 )
 
 plt.ioff()

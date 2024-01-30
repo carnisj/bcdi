@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -1032,7 +1030,7 @@ class CenterFFTPadSymZYX(CenterFFT):
         ]
         # remove negative numbers
         self.pad_width = np.array(
-            list((map(lambda value: max(value, 0), pad_width))), dtype=int
+            list(map(lambda value: max(value, 0), pad_width)), dtype=int
         )
 
     def update_frames_logical(

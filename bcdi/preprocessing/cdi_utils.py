@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
 #   (c) 07/2019-05/2021 : DESY PHOTON SCIENCE
@@ -530,7 +528,7 @@ def grid_cdi(
         0.55,
         0.30,
         "Origin of the reciprocal space (Qx,Qz,Qy):\n\n"
-        + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
+        + f"     ({pivot_z:d}, {pivot_y:d}, {pivot_x:d})",
         size=14,
     )
     fig.savefig(setup.detector.savedir + "reciprocal_space_sum" + plot_comment)
@@ -554,7 +552,7 @@ def grid_cdi(
         0.55,
         0.30,
         "Origin of the reciprocal space (Qx,Qz,Qy):\n\n"
-        + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
+        + f"     ({pivot_z:d}, {pivot_y:d}, {pivot_x:d})",
         size=14,
     )
     fig.savefig(setup.detector.savedir + "reciprocal_space_central" + plot_comment)
@@ -575,7 +573,7 @@ def grid_cdi(
         0.55,
         0.30,
         "Origin of the reciprocal space (Qx,Qz,Qy):\n\n"
-        + "     ({:d}, {:d}, {:d})".format(pivot_z, pivot_y, pivot_x),
+        + f"     ({pivot_z:d}, {pivot_y:d}, {pivot_x:d})",
         size=14,
     )
     fig.savefig(setup.detector.savedir + "reciprocal_space_central_pix" + plot_comment)

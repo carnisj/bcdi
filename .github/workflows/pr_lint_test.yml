@@ -19,9 +19,9 @@ jobs:
         python-version: ['3.9', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -34,7 +34,7 @@ jobs:
 
     - name: Cache dependencies
       id: myCache
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ${{env.LD_LIBRARY_PATH}}/python${{ matrix.python-version }}/site-packages
         key: ${{ runner.os }}-pip-v0-${{ hashFiles('**/requirements.txt') }}
@@ -53,8 +53,8 @@ jobs:
     - name: Check imports with isort
       run: python -m isort --profile black bcdi
 
-    - name: Lint with pycodestyle
-      run: python -m pycodestyle bcdi --max-line-length=88  --ignore=E24,E121,E123,E126,E203,E226,E704,W503
+    - name: Lint with ruff
+      run: python -m ruff check .
 
     - name: Check docstrings with pydocstyle
       run: python -m pydocstyle bcdi --ignore=D102,D107,D212,D203

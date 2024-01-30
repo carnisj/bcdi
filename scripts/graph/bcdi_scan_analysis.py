@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -7,10 +6,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-try:
-    import hdf5plugin  # for P10, should be imported before h5py or PyTables
-except ModuleNotFoundError:
-    pass
 import os
 
 import matplotlib
@@ -19,7 +14,6 @@ import matplotlib.ticker as ticker
 import numpy as np
 from matplotlib.widgets import RectangleSelector
 
-import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.experiment.setup import Setup
 from bcdi.graph.colormap import ColormapFactory

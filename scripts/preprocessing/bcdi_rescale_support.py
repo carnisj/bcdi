@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import gc
 import sys
@@ -488,8 +487,8 @@ print(
 print(
     "Original voxel sizes in detector coordinates based on "
     "experimental parameters (ver, hor): "
-    f"{12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9:.2f} nm, "
-    f"{12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9:.2f} nm"
+    f"{12.398 * 1e-7 / energy * distance / (unbinned_shape[1] * pixel_y) * 1e9:.2f} nm,"
+    f" {12.398 * 1e-7 / energy * distance / (unbinned_shape[2] * pixel_x) * 1e9:.2f} nm"
 )
 
 rebinned_shape = [

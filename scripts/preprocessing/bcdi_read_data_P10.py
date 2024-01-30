@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -7,10 +6,6 @@
 #       authors:
 #         Jerome Carnis, carnis_jerome@yahoo.fr
 
-try:
-    import hdf5plugin  # for P10, should be imported before h5py or PyTables
-except ModuleNotFoundError:
-    pass
 import datetime
 import multiprocessing as mp
 import os
@@ -144,7 +139,7 @@ def main(parameters):
         mask[np.nonzero(result[1])] = 1
         counter.append(result[2])
 
-        sys.stdout.write("\rFile {:d} / {:d}".format(current_point, nb_files))
+        sys.stdout.write(f"\rFile {current_point:d} / {nb_files:d}")
         sys.stdout.flush()
 
     ######################################
@@ -202,20 +197,14 @@ def main(parameters):
         multiproc = False
 
     if load_scan:  # scan or time series
-        detector.datadir = (
-            rootdir + samplename + "_" + str("{:05d}".format(scan)) + "/e4m/"
-        )
+        detector.datadir = rootdir + samplename + "_" + str(f"{scan:05d}") + "/e4m/"
         template_file = (
-            detector.datadir + samplename + "_" + str("{:05d}".format(scan)) + "_data_"
+            detector.datadir + samplename + "_" + str(f"{scan:05d}") + "_data_"
         )
     else:  # single image
         detector.datadir = rootdir + samplename + "/e4m/"
         template_file = (
-            detector.datadir
-            + samplename
-            + "_take_"
-            + str("{:05d}".format(scan))
-            + "_data_"
+            detector.datadir + samplename + "_take_" + str(f"{scan:05d}") + "_data_"
         )
         compare_end = False
 
@@ -229,9 +218,7 @@ def main(parameters):
     # Load data #
     #############
     plt.ion()
-    filenames = [
-        template_file + "{:06d}.h5".format(image_nb[idx]) for idx in range(nb_files)
-    ]
+    filenames = [template_file + f"{image_nb[idx]:06d}.h5" for idx in range(nb_files)]
     roi_counter = None
     current_point = 0
     start = time.time()
@@ -261,9 +248,7 @@ def main(parameters):
 
     else:
         for idx in range(nb_files):
-            sys.stdout.write(
-                "\rLoading file {:d}".format(idx + 1) + " / {:d}".format(nb_files)
-            )
+            sys.stdout.write(f"\rLoading file {idx + 1:d}" + f" / {nb_files:d}")
             sys.stdout.flush()
             h5file = h5py.File(filenames[idx], "r")
             data = h5file["entry"]["data"]["data"][:]
@@ -314,7 +299,7 @@ def main(parameters):
             plot_title = (
                 "masked data - sum of "
                 + str(nb_files)
-                + " points with {:d} frames each".format(frame_per_series)
+                + f" points with {frame_per_series:d} frames each"
             )
         else:
             plot_title = "masked data - sum of " + str(frame_per_series) + " frames"

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -14,7 +13,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
-import bcdi.graph.graph_utils as gu
 import bcdi.utils.utilities as util
 from bcdi.graph.colormap import ColormapFactory
 from bcdi.utils import image_registration as reg
@@ -68,11 +66,11 @@ for raw in range(nbfiles):
         print("\nReference =", raw, "  Test =", col)
         print(
             "z shift",
-            str("{:.2f}".format(shiftz)),
+            str(f"{shiftz:.2f}"),
             ", y shift",
-            str("{:.2f}".format(shifty)),
+            str(f"{shifty:.2f}"),
             ", x shift",
-            str("{:.2f}".format(shiftx)),
+            str(f"{shiftx:.2f}"),
         )
 
         correlation[raw, col] = pearsonr(
@@ -82,7 +80,7 @@ for raw in range(nbfiles):
             np.ndarray.flatten(abs(test_obj[reference_obj > threshold_correlation])),
         )[0]
         correlation[col, raw] = correlation[raw, col]
-        print("Correlation=", str("{:.2f}".format(correlation[raw, col])))
+        print("Correlation=", str(f"{correlation[raw, col]:.2f}"))
 
 plt.figure()
 plt.imshow(correlation, cmap=my_cmap, vmin=0, vmax=1)

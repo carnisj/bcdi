@@ -72,10 +72,10 @@ coverage = "7.4.0"
 doit = "0.36.0"
 isort = "5.13.2"
 mypy = "1.8.0"
-pycodestyle = "2.11.1"
 pydocstyle = "6.3.0"
 pyfakefs = "5.3.2"
 pytest = "7.4.4"
+ruff = "0.1.14"
 sphinx = "7.2.6"
 sphinxcontrib-mermaid = "0.9.2"
 twine = "4.0.2"
@@ -91,6 +91,7 @@ dev = [
     "pydocstyle",
     "pyfakefs",
     "pytest",
+    "ruff",
     "sphinx",
     "sphinxcontrib-mermaid",
     "twine",
@@ -133,3 +134,10 @@ module = [
     "yaml",
 ]
 ignore_missing_imports = true
+
+[tool.ruff.lint]
+extend-select = [
+  "UP",  # pyupgrade
+  "E",  # pycodestyle
+  "W",  # pycodestyle
+]

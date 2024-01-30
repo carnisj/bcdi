@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # BCDI: tools for pre(post)-processing Bragg coherent X-ray diffraction imaging data
 #   (c) 07/2017-06/2019 : CNRS UMR 7344 IM2NP
@@ -191,18 +190,18 @@ for idx in range(nb_scans):
     h5file = h5py.File(datadir + "S" + str(scan_nb[idx]) + ".nxs", "r")
 
     raw_mgomega = (
-        h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["CRISTAL"][
+        h5file["test_" + str(f"{scan_nb[idx]:04d}")]["CRISTAL"][
             "I06-C-C07-EX-MG_OMEGA"
         ]["positon_pre"][:]
         / 1e6
     )
-    raw_delta = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"][
+    raw_delta = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"][
         "actuator_1_1"
     ][:]
-    raw_gamma = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"][
+    raw_gamma = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"][
         "actuator_2_1"
     ][:]
-    ccdn = h5file["test_" + str("{:04d}".format(scan_nb[idx]))]["scan_data"]["data_06"][
+    ccdn = h5file["test_" + str(f"{scan_nb[idx]:04d}")]["scan_data"]["data_06"][
         :
     ]  # ndarray if mesh
     ccdn = np.reshape(
@@ -268,7 +267,8 @@ plt.pause(0.1)
 ################################################################
 # version for fitting meshes in direct beam and Bragg condition:
 ################################################################
-# pwidth1,pwidth2,distance,tiltazimuth,tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength
+# parameters for area_detector_calib: (pwidth1,pwidth2,distance,tiltazimuth,
+# tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength)
 imgpbcnt = 0
 for idx in range(len(mgomega)):
     if np.all(hkl[idx] != (0, 0, 0)):
@@ -300,7 +300,8 @@ else:
     qconv = xu.experiment.QConversion(
         ["y-"], ["z+", "y-"], r_i=beam_direction
     )  # for ID01
-    # pwidth1,pwidth2,distance,tiltazimuth,tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength
+    # parameters for area_detector_calib_hkl: (pwidth1,pwidth2,distance,tiltazimuth,
+    # tilt,detector_rotation,outerangle_offset,sampletilt,sampletiltazimuth,wavelength)
     hxrd = xu.HXRD([1, 0, 0], [0, 0, 1], wl=wl, qconv=qconv)
     param, eps = xu.analysis.area_detector_calib_hkl(
         mgomega,
