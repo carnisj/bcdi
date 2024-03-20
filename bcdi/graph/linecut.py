@@ -160,9 +160,9 @@ class LinecutGenerator:
             index_stop = min(len(dcut), peak + 10)
             cropped_xaxis = np.arange(index_start, index_stop)
             cropped_dcut = dcut[index_start:index_stop]
-            self.result[f"dimension_{self._current_axis}"][
-                f"derivative_{peak_id}"
-            ] = np.vstack((cropped_xaxis, cropped_dcut))
+            self.result[f"dimension_{self._current_axis}"][f"derivative_{peak_id}"] = (
+                np.vstack((cropped_xaxis, cropped_dcut))
+            )
 
             fit_params = Parameters()
             fit_params.add("amp_0", value=1, min=0.1, max=10)
@@ -187,9 +187,9 @@ class LinecutGenerator:
                 x_axis=interp_xaxis,
                 distribution="gaussian",
             )
-            self.result[f"dimension_{self._current_axis}"][
-                f"fit_{peak_id}"
-            ] = np.vstack((interp_xaxis, y_fit))
+            self.result[f"dimension_{self._current_axis}"][f"fit_{peak_id}"] = (
+                np.vstack((interp_xaxis, y_fit))
+            )
             self.result[f"dimension_{self._current_axis}"][f"param_{peak_id}"] = {
                 "amp": fit_result.params["amp_0"].value,
                 "sig": fit_result.params["sig_0"].value,

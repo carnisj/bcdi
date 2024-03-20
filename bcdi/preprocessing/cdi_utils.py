@@ -226,9 +226,9 @@ def beamstop_correction(data, setup, debugging=False, **kwargs):
 
     # interpolation for the border of the large square wafer
     indices = np.argwhere(large_border == 1)
-    data[
-        np.nonzero(np.repeat(large_border[np.newaxis, :, :], nbz, axis=0))
-    ] = 0  # exclude border points
+    data[np.nonzero(np.repeat(large_border[np.newaxis, :, :], nbz, axis=0))] = (
+        0  # exclude border points
+    )
     for frame in range(nbz):  # loop over 2D images in the detector plane
         tempdata = data[frame, :, :]
         for idx in range(indices.shape[0]):
@@ -246,9 +246,9 @@ def beamstop_correction(data, setup, debugging=False, **kwargs):
 
     # interpolation for the border of the small square wafer
     indices = np.argwhere(small_border == 1)
-    data[
-        np.nonzero(np.repeat(small_border[np.newaxis, :, :], nbz, axis=0))
-    ] = 0  # exclude border points
+    data[np.nonzero(np.repeat(small_border[np.newaxis, :, :], nbz, axis=0))] = (
+        0  # exclude border points
+    )
     for frame in range(nbz):  # loop over 2D images in the detector plane
         tempdata = data[frame, :, :]
         for idx in range(indices.shape[0]):

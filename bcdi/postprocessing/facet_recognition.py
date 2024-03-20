@@ -1124,15 +1124,15 @@ def stereographic_proj(
     print("\n")
 
     # identification of local minima
-    density_south[
-        density_south > background_south
-    ] = 0  # define the background in the density of normals
+    density_south[density_south > background_south] = (
+        0  # define the background in the density of normals
+    )
     mask_south = np.copy(density_south)
     mask_south[mask_south != 0] = 1
 
-    density_north[
-        density_north > background_north
-    ] = 0  # define the background in the density of normals
+    density_north[density_north > background_north] = (
+        0  # define the background in the density of normals
+    )
     mask_north = np.copy(density_north)
     mask_north[mask_north != 0] = 1
 
@@ -1528,9 +1528,9 @@ def update_logfile(
             )
 
     str_array = strain_array[support == 1]
-    str_array[
-        str_array == 0
-    ] = np.nan  # remove the artefact from YY reconstrutions at the bottom facet
+    str_array[str_array == 0] = (
+        np.nan
+    )  # remove the artefact from YY reconstrutions at the bottom facet
     support_strain = np.mean(str_array[~np.isnan(str_array)])
     support_deviation = np.std(str_array[~np.isnan(str_array)])
 

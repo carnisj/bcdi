@@ -163,9 +163,9 @@ print(
     np.unravel_index(diff_pattern.argmax(), diff_pattern.shape),
 )
 # print(diff_pattern[434, 54, 462])
-mask[
-    diff_pattern < 1.0
-] = 1  # do not use interpolated points with a low photon count in PRTF calculation.
+mask[diff_pattern < 1.0] = (
+    1  # do not use interpolated points with a low photon count in PRTF calculation.
+)
 # These points results in overshoots in the PRTF
 diff_pattern[np.nonzero(mask)] = 0
 

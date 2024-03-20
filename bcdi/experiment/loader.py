@@ -249,9 +249,9 @@ def check_pixels(data, mask, debugging=False, **kwargs):
     indices_badpixels = np.nonzero(mask)  # update indices
     for index in range(nbz):
         tempdata = data[index, :, :]
-        tempdata[
-            indices_badpixels
-        ] = 0  # numpy array is mutable hence data will be modified
+        tempdata[indices_badpixels] = (
+            0  # numpy array is mutable hence data will be modified
+        )
 
     if debugging:
         meandata = data.mean(axis=0)

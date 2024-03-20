@@ -752,9 +752,9 @@ plt.savefig(
 
 del new_strain_copy
 
-strain_simu[
-    bulk_simu == 0
-] = np.nan  # remove the non-physical outer layer for simulated strain
+strain_simu[bulk_simu == 0] = (
+    np.nan
+)  # remove the non-physical outer layer for simulated strain
 masked_array = np.ma.array(strain_simu, mask=np.isnan(strain_simu))
 
 fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(2, 2)
@@ -877,9 +877,7 @@ plt.savefig(savedir + "simu_strain_XY" + comment + "_colorbar.png", bbox_inches=
 # plot difference strain maps
 ##############################
 diff_strain = strain_simu - new_strain
-diff_strain[
-    support == 0
-] = (
+diff_strain[support == 0] = (
     np.nan
 )  # the support is 0 outside of the simulated object, strain is not defined there
 masked_array = np.ma.array(diff_strain, mask=np.isnan(diff_strain))
@@ -952,9 +950,9 @@ if debug:
     plt.colorbar(plt2, ax=ax2)
     plt.title("Phased support")
 
-diff_strain[
-    phased_support == 0
-] = np.nan  # exclude also layers outside of the isosurface for the reconstruction
+diff_strain[phased_support == 0] = (
+    np.nan
+)  # exclude also layers outside of the isosurface for the reconstruction
 masked_array = np.ma.array(diff_strain, mask=np.isnan(diff_strain))
 
 if debug:

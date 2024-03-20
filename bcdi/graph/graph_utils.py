@@ -340,9 +340,9 @@ def combined_plots(
             if np.isnan(vmin):
                 tmp_array = np.copy(array).astype(float)
                 tmp_array[np.isnan(array)] = np.inf
-                tmp_array[
-                    np.isinf(tmp_array)
-                ] = np.inf  # set -inf to +inf to find the min
+                tmp_array[np.isinf(tmp_array)] = (
+                    np.inf
+                )  # set -inf to +inf to find the min
                 vmin = tmp_array.min()
             if np.isnan(vmax):
                 tmp_array = np.copy(array).astype(float)
@@ -454,9 +454,9 @@ def combined_plots(
             if np.isnan(vmin):
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = np.inf
-                tmp_array[
-                    np.isinf(tmp_array)
-                ] = np.inf  # set -inf to +inf to find the min
+                tmp_array[np.isinf(tmp_array)] = (
+                    np.inf
+                )  # set -inf to +inf to find the min
                 vmin = tmp_array.min()
             if np.isnan(vmax):
                 tmp_array = np.copy(array)
@@ -472,9 +472,9 @@ def combined_plots(
             if np.isnan(vmin):
                 tmp_array = np.copy(array)
                 tmp_array[np.isnan(array)] = np.inf
-                tmp_array[
-                    np.isinf(tmp_array)
-                ] = np.inf  # set -inf to +inf to find the min
+                tmp_array[np.isinf(tmp_array)] = (
+                    np.inf
+                )  # set -inf to +inf to find the min
                 vmin = np.log10(abs(tmp_array).min())
                 if np.isinf(vmin):
                     vmin = 0
@@ -2160,9 +2160,9 @@ def save_to_vti(
         index_first = tuple_fieldnames.index("amp")
         first_array = tuple_array[index_first]
         first_array = first_array / first_array.max()
-        first_array[
-            first_array < amplitude_threshold
-        ] = 0  # theshold low amplitude values in order to save disk space
+        first_array[first_array < amplitude_threshold] = (
+            0  # theshold low amplitude values in order to save disk space
+        )
         is_amp = True
     except ValueError:
         logger.info('"amp" not in fieldnames, will save arrays without thresholding')
@@ -2181,9 +2181,9 @@ def save_to_vti(
             continue
         temp_array = tuple_array[idx]
         if is_amp:
-            temp_array[
-                first_array == 0
-            ] = 0  # use the thresholded amplitude as a support
+            temp_array[first_array == 0] = (
+                0  # use the thresholded amplitude as a support
+            )
             # in order to save disk space
         temp_array = np.transpose(np.flip(temp_array, 2)).reshape(temp_array.size)
         temp_array = numpy_support.numpy_to_vtk(temp_array)
@@ -2835,26 +2835,26 @@ def update_aliens_combined(
 
         if not skip:
             if dim == 0:
-                updated_data[
-                    frame_index[0], starty:stopy, startx:stopx
-                ] = original_data[frame_index[0], starty:stopy, startx:stopx]
-                updated_mask[
-                    frame_index[0], starty:stopy, startx:stopx
-                ] = original_mask[frame_index[0], starty:stopy, startx:stopx]
+                updated_data[frame_index[0], starty:stopy, startx:stopx] = (
+                    original_data[frame_index[0], starty:stopy, startx:stopx]
+                )
+                updated_mask[frame_index[0], starty:stopy, startx:stopx] = (
+                    original_mask[frame_index[0], starty:stopy, startx:stopx]
+                )
             elif dim == 1:
-                updated_data[
-                    starty:stopy, frame_index[1], startx:stopx
-                ] = original_data[starty:stopy, frame_index[1], startx:stopx]
-                updated_mask[
-                    starty:stopy, frame_index[1], startx:stopx
-                ] = original_mask[starty:stopy, frame_index[1], startx:stopx]
+                updated_data[starty:stopy, frame_index[1], startx:stopx] = (
+                    original_data[starty:stopy, frame_index[1], startx:stopx]
+                )
+                updated_mask[starty:stopy, frame_index[1], startx:stopx] = (
+                    original_mask[starty:stopy, frame_index[1], startx:stopx]
+                )
             else:  # dim=2
-                updated_data[
-                    starty:stopy, startx:stopx, frame_index[2]
-                ] = original_data[starty:stopy, startx:stopx, frame_index[2]]
-                updated_mask[
-                    starty:stopy, startx:stopx, frame_index[2]
-                ] = original_mask[starty:stopy, startx:stopx, frame_index[2]]
+                updated_data[starty:stopy, startx:stopx, frame_index[2]] = (
+                    original_data[starty:stopy, startx:stopx, frame_index[2]]
+                )
+                updated_mask[starty:stopy, startx:stopx, frame_index[2]] = (
+                    original_mask[starty:stopy, startx:stopx, frame_index[2]]
+                )
 
     elif key == "f":  # fill empty voxels
         skip = False
@@ -2891,19 +2891,19 @@ def update_aliens_combined(
 
         if not skip:
             if dim == 0:
-                updated_data[
-                    frame_index[0], starty:stopy, startx:stopx
-                ] = original_data.max()
+                updated_data[frame_index[0], starty:stopy, startx:stopx] = (
+                    original_data.max()
+                )
                 updated_mask[frame_index[0], starty:stopy, startx:stopx] = -1
             elif dim == 1:
-                updated_data[
-                    starty:stopy, frame_index[1], startx:stopx
-                ] = original_data.max()
+                updated_data[starty:stopy, frame_index[1], startx:stopx] = (
+                    original_data.max()
+                )
                 updated_mask[starty:stopy, frame_index[1], startx:stopx] = -1
             else:  # dim=2
-                updated_data[
-                    starty:stopy, startx:stopx, frame_index[2]
-                ] = original_data.max()
+                updated_data[starty:stopy, startx:stopx, frame_index[2]] = (
+                    original_data.max()
+                )
                 updated_mask[starty:stopy, startx:stopx, frame_index[2]] = -1
 
     elif key in {"p", "a"}:  # plot full image or restart masking
@@ -3984,9 +3984,9 @@ def update_mask_2d(
         updated_data = np.copy(original_data)
         xy = []
         print("restart masking")
-        updated_data[
-            original_mask == 1
-        ] = masked_color  # masked pixels plotted with the value of masked_pixel
+        updated_data[original_mask == 1] = (
+            masked_color  # masked pixels plotted with the value of masked_pixel
+        )
         updated_mask = np.zeros((nby, nbx))
         xmin, xmax = -0.5, nbx - 0.5
         if invert_yaxis:

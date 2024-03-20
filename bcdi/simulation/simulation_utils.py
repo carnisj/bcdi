@@ -99,9 +99,9 @@ def assign_peakshape(array_shape, lattice_list, peak_shape, pivot):
             kernel_length
             + min(0, int(array_shape[2] - 1 - (pix + kernel_length // 2))),
         )
-        array[
-            startz1 : stopz1 + 1, starty1 : stopy1 + 1, startx1 : stopx1 + 1
-        ] = peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+        array[startz1 : stopz1 + 1, starty1 : stopy1 + 1, startx1 : stopx1 + 1] = (
+            peak_shape[startz2:stopz2, starty2:stopy2, startx2:stopx2]
+        )
 
     # mask the region near the origin of the reciprocal space
     array[
