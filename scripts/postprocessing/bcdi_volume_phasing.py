@@ -34,9 +34,7 @@ amp = amp / amp.max()
 volume_file = open(
     os.path.join(savedir, "volume_vs_isosurface_noapod" + comment + ".dat"), "w"
 )
-volume_file.write(
-    f"{'isosurface': <10}" + "\t" + f"{'volume (um3)': <10}" + "\n"
-)
+volume_file.write(f"{'isosurface': <10}" + "\t" + f"{'volume (um3)': <10}" + "\n")
 
 
 volume = np.zeros(len(isosurface))

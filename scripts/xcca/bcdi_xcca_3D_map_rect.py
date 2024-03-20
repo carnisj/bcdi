@@ -404,9 +404,9 @@ def main(calc_self, user_comment):
         (cross_corr[:, :, 1] == 0).sum(),
         "points masked",
     )
-    cross_corr[
-        (cross_corr[:, :, 1] == 0), 0
-    ] = np.nan  # discard these values of the CCF
+    cross_corr[(cross_corr[:, :, 1] == 0), 0] = (
+        np.nan
+    )  # discard these values of the CCF
 
     dq = q_range[1] - q_range[0]
     fig, ax = plt.subplots()

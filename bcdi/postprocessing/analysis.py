@@ -344,9 +344,11 @@ class Analysis(ABC):
             root = tk.Tk()
             root.withdraw()
             file_path = filedialog.askopenfilenames(
-                initialdir=self.setup.detector.scandir
-                if self.parameters["data_dir"] is None
-                else self.setup.detector.datadir,
+                initialdir=(
+                    self.setup.detector.scandir
+                    if self.parameters["data_dir"] is None
+                    else self.setup.detector.datadir
+                ),
                 filetypes=[
                     ("HDF5", "*.h5"),
                     ("CXI", "*.cxi"),
@@ -853,9 +855,11 @@ class InterpolatedCrystal:
             phase=self.phase,
             bulk=self.get_bulk(),
             strain=self.strain,
-            q_bragg=self.q_bragg_in_saving_frame
-            if self.q_bragg_in_saving_frame is not None
-            else np.nan,
+            q_bragg=(
+                self.q_bragg_in_saving_frame
+                if self.q_bragg_in_saving_frame is not None
+                else np.nan
+            ),
             voxel_sizes=self.voxel_sizes,
             detector=str(yaml.dump(setup.detector.params)),
             setup=str(yaml.dump(setup.params)),

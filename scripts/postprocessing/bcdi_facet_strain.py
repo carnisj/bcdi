@@ -365,9 +365,9 @@ if projection_method == "stereographic":
             coordinates[idx, 1] = stereo_proj[
                 idx, 2
             ]  # use u values for the projection from North pole
-            coordinates[
-                idx, 2
-            ] = 1  # use values from labels_bottom (projection from North pole)
+            coordinates[idx, 2] = (
+                1  # use values from labels_bottom (projection from North pole)
+            )
         else:
             coordinates[idx, 0] = stereo_proj[
                 idx, 1
@@ -375,9 +375,9 @@ if projection_method == "stereographic":
             coordinates[idx, 1] = stereo_proj[
                 idx, 0
             ]  # use u values for the projection from South pole
-            coordinates[
-                idx, 2
-            ] = 0  # use values from labels_top (projection from South pole)
+            coordinates[idx, 2] = (
+                0  # use values from labels_top (projection from South pole)
+            )
     del stereo_proj
     gc.collect()
 
@@ -409,9 +409,9 @@ if projection_method == "stereographic":
         else:
             label_idx = 0  # duplicated facet, set it to the background
         normals_label[idx] = label_idx  # attribute the label to the normal
-        vertices_label[
-            faces[idx, :]
-        ] = label_idx  # attribute the label to the corresponding vertices
+        vertices_label[faces[idx, :]] = (
+            label_idx  # attribute the label to the corresponding vertices
+        )
     del labels_top, labels_bottom
 elif projection_method == "equirectangular":
     labels, longitude_latitude = fu.equirectangular_proj(
@@ -454,9 +454,9 @@ elif projection_method == "equirectangular":
     for idx in range(nb_normals):
         label_idx = labels[coordinates[idx, 0], coordinates[idx, 1]]
         normals_label[idx] = label_idx  # attribute the label to the normal
-        vertices_label[
-            faces[idx, :]
-        ] = label_idx  # attribute the label to the corresponding vertices
+        vertices_label[faces[idx, :]] = (
+            label_idx  # attribute the label to the corresponding vertices
+        )
 
 else:
     print("Invalid value for projection_method")

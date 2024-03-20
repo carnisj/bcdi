@@ -653,9 +653,9 @@ class CenterFFTPadSymZCropSymYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -730,9 +730,9 @@ class CenterFFTPadSymZCropAsymYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -798,9 +798,9 @@ class CenterFFTPadAsymZCropSymYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -861,9 +861,9 @@ class CenterFFTPadAsymZCropAsymYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -926,9 +926,9 @@ class CenterFFTPadSymZ(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -974,9 +974,9 @@ class CenterFFTPadAsymZ(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -1038,9 +1038,9 @@ class CenterFFTPadSymZYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:
@@ -1092,9 +1092,9 @@ class CenterFFTPadAsymZYX(CenterFFT):
         frames_logical: np.ndarray,
     ) -> np.ndarray:
         temp_frames = -1 * np.ones(self.data_shape[0])
-        temp_frames[
-            self.pad_width[0] : self.pad_width[0] + self.data_shape[0]
-        ] = frames_logical
+        temp_frames[self.pad_width[0] : self.pad_width[0] + self.data_shape[0]] = (
+            frames_logical
+        )
         return temp_frames
 
     def update_q_values(self) -> None:

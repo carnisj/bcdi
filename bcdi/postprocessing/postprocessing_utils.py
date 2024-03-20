@@ -631,9 +631,9 @@ def find_bulk(
         outer = np.copy(mycoordination_matrix)
         outer[np.nonzero(outer)] = 1
         if mykernel.shape == np.ones((9, 9, 9)).shape:
-            outer[
-                mycoordination_matrix > 300
-            ] = 0  # start with a larger object, the mean surface amplitude is ~ 5%
+            outer[mycoordination_matrix > 300] = (
+                0  # start with a larger object, the mean surface amplitude is ~ 5%
+            )
         else:
             raise ValueError("Kernel not yet implemented")
 
@@ -665,9 +665,9 @@ def find_bulk(
             surface = np.copy(mycoordination_matrix)
             surface[np.nonzero(surface)] = 1
             surface[mycoordination_matrix > 389] = 0  # remove part from outer  389
-            outer[
-                mycoordination_matrix > 389
-            ] = 1  # include points left over by the coordination number selection
+            outer[mycoordination_matrix > 389] = (
+                1  # include points left over by the coordination number selection
+            )
             surface[mycoordination_matrix < 362] = 0  # remove part from bulk   311
             # below is to exclude from surface the frame outer part
             surface[0:5, :, :] = 0

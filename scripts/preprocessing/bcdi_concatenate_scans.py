@@ -531,9 +531,9 @@ if partially_masked == "unmask":
     mean_data[unmask_ind] = np.divide(
         mean_data[unmask_ind], len(combined_list) - summask[unmask_ind]
     )
-    summask[
-        summask != len(combined_list)
-    ] = 0  # unmask voxels which are partially masked
+    summask[summask != len(combined_list)] = (
+        0  # unmask voxels which are partially masked
+    )
     summask[np.nonzero(summask)] = 1
 else:  # 'mask', mask partially masked pixels
     summask[np.nonzero(summask)] = 1
