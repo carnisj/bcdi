@@ -222,7 +222,7 @@ class CenterFFT(ABC):
             raise TypeError("expecting a tuple, got " f"{type(value)}")
         if len(value) != 2 * len(self.data_shape):
             raise ValueError(
-                f"expecting a tuple of {2* len(self.data_shape)} integers, "
+                f"expecting a tuple of {2 * len(self.data_shape)} integers, "
                 f"got {len(value)} values"
             )
         if any(val < 0 for val in value):

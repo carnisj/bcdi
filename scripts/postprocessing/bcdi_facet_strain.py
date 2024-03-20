@@ -1165,6 +1165,7 @@ with open(
         elif projection_axis == 2:  # q aligned along the 3rd axis
             ref_axis = np.array([0, 0, 1])
         else:
+            ref_axis = np.zeros(3)
             print("projection_axis should be a basis axis of the reconstructed array")
             sys.exit()
 
